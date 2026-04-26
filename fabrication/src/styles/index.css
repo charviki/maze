@@ -1,0 +1,183 @@
+@import "./effects.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0rem;
+    --terminal-background: 210 40% 98%;
+    --terminal-foreground: 185 70% 25%;
+    --terminal-cursor: 185 70% 30%;
+    --terminal-cursor-accent: 0 0% 100%;
+    --terminal-selection: 142 72% 32%;
+  }
+
+  /* 默认跟随系统主题，宿主若显式写 .dark/.light 则以宿主为准。 */
+  @media (prefers-color-scheme: dark) {
+    :root:not(.light):not(.dark) {
+      --background: 240 10% 3.9%;
+      --foreground: 0 0% 98%;
+      --card: 240 10% 6%;
+      --card-foreground: 0 0% 98%;
+      --popover: 240 10% 6%;
+      --popover-foreground: 0 0% 98%;
+      --primary: 188 86% 53%;
+      --primary-foreground: 240 5.9% 10%;
+      --secondary: 240 3.7% 15.9%;
+      --secondary-foreground: 0 0% 98%;
+      --muted: 240 3.7% 15.9%;
+      --muted-foreground: 240 5% 64.9%;
+      --accent: 188 86% 53%;
+      --accent-foreground: 240 5.9% 10%;
+      --destructive: 0 62.8% 30.6%;
+      --destructive-foreground: 0 0% 98%;
+      --border: 240 3.7% 15.9%;
+      --input: 240 3.7% 15.9%;
+      --ring: 188 86% 53%;
+      --radius: 0rem;
+      --terminal-background: 220 27% 10%;
+      --terminal-foreground: 180 70% 55%;
+      --terminal-cursor: 180 70% 55%;
+      --terminal-cursor-accent: 220 27% 10%;
+      --terminal-selection: 137 71% 58%;
+    }
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 6%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 6%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 188 86% 53%; /* Cyan by default, can be overridden */
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 188 86% 53%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 188 86% 53%;
+    --radius: 0rem;
+    --terminal-background: 220 27% 10%;
+    --terminal-foreground: 180 70% 55%;
+    --terminal-cursor: 180 70% 55%;
+    --terminal-cursor-accent: 220 27% 10%;
+    --terminal-selection: 137 71% 58%;
+  }
+
+  .light {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0rem;
+    --terminal-background: 210 40% 98%;
+    --terminal-foreground: 185 70% 25%;
+    --terminal-cursor: 185 70% 30%;
+    --terminal-cursor-accent: 0 0% 100%;
+    --terminal-selection: 142 72% 32%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-mono antialiased;
+    /* 全局网格背景 */
+    background-size: 40px 40px;
+    background-image: 
+      linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    position: relative;
+    min-height: 100vh;
+  }
+  
+  /* CRT 扫描线和噪点特效伪元素 */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 9998;
+    /* 扫描线：大幅降低透明度以减少视觉负担 */
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.01), rgba(0, 255, 0, 0.005), rgba(0, 0, 255, 0.01));
+    background-size: 100% 4px, 3px 100%;
+  }
+
+  body::after {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 9999;
+    /* SVG 噪点：极微弱的质感 */
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: 0.015;
+  }
+
+  /* 关闭 CRT 特效时，隐藏扫描线和噪点伪元素 */
+  body.no-crt-effects::before,
+  body.no-crt-effects::after {
+    display: none !important;
+  }
+}
+
+/* Custom scrollbar for sci-fi feel */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+  border-left: 1px solid hsl(var(--border));
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary));
+}
