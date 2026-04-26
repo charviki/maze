@@ -38,7 +38,7 @@ func TestTemplateStore_EnsureBuiltins(t *testing.T) {
 	if claudeTpl == nil {
 		t.Fatal("期望 claude 内置模板存在")
 	}
-	if claudeTpl.Command != "IS_SANDBOX=1 claude --dangerously-skip-permissions" {
+	if claudeTpl.Command != "IS_SANDBOX=1 claude --dangerously-skip-permissions --session-id {session_id}" {
 		t.Fatalf("claude 默认命令未对齐自动化权限, 实际 %q", claudeTpl.Command)
 	}
 	if claudeTpl.RestoreCommand != "IS_SANDBOX=1 claude --dangerously-skip-permissions --resume {session_id}" {

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"os"
@@ -24,6 +25,16 @@ var ErrSessionNotFound = errors.New("session not found")
 
 // ErrWorkspaceRootProtected 表示命中了基础工作目录根保护，不能删除整个根目录。
 var ErrWorkspaceRootProtected = errors.New("workspace root is protected")
+
+// generateUUID 生成符合 RFC 4122 v4 的 UUID 字符串，用于 Claude CLI 的 --session-id 参数
+func generateUUID() string {
+	b := make([]byte, 16)
+	_, _ = rand.Read(b)
+	b[6] = (b[6] & 0x0f) | 0x40 // version 4
+	b[8] = (b[8] & 0x3f) | 0x80 // variant 10
+	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x",
+		b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
+}
 
 // TmuxService Tmux 会话管理接口。通过接口抽象便于测试时 mock
 type TmuxService interface {
@@ -318,8 +329,9 @@ func (s *tmuxServiceImpl) ExecutePipeline(sessionName string, pipeline model.Pip
 // 1. new-session -d 创建后台会话
 // 2. waitForPrompt 等待 shell 就绪
 // 3. BuildPipeline 构建三层管线
-// 4. ExecutePipeline 按顺序执行所有步骤
-// 5. SavePipelineState 保存管线状态到本地文件
+// 4. 为 command 步骤中的 {session_id} 占位符填充预生成的 UUID
+// 5. ExecutePipeline 按顺序执行所有步骤
+// 6. SavePipelineState 保存管线状态到本地文件
 func (s *tmuxServiceImpl) CreateSession(name string, command string, workingDir string, configs []model.ConfigItem, restoreStrategy string, templateID string, restoreCommand string) (*model.Session, error) {
 	args := []string{"new-session", "-d", "-s", name}
 	if _, err := s.runTmux(args...); err != nil {
@@ -334,6 +346,15 @@ func (s *tmuxServiceImpl) CreateSession(name string, command string, workingDir 
 
 	pipeline := s.BuildPipeline(workingDir, command, configs)
 
+	// 为 command 步骤中的 {session_id} 占位符生成并填充 UUID，
+	// 使 Claude CLI 启动时通过 --session-id 携带已知 ID，恢复时可用 --resume 引用同一 ID。
+	cliSessionID := generateUUID()
+	for i := range pipeline {
+		if pipeline[i].Type == model.StepCommand && strings.Contains(pipeline[i].Value, "{session_id}") {
+			pipeline[i].Value = strings.ReplaceAll(pipeline[i].Value, "{session_id}", cliSessionID)
+		}
+	}
+
 	if err := s.ExecutePipeline(name, pipeline); err != nil {
 		// 管线执行失败，回滚：终止 session 并清理状态文件
 		_ = s.KillSession(name)
@@ -345,7 +366,7 @@ func (s *tmuxServiceImpl) CreateSession(name string, command string, workingDir 
 	if restoreStrategy == "" {
 		restoreStrategy = "auto"
 	}
-	if err := s.SavePipelineState(name, pipeline, restoreStrategy, templateID, "", restoreCommand); err != nil {
+	if err := s.SavePipelineState(name, pipeline, restoreStrategy, templateID, cliSessionID, restoreCommand); err != nil {
 		s.logger.Errorf("[tmux] save pipeline state for session %s failed: %v", name, err)
 	}
 

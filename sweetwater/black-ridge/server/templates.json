@@ -20,7 +20,7 @@
   "claude": {
     "id": "claude",
     "name": "Claude Code",
-    "command": "IS_SANDBOX=1 claude --dangerously-skip-permissions",
+    "command": "IS_SANDBOX=1 claude --dangerously-skip-permissions --session-id {session_id}",
     "restore_command": "IS_SANDBOX=1 claude --dangerously-skip-permissions --resume {session_id}",
     "session_file_pattern": "~/.claude/projects/{encoded_working_dir}/*.jsonl",
     "description": "Anthropic Claude CLI Agent",

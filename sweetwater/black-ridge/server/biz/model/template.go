@@ -206,7 +206,7 @@ func (s *TemplateStore) loadBuiltinsFromFS() ([]SessionTemplate, error) {
 func hardcodedBuiltins() []SessionTemplate {
 	return []SessionTemplate{
 		{
-			ID: "claude", Name: "Claude Code", Command: `IS_SANDBOX=1 claude --dangerously-skip-permissions`,
+			ID: "claude", Name: "Claude Code", Command: `IS_SANDBOX=1 claude --dangerously-skip-permissions --session-id {session_id}`,
 			RestoreCommand:     `IS_SANDBOX=1 claude --dangerously-skip-permissions --resume {session_id}`,
 			SessionFilePattern: `~/.claude/projects/{encoded_working_dir}/*.jsonl`,
 			Description:        "Anthropic Claude CLI Agent", Icon: "🤖", Builtin: true,
