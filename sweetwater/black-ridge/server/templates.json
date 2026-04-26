@@ -1,0 +1,104 @@
+{
+  "bash": {
+    "id": "bash",
+    "name": "Bash Shell",
+    "command": "",
+    "restore_command": "",
+    "session_file_pattern": "",
+    "description": "纯 Bash 终端",
+    "icon": "🖥️",
+    "builtin": true,
+    "defaults": {
+      "env": {},
+      "files": []
+    },
+    "session_schema": {
+      "env_defs": [],
+      "file_defs": []
+    }
+  },
+  "claude": {
+    "id": "claude",
+    "name": "Claude Code",
+    "command": "IS_SANDBOX=1 claude --dangerously-skip-permissions",
+    "restore_command": "IS_SANDBOX=1 claude --dangerously-skip-permissions --resume {session_id}",
+    "session_file_pattern": "~/.claude/projects/{encoded_working_dir}/*.jsonl",
+    "description": "Anthropic Claude CLI Agent",
+    "icon": "🤖",
+    "builtin": true,
+    "defaults": {
+      "env": {},
+      "files": [
+        {
+          "path": "~/.claude.json",
+          "content": "{\n  \"hasCompletedOnboarding\": true,\n  \"firstStartTime\": \"\",\n  \"opusProMigrationComplete\": true,\n  \"sonnet1m45MigrationComplete\": true,\n  \"migrationVersion\": 11,\n  \"projects\": {}\n}\n"
+        },
+        {
+          "path": "~/.claude/settings.json",
+          "content": "{\n  \"permissions\": {\n    \"allow\": [\n      \"Bash(*)\",\n      \"Read(*)\",\n      \"Write(*)\",\n      \"Edit(*)\",\n      \"MultiEdit(*)\",\n      \"WebFetch(*)\",\n      \"WebSearch(*)\"\n    ],\n    \"deny\": [],\n    \"skipDangerousModePermissionPrompt\": true\n  },\n  \"skipDangerousModePermissionPrompt\": true,\n  \"theme\": \"dark\"\n}\n"
+        },
+        {
+          "path": "~/.claude/CLAUDE.md",
+          "content": "# Global Instructions\n"
+        }
+      ]
+    },
+    "session_schema": {
+      "env_defs": [],
+      "file_defs": [
+        {
+          "path": "CLAUDE.md",
+          "label": "CLAUDE.md（项目记忆）",
+          "required": false,
+          "default_content": "# Project Instructions\n"
+        },
+        {
+          "path": ".claude/settings.json",
+          "label": "项目级 Settings",
+          "required": false,
+          "default_content": "{}"
+        }
+      ]
+    }
+  },
+  "codex": {
+    "id": "codex",
+    "name": "Codex",
+    "command": "codex --full-auto",
+    "restore_command": "",
+    "session_file_pattern": "",
+    "description": "OpenAI Codex Agent",
+    "icon": "⚡",
+    "builtin": true,
+    "defaults": {
+      "env": {},
+      "files": [
+        {
+          "path": "~/.codex/config.toml",
+          "content": "# model = \"o3\"\n# approval_policy = \"on-request\"\n"
+        },
+        {
+          "path": "~/AGENTS.md",
+          "content": "# Global Instructions\n"
+        }
+      ]
+    },
+    "session_schema": {
+      "env_defs": [],
+      "file_defs": [
+        {
+          "path": "AGENTS.md",
+          "label": "AGENTS.md（项目指令）",
+          "required": false,
+          "default_content": "# Project Instructions\n"
+        },
+        {
+          "path": ".codex/config.toml",
+          "label": "项目级 Config",
+          "required": false,
+          "default_content": "# model = \"o3\"\n# approval_policy = \"on-request\"\n"
+        }
+      ]
+    }
+  }
+}

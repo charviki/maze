@@ -1,0 +1,24 @@
+id: codex
+name: Codex
+command: "codex --full-auto"
+description: "OpenAI Codex Agent"
+icon: "⚡"
+builtin: true
+defaults:
+  env: {}
+  files:
+    - path: "~/.codex/config.toml"
+      content: "# model = \"o3\"\n# approval_policy = \"on-request\"\n"
+    - path: "~/AGENTS.md"
+      content: "# Global Instructions\n"
+session_schema:
+  env_defs: []
+  file_defs:
+    - path: "AGENTS.md"
+      label: "AGENTS.md（项目指令）"
+      required: false
+      default_content: "# Project Instructions\n"
+    - path: ".codex/config.toml"
+      label: "项目级 Config"
+      required: false
+      default_content: "# model = \"o3\"\n# approval_policy = \"on-request\"\n"
