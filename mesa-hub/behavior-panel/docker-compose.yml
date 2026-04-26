@@ -1,0 +1,76 @@
+services:
+  web:
+    build:
+      context: ../..
+      dockerfile: mesa-hub/behavior-panel/Dockerfile.web
+    ports:
+      - "10800:80"
+    depends_on:
+      - agent-manager
+
+  agent-manager:
+    build:
+      context: ../..
+      dockerfile: mesa-hub/behavior-panel/Dockerfile
+    ports:
+      - "8090:8080"
+    container_name: agent-manager
+    environment:
+      AGENT_MANAGER_SERVER_AUTH_TOKEN: "${MAZE_AUTH_TOKEN:-}"
+      AGENT_MANAGER_ALLOW_PRIVATE_NETWORKS: "true"
+
+  agent-1:
+    build:
+      context: ../..
+      dockerfile: sweetwater/black-ridge/Dockerfile
+    ports:
+      - "8081:8080"
+    environment:
+      AGENT_NAME: "claude-1"
+      AGENT_EXTERNAL_ADDR: "http://localhost:8081"
+      AGENT_ADVERTISED_ADDR: "http://agent-claude-1:8080"
+      AGENT_CONTROLLER_ADDR: "http://agent-manager:8080"
+      AGENT_SERVER_AUTH_TOKEN: "${MAZE_AUTH_TOKEN:-}"
+      AGENT_CONTROLLER_AUTH_TOKEN: "${MAZE_AUTH_TOKEN:-}"
+    container_name: agent-claude-1
+    volumes:
+      # 镜像内的程序代码会随 docker compose up -d --build 更新，
+      # 但 /home/agent 来自宿主持久卷，已有配置和运行时状态会继续保留。
+      - ~/agents/agent-claude-1:/home/agent
+
+  agent-2:
+    build:
+      context: ../..
+      dockerfile: sweetwater/black-ridge/Dockerfile
+    ports:
+      - "8082:8080"
+    environment:
+      AGENT_NAME: "claude-2"
+      AGENT_EXTERNAL_ADDR: "http://localhost:8082"
+      AGENT_ADVERTISED_ADDR: "http://agent-claude-2:8080"
+      AGENT_CONTROLLER_ADDR: "http://agent-manager:8080"
+      AGENT_SERVER_AUTH_TOKEN: "${MAZE_AUTH_TOKEN:-}"
+      AGENT_CONTROLLER_AUTH_TOKEN: "${MAZE_AUTH_TOKEN:-}"
+    container_name: agent-claude-2
+    volumes:
+      # 若“看起来没更新”，需要先区分是镜像中的二进制/前端资源，
+      # 还是 /home/agent 持久卷里的旧文件仍在生效。
+      - ~/agents/agent-claude-2:/home/agent
+
+  agent-3:
+    build:
+      context: ../..
+      dockerfile: sweetwater/black-ridge/Dockerfile
+    ports:
+      - "8083:8080"
+    environment:
+      AGENT_NAME: "codex-1"
+      AGENT_EXTERNAL_ADDR: "http://localhost:8083"
+      AGENT_ADVERTISED_ADDR: "http://agent-codex-1:8080"
+      AGENT_CONTROLLER_ADDR: "http://agent-manager:8080"
+      AGENT_SERVER_AUTH_TOKEN: "${MAZE_AUTH_TOKEN:-}"
+      AGENT_CONTROLLER_AUTH_TOKEN: "${MAZE_AUTH_TOKEN:-}"
+    container_name: agent-codex-1
+    volumes:
+      # 当前策略保留持久卷优先，不在容器重建时强制覆盖宿主机 home 目录内容。
+      - ~/agents/agent-codex-1:/home/agent

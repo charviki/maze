@@ -1,0 +1,22 @@
+# 阶段 1：构建前端资产 (支持 Monorepo)
+FROM public.ecr.aws/docker/library/node:22-bookworm-slim AS frontend-builder
+WORKDIR /app
+# 安装 pnpm
+RUN npm install -g pnpm
+# 复制 Monorepo 工作区配置和锁定文件
+COPY pnpm-workspace.yaml package.json ./
+# 复制共享组件库
+COPY fabrication ./fabrication
+# 复制当前子项目代码
+COPY mesa-hub/behavior-panel/web ./mesa-hub/behavior-panel/web
+# 安装所有依赖并构建
+RUN pnpm install
+WORKDIR /app/mesa-hub/behavior-panel/web
+RUN pnpm run build
+
+FROM public.ecr.aws/docker/library/nginx:alpine
+
+COPY --from=frontend-builder /app/mesa-hub/behavior-panel/web-dist /usr/share/nginx/html
+COPY mesa-hub/behavior-panel/nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80

@@ -1,0 +1,10 @@
+server:
+  listen_addr: ":8080"
+  auth_token: ""
+
+tmux:
+  socket_path: ""
+  default_shell: "/bin/bash"
+
+terminal:
+  default_lines: 50
