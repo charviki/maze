@@ -1,0 +1,4 @@
+packages:
+  - "fabrication"
+  - "mesa-hub/behavior-panel/web"
+  - "sweetwater/black-ridge/web"

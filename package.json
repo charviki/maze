@@ -1,0 +1,17 @@
+{
+  "name": "maze-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The Maze - Westworld themed autonomous agent workspace",
+  "scripts": {
+    "dev:mesa-hub": "pnpm --filter @maze/mesa-hub-web dev",
+    "dev:black-ridge": "pnpm --filter @maze/black-ridge-web dev",
+    "build:all": "pnpm -r build"
+  },
+  "pnpm": {
+    "overrides": {
+      "react": "^19.2.4",
+      "react-dom": "^19.2.4"
+    }
+  }
+}

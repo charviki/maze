@@ -30,3 +30,31 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+.trae
+
+# Go 编译产物（无后缀二进制）
+agent
+agent-manager
+
+# 前端构建产物
+web-dist/
+
+# macOS
+.DS_Store
+
+# 运行时配置（只保留 .example 版本）
+**/config.yaml
+!**/config.example.yaml
+node_modules
+# Claude Code 本地配置
+.claude/
+
+# Go 编译产物（补充通配规则，覆盖所有模块的 main 包输出）
+**/server/mesa-hub-behavior-panel
+**/server/black-ridge
+
+# 通用
+tmp/
+*.tgz
+*.tar.gz
