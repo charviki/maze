@@ -83,6 +83,13 @@ export function XtermTerminal({ wsUrl, backgroundComponent, theme, allowTranspar
     const fitAddon = fitAddonRef.current;
     if (!term || !fitAddon) return;
 
+    const element = term.element;
+    if (!element) return;
+
+    // 确保容器有非零尺寸后再 fit，避免在布局未稳定时计算出错误的终端尺寸
+    const rect = element.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+
     fitAddon.fit();
 
     // 终端尺寸需要同步到后端 PTY/tmux，否则只放大前端容器时，
@@ -145,6 +152,59 @@ export function XtermTerminal({ wsUrl, backgroundComponent, theme, allowTranspar
     fitAddonRef.current = fitAddon;
     scheduleFitAndSync();
 
+    // tmux 的 set -g mouse on 会发送 \e[?1000h 等鼠标追踪启用序列，
+    // xterm.js 响应后会禁用原生文本选择。拦截这些序列以保留拖拽选择功能，
+    // 同时滚轮事件由自定义 wheel handler 手动发送 SGR 序列给 tmux。
+    const mouseTrackingModes = new Set([1000, 1002, 1003, 1006]);
+    const isMouseTracking = (params: (number | number[])[]) => {
+      for (let i = 0; i < params.length; i++) {
+        const p = params[i];
+        if (typeof p === 'number' && mouseTrackingModes.has(p)) return true;
+      }
+      return false;
+    };
+    const csiSetHandler = term.parser.registerCsiHandler(
+      { prefix: '?', final: 'h' },
+      (params) => isMouseTracking(params),
+    );
+    const csiResetHandler = term.parser.registerCsiHandler(
+      { prefix: '?', final: 'l' },
+      (params) => isMouseTracking(params),
+    );
+
+    // xterm.js 在 alternate screen 下会静默丢弃滚轮事件，
+    // 手动将 wheel 转为 SGR 鼠标协议序列（\e[<Btn;Col;RowM）通过 WebSocket 发给 tmux。
+    const handleWheel = (e: WheelEvent) => {
+      const t = xtermRef.current;
+      if (!t) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      // SGR 编码: 64=scroll-up, 65=scroll-down
+      const button = e.deltaY < 0 ? 64 : 65;
+
+      const rect = t.element?.getBoundingClientRect();
+      if (!rect) return;
+
+      const col = Math.max(1, Math.min(t.cols,
+        Math.floor((e.clientX - rect.left) / (rect.width / t.cols)) + 1));
+      const row = Math.max(1, Math.min(t.rows,
+        Math.floor((e.clientY - rect.top) / (rect.height / t.rows)) + 1));
+
+      // SGR 鼠标协议格式: CSI < Btn ; Col ; Row M
+      // 注意必须有 '<' 前缀，否则 tmux 不识别为 SGR 序列
+      const seq = `\x1b[<${button};${col};${row}M`;
+
+      const ws = wsRef.current;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(seq);
+      }
+    };
+
+    const screenEl = terminalRef.current?.querySelector('.xterm-screen') as HTMLElement | null;
+    screenEl?.addEventListener('wheel', handleWheel as EventListener, { passive: false });
+
     const handleThemeChange = () => {
       if (!xtermRef.current || !terminalRef.current) return;
       const newTheme = buildTerminalTheme(themeRef.current, terminalRef.current);
@@ -184,6 +244,9 @@ export function XtermTerminal({ wsUrl, backgroundComponent, theme, allowTranspar
     return () => {
       darkSchemeQuery.removeEventListener('change', handleThemeChange);
       themeObserver.disconnect();
+      csiSetHandler.dispose();
+      csiResetHandler.dispose();
+      screenEl?.removeEventListener('wheel', handleWheel as EventListener);
       if (resizeFrameRef.current !== null) {
         window.cancelAnimationFrame(resizeFrameRef.current);
         resizeFrameRef.current = null;
@@ -212,8 +275,9 @@ export function XtermTerminal({ wsUrl, backgroundComponent, theme, allowTranspar
       const attachAddon = new AttachAddon(ws);
       term.loadAddon(attachAddon);
 
-      // WebSocket 连接建立后立即显式同步一次尺寸，避免 attach 后 tmux 仍停留在默认 80x24。
-      scheduleFitAndSync();
+      // AttachAddon 加载后 tmux 数据开始流入，延迟 fit 确保容器布局稳定
+      setTimeout(() => fitAndSync(), 50);
+      setTimeout(() => fitAndSync(), 300);
     });
 
     // 终端尺寸更多受父容器布局影响，而不只是 window.resize，
@@ -223,8 +287,10 @@ export function XtermTerminal({ wsUrl, backgroundComponent, theme, allowTranspar
     };
     window.addEventListener('resize', handleResize);
 
+    // ResizeObserver 首次 observe 时会触发回调，用于捕获初始布局完成后的 fit
+    // 直接调用 fitAndSync 而非 scheduleFitAndSync，避免 rAF 延迟导致时序问题
     const resizeObserver = new ResizeObserver(() => {
-      scheduleFitAndSync();
+      fitAndSync();
     });
     if (terminalRef.current) {
       resizeObserver.observe(terminalRef.current);

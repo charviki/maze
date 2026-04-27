@@ -51,8 +51,20 @@ fs.writeFileSync(path, JSON.stringify(cfg, null, 2))
 ' "$AGENT_HOME/.claude/settings.json"
 echo "[entrypoint] ensured default Claude settings in $AGENT_HOME/.claude/settings.json"
 
-cat > "$AGENT_HOME/.tmux.conf" << TMUXEOF
+cat > "$AGENT_HOME/.tmux.conf" << 'TMUXEOF'
 set -g history-limit 50000
+set -g mouse on
+set -as terminal-features 'xterm*:mouse'
+
+# 滚轮事件：自动进入 copy-mode 并滚动（如果应用自己处理鼠标则直接转发）
+bind -T root WheelUpPane if-shell -Ft= '#{mouse_any_flag}' 'send-keys -M' 'copy-mode -e; send-keys -M'
+bind -T root WheelDownPane if-shell -Ft= '#{mouse_any_flag}' 'send-keys -M' 'send-keys -M'
+
+# copy-mode 滚动速度：每次 2 行
+bind -T copy-mode WheelUpPane select-pane \; send-keys -X -N 2 scroll-up
+bind -T copy-mode WheelDownPane select-pane \; send-keys -X -N 2 scroll-down
+bind -T copy-mode-vi WheelUpPane select-pane \; send-keys -X -N 2 scroll-up
+bind -T copy-mode-vi WheelDownPane select-pane \; send-keys -X -N 2 scroll-down
 TMUXEOF
 
 if [ "${SKIP_TMUX_INIT:-0}" != "1" ]; then

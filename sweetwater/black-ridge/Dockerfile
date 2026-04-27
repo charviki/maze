@@ -68,6 +68,18 @@ COPY sweetwater/black-ridge/config.example.yaml /usr/local/bin/config.yaml
 
 RUN printf '%s\n' \
     'set -g history-limit 50000' \
+    'set -g mouse on' \
+    "set -as terminal-features 'xterm*:mouse'" \
+    '' \
+    '# Scroll: auto enter copy-mode, forward to app if it handles mouse' \
+    "bind -T root WheelUpPane if-shell -Ft= '#{mouse_any_flag}' 'send-keys -M' 'copy-mode -e; send-keys -M'" \
+    "bind -T root WheelDownPane if-shell -Ft= '#{mouse_any_flag}' 'send-keys -M' 'send-keys -M'" \
+    '' \
+    '# Copy-mode scroll speed: 2 lines per event' \
+    'bind -T copy-mode WheelUpPane select-pane \; send-keys -X -N 2 scroll-up' \
+    'bind -T copy-mode WheelDownPane select-pane \; send-keys -X -N 2 scroll-down' \
+    'bind -T copy-mode-vi WheelUpPane select-pane \; send-keys -X -N 2 scroll-up' \
+    'bind -T copy-mode-vi WheelDownPane select-pane \; send-keys -X -N 2 scroll-down' \
     > /home/agent/.tmux.conf
 
 RUN chown -R agent:agent /home/agent
