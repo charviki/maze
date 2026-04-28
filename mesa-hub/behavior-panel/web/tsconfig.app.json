@@ -24,8 +24,8 @@
 
     "paths": {
       "@/*": ["./src/*"],
-      "@maze/fabrication": ["../../../fabrication/src"],
-      "@maze/fabrication/*": ["../../../fabrication/src/*"]
+      "@maze/fabrication": ["../../../fabrication/skin/src"],
+      "@maze/fabrication/*": ["../../../fabrication/skin/src/*"]
     }
   },
   "include": ["src"]

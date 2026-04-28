@@ -1,4 +1,4 @@
 packages:
-  - "fabrication"
+  - "fabrication/skin"
   - "mesa-hub/behavior-panel/web"
   - "sweetwater/black-ridge/web"

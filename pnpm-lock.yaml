@@ -12,7 +12,7 @@ importers:
 
   .: {}
 
-  fabrication:
+  fabrication/skin:
     dependencies:
       '@radix-ui/react-dialog':
         specifier: ^1.1.5
@@ -68,7 +68,7 @@ importers:
     dependencies:
       '@maze/fabrication':
         specifier: workspace:*
-        version: link:../../../fabrication
+        version: link:../../../fabrication/skin
       lucide-react:
         specifier: ^1.8.0
         version: 1.11.0(react@19.2.5)
@@ -144,7 +144,7 @@ importers:
     dependencies:
       '@maze/fabrication':
         specifier: workspace:*
-        version: link:../../../fabrication
+        version: link:../../../fabrication/skin
       lucide-react:
         specifier: ^1.11.0
         version: 1.11.0(react@19.2.5)

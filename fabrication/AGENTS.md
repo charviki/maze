@@ -11,8 +11,8 @@
 
 | 子模块 | 目录 | 职责 | 详细文档 |
 |--------|------|------|----------|
-| Fabrication (UI) | ./ | Westworld 主题 UI 组件库 | [docs/](docs/) |
-| Cradle (Go) | cradle/ | Go 共享库（HTTP/Pipeline/Config/Auth） | [cradle/AGENTS.md](cradle/AGENTS.md) + [cradle/docs/](cradle/docs/) |
+| Skin (UI) | skin/ | Westworld 主题 UI 组件库 | [AGENTS.md](skin/AGENTS.md) + [docs/](skin/docs/) |
+| Cradle (Go) | cradle/ | Go 共享库（HTTP/Pipeline/Config/Auth） | [AGENTS.md](cradle/AGENTS.md) + [docs/](cradle/docs/) |
 
 ## 核心原则
 - **主题一致性** — 所有组件必须遵循西部世界科幻视觉风格（切角面板、解密动画、CRT 扫描线等）
@@ -22,22 +22,22 @@
 
 ## 依赖关系
 - 依赖: React, @xterm/xterm (+addon-fit/addon-attach/addon-webgl), @radix-ui/react-dialog, @radix-ui/react-select, @radix-ui/react-slot, class-variance-authority, clsx, tailwind-merge, lucide-react, tailwindcss
-- 被依赖: [behavior-panel/web](../mesa-hub/behavior-panel/AGENTS.md), [black-ridge/web](../sweetwater/black-ridge/AGENTS.md)（消费组件和 IAgentApiClient）
+- 被依赖: [behavior-panel/web](../../mesa-hub/behavior-panel/AGENTS.md), [black-ridge/web](../../sweetwater/black-ridge/AGENTS.md)（消费组件和 IAgentApiClient）
 
 ## 关键文件
 | 路径 | 职责 | 文档同步 |
 |------|------|----------|
-| src/index.ts | 模块入口，统一导出所有组件、工具函数和类型 | 本文件 |
-| src/types.ts | 全局类型定义（Session, Pipeline, Template, Config 等） | 本文件 |
-| src/api.ts | IAgentApiClient 接口定义，规范所有 Agent 交互方法 | 本文件 |
-| src/utils.ts | cn 类名合并工具 | 本文件 |
-| src/utils/mask.ts | 环境变量和文件内容脱敏工具 | 本文件 |
-| src/utils/request.ts | HTTP 请求工厂函数 createRequest | 本文件 |
-| src/hooks/usePollingWithBackoff.ts | 带指数退避的轮询 Hook | 本文件 |
-| src/components/ui/ | 视觉特效和基础 UI 组件（20 个文件） | [components.md](docs/components.md) |
-| src/components/agent/ | Agent 业务组件（6 个文件） | [components.md](docs/components.md) |
+| skin/src/index.ts | 模块入口，统一导出所有组件、工具函数和类型 | 本文件 |
+| skin/src/types.ts | 全局类型定义（Session, Pipeline, Template, Config 等） | 本文件 |
+| skin/src/api.ts | IAgentApiClient 接口定义，规范所有 Agent 交互方法 | 本文件 |
+| skin/src/utils.ts | cn 类名合并工具 | 本文件 |
+| skin/src/utils/mask.ts | 环境变量和文件内容脱敏工具 | 本文件 |
+| skin/src/utils/request.ts | HTTP 请求工厂函数 createRequest | 本文件 |
+| skin/src/hooks/usePollingWithBackoff.ts | 带指数退避的轮询 Hook | 本文件 |
+| skin/src/components/ui/ | 视觉特效和基础 UI 组件（20 个文件） | [components.md](skin/docs/components.md) |
+| skin/src/components/agent/ | Agent 业务组件（6 个文件） | [components.md](skin/docs/components.md) |
 
 ## 详细文档
 | 文档 | 内容 |
 |------|------|
-| [docs/components.md](docs/components.md) | 组件清单 + 工具函数 + Hook + 接口使用方式 |
+| [skin/docs/components.md](skin/docs/components.md) | 组件清单 + 工具函数 + Hook + 接口使用方式 |
