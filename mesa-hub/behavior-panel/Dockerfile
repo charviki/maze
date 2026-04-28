@@ -6,13 +6,13 @@ ENV GOPROXY=https://goproxy.cn,direct
 ENV GOSUMDB=sum.golang.org
 
 # 先复制 cradle 共享库
-COPY mesa-hub/cradle/ mesa-hub/cradle/
+COPY fabrication/cradle/ mesa-hub/cradle/
 
 # 复制 behavior-panel 源码
 COPY mesa-hub/behavior-panel/server/ ./
 
 # 将 go.mod 中的 replace 路径从相对路径调整为容器内路径，然后下载依赖并构建
-RUN sed -i 's|../../cradle|./mesa-hub/cradle|g' go.mod \
+RUN sed -i 's|../../../fabrication/cradle|./mesa-hub/cradle|g' go.mod \
     && go mod download \
     && CGO_ENABLED=0 go build -o /bin/agent-manager .
 

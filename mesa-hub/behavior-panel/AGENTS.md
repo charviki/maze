@@ -11,7 +11,7 @@
 - **优雅关闭** — 监听 SIGINT/SIGTERM，依次停止 HTTP 服务、刷盘节点数据、关闭审计日志文件
 
 ## 依赖关系
-- 依赖: [cradle](../cradle/AGENTS.md) (Go 共享库: logutil, httputil, protocol, configutil, middleware), [@maze/fabrication](../../fabrication/AGENTS.md) (UI 组件库)
+- 依赖: [cradle](../../fabrication/cradle/AGENTS.md) (Go 共享库: logutil, httputil, protocol, configutil, middleware), [@maze/fabrication](../../fabrication/AGENTS.md) (UI 组件库)
 - 被依赖: 无（是控制中心，不被其他模块依赖）
 
 ## 关键文件

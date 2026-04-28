@@ -29,7 +29,7 @@ ENV GOPROXY=https://goproxy.cn,direct
 ENV GOSUMDB=sum.golang.org
 
 # 先复制 cradle 共享库
-COPY mesa-hub/cradle/ mesa-hub/cradle/
+COPY fabrication/cradle/ mesa-hub/cradle/
 
 # 复制 agent 源码
 COPY sweetwater/black-ridge/server/ ./
@@ -38,7 +38,7 @@ RUN rm -rf ./web-dist
 COPY --from=frontend-builder /src/sweetwater/black-ridge/web-dist ./web-dist/
 
 # 将 go.mod 中的 replace 路径调整为容器内路径，然后下载依赖并构建
-RUN sed -i 's|../../../mesa-hub/cradle|./mesa-hub/cradle|g' go.mod \
+RUN sed -i 's|../../../fabrication/cradle|./mesa-hub/cradle|g' go.mod \
     && go mod download \
     && CGO_ENABLED=0 go build -o /bin/agent .
 

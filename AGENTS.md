@@ -16,7 +16,7 @@ The Maze — 基于 Westworld 概念构建的 AI Agent 管理平台。Manager (b
 | 模块 | 目录 | 职责 | 详细文档 |
 |------|------|------|----------|
 | Behavior Panel | mesa-hub/behavior-panel/ | Agent 管理面板（Go + React） | [AGENTS.md](mesa-hub/behavior-panel/AGENTS.md) + [docs/](mesa-hub/behavior-panel/docs/) |
-| Cradle | mesa-hub/cradle/ | Go 共享库（HTTP/Pipeline/Config/Auth） | [AGENTS.md](mesa-hub/cradle/AGENTS.md) + [docs/](mesa-hub/cradle/docs/) |
+| Cradle | fabrication/cradle/ | Go 共享库（HTTP/Pipeline/Config/Auth） | [AGENTS.md](fabrication/cradle/AGENTS.md) + [docs/](fabrication/cradle/docs/) |
 | Black Ridge | sweetwater/black-ridge/ | Agent 运行时节点（tmux + Web UI） | [AGENTS.md](sweetwater/black-ridge/AGENTS.md) + [docs/](sweetwater/black-ridge/docs/) |
 | Fabrication | fabrication/ | Westworld 主题 UI 组件库 | [AGENTS.md](fabrication/AGENTS.md) + [docs/](fabrication/docs/) |
 

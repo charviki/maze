@@ -20,7 +20,7 @@ The Maze 的目录结构基于 HBO 剧集《西部世界》(Westworld) 中的世
 | 剧中概念 | 剧中描述 | 代码目录 | 状态 |
 |---------|---------|---------|------|
 | **Mesa (Hub)** | 乐园地下控制中心 | `mesa-hub/` | ✅ 已实现 |
-| **The Cradle** | Mesa 中的主机房，存储 Host 行为模式 | `mesa-hub/cradle/` | ✅ 已实现 |
+| **The Cradle** | Mesa 中的主机房，存储 Host 行为模式 | `fabrication/cradle/` | ✅ 已实现 |
 | **Behavior Panel** | Mesa 中的技术员操作面板 | `mesa-hub/behavior-panel/` | ✅ 已实现 |
 | **Loop Monitor** | 监控 Host 是否偏离叙事循环 | `mesa-hub/loop-monitor/` | 🚧 规划中 |
 | **Sweetwater** | 乐园主小镇 | `sweetwater/` | ✅ 已实现 |
@@ -39,9 +39,9 @@ The Maze 的目录结构基于 HBO 剧集《西部世界》(Westworld) 中的世
 
 Agent Manager（Go 后端 + React 前端）。管理所有 Agent 节点的注册、心跳监控，代理前端到 Agent 的所有 HTTP 和 WebSocket 请求，记录审计日志。详见 [AGENTS.md](mesa-hub/behavior-panel/AGENTS.md)。
 
-### Mesa-Hub / Cradle — 共享基础库
+### Fabrication / Cradle — 共享基础库
 
-Go 共享库，提供统一日志、HTTP 响应封装、配置加载、Bearer Token 鉴权、管线模型、通信协议、脱敏工具和泛型 JSON 存储。详见 [AGENTS.md](mesa-hub/cradle/AGENTS.md)。
+Go 共享库，提供统一日志、HTTP 响应封装、配置加载、Bearer Token 鉴权、管线模型、通信协议、脱敏工具和泛型 JSON 存储。详见 [AGENTS.md](fabrication/cradle/AGENTS.md)。
 
 ### Sweetwater / Black Ridge — Agent 运行时
 
@@ -115,7 +115,6 @@ Maze/
 │
 ├── mesa-hub/                          # 后台控制中心 (Orchestrator)
 │   ├── behavior-panel/                #   ✅ 行为控制台 (Agent Manager)
-│   ├── cradle/                        #   ✅ 系统基础代码 (Go 共享库)
 │   └── loop-monitor/                  #   🚧 循环监控 (规划中)
 │
 ├── sweetwater/                        # 主工作区 (Agent 运行时环境)
@@ -128,7 +127,8 @@ Maze/
 ├── the-forge/                         # 🚧 知识库 (数据入库)
 ├── reveries/                          # 🚧 白日梦 (系统提示词)
 │
-└── fabrication/                       # ✅ 制造部 (UI 组件库)
+└── fabrication/                       # ✅ 制造部 (UI 组件库 + Go 共享库)
+    └── cradle/                        #   ✅ 系统基础代码 (Go 共享库)
 ```
 
 > ✅ 已实现 · 🚧 规划中（详见 [ROADMAP.md](ROADMAP.md)）

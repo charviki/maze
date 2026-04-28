@@ -11,7 +11,7 @@
 - **可观测性** — 心跳定期上报完整状态快照（Session 详情、内存、本地配置），配置文件使用乐观并发控制
 
 ## 依赖关系
-- 依赖: [cradle](../../mesa-hub/cradle/AGENTS.md) (Go 共享库, 提供日志/配置/协议/管线/中间件), [@maze/fabrication](../../fabrication/AGENTS.md) (UI 组件库, 前端构建)
+- 依赖: [cradle](../../fabrication/cradle/AGENTS.md) (Go 共享库, 提供日志/配置/协议/管线/中间件), [@maze/fabrication](../../fabrication/AGENTS.md) (UI 组件库, 前端构建)
 - 被依赖: [behavior-panel](../../mesa-hub/behavior-panel/AGENTS.md) (Manager 通过代理调用 Agent API)
 
 ## 关键文件

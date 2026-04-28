@@ -2,7 +2,17 @@
 
 ## 职责
 
-如同剧中的制造部（Fabrication）是 Host 制造、维修和外观定制的场所，Fabrication 为整个系统打造统一的西部世界主题视觉体验。作为共享 UI 组件库，它提供视觉特效组件、基础 UI 组件、Agent 业务组件及工具函数，所有面向使用者的界面都由这里"制造"出来。
+如同剧中的制造部（Fabrication）是 Host 制造、维修和外观定制的场所，Fabrication 为整个系统提供统一的共享基础设施。它包含两个子模块：
+
+- **fabrication（UI 组件库）** — 西部世界主题的 React 组件库，提供视觉特效组件、基础 UI 组件、Agent 业务组件及工具函数，所有面向使用者的界面都由这里"制造"出来。
+- **cradle（Go 共享库）** — Go 公共库，为 Manager 和 Agent 提供统一的日志、配置、HTTP 工具、中间件、通信协议、管线编排及数据持久化能力。
+
+## 子模块索引
+
+| 子模块 | 目录 | 职责 | 详细文档 |
+|--------|------|------|----------|
+| Fabrication (UI) | ./ | Westworld 主题 UI 组件库 | [docs/](docs/) |
+| Cradle (Go) | cradle/ | Go 共享库（HTTP/Pipeline/Config/Auth） | [cradle/AGENTS.md](cradle/AGENTS.md) + [cradle/docs/](cradle/docs/) |
 
 ## 核心原则
 - **主题一致性** — 所有组件必须遵循西部世界科幻视觉风格（切角面板、解密动画、CRT 扫描线等）

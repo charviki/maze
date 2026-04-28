@@ -29,4 +29,4 @@ require (
 	google.golang.org/protobuf v1.34.1 // indirect
 )
 
-replace github.com/charviki/maze-cradle => ../../../mesa-hub/cradle
+replace github.com/charviki/maze-cradle => ../../../fabrication/cradle

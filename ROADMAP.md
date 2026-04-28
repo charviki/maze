@@ -3,7 +3,7 @@
 ## 已实现模块
 
 - [Behavior Panel](mesa-hub/behavior-panel/AGENTS.md) — Agent 管理面板（Manager），代理网关 + 审计日志
-- [Cradle](mesa-hub/cradle/AGENTS.md) — Go 共享库（HTTP/Pipeline/Config/Auth 等工具）
+- [Cradle](fabrication/cradle/AGENTS.md) — Go 共享库（HTTP/Pipeline/Config/Auth 等工具）
 - [Black Ridge](sweetwater/black-ridge/AGENTS.md) — Agent 运行时节点（tmux 会话管理 + Pipeline 编排）
 - [Fabrication](fabrication/AGENTS.md) — Westworld 主题 UI 组件库
 

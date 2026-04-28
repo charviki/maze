@@ -12,7 +12,7 @@
 
 ## 依赖关系
 - 依赖: Go 1.24 标准库 + hertz (HTTP 框架) + yaml.v3 (配置解析)
-- 被依赖: [behavior-panel](../behavior-panel/AGENTS.md), [black-ridge](../../sweetwater/black-ridge/AGENTS.md)
+- 被依赖: [behavior-panel](../../mesa-hub/behavior-panel/AGENTS.md), [black-ridge](../../sweetwater/black-ridge/AGENTS.md)
 
 ## 关键文件
 | 路径 | 职责 | 文档同步 |
