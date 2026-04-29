@@ -50,6 +50,9 @@ importers:
       tailwindcss:
         specifier: '>=3.4.0'
         version: 3.4.19
+      tailwindcss-animate:
+        specifier: ^1.0.7
+        version: 1.0.7(tailwindcss@3.4.19)
     devDependencies:
       '@types/react':
         specifier: ^19.2.14

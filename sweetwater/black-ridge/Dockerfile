@@ -1,26 +1,27 @@
-# 阶段 1：构建前端资产 (支持 Monorepo)
+# 阶段 1：构建前端资产
 FROM public.ecr.aws/docker/library/node:22-bookworm-slim AS frontend-builder
 
 WORKDIR /src
 
-# 安装 pnpm
 RUN npm install -g pnpm
 
-# 复制 Monorepo 工作区配置和锁定文件
-COPY pnpm-workspace.yaml package.json ./
+# 只复制依赖声明文件
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY fabrication/skin/package.json fabrication/skin/package.json
+COPY sweetwater/black-ridge/web/package.json sweetwater/black-ridge/web/
 
-# 复制共享组件库
-COPY fabrication ./fabrication
+# 安装依赖（package.json 不变时命中 Docker 层缓存）
+RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
+    pnpm install
 
-# 复制当前子项目代码
-COPY sweetwater/black-ridge/web ./sweetwater/black-ridge/web
-
-# 安装所有依赖并构建
-RUN pnpm install
+# 复制源码（改源码只触发从这里开始的层重建）
+COPY fabrication/skin/ fabrication/skin/
+COPY sweetwater/black-ridge/web/ sweetwater/black-ridge/web/
 
 WORKDIR /src/sweetwater/black-ridge/web
 RUN pnpm run build
 
+# 阶段 2：构建 Go 后端
 FROM public.ecr.aws/docker/library/golang:1.24-bookworm AS backend-builder
 
 WORKDIR /src
@@ -28,20 +29,20 @@ WORKDIR /src
 ENV GOPROXY=https://goproxy.cn,direct
 ENV GOSUMDB=sum.golang.org
 
-# 先复制 cradle 共享库
 COPY fabrication/cradle/ mesa-hub/cradle/
-
-# 复制 agent 源码
 COPY sweetwater/black-ridge/server/ ./
 
 RUN rm -rf ./web-dist
 COPY --from=frontend-builder /src/sweetwater/black-ridge/web-dist ./web-dist/
 
-# 将 go.mod 中的 replace 路径调整为容器内路径，然后下载依赖并构建
-RUN sed -i 's|../../../fabrication/cradle|./mesa-hub/cradle|g' go.mod \
-    && go mod download \
-    && CGO_ENABLED=0 go build -o /bin/agent .
+RUN sed -i 's|../../../fabrication/cradle|./mesa-hub/cradle|g' go.mod
 
+RUN --mount=type=cache,id=go-pkg-mod,target=/go/pkg/mod \
+    go mod download
+
+RUN CGO_ENABLED=0 go build -o /bin/agent .
+
+# 阶段 3：运行时镜像
 FROM public.ecr.aws/docker/library/node:22-bookworm-slim
 
 ENV LANG=C.UTF-8
@@ -56,7 +57,8 @@ RUN apt-get update && apt-get install -y \
     jq \
     && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g @anthropic-ai/claude-code
+COPY --from=maze-deps-claude:latest /opt/claude /opt/claude
+ENV PATH="/opt/claude/bin:${PATH}"
 
 RUN useradd -m -s /bin/bash agent
 

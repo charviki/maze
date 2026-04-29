@@ -1,16 +1,23 @@
-# 阶段 1：构建前端资产 (支持 Monorepo)
 FROM public.ecr.aws/docker/library/node:22-bookworm-slim AS frontend-builder
+
 WORKDIR /app
-# 安装 pnpm
+
 RUN npm install -g pnpm
-# 复制 Monorepo 工作区配置和锁定文件
-COPY pnpm-workspace.yaml package.json ./
-# 复制共享组件库
-COPY fabrication ./fabrication
-# 复制当前子项目代码
-COPY mesa-hub/behavior-panel/web ./mesa-hub/behavior-panel/web
-# 安装所有依赖并构建
-RUN pnpm install
+
+# 第 1 步：只复制依赖声明文件和 workspace 最小文件集
+# package.json 变更频率远低于源码，拆分 COPY 可让 pnpm install 命中 Docker 层缓存
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY fabrication/skin/package.json fabrication/skin/package.json
+COPY mesa-hub/behavior-panel/web/package.json mesa-hub/behavior-panel/web/package.json
+
+# 第 2 步：安装依赖（package.json 不变时直接命中 Docker 层缓存）
+RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
+    pnpm install
+
+# 第 3 步：复制源码（改源码只触发从这里开始的层重建）
+COPY fabrication/skin/ fabrication/skin/
+COPY mesa-hub/behavior-panel/web/ mesa-hub/behavior-panel/web/
+
 WORKDIR /app/mesa-hub/behavior-panel/web
 RUN pnpm run build
 

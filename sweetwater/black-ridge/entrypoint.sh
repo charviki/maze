@@ -27,6 +27,37 @@ fs.writeFileSync(path, JSON.stringify(cfg, null, 2))
 
 ensure_claude_json
 
+# 动态发现 /opt/ 下所有工具的 bin 目录，注入 .bashrc 和 .profile。
+# 这样无论供应商镜像提供了哪些工具，tmux session 内的 PATH 都能正确设置。
+# 需要同时写 .bashrc 和 .profile：tmux new-session 默认启动 login shell（读 .profile），
+# 而 tmux 内新开 pane 可能是 non-login interactive shell（读 .bashrc）。
+OPT_PATHS=""
+for dir in /opt/*/bin; do
+    if [ -d "$dir" ]; then
+        OPT_PATHS="${OPT_PATHS}${dir}:"
+    fi
+done
+
+if [ -n "$OPT_PATHS" ]; then
+    BASHRC_LINE="export PATH=\"${OPT_PATHS}\${PATH}\""
+    BASHRC_FILE="$AGENT_HOME/.bashrc"
+    PROFILE_FILE="$AGENT_HOME/.profile"
+
+    # .bashrc（non-login interactive shell）
+    if ! grep -qF "$BASHRC_LINE" "$BASHRC_FILE" 2>/dev/null; then
+        echo "$BASHRC_LINE" >> "$BASHRC_FILE"
+        echo "[entrypoint] appended $OPT_PATHS to $BASHRC_FILE"
+    fi
+
+    # .profile（login shell，tmux new-session 默认启动 login shell）
+    if ! grep -qF "$BASHRC_LINE" "$PROFILE_FILE" 2>/dev/null; then
+        echo "$BASHRC_LINE" >> "$PROFILE_FILE"
+        echo "[entrypoint] appended $OPT_PATHS to $PROFILE_FILE"
+    fi
+
+    chown agent:agent "$BASHRC_FILE" "$PROFILE_FILE" 2>/dev/null || true
+fi
+
 mkdir -p "$AGENT_HOME/.claude"
 if [ ! -f "$AGENT_HOME/.claude/settings.json" ]; then
     echo '{}' > "$AGENT_HOME/.claude/settings.json"
