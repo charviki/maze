@@ -1,0 +1,7 @@
+# Claude Code CLI 供应商镜像
+# 安装 Claude Code 到 /opt/claude/
+FROM public.ecr.aws/docker/library/node:22-bookworm-slim
+
+RUN npm install -g --prefix /opt/claude @anthropic-ai/claude-code
+
+ENV PATH="/opt/claude/bin:${PATH}"

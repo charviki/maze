@@ -1,0 +1,4 @@
+typescript@latest
+ts-node@latest
+prettier@latest
+eslint@latest

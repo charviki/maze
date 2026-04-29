@@ -1,0 +1,24 @@
+# Python 工具链供应商镜像
+# 基于 node:22-bookworm-slim（与 host 基础镜像相同），确保 glibc 兼容
+FROM public.ecr.aws/docker/library/node:22-bookworm-slim
+
+# 安装 Python 3（Debian bookworm 自带 Python 3.11）
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# 预装常用 Python 包（使用 --break-system-packages 应对 Debian 的 externally-managed 标记）
+COPY fabrication/deps/python.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir --break-system-packages -r /tmp/requirements.txt
+
+RUN rm -f /tmp/requirements.txt
+
+# 复制完整的 Python 安装到 /opt/python/
+# 必须在 pip install 之后复制，这样 /opt/python/lib/ 包含所有已安装的包
+RUN mkdir -p /opt/python/bin /opt/python/lib && \
+    cp /usr/bin/python3.* /opt/python/bin/ && \
+    ln -sf python3.11 /opt/python/bin/python3 && \
+    ln -sf python3.11 /opt/python/bin/python && \
+    cp -r /usr/lib/python3.11 /opt/python/lib/ && \
+    cp -r /usr/local/lib/python3.11/dist-packages /opt/python/lib/python3.11/dist-packages 2>/dev/null || true

@@ -1,0 +1,5 @@
+pytest>=8.0
+black>=24.0
+ruff>=0.5
+ipython>=8.0
+httpie>=3.0

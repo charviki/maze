@@ -1,0 +1,92 @@
+# Host 装配镜像 — 多 target stage 按需组合
+# 通过 --target 选择环境配置
+
+# === 基础层：Node.js + tmux + git ===
+FROM public.ecr.aws/docker/library/node:22-bookworm-slim AS base
+
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
+RUN apt-get update && apt-get install -y \
+    tmux \
+    git \
+    curl \
+    ca-certificates \
+    procps \
+    jq \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m -s /bin/bash agent
+
+RUN mkdir -p /home/agent/.claude && \
+    echo '{"hasCompletedOnboarding":true,"firstStartTime":"","opusProMigrationComplete":true,"sonnet1m45MigrationComplete":true,"migrationVersion":11}' > /home/agent/.claude.json
+
+# === CLI 扩展层 ===
+FROM base AS with-claude
+COPY --from=maze-deps-claude:latest /opt/claude /opt/claude
+ENV PATH="/opt/claude/bin:${PATH}"
+
+FROM base AS with-codex
+COPY --from=maze-deps-codex:latest /opt/codex /opt/codex
+ENV PATH="/opt/codex/bin:${PATH}"
+
+# === 语言环境扩展层 ===
+FROM base AS with-go
+COPY --from=maze-deps-go:latest /opt/go /opt/go
+ENV PATH="/opt/go/bin:${PATH}"
+ENV GOROOT=/opt/go
+ENV GOPROXY=https://goproxy.cn,direct
+ENV GOSUMDB=sum.golang.org
+
+FROM base AS with-python
+COPY --from=maze-deps-python:latest /opt/python /opt/python
+ENV PATH="/opt/python/bin:${PATH}"
+
+# === 组合层 ===
+
+# Claude + Go
+FROM with-claude AS claude-go
+COPY --from=maze-deps-go:latest /opt/go /opt/go
+ENV PATH="/opt/go/bin:/opt/claude/bin:${PATH}"
+ENV GOROOT=/opt/go
+ENV GOPROXY=https://goproxy.cn,direct
+ENV GOSUMDB=sum.golang.org
+
+# Codex + Go + Python
+FROM with-codex AS codex-full
+COPY --from=maze-deps-go:latest /opt/go /opt/go
+COPY --from=maze-deps-python:latest /opt/python /opt/python
+ENV PATH="/opt/go/bin:/opt/python/bin:/opt/codex/bin:${PATH}"
+ENV GOROOT=/opt/go
+ENV GOPROXY=https://goproxy.cn,direct
+ENV GOSUMDB=sum.golang.org
+
+# === 完整层：Claude + Codex + Go + Python ===
+FROM base AS full
+COPY --from=maze-deps-claude:latest /opt/claude /opt/claude
+COPY --from=maze-deps-codex:latest /opt/codex /opt/codex
+COPY --from=maze-deps-go:latest /opt/go /opt/go
+COPY --from=maze-deps-python:latest /opt/python /opt/python
+ENV PATH="/opt/go/bin:/opt/python/bin:/opt/claude/bin:/opt/codex/bin:${PATH}"
+ENV GOROOT=/opt/go
+ENV GOPROXY=https://goproxy.cn,direct
+ENV GOSUMDB=sum.golang.org
+
+# === 公共收尾配置 ===
+RUN printf '%s\n' \
+    'set -g history-limit 50000' \
+    'set -g mouse on' \
+    "set -as terminal-features 'xterm*:mouse'" \
+    '' \
+    "bind -T root WheelUpPane if-shell -Ft= '#{mouse_any_flag}' 'send-keys -M' 'copy-mode -e; send-keys -M'" \
+    "bind -T root WheelDownPane if-shell -Ft= '#{mouse_any_flag}' 'send-keys -M' 'send-keys -M'" \
+    '' \
+    'bind -T copy-mode WheelUpPane select-pane \; send-keys -X -N 2 scroll-up' \
+    'bind -T copy-mode WheelDownPane select-pane \; send-keys -X -N 2 scroll-down' \
+    'bind -T copy-mode-vi WheelUpPane select-pane \; send-keys -X -N 2 scroll-up' \
+    'bind -T copy-mode-vi WheelDownPane select-pane \; send-keys -X -N 2 scroll-down' \
+    > /home/agent/.tmux.conf
+
+RUN chown -R agent:agent /home/agent
+
+USER agent
