@@ -10,6 +10,7 @@ The Maze — 基于 Westworld 概念构建的 AI Agent 管理平台。Manager (b
 - **共享基础 (Shared Foundation)** — Go 公共库 (cradle) 和 UI 组件库 (fabrication) 跨模块复用，修改时须考虑向后兼容
 - **先读后改 (Read Before Modify)** — 修改模块代码前，先阅读该模块的 AGENTS.md 了解上下文
 - **验证后交付 (Verify Before Deliver)** — 修改代码后必须验证编译通过、测试通过，不要仅靠推理，自验证通过后再交付
+- **构建规范 (Build Standards)** — 新增或修改 Dockerfile 必须遵循 [Docker 构建规范](fabrication/docs/docker-build-guide.md)（拆分 COPY + Cache Mount + 供应商镜像）
 
 ## 模块索引
 
@@ -18,7 +19,7 @@ The Maze — 基于 Westworld 概念构建的 AI Agent 管理平台。Manager (b
 | Behavior Panel | mesa-hub/behavior-panel/ | Agent 管理面板（Go + React） | [AGENTS.md](mesa-hub/behavior-panel/AGENTS.md) + [docs/](mesa-hub/behavior-panel/docs/) |
 | Cradle | fabrication/cradle/ | Go 共享库（HTTP/Pipeline/Config/Auth） | [AGENTS.md](fabrication/cradle/AGENTS.md) + [docs/](fabrication/cradle/docs/) |
 | Black Ridge | sweetwater/black-ridge/ | Agent 运行时节点（tmux + Web UI） | [AGENTS.md](sweetwater/black-ridge/AGENTS.md) + [docs/](sweetwater/black-ridge/docs/) |
-| Fabrication | fabrication/skin/ | Westworld 主题 UI 组件库 | [AGENTS.md](fabrication/skin/AGENTS.md) + [docs/](fabrication/skin/docs/) |
+| Fabrication | fabrication/ | 制造部（UI 组件库 + Go 共享库 + Docker 构建基础设施） | [AGENTS.md](fabrication/AGENTS.md) + [docs/](fabrication/docs/) |
 
 ## 文档维护
 
