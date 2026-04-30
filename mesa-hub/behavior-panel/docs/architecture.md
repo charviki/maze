@@ -12,7 +12,8 @@ Manager 采用**代理网关模式**（API Gateway Pattern），核心职责：
 2. **请求代理** — 前端所有 API 请求（Session、Template、LocalConfig）经 Manager 代理到目标 Agent
 3. **WebSocket 终端代理** — 前端终端连接经 Manager 双向代理到 Agent
 4. **审计日志** — 记录所有代理操作，提供操作可追溯性
-5. **前端不直连 Agent** — 所有通信经过 Manager，保证可观测性
+5. **动态 Host 生命周期管理** — 通过 Docker socket 动态创建/销毁 Host 容器，选配工具链和资源限制
+6. **前端不直连 Agent** — 所有通信经过 Manager，保证可观测性
 
 ## 数据流
 
@@ -128,6 +129,9 @@ Agent 实例 (xN)
 ### Docker Compose 编排（来自 docker-compose.yml）
 - **web** — Nginx 容器，构建前端资产并托管静态文件 + 反向代理 API
 - **agent-manager** — Go 后端容器，监听 8080 端口
+  - 挂载 `/var/run/docker.sock` 以动态创建/销毁 Host 容器
+  - 挂载 `~/agents:/agents` 以管理 Host 持久化目录
+  - 安装 `docker-ce-cli` 用于执行 docker build/run/stop/rm
 - **agent-1/2/3** — Agent 实例容器，各自独立的持久卷（`~/agents/agent-*`）
 
 ### Nginx 配置要点（来自 nginx.conf）
@@ -149,7 +153,12 @@ Agent 实例 (xN)
 | server.auth_token | AGENT_MANAGER_SERVER_AUTH_TOKEN | "" | API 鉴权 Token，空为开发模式 |
 | server.allowed_origins | AGENT_MANAGER_SERVER_ALLOWED_ORIGINS | [] | CORS/WebSocket 允许的来源列表 |
 | server.allow_private_networks | AGENT_MANAGER_ALLOW_PRIVATE_NETWORKS | false | 是否允许代理到内网 IP |
-| workspace.base_dir | AGENT_MANAGER_WORKSPACE_BASE_DIR | ~/agents | 数据文件存储目录 |
+| workspace.base_dir | AGENT_MANAGER_WORKSPACE_BASE_DIR | ~/agents | 宿主机持久化根目录（用于 docker -v 挂载路径） |
+| workspace.mount_dir | AGENT_MANAGER_WORKSPACE_MOUNT_DIR | 同 base_dir | Manager 容器内挂载路径（用于文件操作） |
+| docker.socket_path | AGENT_MANAGER_DOCKER_SOCKET_PATH | /var/run/docker.sock | Docker socket 路径 |
+| docker.network | AGENT_MANAGER_DOCKER_NETWORK | "" | Docker 网络名（Host 容器加入此网络） |
+| docker.agent_base_image | AGENT_MANAGER_DOCKER_AGENT_BASE_IMAGE | "" | Agent 基础镜像名（含 agent 二进制和 entrypoint） |
+| docker.manager_addr | AGENT_MANAGER_DOCKER_MANAGER_ADDR | http://agent-manager:8080 | Manager 在容器网络中的地址 |
 
 ### 开发模式
 当 `auth_token` 为空时进入开发模式：

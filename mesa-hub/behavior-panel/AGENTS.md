@@ -21,12 +21,17 @@
 | server/router.go | 顶层路由注册、健康检查、NoRoute 重定向 | [api.md](docs/api.md) |
 | server/biz/router/register.go | 所有 API 路由定义、Store/Handler 初始化、中间件注册 | [api.md](docs/api.md) |
 | server/biz/handler/node.go | 节点注册/心跳/查询/删除 Handler | [api.md#节点管理](docs/api.md) |
+| server/biz/handler/host.go | Host 生命周期管理 Handler（CreateHost/ListTools/DeleteHost） | [api.md#Host管理](docs/api.md) |
 | server/biz/handler/session_proxy.go | SessionProxyHandler 结构定义和构造函数 | [architecture.md#代理网关](docs/architecture.md) |
 | server/biz/handler/proxy_http.go | HTTP 代理实现、审计日志、SSRF 校验 | [architecture.md#代理网关](docs/architecture.md) |
 | server/biz/handler/proxy_ws.go | WebSocket 双向代理（前端-Manager-Agent） | [architecture.md#WebSocket终端](docs/architecture.md) |
 | server/biz/handler/audit_logger.go | 审计日志：append-only JSON Lines 持久化 | [architecture.md#审计日志](docs/architecture.md) |
 | server/biz/model/node.go | NodeRegistry：节点注册表、dirty flush 持久化 | [architecture.md#节点注册表](docs/architecture.md) |
 | server/biz/config/config.go | 配置加载：YAML + 环境变量覆盖 + 校验 | [architecture.md#配置](docs/architecture.md) |
+| server/biz/builder/registry.go | 工具配置注册表（claude/codex/go/python/node） | [architecture.md#动态Host](docs/architecture.md) |
+| server/biz/builder/host.go | Dockerfile 动态生成器（基于 agent base + 选配工具链） | [architecture.md#动态Host](docs/architecture.md) |
+| server/biz/runtime/runtime.go | HostRuntime 抽象接口（屏蔽 Docker/K8s 差异） | [architecture.md#动态Host](docs/architecture.md) |
+| server/biz/runtime/docker.go | Docker 运行时实现（docker CLI + socket） | [architecture.md#动态Host](docs/architecture.md) |
 | web/src/App.tsx | 前端入口：节点列表 + AgentPanel + RadarView | [architecture.md#前端](docs/architecture.md) |
 | web/src/api/agent.ts | 通过 Manager 代理的 Agent API 客户端 | [api.md](docs/api.md) |
 | web/src/api/controller.ts | Manager 节点管理 API 客户端 | [api.md#节点管理](docs/api.md) |

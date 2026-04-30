@@ -101,3 +101,58 @@ func TestApplyEnvOverrides_AllowPrivateNetworks(t *testing.T) {
 		t.Error("期望 AllowPrivateNetworks=true, 实际=false")
 	}
 }
+
+func TestDockerConfig_Defaults(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.yaml")
+
+	content := `{}`
+	if err := os.WriteFile(cfgPath, []byte(content), 0644); err != nil {
+		t.Fatalf("写入配置文件失败: %v", err)
+	}
+
+	cfg, err := Load(cfgPath)
+	if err != nil {
+		t.Fatalf("Load 失败: %v", err)
+	}
+
+	if cfg.Docker.SocketPath != "/var/run/docker.sock" {
+		t.Errorf("期望默认 SocketPath=/var/run/docker.sock, 实际=%s", cfg.Docker.SocketPath)
+	}
+	if cfg.Docker.ManagerAddr != "http://agent-manager:8080" {
+		t.Errorf("期望默认 ManagerAddr=http://agent-manager:8080, 实际=%s", cfg.Docker.ManagerAddr)
+	}
+}
+
+func TestDockerConfig_EnvOverrides(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.yaml")
+
+	content := `{}`
+	if err := os.WriteFile(cfgPath, []byte(content), 0644); err != nil {
+		t.Fatalf("写入配置文件失败: %v", err)
+	}
+
+	t.Setenv("AGENT_MANAGER_DOCKER_SOCKET_PATH", "/custom/docker.sock")
+	t.Setenv("AGENT_MANAGER_DOCKER_NETWORK", "my-network")
+	t.Setenv("AGENT_MANAGER_DOCKER_MANAGER_ADDR", "http://my-manager:9090")
+	t.Setenv("AGENT_MANAGER_DOCKER_AGENT_BASE_IMAGE", "custom-agent:latest")
+
+	cfg, err := Load(cfgPath)
+	if err != nil {
+		t.Fatalf("Load 失败: %v", err)
+	}
+
+	if cfg.Docker.SocketPath != "/custom/docker.sock" {
+		t.Errorf("期望 SocketPath=/custom/docker.sock, 实际=%s", cfg.Docker.SocketPath)
+	}
+	if cfg.Docker.Network != "my-network" {
+		t.Errorf("期望 Network=my-network, 实际=%s", cfg.Docker.Network)
+	}
+	if cfg.Docker.ManagerAddr != "http://my-manager:9090" {
+		t.Errorf("期望 ManagerAddr=http://my-manager:9090, 实际=%s", cfg.Docker.ManagerAddr)
+	}
+	if cfg.Docker.AgentBaseImage != "custom-agent:latest" {
+		t.Errorf("期望 AgentBaseImage=custom-agent:latest, 实际=%s", cfg.Docker.AgentBaseImage)
+	}
+}

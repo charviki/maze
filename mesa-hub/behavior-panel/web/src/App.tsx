@@ -1,9 +1,10 @@
 import { useState, useMemo, useCallback } from 'react';
 import { NodeList } from './components/NodeList';
 import { createAgentApi } from './api/agent';
-import { AgentPanel, DecryptText, RadarView, BootSequence, TerrainBackground, ErrorBoundary, Button, AnimationSettingsProvider, AnimationSettingsPanel, ToastProvider } from '@maze/fabrication';
-import type { Node, RadarNode } from '@maze/fabrication';
-import { Server, Activity, Menu, Settings } from 'lucide-react';
+import { controllerApi } from './api/controller';
+import { AgentPanel, DecryptText, RadarView, BootSequence, TerrainBackground, ErrorBoundary, Button, AnimationSettingsProvider, AnimationSettingsPanel, ToastProvider, CreateHostDialog } from '@maze/fabrication';
+import type { Node, RadarNode, Tool, CreateHostRequest } from '@maze/fabrication';
+import { Server, Activity, Menu, Settings, Plus } from 'lucide-react';
 import './index.css';
 
 function App() {
@@ -12,6 +13,9 @@ function App() {
   const [radarNodes, setRadarNodes] = useState<RadarNode[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showAnimSettings, setShowAnimSettings] = useState(false);
+  const [showCreateHost, setShowCreateHost] = useState(false);
+  const [availableTools, setAvailableTools] = useState<Tool[]>([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // 选中节点后自动收起侧边栏（仅小屏幕生效）
   const handleSelectNode = useCallback((node: Node) => {
@@ -32,6 +36,26 @@ function App() {
   );
 
   const terminalBg = useMemo(() => <TerrainBackground />, []);
+
+  const handleOpenCreateHost = useCallback(async () => {
+    setShowCreateHost(true);
+    try {
+      const res = await controllerApi.listTools();
+      if (res.status === 'ok' && res.data) {
+        setAvailableTools(res.data);
+      }
+    } catch {
+      setAvailableTools([]);
+    }
+  }, []);
+
+  const handleCreateHost = useCallback(async (data: CreateHostRequest) => {
+    const res = await controllerApi.createHost(data);
+    if (res.status === 'error') {
+      throw new Error(res.message || '创建失败');
+    }
+    setRefreshTrigger((n) => n + 1);
+  }, []);
 
   if (isBooting) {
     return (
@@ -80,15 +104,27 @@ function App() {
       {/* Pane 1: Nodes */}
       <div className={`border-r border-border/50 ${!sidebarOpen ? 'hidden md:flex' : 'flex'} flex-col bg-background/50 relative z-10 overflow-hidden`}>
         <div className="absolute right-0 top-0 w-[1px] h-full bg-gradient-to-b from-primary/20 to-transparent"></div>
-        <div className="p-3 border-b border-border/50 font-bold flex items-center gap-2 text-xs uppercase tracking-widest text-primary/80">
-          <Server className="w-4 h-4" />
-          HOSTS
+        <div className="p-3 border-b border-border/50 font-bold flex items-center justify-between text-xs uppercase tracking-widest text-primary/80">
+          <div className="flex items-center gap-2">
+            <Server className="w-4 h-4" />
+            HOSTS
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-5 w-5 rounded-none text-primary/60 hover:text-primary hover:bg-primary/20"
+            onClick={handleOpenCreateHost}
+            title="Create Host"
+          >
+            <Plus className="w-3.5 h-3.5" />
+          </Button>
         </div>
         <div className="flex-1 overflow-y-auto p-2">
           <NodeList 
             onSelectNode={handleSelectNode} 
             selectedNodeName={selectedNode?.name || null}
             onNodesChange={handleNodesChange}
+            refreshTrigger={refreshTrigger}
           />
         </div>
         {/* Radar View */}
@@ -117,6 +153,12 @@ function App() {
       </div>
     </div>
     </ToastProvider>
+    <CreateHostDialog
+      open={showCreateHost}
+      onOpenChange={setShowCreateHost}
+      tools={availableTools}
+      onSubmit={handleCreateHost}
+    />
     <AnimationSettingsPanel open={showAnimSettings} onOpenChange={setShowAnimSettings} />
     </AnimationSettingsProvider>
     </ErrorBoundary>

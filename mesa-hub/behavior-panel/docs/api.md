@@ -214,3 +214,69 @@ WebSocket 终端代理。Manager 将前端 WebSocket 连接升级后，建立到
 
 ### GET /health
 返回服务健康状态，无需认证。**响应**：`{"status": "ok"}`
+
+---
+
+## Host 管理
+
+以下端点用于动态创建和销毁 Host 容器。Manager 通过 Docker socket 构建镜像、启动容器、分配资源。
+
+### POST /api/v1/hosts
+创建 Host：验证 → 生成 Dockerfile → 构建镜像 → 启动容器。**认证**：需要 Bearer Token（开发模式除外）
+
+**请求体**（protocol.CreateHostRequest）：
+```json
+{
+  "name": "my-host",
+  "tools": ["claude", "go"],
+  "resources": {
+    "cpu_limit": "2",
+    "memory_limit": "4g"
+  }
+}
+```
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| name | string | 是 | Host 唯一标识，用作容器名和镜像 tag |
+| tools | string[] | 是 | 选配工具 ID 列表（可选值通过 GET /api/v1/host/tools 查询） |
+| display_name | string | 否 | 显示名称 |
+| resources | object | 否 | 资源限制（cpu_limit: CPU 核数, memory_limit: 内存上限如 "4g"） |
+
+**响应**（protocol.CreateHostResponse）：
+```json
+{
+  "status": "ok",
+  "data": {
+    "name": "my-host",
+    "tools": ["claude", "go"],
+    "image_tag": "maze-host-my-host:latest",
+    "container_id": "abc123...",
+    "status": "running"
+  }
+}
+```
+
+| 状态码 | 说明 |
+|--------|------|
+| 200 | 创建成功 |
+| 400 | 参数错误（缺 name/tools、未知工具 ID） |
+| 409 | 同名 Host 已存在 |
+| 500 | 构建或部署失败（响应 message 包含 docker build 日志） |
+
+### GET /api/v1/host/tools
+查询可用工具列表。**认证**：需要 Bearer Token（开发模式除外）
+
+**响应**：返回 ToolConfig 数组，每个工具包含 id、image、description、category 等字段。
+
+### DELETE /api/v1/hosts/:name
+销毁 Host：停止容器 → 移除容器 → 删除镜像 → 清理持久化目录 → 删除节点记录。**认证**：需要 Bearer Token（开发模式除外）
+
+**路径参数**：`name` - Host 名称。
+
+**行为**：
+- 容器停止/移除失败时静默忽略（容器可能已不存在）
+- 镜像删除和目录清理失败时静默忽略
+- 节点记录始终从注册表删除
+
+**响应**：成功返回 `{"status": "ok", "data": null}`。

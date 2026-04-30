@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { controllerApi } from '../api/controller';
 import type { Node } from '@maze/fabrication';
 import { Button, DecryptText, GlitchEffect, ConfirmDialog, Skeleton, usePollingWithBackoff } from '@maze/fabrication';
@@ -8,9 +8,10 @@ interface NodeListProps {
   onSelectNode: (node: Node) => void;
   selectedNodeName: string | null;
   onNodesChange?: (nodes: Node[]) => void;
+  refreshTrigger?: number;
 }
 
-export function NodeList({ onSelectNode, selectedNodeName, onNodesChange }: NodeListProps) {
+export function NodeList({ onSelectNode, selectedNodeName, onNodesChange, refreshTrigger }: NodeListProps) {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const { data, isLoading, refresh: refreshNodes } = usePollingWithBackoff<Node[]>({
@@ -25,8 +26,16 @@ export function NodeList({ onSelectNode, selectedNodeName, onNodesChange }: Node
   });
   const nodes = data ?? [];
 
+  // refreshTrigger 变化时立即刷新节点列表（由父组件在创建 Host 成功后递增）
+  useEffect(() => {
+    if (refreshTrigger !== undefined && refreshTrigger > 0) {
+      refreshNodes();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshTrigger]);
+
   const handleRemove = async (name: string) => {
-    await controllerApi.deleteNode(name);
+    await controllerApi.deleteHost(name);
     setDeleteTarget(null);
     refreshNodes();
   };
@@ -74,11 +83,9 @@ export function NodeList({ onSelectNode, selectedNodeName, onNodesChange }: Node
                     {isSelected ? <DecryptText text={node.name} /> : node.name}
                   </span>
                 </div>
-                {!isOnline && (
-                  <Button variant="ghost" size="icon" className="h-6 w-6 rounded-none text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); setDeleteTarget(node.name); }}>
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
-                )}
+                <Button variant="ghost" size="icon" className="h-6 w-6 rounded-none text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); setDeleteTarget(node.name); }}>
+                  <Trash2 className="w-3 h-3" />
+                </Button>
               </div>
               
               <div className="text-[10px] text-muted-foreground space-y-1.5 font-mono uppercase tracking-widest pl-4">
@@ -106,9 +113,9 @@ export function NodeList({ onSelectNode, selectedNodeName, onNodesChange }: Node
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}
-        title="确认移除 Host"
-        description={`确认移除 Host「${deleteTarget || ''}」？该操作将从监控列表中移除此节点。`}
-        confirmLabel="确认移除"
+        title="确认销毁 Host"
+        description={`确认销毁 Host「${deleteTarget || ''}」？该操作将停止容器并清理所有资源。`}
+        confirmLabel="确认销毁"
         onConfirm={() => deleteTarget && handleRemove(deleteTarget)}
       />
     </div>

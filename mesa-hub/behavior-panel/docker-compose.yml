@@ -18,6 +18,16 @@ services:
     environment:
       AGENT_MANAGER_SERVER_AUTH_TOKEN: "${MAZE_AUTH_TOKEN:-}"
       AGENT_MANAGER_ALLOW_PRIVATE_NETWORKS: "true"
+      AGENT_MANAGER_DOCKER_NETWORK: "${COMPOSE_PROJECT_NAME:-behavior-panel}_default"
+      # Manager 通过 Docker socket 操作宿主机，需要宿主机上的绝对路径来挂载卷
+      AGENT_MANAGER_WORKSPACE_BASE_DIR: "${HOME}/agents"
+      # Manager 容器内挂载 agents 目录的路径（用于文件操作）
+      AGENT_MANAGER_WORKSPACE_MOUNT_DIR: "/agents"
+      # Agent 基础镜像（含 agent 二进制和 entrypoint），动态 Host 在此基础上叠加工具链
+      AGENT_MANAGER_DOCKER_AGENT_BASE_IMAGE: "behavior-panel-agent-1:latest"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ~/agents:/agents
 
   agent-1:
     build:

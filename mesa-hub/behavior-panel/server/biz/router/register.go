@@ -12,6 +12,7 @@ import (
 	"github.com/charviki/mesa-hub-behavior-panel/biz/config"
 	"github.com/charviki/mesa-hub-behavior-panel/biz/handler"
 	"github.com/charviki/mesa-hub-behavior-panel/biz/model"
+	"github.com/charviki/mesa-hub-behavior-panel/biz/runtime"
 )
 
 // dataDir 返回数据文件存储目录。
@@ -44,6 +45,9 @@ func Register(h *server.Hertz, cfg *config.Config, logger logutil.Logger) *Clean
 
 	auditLog := handler.NewAuditLogger(filepath.Join(dir, "audit.log"), logger)
 	sessionProxyHandler := handler.NewSessionProxyHandler(registry, auditLog, logger, cfg.Server.AuthToken, cfg.AllowedOrigins(), cfg.Server.AllowPrivateNetworks)
+
+	dockerRuntime := runtime.NewDockerRuntime(cfg.Docker, cfg.Workspace, cfg.Server.AuthToken)
+	hostHandler := handler.NewHostHandler(registry, dockerRuntime, auditLog, cfg, logger)
 
 	// Access Log
 	h.Use(accesslog.New())
@@ -96,6 +100,11 @@ func Register(h *server.Hertz, cfg *config.Config, logger logutil.Logger) *Clean
 
 	// WebSocket 终端代理（前端通过 Manager 代理到 Agent 的 WebSocket 连接）
 	protected.GET("/nodes/:name/sessions/:id/ws", sessionProxyHandler.ProxyWebSocket)
+
+	// Host 生命周期管理
+	protected.POST("/hosts", hostHandler.CreateHost)
+	protected.GET("/host/tools", hostHandler.ListTools)
+	protected.DELETE("/hosts/:name", hostHandler.DeleteHost)
 
 	// 审计日志路由
 	protected.GET("/audit/logs", sessionProxyHandler.GetAuditLogs)
