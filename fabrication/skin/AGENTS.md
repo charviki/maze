@@ -18,7 +18,7 @@
 | 路径 | 职责 | 文档同步 |
 |------|------|----------|
 | src/index.ts | 模块入口，统一导出所有组件、工具函数和类型 | 本文件 |
-| src/types.ts | 全局类型定义（Session, Pipeline, Template, Config 等） | 本文件 |
+| src/types.ts | 全局类型定义（Session, Pipeline, Template, Config, Tool, CreateHostRequest 等） | 本文件 |
 | src/api.ts | IAgentApiClient 接口定义，规范所有 Agent 交互方法 | 本文件 |
 | src/utils.ts | cn 类名合并工具 | 本文件 |
 | src/utils/mask.ts | 环境变量和文件内容脱敏工具 | 本文件 |

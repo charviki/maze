@@ -8,6 +8,7 @@ export * from './components/ui/TerrainBackground';
 export * from './components/ui/HostVitalSign';
 export * from './components/ui/ReverieEffect';
 export * from './components/ui/ConfirmDialog';
+export * from './components/ui/CreateHostDialog';
 export * from './components/ui/ErrorBoundary';
 export * from './components/ui/button';
 export * from './components/ui/dialog';

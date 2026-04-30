@@ -205,3 +205,37 @@ export interface SaveSessionMetaRequest {
   pipeline: PipelineStep[];
   restore_strategy: string;
 }
+
+// --- Host ---
+
+export interface Tool {
+  id: string;
+  image: string;
+  source_path: string;
+  dest_path: string;
+  bin_paths: string[];
+  env_vars?: Record<string, string>;
+  description: string;
+  category: string;
+}
+
+export interface ResourceLimits {
+  cpu_limit?: string;
+  memory_limit?: string;
+}
+
+export interface CreateHostRequest {
+  name: string;
+  tools: string[];
+  display_name?: string;
+  resources?: ResourceLimits;
+}
+
+export interface CreateHostResponse {
+  name: string;
+  tools: string[];
+  image_tag: string;
+  container_id: string;
+  status: string;
+  build_log?: string;
+}

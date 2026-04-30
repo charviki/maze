@@ -13,19 +13,30 @@ const DEFAULT_TIMEOUT_MS = 30000;
 export function createRequest(baseUrl: string = '') {
   return async function request<T>(url: string, options?: RequestInit): Promise<ApiResponse<T>> {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+      // 如果调用方提供了 signal（自定义超时控制），直接使用；否则用默认超时
+      const externalSignal = options?.signal;
+      let controller: AbortController | null = null;
+      let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+      if (externalSignal) {
+        // 外部控制超时，不创建内部 AbortController
+      } else {
+        controller = new AbortController();
+        timeoutId = setTimeout(() => controller!.abort(), DEFAULT_TIMEOUT_MS);
+      }
+
+      const signal = externalSignal || controller!.signal;
 
       const response = await fetch(`${baseUrl}${url}`, {
         ...options,
-        signal: controller.signal,
+        signal,
         headers: {
           'Content-Type': 'application/json',
           ...options?.headers,
         },
       });
 
-      clearTimeout(timeoutId);
+      if (timeoutId) clearTimeout(timeoutId);
 
       const text = await response.text();
       if (!response.ok) {
