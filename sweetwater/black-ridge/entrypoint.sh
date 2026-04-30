@@ -8,7 +8,7 @@ ensure_claude_json() {
     if [ ! -f "$json_file" ]; then
         # 仅在首次启动时写入默认值，若宿主持久卷中已有文件则保留用户状态，
         # 避免 rebuild 容器时暗中覆盖本地配置。
-        echo '{"hasCompletedOnboarding":true,"firstStartTime":"","opusProMigrationComplete":true,"sonnet1m45MigrationComplete":true,"migrationVersion":11,"projects":{}}' > "$json_file"
+        echo '{"hasCompletedOnboarding":true,"firstStartTime":"","opusProMigrationComplete":true,"sonnet1m45MigrationComplete":true,"migrationVersion":11,"projects":{"/home/agent":{"allowedTools":[]}}}' > "$json_file"
         echo "[entrypoint] initialized default $json_file"
     else
         echo "[entrypoint] keeping existing $json_file from persisted /home/agent volume"

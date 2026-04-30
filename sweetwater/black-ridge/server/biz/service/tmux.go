@@ -346,6 +346,13 @@ func (s *tmuxServiceImpl) CreateSession(name string, command string, workingDir 
 
 	pipeline := s.BuildPipeline(workingDir, command, configs)
 
+	// 修改 ~/.claude.json 的 projects 字段，将工作目录标记为已信任
+	if workingDir != "" {
+		if err := s.trustBootstrapper.TrustDir(workingDir); err != nil {
+			s.logger.Warnf("[tmux] trust dir %s failed: %v", workingDir, err)
+		}
+	}
+
 	// 为 command 步骤中的 {session_id} 占位符生成并填充 UUID，
 	// 使 Claude CLI 启动时通过 --session-id 携带已知 ID，恢复时可用 --resume 引用同一 ID。
 	cliSessionID := generateUUID()

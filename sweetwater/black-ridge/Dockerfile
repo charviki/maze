@@ -30,17 +30,20 @@ ENV GOPROXY=https://goproxy.cn,direct
 ENV GOSUMDB=sum.golang.org
 
 COPY fabrication/cradle/ mesa-hub/cradle/
-COPY sweetwater/black-ridge/server/ ./
+COPY sweetwater/black-ridge/server/go.mod sweetwater/black-ridge/server/go.sum ./
 
 RUN rm -rf ./web-dist
 COPY --from=frontend-builder /src/sweetwater/black-ridge/web-dist ./web-dist/
 
 RUN sed -i 's|../../../fabrication/cradle|./mesa-hub/cradle|g' go.mod
-
 RUN --mount=type=cache,id=go-pkg-mod,target=/go/pkg/mod \
     go mod download
 
-RUN CGO_ENABLED=0 go build -o /bin/agent .
+COPY sweetwater/black-ridge/server/ ./
+RUN sed -i 's|../../../fabrication/cradle|./mesa-hub/cradle|g' go.mod
+
+RUN --mount=type=cache,id=go-pkg-mod,target=/go/pkg/mod \
+    CGO_ENABLED=0 go build -o /bin/agent .
 
 # 阶段 3：运行时镜像
 FROM public.ecr.aws/docker/library/node:22-bookworm-slim
