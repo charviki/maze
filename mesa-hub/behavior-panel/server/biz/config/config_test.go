@@ -57,9 +57,9 @@ func TestValidate_Defaults(t *testing.T) {
 		t.Errorf("期望默认 ListenAddr=:8080, 实际=%s", cfg.Server.ListenAddr)
 	}
 
-	// 未配置 base_dir 时默认为 ~/agents
+	// 未配置 base_dir 时默认为 ~/.maze/docker/agents
 	home, _ := os.UserHomeDir()
-	expected := filepath.Join(home, "agents")
+	expected := filepath.Join(home, ".maze", "docker", "agents")
 	if cfg.Workspace.BaseDir != expected {
 		t.Errorf("期望默认 BaseDir=%s, 实际=%s", expected, cfg.Workspace.BaseDir)
 	}

@@ -46,8 +46,14 @@ func Register(h *server.Hertz, cfg *config.Config, logger logutil.Logger) *Clean
 	auditLog := handler.NewAuditLogger(filepath.Join(dir, "audit.log"), logger)
 	sessionProxyHandler := handler.NewSessionProxyHandler(registry, auditLog, logger, cfg.Server.AuthToken, cfg.AllowedOrigins(), cfg.Server.AllowPrivateNetworks)
 
-	dockerRuntime := runtime.NewDockerRuntime(cfg.Docker, cfg.Workspace, cfg.Server.AuthToken)
-	hostHandler := handler.NewHostHandler(registry, dockerRuntime, auditLog, cfg, logger)
+	// 根据运行时类型选择对应的 HostRuntime 实现
+	var hostRuntime runtime.HostRuntime
+	if cfg.Runtime.Type == "kubernetes" {
+		hostRuntime = runtime.NewKubernetesRuntime(cfg.Kubernetes, cfg.Workspace, cfg.Server.AuthToken, logger)
+	} else {
+		hostRuntime = runtime.NewDockerRuntime(cfg.Docker, cfg.Workspace, cfg.Server.AuthToken)
+	}
+	hostHandler := handler.NewHostHandler(registry, hostRuntime, auditLog, cfg, logger)
 
 	// Access Log
 	h.Use(accesslog.New())

@@ -69,6 +69,8 @@ type CreateHostResponse struct {
 	Status string `json:"status"`
 	// BuildLog 构建日志（可选）
 	BuildLog string `json:"build_log,omitempty"`
+	// WorkloadName K8s 模式下的工作负载名称（Deployment 名称），Docker 模式下为空
+	WorkloadName string `json:"workload_name,omitempty"`
 }
 
 // ContainerInfo 容器信息
