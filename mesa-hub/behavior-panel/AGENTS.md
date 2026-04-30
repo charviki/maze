@@ -32,6 +32,8 @@
 | server/biz/builder/host.go | Dockerfile 动态生成器（基于 agent base + 选配工具链） | [architecture.md#动态Host](docs/architecture.md) |
 | server/biz/runtime/runtime.go | HostRuntime 抽象接口（屏蔽 Docker/K8s 差异） | [architecture.md#动态Host](docs/architecture.md) |
 | server/biz/runtime/docker.go | Docker 运行时实现（docker CLI + socket） | [architecture.md#动态Host](docs/architecture.md) |
+| server/biz/runtime/kubernetes.go | K8s 运行时实现（client-go API，通过 Deployment/PVC/Service 管理 Agent） | [architecture.md#动态Host](docs/architecture.md) |
+| server/biz/builder/kubernetes.go | K8s Builder：根据工具列表选择预构建 Agent 镜像 | [architecture.md#动态Host](docs/architecture.md) |
 | web/src/App.tsx | 前端入口：节点列表 + AgentPanel + RadarView | [architecture.md#前端](docs/architecture.md) |
 | web/src/api/agent.ts | 通过 Manager 代理的 Agent API 客户端 | [api.md](docs/api.md) |
 | web/src/api/controller.ts | Manager 节点管理 API 客户端 | [api.md#节点管理](docs/api.md) |

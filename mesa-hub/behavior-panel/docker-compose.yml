@@ -20,14 +20,14 @@ services:
       AGENT_MANAGER_ALLOW_PRIVATE_NETWORKS: "true"
       AGENT_MANAGER_DOCKER_NETWORK: "${COMPOSE_PROJECT_NAME:-behavior-panel}_default"
       # Manager 通过 Docker socket 操作宿主机，需要宿主机上的绝对路径来挂载卷
-      AGENT_MANAGER_WORKSPACE_BASE_DIR: "${HOME}/agents"
+      AGENT_MANAGER_WORKSPACE_BASE_DIR: "${HOME}/.maze/docker/agents"
       # Manager 容器内挂载 agents 目录的路径（用于文件操作）
-      AGENT_MANAGER_WORKSPACE_MOUNT_DIR: "/agents"
+      AGENT_MANAGER_WORKSPACE_MOUNT_DIR: "/data"
       # Agent 基础镜像（含 agent 二进制和 entrypoint），动态 Host 在此基础上叠加工具链
       AGENT_MANAGER_DOCKER_AGENT_BASE_IMAGE: "behavior-panel-agent-1:latest"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ~/agents:/agents
+      - ~/.maze/docker/agents:/data
 
   agent-1:
     build:
@@ -46,7 +46,7 @@ services:
     volumes:
       # 镜像内的程序代码会随 docker compose up -d --build 更新，
       # 但 /home/agent 来自宿主持久卷，已有配置和运行时状态会继续保留。
-      - ~/agents/agent-claude-1:/home/agent
+      - ~/.maze/docker/agents/agent-claude-1:/home/agent
 
   agent-2:
     build:
@@ -65,7 +65,7 @@ services:
     volumes:
       # 若“看起来没更新”，需要先区分是镜像中的二进制/前端资源，
       # 还是 /home/agent 持久卷里的旧文件仍在生效。
-      - ~/agents/agent-claude-2:/home/agent
+      - ~/.maze/docker/agents/agent-claude-2:/home/agent
 
   agent-3:
     build:
@@ -83,4 +83,4 @@ services:
     container_name: agent-codex-1
     volumes:
       # 当前策略保留持久卷优先，不在容器重建时强制覆盖宿主机 home 目录内容。
-      - ~/agents/agent-codex-1:/home/agent
+      - ~/.maze/docker/agents/agent-codex-1:/home/agent

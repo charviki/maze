@@ -8,6 +8,7 @@
 - **cradle（Go 共享库）** — Go 公共库，为 Manager 和 Agent 提供统一的日志、配置、HTTP 工具、中间件、通信协议、管线编排及数据持久化能力。
 - **molds（供应商镜像）** — Docker 构建模具，为所有模块提供预装工具链的供应商镜像，通过 `COPY --from` 按需组合到目标镜像。
 - **deps（原料清单）** — 声明式依赖配置，管理供应商镜像的预装工具列表。
+- **kubernetes（K8s 部署）** — Kubernetes 部署清单和 Makefile，提供一键部署、滚动更新等运维能力，支持 Docker Desktop 本地 K8s 环境。
 
 ## 子模块索引
 
@@ -17,6 +18,7 @@
 | Cradle (Go) | cradle/ | Go 共享库（HTTP/Pipeline/Config/Auth） | [AGENTS.md](cradle/AGENTS.md) + [docs/](cradle/docs/) |
 | Molds (模具) | molds/ | 供应商 Dockerfile | [docker-build-guide.md](docs/docker-build-guide.md) |
 | Deps (原料) | deps/ | 声明式依赖配置 | [docker-build-guide.md](docs/docker-build-guide.md) |
+| Kubernetes (部署) | kubernetes/ | K8s 部署清单 + Makefile | 本文件 |
 
 ## 核心原则
 - **主题一致性** — 所有组件必须遵循西部世界科幻视觉风格（切角面板、解密动画、CRT 扫描线等）
@@ -44,6 +46,9 @@
 | molds/Dockerfile.* | 供应商 Dockerfile（5 个工具链） | [docker-build-guide.md](docs/docker-build-guide.md) |
 | deps/*.txt | 声明式依赖配置（go/python/js） | [docker-build-guide.md](docs/docker-build-guide.md) |
 | Dockerfile.host | Host 装配镜像（多 target stage） | [docker-build-guide.md](docs/docker-build-guide.md) |
+| kubernetes/Makefile | K8s 部署 Makefile（up/down/update） | 本文件 |
+| kubernetes/overlays/local/ | 本地开发 overlay（hostPath + 动态构建） | [kubernetes-deploy-guide.md](docs/kubernetes-deploy-guide.md) |
+| kubernetes/overlays/production/ | 生产环境 overlay（PVC + 远程镜像） | [kubernetes-deploy-guide.md](docs/kubernetes-deploy-guide.md) |
 
 ## 详细文档
 | 文档 | 内容 |

@@ -130,9 +130,9 @@ Agent 实例 (xN)
 - **web** — Nginx 容器，构建前端资产并托管静态文件 + 反向代理 API
 - **agent-manager** — Go 后端容器，监听 8080 端口
   - 挂载 `/var/run/docker.sock` 以动态创建/销毁 Host 容器
-  - 挂载 `~/agents:/agents` 以管理 Host 持久化目录
+  - 挂载 `~/.maze/docker/agents:/data` 以管理 Host 持久化目录
   - 安装 `docker-ce-cli` 用于执行 docker build/run/stop/rm
-- **agent-1/2/3** — Agent 实例容器，各自独立的持久卷（`~/agents/agent-*`）
+- **agent-1/2/3** — Agent 实例容器，各自独立的持久卷（`~/.maze/docker/agents/agent-*`）
 
 ### Nginx 配置要点（来自 nginx.conf）
 - WebSocket 支持：`proxy_http_version 1.1` + `Upgrade/Connection` 头处理
@@ -153,7 +153,7 @@ Agent 实例 (xN)
 | server.auth_token | AGENT_MANAGER_SERVER_AUTH_TOKEN | "" | API 鉴权 Token，空为开发模式 |
 | server.allowed_origins | AGENT_MANAGER_SERVER_ALLOWED_ORIGINS | [] | CORS/WebSocket 允许的来源列表 |
 | server.allow_private_networks | AGENT_MANAGER_ALLOW_PRIVATE_NETWORKS | false | 是否允许代理到内网 IP |
-| workspace.base_dir | AGENT_MANAGER_WORKSPACE_BASE_DIR | ~/agents | 宿主机持久化根目录（用于 docker -v 挂载路径） |
+| workspace.base_dir | AGENT_MANAGER_WORKSPACE_BASE_DIR | ~/.maze/docker/agents | 宿主机持久化根目录（用于 docker -v 挂载路径） |
 | workspace.mount_dir | AGENT_MANAGER_WORKSPACE_MOUNT_DIR | 同 base_dir | Manager 容器内挂载路径（用于文件操作） |
 | docker.socket_path | AGENT_MANAGER_DOCKER_SOCKET_PATH | /var/run/docker.sock | Docker socket 路径 |
 | docker.network | AGENT_MANAGER_DOCKER_NETWORK | "" | Docker 网络名（Host 容器加入此网络） |
