@@ -1,5 +1,8 @@
 FROM public.ecr.aws/docker/library/golang:1.24-bookworm AS backend-builder
 
+# client-go 要求 Go >= 1.26，通过 GOTOOLCHAIN 自动下载匹配的工具链
+ENV GOTOOLCHAIN=auto
+
 WORKDIR /src
 
 ENV GOPROXY=https://goproxy.cn,direct

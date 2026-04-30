@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  namespace: maze
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+        - name: nginx
+          image: maze-web:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 80
+          env:
+            - name: MANAGER_UPSTREAM
+              valueFrom:
+                configMapKeyRef:
+                  name: web-nginx-config
+                  key: MANAGER_UPSTREAM
+            - name: WS_TIMEOUT
+              valueFrom:
+                configMapKeyRef:
+                  name: web-nginx-config
+                  key: WS_TIMEOUT
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/templates
+              readOnly: true
+          resources:
+            limits:
+              cpu: "0.5"
+              memory: 128Mi
+            requests:
+              cpu: "0.1"
+              memory: 64Mi
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: web-nginx-config

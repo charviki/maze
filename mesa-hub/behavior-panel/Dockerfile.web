@@ -23,7 +23,13 @@ RUN pnpm run build
 
 FROM public.ecr.aws/docker/library/nginx:alpine
 
+# nginx:alpine 官方镜像内置 envsubst 模板机制，
+# /etc/nginx/templates/ 下的 .template 文件会在启动时自动替换环境变量并输出到 /etc/nginx/conf.d/
+COPY mesa-hub/behavior-panel/nginx.conf /etc/nginx/templates/default.conf.template
+
 COPY --from=frontend-builder /app/mesa-hub/behavior-panel/web-dist /usr/share/nginx/html
-COPY mesa-hub/behavior-panel/nginx.conf /etc/nginx/conf.d/default.conf
+
+ENV MANAGER_UPSTREAM="agent-manager:8080"
+ENV WS_TIMEOUT="3600s"
 
 EXPOSE 80

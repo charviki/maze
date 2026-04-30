@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agent-manager
+  namespace: maze
+spec:
+  selector:
+    matchLabels:
+      app: agent-manager
+  template:
+    metadata:
+      labels:
+        app: agent-manager
+    spec:
+      serviceAccountName: maze-manager
+      containers:
+        - name: agent-manager
+          image: maze-manager:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: manager-config
+            - secretRef:
+                name: manager-secret
+          env:
+            - name: AGENT_MANAGER_SERVER_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: manager-secret
+                  key: AUTH_TOKEN
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: docker-socket
+              mountPath: /var/run/docker.sock
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            limits:
+              cpu: "1"
+              memory: 512Mi
+            requests:
+              cpu: "0.5"
+              memory: 256Mi
+      volumes:
+        - name: data
+          hostPath:
+            path: __HOST_HOME__/.maze/kubernetes
+            type: DirectoryOrCreate
+        - name: docker-socket
+          hostPath:
+            path: /var/run/docker.sock
+            type: Socket
