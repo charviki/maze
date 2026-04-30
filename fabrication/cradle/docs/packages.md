@@ -136,6 +136,14 @@ Agent 与 Manager 之间的通信协议定义。
 ### 导出类型（audit.go）
 - `AuditLogEntry` — 审计日志条目：ID、Timestamp、Operator、TargetNode、Action、PayloadSummary、Result、StatusCode
 
+### 导出类型（host.go）
+- `ToolConfig` — 工具配置：ID、Image、SourcePath、DestPath、BinPaths、EnvVars、Description、Category
+- `ResourceLimits` — 资源限制：CPULimit、MemoryLimit（均为可选字符串）
+- `HostDeploySpec` — 运行时无关的 Host 部署规格：Name、Tools、Resources、AuthToken
+- `CreateHostRequest` — 创建 Host 请求：Name、Tools、DisplayName、Resources
+- `CreateHostResponse` — 创建 Host 响应：Name、Tools、ImageTag、ContainerID、Status、BuildLog
+- `ContainerInfo` — 容器信息：ID、Name、Status、Image、CreatedAt
+
 ### 使用示例
 ```go
 req := protocol.RegisterRequest{

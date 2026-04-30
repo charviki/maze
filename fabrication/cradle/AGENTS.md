@@ -28,6 +28,7 @@
 | middleware/cors.go | CORS 中间件（委托 httputil） | [packages.md#middleware](docs/packages.md) |
 | pipeline/pipeline.go | 管线步骤定义与层级过滤 | [packages.md#pipeline](docs/packages.md) |
 | protocol/register.go | Agent 注册与心跳协议 | [packages.md#protocol](docs/packages.md) |
+| protocol/host.go | Host 部署协议（HostDeploySpec、ToolConfig、ResourceLimits） | [packages.md#protocol](docs/packages.md) |
 | protocol/audit.go | 审计日志条目定义 | [packages.md#protocol](docs/packages.md) |
 | maskutil/mask.go | 敏感值脱敏 | [packages.md#maskutil](docs/packages.md) |
 | storeutil/json_store.go | 泛型 JSON 持久化存储 | [packages.md#storeutil](docs/packages.md) |
