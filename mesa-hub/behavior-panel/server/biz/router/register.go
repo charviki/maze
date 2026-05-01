@@ -56,7 +56,7 @@ func Register(h *server.Hertz, cfg *config.Config, logger logutil.Logger) *Clean
 	if cfg.Runtime.Type == "kubernetes" {
 		hostRuntime = runtime.NewKubernetesRuntime(cfg.Kubernetes, cfg.Workspace, logger)
 	} else {
-		hostRuntime = runtime.NewDockerRuntime(cfg.Docker, cfg.Workspace)
+		hostRuntime = runtime.NewDockerRuntime(cfg.Docker, cfg.Workspace, logger)
 	}
 
 	// host_logs 目录用于存储构建日志

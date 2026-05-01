@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/maze-cradle/protocol"
 	"github.com/charviki/mesa-hub-behavior-panel/biz/builder"
 	"github.com/charviki/mesa-hub-behavior-panel/biz/config"
@@ -19,11 +20,12 @@ import (
 type DockerRuntime struct {
 	docker    config.DockerConfig
 	workspace config.WorkspaceConfig
+	logger    logutil.Logger
 }
 
 // NewDockerRuntime 创建 DockerRuntime
-func NewDockerRuntime(docker config.DockerConfig, workspace config.WorkspaceConfig) *DockerRuntime {
-	return &DockerRuntime{docker: docker, workspace: workspace}
+func NewDockerRuntime(docker config.DockerConfig, workspace config.WorkspaceConfig, logger logutil.Logger) *DockerRuntime {
+	return &DockerRuntime{docker: docker, workspace: workspace, logger: logger}
 }
 
 func (d *DockerRuntime) dockerCmd(args ...string) *exec.Cmd {
@@ -37,21 +39,69 @@ func (d *DockerRuntime) imageExistsLocally(imageName string) bool {
 	return cmd.Run() == nil
 }
 
+// tryTagComboImage 尝试将已存在的工具组合镜像 tag 为 Host 专属镜像。
+// 会校验缓存镜像的 dockerfile-hash label 是否与当前 Dockerfile 一致，
+// 不一致时返回 false 触发重建（供应商镜像更新后自动失效）。
+func (d *DockerRuntime) tryTagComboImage(comboTag, imageTag, expectedHash string) bool {
+	// 优先检查组合缓存镜像
+	if d.imageExistsLocally(comboTag) {
+		if d.checkDockerfileHash(comboTag, expectedHash) {
+			tagCmd := d.dockerCmd("tag", comboTag, imageTag)
+			return tagCmd.Run() == nil
+		}
+		// hash 不匹配，删除旧缓存触发重建
+		d.dockerCmd("rmi", comboTag).Run()
+	}
+	// 检查 Host 专属镜像
+	if d.imageExistsLocally(imageTag) {
+		if d.checkDockerfileHash(imageTag, expectedHash) {
+			return true
+		}
+		// hash 不匹配，删除旧镜像触发重建
+		d.dockerCmd("rmi", imageTag).Run()
+	}
+	return false
+}
+
+// checkDockerfileHash 从镜像 label 中读取 dockerfile-hash 与期望值比较
+func (d *DockerRuntime) checkDockerfileHash(imageName, expectedHash string) bool {
+	cmd := d.dockerCmd("inspect", "--format", "{{index .Config.Labels \"maze.dockerfile-hash\"}}", imageName)
+	output, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	return strings.TrimSpace(string(output)) == expectedHash
+}
+
+// extractDockerfileHash 从生成的 Dockerfile 内容中提取 maze.dockerfile-hash label 值
+func extractDockerfileHash(dockerfileContent string) string {
+	for _, line := range strings.Split(dockerfileContent, "\n") {
+		if strings.HasPrefix(line, "LABEL maze.dockerfile-hash=") {
+			return strings.TrimPrefix(line, "LABEL maze.dockerfile-hash=")
+		}
+	}
+	return ""
+}
+
 // DeployHost 部署一个 Host：构建镜像 → 创建持久化目录 → 启动容器
 func (d *DockerRuntime) DeployHost(ctx context.Context, spec *protocol.HostDeploySpec, dockerfileContent string) (*protocol.CreateHostResponse, error) {
-	imageTag := fmt.Sprintf("maze-host-%s:latest", strings.ReplaceAll(spec.Name, "_", "-"))
-
-	// 检查工具组合镜像是否已存在，命中则直接 tag 复用，跳过 docker build
+	deployStart := time.Now()
+	imageTag := fmt.Sprintf("maze-agent:%s", spec.Name)
 	comboTag := builder.ToolsetImageTag(spec.Tools)
-	if d.imageExistsLocally(comboTag) {
-		tagCmd := d.dockerCmd("tag", comboTag, imageTag)
-		if tagCmd.Run() == nil {
-			// 组合镜像 tag 成功，跳过构建
-		}
-	} else if d.imageExistsLocally(imageTag) {
-		// Host 专属镜像已存在，跳过构建
+	expectedHash := extractDockerfileHash(dockerfileContent)
+
+	cacheStart := time.Now()
+	cacheHit := d.tryTagComboImage(comboTag, imageTag, expectedHash)
+	if cacheHit {
+		d.logger.Infof("[deploy] host=%s cache HIT, combo=%s, took=%v", spec.Name, comboTag, time.Since(cacheStart))
 	} else {
-		// 需要执行 docker build
+		// 获取构建槽位，防止重建风暴
+		buildSemaphore <- struct{}{}
+		defer func() { <-buildSemaphore }()
+
+		d.logger.Infof("[deploy] host=%s cache MISS, building image (combo=%s)...", spec.Name, comboTag)
+		buildStart := time.Now()
+
 		tmpDir, err := os.MkdirTemp("", "maze-build-*")
 		if err != nil {
 			return nil, fmt.Errorf("create temp dir: %w", err)
@@ -73,7 +123,9 @@ func (d *DockerRuntime) DeployHost(ctx context.Context, spec *protocol.HostDeplo
 			return nil, fmt.Errorf("docker build failed: %s", buildOutput.String())
 		}
 
-		// 构建完成后也打上组合标签，供后续相同组合的 Host 复用
+		d.logger.Infof("[deploy] host=%s docker build took=%v", spec.Name, time.Since(buildStart))
+
+		// 构建完成后打上组合标签，供后续相同工具组合的 Host 复用
 		tagCmd := d.dockerCmd("tag", imageTag, comboTag)
 		tagCmd.Run()
 	}
@@ -84,6 +136,7 @@ func (d *DockerRuntime) DeployHost(ctx context.Context, spec *protocol.HostDeplo
 		return nil, fmt.Errorf("create host dir: %w", err)
 	}
 
+	runStart := time.Now()
 	// 构造容器启动参数
 	runArgs := []string{"run", "-d", "--name", spec.Name}
 	if d.docker.Network != "" {
@@ -126,6 +179,8 @@ func (d *DockerRuntime) DeployHost(ctx context.Context, spec *protocol.HostDeplo
 	}
 
 	containerID := strings.TrimSpace(string(output))
+	d.logger.Infof("[deploy] host=%s docker run took=%v, container=%s", spec.Name, time.Since(runStart), containerID[:12])
+	d.logger.Infof("[deploy] host=%s TOTAL deploy took=%v", spec.Name, time.Since(deployStart))
 
 	return &protocol.CreateHostResponse{
 		Name:        spec.Name,
@@ -152,7 +207,7 @@ func (d *DockerRuntime) StopHost(ctx context.Context, name string) error {
 func (d *DockerRuntime) RemoveHost(ctx context.Context, name string) error {
 	_ = d.StopHost(ctx, name)
 
-	imageTag := fmt.Sprintf("maze-host-%s:latest", strings.ReplaceAll(name, "_", "-"))
+	imageTag := fmt.Sprintf("maze-agent:%s", name)
 	rmiCmd := d.dockerCmd("rmi", "-f", imageTag)
 	_ = rmiCmd.Run()
 

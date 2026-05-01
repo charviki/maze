@@ -78,26 +78,52 @@ func (k *KubernetesRuntime) imageExistsLocally(imageName string) bool {
 	return cmd.Run() == nil
 }
 
+// checkDockerfileHash 从镜像 label 中读取 dockerfile-hash 与期望值比较
+func (k *KubernetesRuntime) checkDockerfileHash(imageName, expectedHash string) bool {
+	cmd := exec.Command("docker", "inspect", "--format",
+		"{{index .Config.Labels \"maze.dockerfile-hash\"}}", imageName)
+	output, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	return strings.TrimSpace(string(output)) == expectedHash
+}
+
 // buildDockerImage 使用 docker build 从 Dockerfile 内容构建镜像
 // 复用 Docker 模式相同的动态构建逻辑，K8s 模式下只是把 docker run 换成创建 Deployment
 func (k *KubernetesRuntime) buildDockerImage(spec *protocol.HostDeploySpec, dockerfileContent string) (string, error) {
 	imageName := fmt.Sprintf("maze-agent:%s", spec.Name)
+	expectedHash := extractDockerfileHash(dockerfileContent)
 
-	// 优先检查 Host 专属镜像是否已存在
+	// 优先检查 Host 专属镜像是否已存在且 hash 匹配
 	if k.imageExistsLocally(imageName) {
-		k.logger.Infof("image %s already exists, skip build", imageName)
-		return imageName, nil
-	}
-
-	// 检查工具组合镜像是否已存在（相同工具组合的 Host 共享同一镜像）
-	comboTag := builder.ToolsetImageTag(spec.Tools)
-	if k.imageExistsLocally(comboTag) {
-		k.logger.Infof("combo image %s exists, tagging as %s", comboTag, imageName)
-		cmd := exec.Command("docker", "tag", comboTag, imageName)
-		if cmd.Run() == nil {
+		if k.checkDockerfileHash(imageName, expectedHash) {
+			k.logger.Infof("image %s already exists, skip build", imageName)
 			return imageName, nil
 		}
+		// hash 不匹配，删除旧镜像触发重建
+		k.logger.Infof("image %s hash mismatch, rebuilding", imageName)
+		exec.Command("docker", "rmi", imageName).Run()
 	}
+
+	// 检查工具组合镜像是否已存在且 hash 匹配
+	comboTag := builder.ToolsetImageTag(spec.Tools)
+	if k.imageExistsLocally(comboTag) {
+		if k.checkDockerfileHash(comboTag, expectedHash) {
+			k.logger.Infof("combo image %s exists, tagging as %s", comboTag, imageName)
+			cmd := exec.Command("docker", "tag", comboTag, imageName)
+			if cmd.Run() == nil {
+				return imageName, nil
+			}
+		}
+		// hash 不匹配，删除旧缓存触发重建
+		k.logger.Infof("combo image %s hash mismatch, rebuilding", comboTag)
+		exec.Command("docker", "rmi", comboTag).Run()
+	}
+
+	// 获取构建槽位，防止重建风暴
+	buildSemaphore <- struct{}{}
+	defer func() { <-buildSemaphore }()
 
 	// 创建临时构建上下文目录
 	tmpDir, err := os.MkdirTemp("", "maze-agent-build-*")
@@ -547,14 +573,12 @@ func (k *KubernetesRuntime) IsHealthy(ctx context.Context, name string) (bool, e
 
 	ns := k.kube.Namespace
 	appName := fmt.Sprintf("maze-agent-%s", name)
-	deploy, err := k.clientset.AppsV1().Deployments(ns).Get(ctx, appName, metav1.GetOptions{})
+	_, err := k.clientset.AppsV1().Deployments(ns).Get(ctx, appName, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return false, nil
 		}
 		return false, fmt.Errorf("get deployment: %w", err)
 	}
-	// Deployment 存在即视为健康（K8s 会自行处理 Pod 调度）
-	_ = deploy.Status.ReadyReplicas
 	return true, nil
 }
