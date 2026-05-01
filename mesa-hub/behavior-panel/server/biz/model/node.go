@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"sync"
 	"time"
@@ -23,6 +24,7 @@ type Node struct {
 	Name          string                     `json:"name"`
 	Address       string                     `json:"address"`
 	ExternalAddr  string                     `json:"external_addr"`
+	AuthToken     string                     `json:"auth_token"`
 	Status        string                     `json:"status"`
 	RegisteredAt  time.Time                  `json:"registered_at"`
 	LastHeartbeat time.Time                  `json:"last_heartbeat"`
@@ -35,63 +37,121 @@ type Node struct {
 // Manager 重启后可从文件恢复已注册节点信息，Agent 下次心跳时更新状态。
 // 持久化采用 dirty flag + 后台定时刷盘策略，避免每次心跳都触发全量写盘。
 type NodeRegistry struct {
-	mu     sync.RWMutex
-	nodes  map[string]*Node
-	path   string
-	logger logutil.Logger
-	dirty  bool
-	stopCh chan struct{}
-	doneCh chan struct{}
+	mu             sync.RWMutex
+	nodes          map[string]*Node
+	hostTokens     map[string]string
+	path           string
+	hostTokensPath string
+	logger         logutil.Logger
+	dirty          bool
+	stopCh         chan struct{}
+	doneCh         chan struct{}
 }
 
 const flushInterval = 30 * time.Second
 
 // NewNodeRegistry 创建节点注册表并从 JSON 文件加载已有数据。
+// nodesFile 指定节点数据文件路径，hostTokens 文件路径自动推导为同目录下的 host_tokens.json。
 // 文件不存在时为首次启动，以空注册表开始；解析失败时记录错误日志但不阻塞启动。
 // 启动后台 flush loop 定期检查 dirty 标记并刷盘。
-func NewNodeRegistry(filePath string, logger logutil.Logger) *NodeRegistry {
+func NewNodeRegistry(nodesFile string, logger logutil.Logger) *NodeRegistry {
 	r := &NodeRegistry{
-		nodes:  make(map[string]*Node),
-		path:   filePath,
-		logger: logger,
-		stopCh: make(chan struct{}),
-		doneCh: make(chan struct{}),
+		nodes:          make(map[string]*Node),
+		hostTokens:     make(map[string]string),
+		path:           nodesFile,
+		hostTokensPath: filepath.Join(filepath.Dir(nodesFile), "host_tokens.json"),
+		logger:         logger,
+		stopCh:         make(chan struct{}),
+		doneCh:         make(chan struct{}),
 	}
 	r.load()
 	go r.flushLoop()
 	return r
 }
 
-// load 从 JSON 文件加载节点数据。文件不存在视为首次启动，不报错。
+// load 从 JSON 文件加载节点数据和 Host 令牌。
+// 任一文件不存在视为首次启动，不报错；解析失败时记录错误日志但不阻塞启动。
 func (r *NodeRegistry) load() {
+	// 加载节点数据
 	data, err := os.ReadFile(r.path)
 	if err != nil {
 		r.logger.Infof("[node-registry] file not found, starting fresh: %s", r.path)
+	} else {
+		var nodes map[string]*Node
+		if err := json.Unmarshal(data, &nodes); err != nil {
+			r.logger.Errorf("[node-registry] parse file %s failed: %v", r.path, err)
+		} else {
+			r.mu.Lock()
+			r.nodes = nodes
+			r.mu.Unlock()
+		}
+	}
+
+	// 加载 Host 令牌（CreateHost 时预存，用于后续注册/心跳验证）
+	tokensData, err := os.ReadFile(r.hostTokensPath)
+	if err != nil {
+		r.logger.Infof("[node-registry] host tokens file not found, starting fresh: %s", r.hostTokensPath)
 		return
 	}
-	var nodes map[string]*Node
-	if err := json.Unmarshal(data, &nodes); err != nil {
-		r.logger.Errorf("[node-registry] parse file %s failed: %v", r.path, err)
+	var tokens map[string]string
+	if err := json.Unmarshal(tokensData, &tokens); err != nil {
+		r.logger.Errorf("[node-registry] parse host tokens file %s failed: %v", r.hostTokensPath, err)
 		return
 	}
 	r.mu.Lock()
-	r.nodes = nodes
+	r.hostTokens = tokens
 	r.mu.Unlock()
 }
 
-// save 持久化当前节点数据到 JSON 文件（原子写入，防止写入中断导致文件损坏）。
+// save 持久化当前节点数据和 Host 令牌到各自的 JSON 文件（原子写入，防止写入中断导致文件损坏）。
 // 持久化失败时仅记录错误日志，不阻塞业务流程——内存中的数据仍然有效。
 func (r *NodeRegistry) save() {
 	r.mu.RLock()
 	data, err := json.MarshalIndent(r.nodes, "", "  ")
+	tokensData, tokensErr := json.MarshalIndent(r.hostTokens, "", "  ")
 	r.mu.RUnlock()
+
 	if err != nil {
 		r.logger.Errorf("[node-registry] marshal nodes failed: %v", err)
-		return
+	} else if writeErr := atomicWriteFile(r.path, data, 0644); writeErr != nil {
+		r.logger.Errorf("[node-registry] write file %s failed: %v", r.path, writeErr)
 	}
-	if err := atomicWriteFile(r.path, data, 0644); err != nil {
-		r.logger.Errorf("[node-registry] write file %s failed: %v", r.path, err)
+
+	if tokensErr != nil {
+		r.logger.Errorf("[node-registry] marshal host tokens failed: %v", tokensErr)
+	} else if writeErr := atomicWriteFile(r.hostTokensPath, tokensData, 0644); writeErr != nil {
+		r.logger.Errorf("[node-registry] write host tokens file %s failed: %v", r.hostTokensPath, writeErr)
 	}
+}
+
+// StoreHostToken 存储 CreateHost 时为 Host 生成的认证令牌，用于后续 Agent 注册时验证身份。
+// 即使 Agent 尚未注册，也先保存令牌，形成"预存令牌 → Agent 携令注册 → 验证通过"的握手流程。
+func (r *NodeRegistry) StoreHostToken(name, token string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.hostTokens[name] = token
+	r.dirty = true
+}
+
+// ValidateHostToken 检查提供的令牌是否与该 Host 预存的令牌匹配。
+// 返回值 exists 表示该 Host 是否有预存令牌（即是否由 Manager 创建），
+// matched 表示提供的令牌是否匹配。无预存令牌的 Host 走全局 auth 校验。
+func (r *NodeRegistry) ValidateHostToken(name, token string) (exists bool, matched bool) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	expected, ok := r.hostTokens[name]
+	if !ok {
+		return false, false
+	}
+	return true, expected == token
+}
+
+// RemoveHostToken 删除该 Host 的预存令牌（在 DeleteHost 时调用，避免令牌残留）
+func (r *NodeRegistry) RemoveHostToken(name string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	delete(r.hostTokens, name)
+	r.dirty = true
 }
 
 // Register 注册新节点，携带 capabilities、status、metadata。

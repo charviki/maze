@@ -88,12 +88,19 @@ func (h *HostHandler) CreateHost(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
+	// 当前阶段使用 hostname 作为 Host 专属令牌，后续可升级为安全随机令牌
+	hostToken := req.Name
+
+	// 预存 Host 令牌到注册表，供注册/心跳时校验
+	h.registry.StoreHostToken(req.Name, hostToken)
+
 	// 构建运行时无关的部署规格
 	spec := &protocol.HostDeploySpec{
-		Name:      req.Name,
-		Tools:     req.Tools,
-		Resources: req.Resources,
-		AuthToken: h.cfg.Server.AuthToken,
+		Name:            req.Name,
+		Tools:           req.Tools,
+		Resources:       req.Resources,
+		AuthToken:       hostToken,
+		ServerAuthToken: h.cfg.Server.AuthToken,
 	}
 
 	// 交给运行时实现部署（构建镜像 + 启动容器）
@@ -147,6 +154,9 @@ func (h *HostHandler) DeleteHost(ctx context.Context, c *app.RequestContext) {
 
 	// 从节点注册表删除
 	h.registry.Delete(name)
+
+	// 清除 Host 预存令牌，避免令牌残留
+	h.registry.RemoveHostToken(name)
 
 	h.auditLog.Log(protocol.AuditLogEntry{
 		Operator:       "frontend",

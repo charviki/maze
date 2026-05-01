@@ -39,8 +39,10 @@ type HostDeploySpec struct {
 	Tools []string `json:"tools"`
 	// Resources 资源限制（可选）
 	Resources ResourceLimits `json:"resources,omitempty"`
-	// AuthToken Manager 的 auth token，用于 Agent 注册和心跳
+	// AuthToken Host 专属令牌，用于 Agent 向 Manager 注册/心跳
 	AuthToken string `json:"-"`
+	// ServerAuthToken 全局 auth token，用于 Agent 自身 API 鉴权
+	ServerAuthToken string `json:"-"`
 }
 
 // CreateHostRequest 创建 Host 请求

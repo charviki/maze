@@ -41,7 +41,7 @@ func Register(h *server.Hertz, cfg *config.Config, logger logutil.Logger) *Clean
 	dir := dataDir(cfg)
 
 	registry := model.NewNodeRegistry(filepath.Join(dir, "nodes.json"), logger)
-	nodeHandler := handler.NewNodeHandler(registry)
+	nodeHandler := handler.NewNodeHandler(registry, cfg.Server.AuthToken)
 
 	auditLog := handler.NewAuditLogger(filepath.Join(dir, "audit.log"), logger)
 	sessionProxyHandler := handler.NewSessionProxyHandler(registry, auditLog, logger, cfg.Server.AuthToken, cfg.AllowedOrigins(), cfg.Server.AllowPrivateNetworks)
@@ -49,9 +49,9 @@ func Register(h *server.Hertz, cfg *config.Config, logger logutil.Logger) *Clean
 	// 根据运行时类型选择对应的 HostRuntime 实现
 	var hostRuntime runtime.HostRuntime
 	if cfg.Runtime.Type == "kubernetes" {
-		hostRuntime = runtime.NewKubernetesRuntime(cfg.Kubernetes, cfg.Workspace, cfg.Server.AuthToken, logger)
+		hostRuntime = runtime.NewKubernetesRuntime(cfg.Kubernetes, cfg.Workspace, logger)
 	} else {
-		hostRuntime = runtime.NewDockerRuntime(cfg.Docker, cfg.Workspace, cfg.Server.AuthToken)
+		hostRuntime = runtime.NewDockerRuntime(cfg.Docker, cfg.Workspace)
 	}
 	hostHandler := handler.NewHostHandler(registry, hostRuntime, auditLog, cfg, logger)
 
@@ -68,9 +68,9 @@ func Register(h *server.Hertz, cfg *config.Config, logger logutil.Logger) *Clean
 
 	api := h.Group("/api/v1")
 
-	// 节点注册和心跳端点：Agent 启动时使用，同样需要 Auth 保护防止恶意注册
-	api.POST("/nodes/register", cradlemw.Auth(cfg.Server.AuthToken), nodeHandler.Register)
-	api.POST("/nodes/heartbeat", cradlemw.Auth(cfg.Server.AuthToken), nodeHandler.Heartbeat)
+	// 节点注册和心跳端点：认证在 handler 内部完成（支持 Host 令牌 + 全局令牌分层校验）
+	api.POST("/nodes/register", nodeHandler.Register)
+	api.POST("/nodes/heartbeat", nodeHandler.Heartbeat)
 
 	// 其余 API 需要 Auth 保护（当 config.auth_token 非空时生效）
 	protected := api.Group("", cradlemw.Auth(cfg.Server.AuthToken))

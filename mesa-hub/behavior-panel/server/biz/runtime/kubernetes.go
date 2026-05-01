@@ -27,14 +27,13 @@ import (
 type KubernetesRuntime struct {
 	kube      config.KubernetesConfig
 	workspace config.WorkspaceConfig
-	authToken string
 	logger    logutil.Logger
 	clientset kubernetes.Interface
 }
 
 // NewKubernetesRuntime 创建 KubernetesRuntime
 // K8s 客户端在构造时初始化，失败时 clientset 为 nil，后续方法将返回错误
-func NewKubernetesRuntime(kube config.KubernetesConfig, workspace config.WorkspaceConfig, authToken string, logger logutil.Logger) *KubernetesRuntime {
+func NewKubernetesRuntime(kube config.KubernetesConfig, workspace config.WorkspaceConfig, logger logutil.Logger) *KubernetesRuntime {
 	var clientset kubernetes.Interface
 
 	var restConfig *rest.Config
@@ -48,7 +47,7 @@ func NewKubernetesRuntime(kube config.KubernetesConfig, workspace config.Workspa
 	}
 	if err != nil {
 		logger.Errorf("kubernetes client init failed: %v", err)
-		return &KubernetesRuntime{kube: kube, workspace: workspace, authToken: authToken, logger: logger}
+		return &KubernetesRuntime{kube: kube, workspace: workspace, logger: logger}
 	}
 
 	clientset, err = kubernetes.NewForConfig(restConfig)
@@ -59,7 +58,6 @@ func NewKubernetesRuntime(kube config.KubernetesConfig, workspace config.Workspa
 	return &KubernetesRuntime{
 		kube:      kube,
 		workspace: workspace,
-		authToken: authToken,
 		logger:    logger,
 		clientset: clientset,
 	}
@@ -210,8 +208,10 @@ func (k *KubernetesRuntime) createDeployment(ctx context.Context, ns, appName st
 		{Name: "AGENT_EXTERNAL_ADDR", Value: externalAddr},
 		{Name: "AGENT_ADVERTISED_ADDR", Value: externalAddr},
 		{Name: "AGENT_CONTROLLER_ADDR", Value: managerAddr},
-		{Name: "AGENT_SERVER_AUTH_TOKEN", Value: k.authToken},
-		{Name: "AGENT_CONTROLLER_AUTH_TOKEN", Value: k.authToken},
+		// Agent 自身 API 鉴权使用全局 auth token
+		{Name: "AGENT_SERVER_AUTH_TOKEN", Value: spec.ServerAuthToken},
+		// Host 注册/心跳使用 Host 专属令牌
+		{Name: "AGENT_CONTROLLER_AUTH_TOKEN", Value: spec.AuthToken},
 	}
 
 	container := corev1.Container{

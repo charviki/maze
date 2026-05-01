@@ -18,12 +18,11 @@ import (
 type DockerRuntime struct {
 	docker    config.DockerConfig
 	workspace config.WorkspaceConfig
-	authToken string
 }
 
 // NewDockerRuntime 创建 DockerRuntime
-func NewDockerRuntime(docker config.DockerConfig, workspace config.WorkspaceConfig, authToken string) *DockerRuntime {
-	return &DockerRuntime{docker: docker, workspace: workspace, authToken: authToken}
+func NewDockerRuntime(docker config.DockerConfig, workspace config.WorkspaceConfig) *DockerRuntime {
+	return &DockerRuntime{docker: docker, workspace: workspace}
 }
 
 func (d *DockerRuntime) dockerCmd(args ...string) *exec.Cmd {
@@ -69,13 +68,15 @@ func (d *DockerRuntime) DeployHost(ctx context.Context, spec *protocol.HostDeplo
 	}
 
 	// 环境变量：Agent 通过这些变量向 Manager 注册心跳
+	// AGENT_CONTROLLER_AUTH_TOKEN: Host 专属令牌，用于向 Manager 注册/心跳
+	// AGENT_SERVER_AUTH_TOKEN: 全局 auth token，用于 Agent 自身 API 鉴权
 	runArgs = append(runArgs,
 		"-e", fmt.Sprintf("AGENT_NAME=%s", spec.Name),
 		"-e", fmt.Sprintf("AGENT_EXTERNAL_ADDR=http://%s:8080", spec.Name),
 		"-e", fmt.Sprintf("AGENT_ADVERTISED_ADDR=http://%s:8080", spec.Name),
 		"-e", fmt.Sprintf("AGENT_CONTROLLER_ADDR=%s", d.docker.ManagerAddr),
-		"-e", fmt.Sprintf("AGENT_SERVER_AUTH_TOKEN=%s", d.authToken),
-		"-e", fmt.Sprintf("AGENT_CONTROLLER_AUTH_TOKEN=%s", d.authToken),
+		"-e", fmt.Sprintf("AGENT_SERVER_AUTH_TOKEN=%s", spec.ServerAuthToken),
+		"-e", fmt.Sprintf("AGENT_CONTROLLER_AUTH_TOKEN=%s", spec.AuthToken),
 	)
 
 	// 卷挂载（宿主机路径）
