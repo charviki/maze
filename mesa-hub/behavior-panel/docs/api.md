@@ -223,10 +223,10 @@ WebSocket 终端代理。Manager 将前端 WebSocket 连接升级后，建立到
 
 ## Host 管理
 
-以下端点用于动态创建和销毁 Host 容器。Manager 通过 Docker socket 构建镜像、启动容器、分配资源。
+以下端点用于管理 Host 的完整生命周期。创建为异步流程（202 Accepted），后台执行构建和部署。HostSpec 持久化到 `host_specs.json`，Reconciler 负责启动恢复和定期健康巡检。
 
 ### POST /api/v1/hosts
-创建 Host：验证 → 生成 Dockerfile → 构建镜像 → 启动容器。**认证**：需要 Bearer Token（开发模式除外）
+异步创建 Host：验证 → 持久化 HostSpec → 后台构建部署。**认证**：需要 Bearer Token（开发模式除外）
 
 **请求体**（protocol.CreateHostRequest）：
 ```json
@@ -234,8 +234,8 @@ WebSocket 终端代理。Manager 将前端 WebSocket 连接升级后，建立到
   "name": "my-host",
   "tools": ["claude", "go"],
   "resources": {
-    "cpu_limit": "2",
-    "memory_limit": "4g"
+    "cpu_limit": "0.5",
+    "memory_limit": "256m"
   }
 }
 ```
@@ -247,26 +247,57 @@ WebSocket 终端代理。Manager 将前端 WebSocket 连接升级后，建立到
 | display_name | string | 否 | 显示名称 |
 | resources | object | 否 | 资源限制（cpu_limit: CPU 核数, memory_limit: 内存上限如 "4g"） |
 
-**响应**（protocol.CreateHostResponse）：
+**响应**（202 Accepted，异步返回 HostSpec）：
 ```json
 {
   "status": "ok",
   "data": {
     "name": "my-host",
     "tools": ["claude", "go"],
-    "image_tag": "maze-host-my-host:latest",
-    "container_id": "abc123...",
-    "status": "running"
+    "status": "pending",
+    "auth_token": "my-host",
+    "created_at": "2026-05-01T00:00:00Z",
+    "updated_at": "2026-05-01T00:00:00Z",
+    "retry_count": 0
   }
 }
 ```
 
 | 状态码 | 说明 |
 |--------|------|
-| 200 | 创建成功 |
+| 202 | 已接受，后台开始构建部署 |
 | 400 | 参数错误（缺 name/tools、未知工具 ID） |
-| 409 | 同名 Host 已存在 |
-| 500 | 构建或部署失败（响应 message 包含 docker build 日志） |
+| 409 | 同名 Host 已存在（HostSpec 或 NodeRegistry 中） |
+
+后台流程：生成 Dockerfile → 检查工具组合镜像缓存 → docker build（BuildKit） → 启动容器/创建 Deployment → 等待 Agent 注册。前端可通过 `GET /api/v1/hosts/:name` 轮询状态变化。
+
+### GET /api/v1/hosts
+列出所有 Host（HostSpec 与 NodeRegistry 合并视图）。**认证**：需要 Bearer Token（开发模式除外）
+
+**响应**：返回 Host 数组（protocol.HostInfo），每个 Host 包含：
+- HostSpec 字段：name, tools, resources, status, error_msg, retry_count, created_at, updated_at
+- NodeRegistry 字段（仅 online/offline 状态）：address, session_count, last_heartbeat
+
+### GET /api/v1/hosts/:name
+获取指定 Host 详情（合并视图）。**认证**：需要 Bearer Token（开发模式除外）
+
+**路径参数**：`name` - Host 名称。
+
+**响应**：返回单个 Host 对象。Host 不存在返回 404。
+
+### GET /api/v1/hosts/:name/logs/build
+获取 Host 构建日志。**认证**：需要 Bearer Token（开发模式除外）
+
+**路径参数**：`name` - Host 名称。
+
+**响应**：返回构建日志文本内容（string）。日志文件位于 `{base_dir}/host_logs/{name}.log`。
+
+### GET /api/v1/hosts/:name/logs/runtime
+获取 Host 运行时日志（容器 stdout）。**认证**：需要 Bearer Token（开发模式除外）
+
+**路径参数**：`name` - Host 名称。
+
+**响应**：返回容器 stdout 日志（string）。Docker 模式通过 `docker logs` 获取，K8s 模式通过 Pod logs 获取。
 
 ### GET /api/v1/host/tools
 查询可用工具列表。**认证**：需要 Bearer Token（开发模式除外）
@@ -274,13 +305,13 @@ WebSocket 终端代理。Manager 将前端 WebSocket 连接升级后，建立到
 **响应**：返回 ToolConfig 数组，每个工具包含 id、image、description、category 等字段。
 
 ### DELETE /api/v1/hosts/:name
-销毁 Host：停止容器 → 移除容器 → 删除镜像 → 清理持久化目录 → 删除节点记录。**认证**：需要 Bearer Token（开发模式除外）
+销毁 Host：停止容器 → 移除容器 → 清理持久化目录 → 删除 HostSpec → 删除令牌 → 删除节点记录。**认证**：需要 Bearer Token（开发模式除外）
 
 **路径参数**：`name` - Host 名称。
 
 **行为**：
-- 容器停止/移除失败时静默忽略（容器可能已不存在）
-- 镜像删除和目录清理失败时静默忽略
-- 节点记录始终从注册表删除
+- 清理顺序：RemoveHost（容器/Pod）→ 清理 host_logs → 删除 HostSpec → 移除令牌 → 移除节点
+- 每步失败时静默忽略（资源可能已不存在）
+- HostSpec 和节点记录始终删除
 
 **响应**：成功返回 `{"status": "ok", "data": null}`。

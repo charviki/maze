@@ -1,6 +1,6 @@
 # AGENTS.md
 
-The Maze — 基于 Westworld 概念构建的 AI Agent 管理平台。Manager (behavior-panel) 统一管控多个 Agent 节点 (black-ridge)，每个节点通过 tmux 运行 AI CLI 工具（Claude Code、Codex 等）。前端通过 Manager 代理所有操作，确保可观测性。
+The Maze — 基于 Westworld 概念构建的 AI Agent 管理平台。Manager (behavior-panel) 作为代理网关和 Host 编排引擎，统一管控多个 Agent 节点 (black-ridge)，每个节点通过 tmux 运行 AI CLI 工具（Claude Code、Codex 等）。前端通过 Manager 代理所有操作，确保可观测性。Host 的完整生命周期（创建→部署→监控→恢复→销毁）由 Manager 的声明式 HostSpec 持久化 + Reconciler 自动化管理。
 
 ## 核心原则
 
@@ -11,13 +11,14 @@ The Maze — 基于 Westworld 概念构建的 AI Agent 管理平台。Manager (b
 - **先读后改 (Read Before Modify)** — 修改模块代码前，先阅读该模块的 AGENTS.md 了解上下文
 - **验证后交付 (Verify Before Deliver)** — 修改代码后必须验证编译通过、测试通过，不要仅靠推理，自验证通过后再交付
 - **双环境验证 (Dual Environment Verification)** — 涉及运行时、部署、网络、配置的变更，必须在 Docker Compose 和 Kubernetes 两种环境下都验证通过
-- **构建规范 (Build Standards)** — 新增或修改 Dockerfile 必须遵循 [Docker 构建规范](fabrication/docs/docker-build-guide.md)（拆分 COPY + Cache Mount + 供应商镜像）
+- **构建规范 (Build Standards)** — 新增或修改 Dockerfile 必须遵循 [Docker 构建规范](fabrication/docs/docker-build-guide.md)（拆分 COPY + Cache Mount + 供应商镜像多阶段构建）
+- **声明式编排 (Declarative Orchestration)** — Host 规格持久化为 HostSpec，Reconciler 确保实际状态趋近期望状态（启动恢复 + 健康巡检 + 自动重试）
 
 ## 模块索引
 
 | 模块 | 目录 | 职责 | 详细文档 |
 |------|------|------|----------|
-| Behavior Panel | mesa-hub/behavior-panel/ | Agent 管理面板（Go + React） | [AGENTS.md](mesa-hub/behavior-panel/AGENTS.md) + [docs/](mesa-hub/behavior-panel/docs/) |
+| Behavior Panel | mesa-hub/behavior-panel/ | Agent 管理面板 + Host 编排引擎（Go + React） | [AGENTS.md](mesa-hub/behavior-panel/AGENTS.md) + [docs/](mesa-hub/behavior-panel/docs/) |
 | Cradle | fabrication/cradle/ | Go 共享库（HTTP/Pipeline/Config/Auth） | [AGENTS.md](fabrication/cradle/AGENTS.md) + [docs/](fabrication/cradle/docs/) |
 | Black Ridge | sweetwater/black-ridge/ | Agent 运行时节点（tmux + Web UI） | [AGENTS.md](sweetwater/black-ridge/AGENTS.md) + [docs/](sweetwater/black-ridge/docs/) |
 | Fabrication | fabrication/ | 制造部（UI 组件库 + Go 共享库 + Docker 构建 + K8s 部署基础设施） | [AGENTS.md](fabrication/AGENTS.md) + [docs/](fabrication/docs/) |

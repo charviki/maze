@@ -2,7 +2,7 @@
 
 ## 概述
 
-Behavior Panel 是 Mesa-Hub 的控制中心模块，由 **Agent Manager**（Go 后端，基于 Hertz 框架）和 **Web 前端**（React + @maze/fabrication 组件库）组成。Manager 作为代理网关，统一管理所有 Agent 节点，代理前端到 Agent 的所有 HTTP 和 WebSocket 请求。
+Behavior Panel 是 Mesa-Hub 的控制中心模块，由 **Agent Manager**（Go 后端，基于 Hertz 框架）和 **Web 前端**（React + @maze/fabrication 组件库）组成。Manager 作为代理网关和 Host 编排引擎，统一管理所有 Agent 节点，代理前端到 Agent 的所有 HTTP 和 WebSocket 请求，并通过声明式 HostSpec 持久化 + Reconciler 实现 Host 的全生命周期自动化管理。
 
 ## Manager 角色：代理网关
 
@@ -12,8 +12,9 @@ Manager 采用**代理网关模式**（API Gateway Pattern），核心职责：
 2. **请求代理** — 前端所有 API 请求（Session、Template、LocalConfig）经 Manager 代理到目标 Agent
 3. **WebSocket 终端代理** — 前端终端连接经 Manager 双向代理到 Agent
 4. **审计日志** — 记录所有代理操作，提供操作可追溯性
-5. **动态 Host 生命周期管理** — 通过 Docker socket 动态创建/销毁 Host 容器，选配工具链和资源限制
-6. **前端不直连 Agent** — 所有通信经过 Manager，保证可观测性
+5. **Host 编排引擎** — 异步创建 Host（202 Accepted），声明式 HostSpec 持久化，工具组合镜像缓存
+6. **灾难恢复** — Reconciler 启动恢复 + 60s 健康巡检 + failed 自动重试（最多 3 次），确保实际状态趋近期望状态
+7. **前端不直连 Agent** — 所有通信经过 Manager，保证可观测性
 
 ## 数据流
 
@@ -88,6 +89,87 @@ Node 结构定义在 [node.go](../server/biz/model/node.go)，包含：`Name`, `
 - **优雅关闭** — `WaitSave()` 停止 flush loop 并执行最终刷盘，确保最后 30 秒内的数据不丢失
 - **启动恢复** — Manager 重启后从 `nodes.json` 加载已有节点，Agent 下次心跳时更新状态
 - **并发安全** — 读写锁（`sync.RWMutex`）保护所有内存操作
+
+## HostSpec 持久化（HostSpecManager）
+
+### 数据结构
+
+HostSpec 结构定义在 [host_spec.go](../server/biz/model/host_spec.go)，包含：`Name`, `Tools`, `Resources`, `AuthToken`, `Status`(pending/deploying/online/offline/failed), `ErrorMsg`, `RetryCount`, `CreatedAt`, `UpdatedAt`。
+
+### 状态流转
+
+```
+pending → deploying → online（Agent 注册成功）
+                    → offline（Agent 心跳超时）
+                    → failed（构建/部署失败）
+failed → deploying（Reconciler 自动重试，最多 3 次）
+```
+
+### 持久化策略：dirty flush
+
+- **存储文件** — `host_specs.json`（JSON 格式），位于 workspace.base_dir 目录
+- **dirty 标记** — Create/UpdateStatus/Delete/IncrementRetry 操作设置 `dirty = true`
+- **后台 flush loop** — 每 30 秒检查 dirty 标记，有变更时执行原子写入
+- **优雅关闭** — `WaitSave()` 停止 flush loop 并执行最终刷盘
+- **启动恢复** — Manager 重启后从 `host_specs.json` 加载已有 HostSpec
+- **ListMerged** — 将 HostSpec 与 NodeRegistry 合并，返回带地址/心跳的完整视图
+
+### 与 NodeRegistry 的关系
+
+- NodeRegistry 记录已注册的 Agent 节点（运行时状态）
+- HostSpecManager 记录期望的 Host 规格（声明式意图）
+- ListMerged 合并两者：HostSpec.Status 为 online/offline 时从 NodeRegistry 获取地址和心跳
+
+## Reconciler（声明式恢复）
+
+Reconciler 在 [reconciler.go](../server/biz/reconciler/reconciler.go) 中实现，负责确保实际运行状态趋近期望状态。
+
+### 启动恢复（RecoverOnStartup）
+
+Manager 启动时执行一次：
+1. 遍历所有 HostSpec，预存 AuthToken 到 NodeRegistry
+2. 根据 HostSpec.Status 决定恢复策略：
+   - `pending`/`deploying` → 检查运行时是否存在，不存在则重新部署
+   - `online`/`offline` → 检查运行时是否存在，不存在则重新部署
+   - `failed` → 如果 RetryCount < 3，递增重试计数并重新部署
+
+### 健康巡检（StartHealthCheck）
+
+后台 goroutine 每 60 秒执行一次：
+- `deploying` — **保护窗口**（5 分钟内不干预，让 deployHostAsync 完成）；超过保护期仍未上线则重新部署
+- `online`/`offline` — 检查运行时健康，不健康则重新部署
+- `failed` — RetryCount < 3 时自动重试
+- `pending` — 超过 5 分钟视为后台任务丢失，标记为 failed
+
+### 重新部署（redeploy）
+
+1. 预存 Host AuthToken 到 NodeRegistry
+2. 清理旧容器/Pod（RemoveHost，忽略不存在的错误）
+3. 更新状态为 deploying
+4. 生成 Dockerfile（工具排序稳定化）
+5. 检查工具组合镜像缓存（相同工具组合共享镜像，跳过 docker build）
+6. 调用 DeployHost 执行构建和部署
+
+### K8s 环境保护
+
+- `IsHealthy` 只检查 Deployment 是否存在（不检查 Pod 状态）
+- K8s 的 `rollout restart` 不会触发 Manager 干预（Deployment 对象存在即视为健康）
+
+## 构建优化
+
+### 工具排序稳定化
+
+`GenerateHostDockerfile` 对工具列表排序后再生成，确保相同组合产生相同 Dockerfile，最大化 Docker 层缓存命中。
+
+### 工具组合镜像缓存
+
+`ToolsetImageTag` 为工具组合生成稳定标签（如 `maze-agent:claude-go`）。构建前先检查组合镜像是否存在：
+- 存在 → `docker tag` 复用，跳过构建（相同工具组合的后续 Host 创建从 77 秒降到 ~5 秒）
+- 不存在 → 执行 `docker build`，构建后打上组合标签
+
+### BuildKit
+
+`docker build` 启用 `DOCKER_BUILDKIT=1`，利用 BuildKit 并行 COPY 和层缓存加速构建。
 
 ## 审计日志（AuditLogger）
 

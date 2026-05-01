@@ -6,7 +6,7 @@
 
 - **skin（UI 组件库）** — 西部世界主题的 React 组件库，提供视觉特效组件、基础 UI 组件、Agent 业务组件及工具函数，所有面向使用者的界面都由这里"制造"出来。
 - **cradle（Go 共享库）** — Go 公共库，为 Manager 和 Agent 提供统一的日志、配置、HTTP 工具、中间件、通信协议、管线编排及数据持久化能力。
-- **molds（供应商镜像）** — Docker 构建模具，为所有模块提供预装工具链的供应商镜像，通过 `COPY --from` 按需组合到目标镜像。
+- **molds（供应商镜像）** — Docker 构建模具，使用多阶段构建（`FROM scratch`），只包含 `/opt/*` 工具目录，不含基础系统层。通过 `COPY --from` 按需组合到目标镜像。
 - **deps（原料清单）** — 声明式依赖配置，管理供应商镜像的预装工具列表。
 - **kubernetes（K8s 部署）** — Kubernetes 部署清单和 Makefile，提供一键部署、滚动更新等运维能力，支持 Docker Desktop 本地 K8s 环境。
 
