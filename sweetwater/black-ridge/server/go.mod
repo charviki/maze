@@ -1,6 +1,6 @@
 module github.com/charviki/sweetwater-black-ridge
 
-go 1.24
+go 1.26.0
 
 require (
 	github.com/charviki/maze-cradle v0.0.0

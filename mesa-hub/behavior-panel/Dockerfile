@@ -1,4 +1,4 @@
-FROM public.ecr.aws/docker/library/golang:1.24-bookworm AS backend-builder
+FROM public.ecr.aws/docker/library/golang:1.26-bookworm AS backend-builder
 
 ENV GOTOOLCHAIN=auto
 

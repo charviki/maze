@@ -1,4 +1,4 @@
-FROM public.ecr.aws/docker/library/golang:1.24-bookworm AS builder
+FROM public.ecr.aws/docker/library/golang:1.26-bookworm AS builder
 WORKDIR /go
 RUN cp -r /usr/local/go /opt/go
 

@@ -22,7 +22,7 @@ WORKDIR /src/sweetwater/black-ridge/web
 RUN pnpm run build
 
 # 阶段 2：构建 Go 后端
-FROM public.ecr.aws/docker/library/golang:1.24-bookworm AS backend-builder
+FROM public.ecr.aws/docker/library/golang:1.26-bookworm AS backend-builder
 
 WORKDIR /src
 
