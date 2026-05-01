@@ -1,13 +1,8 @@
-# Node.js + pnpm 供应商镜像
-# 安装 pnpm 和预装全局包到 /opt/node/
-FROM public.ecr.aws/docker/library/node:22-bookworm-slim
-
+FROM public.ecr.aws/docker/library/node:22-bookworm-slim AS builder
 RUN npm install -g pnpm
 
-# 预装全局 npm 包
 COPY fabrication/deps/js.txt /tmp/js-deps.txt
 RUN xargs -a /tmp/js-deps.txt -I {} npm install -g --prefix /opt/node {} || true
 
-RUN rm -f /tmp/js-deps.txt
-
-ENV PATH="/opt/node/bin:${PATH}"
+FROM scratch
+COPY --from=builder /opt/node /opt/node

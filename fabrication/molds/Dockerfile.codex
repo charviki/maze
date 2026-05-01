@@ -1,7 +1,5 @@
-# Codex CLI 供应商镜像
-# 安装 OpenAI Codex CLI 到 /opt/codex/
-FROM public.ecr.aws/docker/library/node:22-bookworm-slim
-
+FROM public.ecr.aws/docker/library/node:22-bookworm-slim AS builder
 RUN npm install -g --prefix /opt/codex @openai/codex
 
-ENV PATH="/opt/codex/bin:${PATH}"
+FROM scratch
+COPY --from=builder /opt/codex /opt/codex
