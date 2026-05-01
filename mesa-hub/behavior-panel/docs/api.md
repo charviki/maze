@@ -14,7 +14,11 @@
 ## 节点管理
 
 ### POST /api/v1/nodes/register
-Agent 注册节点。**认证**：需要 Bearer Token
+Agent 注册节点。**认证**：分层令牌校验（`validateHostToken()`）
+
+- 已知 Host（由 Manager 创建，有预存令牌）：`Authorization: Bearer <host_token>`，令牌必须与预存令牌精确匹配
+- 未知 Host（非 Manager 创建）：`Authorization: Bearer <global_auth_token>`，使用全局 auth_token 校验
+- 开发模式（全局 auth_token 为空）：放行所有请求
 
 **请求体**（protocol.RegisterRequest）：
 ```json
@@ -40,7 +44,7 @@ Agent 注册节点。**认证**：需要 Bearer Token
 **响应**：返回完整 Node 对象，`status` 为 "online"，`registered_at` 和 `last_heartbeat` 设为当前时间。
 
 ### POST /api/v1/nodes/heartbeat
-Agent 上报心跳和状态快照。**认证**：需要 Bearer Token
+Agent 上报心跳和状态快照。**认证**：分层令牌校验（同注册端点）
 
 **请求体**（protocol.HeartbeatRequest）：
 ```json

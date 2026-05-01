@@ -17,17 +17,28 @@ Manager 采用**代理网关模式**（API Gateway Pattern），核心职责：
 
 ## 数据流
 
-### 节点注册流程
+### 节点注册流程（含令牌校验）
+
+Manager 为每个动态创建的 Host 预存专属令牌（`hostTokens` map），Agent 注册时校验令牌身份：
 
 ```
-Agent 启动 → POST /api/v1/nodes/register (name, address, capabilities, status, metadata)
+CreateHost() → StoreHostToken(name, hostToken) → 注入容器 AGENT_CONTROLLER_AUTH_TOKEN
+                                                              ↓
+Agent 启动 → POST /api/v1/nodes/register (Authorization: Bearer <hostToken>)
+            → validateHostToken() 校验令牌：
+                1. 开发模式（全局 auth_token 为空）→ 放行
+                2. 已知 Host（hostTokens 中有预存令牌）→ 精确匹配
+                3. 未知 Host → 回退到全局 auth_token 校验
             → NodeRegistry.Register() → 标记 dirty → 返回 Node 信息
 ```
+
+令牌校验逻辑定义在 [node.go (handler)](../server/biz/handler/node.go) 的 `validateHostToken()` 方法中。
 
 ### 心跳机制
 
 ```
-Agent 定时 → POST /api/v1/nodes/heartbeat (name, status 快照含 CPU/内存/Session 详情)
+Agent 定时 → POST /api/v1/nodes/heartbeat (Authorization: Bearer <hostToken>, name, status 快照)
+            → validateHostToken() 校验令牌身份
             → NodeRegistry.Heartbeat() → 更新 LastHeartbeat + AgentStatus → 标记 dirty
             → 超过 30 秒无心跳 → ListNodes/GetNode 时标记为 offline
 ```
@@ -66,12 +77,13 @@ WebSocket Origin 校验使用配置化的 `allowedOrigins` 列表，为空时允
 
 ### 数据结构
 
-Node 结构定义在 [node.go](../server/biz/model/node.go)，包含：`Name`, `Address`, `ExternalAddr`, `Status`(online/offline), `RegisteredAt`, `LastHeartbeat`, `Capabilities`, `AgentStatus`, `Metadata`。
+Node 结构定义在 [node.go](../server/biz/model/node.go)，包含：`Name`, `Address`, `ExternalAddr`, `AuthToken`, `Status`(online/offline), `RegisteredAt`, `LastHeartbeat`, `Capabilities`, `AgentStatus`, `Metadata`。
 
 ### 持久化策略：dirty flush
 
-- **存储文件** — `nodes.json`（JSON 格式，位于 workspace.base_dir 目录）
-- **dirty 标记** — Register/Heartbeat/Delete 操作设置 `dirty = true`
+- **存储文件** — `nodes.json`（节点数据）+ `host_tokens.json`（Host 令牌映射），均为 JSON 格式，位于 workspace.base_dir 目录
+- **host_tokens.json** — 存储每个 Host 的专属认证令牌（name → token 映射）。令牌在 `CreateHost` 时预存，Agent 注册时用于身份校验。独立的文件存储是因为令牌需要在 Agent 注册前就存在，而 Node 在注册时才创建
+- **dirty 标记** — Register/Heartbeat/Delete/StoreHostToken/RemoveHostToken 操作设置 `dirty = true`
 - **后台 flush loop** — 每 30 秒检查 dirty 标记，有变更时执行原子写入（先写临时文件再 rename，通过 `configutil.AtomicWriteFile` 实现）
 - **优雅关闭** — `WaitSave()` 停止 flush loop 并执行最终刷盘，确保最后 30 秒内的数据不丢失
 - **启动恢复** — Manager 重启后从 `nodes.json` 加载已有节点，Agent 下次心跳时更新状态
@@ -120,10 +132,8 @@ agent-manager (:8080)
   ├── /api/v1/nodes/:name/*     → 代理到 Agent HTTP API
   └── /api/v1/nodes/:name/sessions/:id/ws → WebSocket 双向代理
 
-Agent 实例 (xN)
-  ├── agent-claude-1 (:8081)
-  ├── agent-claude-2 (:8082)
-  └── agent-codex-1  (:8083)
+Agent 实例（动态创建）
+  └── 通过 Manager UI 创建，由 Docker/K8s 运行时部署
 ```
 
 ### Docker Compose 编排（来自 docker-compose.yml）
@@ -132,7 +142,7 @@ Agent 实例 (xN)
   - 挂载 `/var/run/docker.sock` 以动态创建/销毁 Host 容器
   - 挂载 `~/.maze/docker/agents:/data` 以管理 Host 持久化目录
   - 安装 `docker-ce-cli` 用于执行 docker build/run/stop/rm
-- **agent-1/2/3** — Agent 实例容器，各自独立的持久卷（`~/.maze/docker/agents/agent-*`）
+- **Agent 实例** — 全部通过 Manager UI 动态创建，不再在 docker-compose.yml 中静态定义
 
 ### Nginx 配置要点（来自 nginx.conf）
 - WebSocket 支持：`proxy_http_version 1.1` + `Upgrade/Connection` 头处理
@@ -169,9 +179,13 @@ Agent 实例 (xN)
 ## 安全设计
 
 ### Auth Token 认证
-- 使用 `cradlemw.Auth()` 中间件，验证 `Authorization: Bearer <token>` 头
-- 注册和心跳端点单独添加 Auth 保护，防止恶意注册
-- 其余 API 通过 `protected` 路由组统一保护
+- **分层令牌校验** — 注册和心跳端点使用 `validateHostToken()` 进行分层校验：
+  1. 开发模式（全局 `auth_token` 为空）→ 放行所有请求
+  2. 已知 Host（`hostTokens` 中有预存令牌）→ 精确匹配 Host 专属令牌
+  3. 未知 Host（非 Manager 创建）→ 回退到全局 `auth_token` 校验
+- Host 专属令牌在 `CreateHost` 时生成（当前阶段使用 hostname），通过 `AGENT_CONTROLLER_AUTH_TOKEN` 注入容器
+- Agent 自身 API 鉴权使用全局 `auth_token`（`AGENT_SERVER_AUTH_TOKEN`），与注册令牌独立
+- 其余 API 通过 `protected` 路由组统一保护（`cradlemw.Auth()` 中间件）
 - Auth Token 为空时中间件 pass-through（开发模式）
 - Manager 到 Agent 代理时透传 Auth Token
 

@@ -38,7 +38,7 @@
 | web/src/api/agent.ts | 通过 Manager 代理的 Agent API 客户端 | [api.md](docs/api.md) |
 | web/src/api/controller.ts | Manager 节点管理 API 客户端 | [api.md#节点管理](docs/api.md) |
 | nginx.conf | Nginx 反向代理配置（API 代理 + WebSocket 支持） | [architecture.md#部署拓扑](docs/architecture.md) |
-| docker-compose.yml | 完整部署编排：web + agent-manager + 多 Agent 实例 | [architecture.md#部署拓扑](docs/architecture.md) |
+| docker-compose.yml | 完整部署编排：web + agent-manager（Agent 通过 Manager UI 动态创建） | [architecture.md#部署拓扑](docs/architecture.md) |
 
 ## 详细文档
 | 文档 | 内容 |
