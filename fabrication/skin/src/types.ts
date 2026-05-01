@@ -239,3 +239,24 @@ export interface CreateHostResponse {
   status: string;
   build_log?: string;
 }
+
+// --- Host Lifecycle ---
+
+export type HostStatus = 'pending' | 'deploying' | 'online' | 'offline' | 'failed';
+
+export interface Host {
+  name: string;
+  display_name?: string;
+  tools: string[];
+  resources?: ResourceLimits;
+  auth_token: string;
+  created_at: string;
+  updated_at: string;
+  status: HostStatus;
+  error_msg?: string;
+  retry_count: number;
+  // merged from NodeRegistry
+  address?: string;
+  session_count: number;
+  last_heartbeat?: string;
+}

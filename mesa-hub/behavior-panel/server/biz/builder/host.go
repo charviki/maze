@@ -2,23 +2,38 @@ package builder
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 )
+
+// ToolsetImageTag 为工具组合生成稳定的镜像标签。
+// 排序后用 `-` 连接，确保相同组合产生相同标签。
+// 例如 ["claude", "go"] → "maze-agent:claude-go"
+func ToolsetImageTag(toolIDs []string) string {
+	sorted := make([]string, len(toolIDs))
+	copy(sorted, toolIDs)
+	sort.Strings(sorted)
+	return "maze-agent:" + strings.Join(sorted, "-")
+}
 
 // GenerateHostDockerfile 根据工具列表和 agent 基础镜像动态生成 Dockerfile。
 // baseImage 是已包含 agent 二进制、entrypoint.sh 和基础运行时的镜像。
 // 在此基础上叠加供应商工具链。
+// 工具列表排序后再生成，确保相同组合产生相同 Dockerfile，最大化 Docker 层缓存命中。
 func GenerateHostDockerfile(toolIDs []string, baseImage string) (string, error) {
+	sorted := make([]string, len(toolIDs))
+	copy(sorted, toolIDs)
+	sort.Strings(sorted)
+
 	var buf strings.Builder
 
 	// 使用 agent 基础镜像（含 agent 二进制、entrypoint、Claude Code 等）
 	buf.WriteString(fmt.Sprintf("FROM %s\n", baseImage))
 
-	// 收集所有 bin 路径和额外环境变量
 	var allBinPaths []string
 	var extraEnvs []string
 
-	for _, id := range toolIDs {
+	for _, id := range sorted {
 		cfg, ok := DefaultToolRegistry[id]
 		if !ok {
 			continue

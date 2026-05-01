@@ -48,8 +48,12 @@ func main() {
 		if err := h.Shutdown(ctx); err != nil {
 			logger.Errorf("shutdown error: %v", err)
 		}
+		// 停止 Reconciler 健康巡检
+		resources.Reconciler.Stop()
 		// 刷盘 NodeRegistry 脏数据，确保最后 30 秒内的注册/心跳不丢失
 		resources.Registry.WaitSave()
+		// 刷盘 HostSpecManager 脏数据
+		resources.SpecMgr.WaitSave()
 		// 关闭审计日志文件句柄，确保 last write 刷盘
 		resources.AuditLog.Close()
 	}()

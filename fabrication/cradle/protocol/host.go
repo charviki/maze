@@ -75,6 +75,37 @@ type CreateHostResponse struct {
 	WorkloadName string `json:"workload_name,omitempty"`
 }
 
+// HostStatus 枚举：Manager 管理的 Host 部署生命周期状态
+const (
+	HostStatusPending   = "pending"   // 规格已持久化，等待构建
+	HostStatusDeploying = "deploying" // 构建部署中或已部署等待上线
+	HostStatusOnline    = "online"    // Agent 已注册且心跳正常
+	HostStatusOffline   = "offline"   // Agent 已注册但心跳超时
+	HostStatusFailed    = "failed"    // 构建或部署失败
+)
+
+// HostSpec Host 完整创建规格，作为恢复和巡检的 source of truth
+type HostSpec struct {
+	Name        string         `json:"name"`
+	DisplayName string         `json:"display_name,omitempty"`
+	Tools       []string       `json:"tools"`
+	Resources   ResourceLimits `json:"resources,omitempty"`
+	AuthToken   string         `json:"auth_token"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+	Status      string         `json:"status"`
+	ErrorMsg    string         `json:"error_msg,omitempty"`
+	RetryCount  int            `json:"retry_count"`
+}
+
+// HostInfo API 响应的合并视图：HostSpec + NodeRegistry 运行时信息
+type HostInfo struct {
+	HostSpec
+	Address       string `json:"address,omitempty"`
+	SessionCount  int    `json:"session_count"`
+	LastHeartbeat string `json:"last_heartbeat,omitempty"`
+}
+
 // ContainerInfo 容器信息
 type ContainerInfo struct {
 	// ID 容器 ID

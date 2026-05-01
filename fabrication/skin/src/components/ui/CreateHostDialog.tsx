@@ -1,17 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './dialog';
 import { Button } from './button';
 import { Input } from './input';
-import type { Tool, CreateHostRequest, CreateHostResponse } from '../../types';
-import { Loader2, Cpu, MemoryStick, Wrench, CheckSquare, Square } from 'lucide-react';
+import type { Tool, CreateHostRequest, Host, HostStatus } from '../../types';
+import { Loader2, Cpu, MemoryStick, Wrench, CheckSquare, Square, X } from 'lucide-react';
 
 export interface CreateHostDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tools: Tool[];
-  onSubmit: (request: CreateHostRequest) => Promise<CreateHostResponse>;
-  // 轮询直到 Host 上线或超时，返回是否成功
+  onSubmit: (request: CreateHostRequest) => Promise<Host>;
   onWaitOnline: (hostName: string) => Promise<boolean>;
+  getHostBuildLog: (name: string) => Promise<string>;
 }
 
 const CLIP_PATH =
@@ -29,17 +29,21 @@ export function CreateHostDialog({
   tools,
   onSubmit,
   onWaitOnline,
+  getHostBuildLog,
 }: CreateHostDialogProps) {
   const [name, setName] = useState('');
   const [selectedTools, setSelectedTools] = useState<string[]>([]);
-  const [cpuLimit, setCpuLimit] = useState('2');
-  const [memoryLimit, setMemoryLimit] = useState('4g');
+  const [cpuLimit, setCpuLimit] = useState('0.5');
+  const [memoryLimit, setMemoryLimit] = useState('256m');
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [phase, setPhase] = useState<'form' | 'building' | 'waiting' | 'online' | 'timeout'>('form');
   const [createdHostName, setCreatedHostName] = useState('');
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [buildLog, setBuildLog] = useState('');
+  const [hostStatus, setHostStatus] = useState<HostStatus>('pending');
+  const logEndRef = useRef<HTMLDivElement>(null);
 
   const allSelected = tools.length > 0 && selectedTools.length === tools.length;
 
@@ -49,7 +53,6 @@ export function CreateHostDialog({
     );
   };
 
-  // 全选 / 取消全选切换
   const toggleAll = () => {
     setSelectedTools(allSelected ? [] : tools.map((t) => t.id));
   };
@@ -63,7 +66,29 @@ export function CreateHostDialog({
     setPhase('form');
     setCreatedHostName('');
     setElapsedSeconds(0);
+    setBuildLog('');
+    setHostStatus('pending');
   };
+
+  // 轮询构建日志
+  useEffect(() => {
+    if (!createdHostName || phase === 'form' || phase === 'online' || phase === 'timeout') return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await getHostBuildLog(createdHostName);
+        if (res) setBuildLog(res);
+      } catch {
+        // 日志可能还没准备好
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [createdHostName, phase, getHostBuildLog]);
+
+  // 自动滚动日志到底部
+  useEffect(() => {
+    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [buildLog]);
 
   const handleSubmit = async () => {
     if (!name || selectedTools.length === 0) return;
@@ -78,24 +103,21 @@ export function CreateHostDialog({
           memory_limit: memoryLimit || undefined,
         },
       });
-      // 创建成功，进入等待上线状态
       setCreatedHostName(response.name);
+      setHostStatus(response.status);
       setPhase('waiting');
       setIsCreating(false);
 
-      // 启动计时器
       const startTime = Date.now();
       const timer = setInterval(() => {
         setElapsedSeconds(Math.floor((Date.now() - startTime) / 1000));
       }, 1000);
 
-      // 轮询等待 Host 上线
       try {
         const online = await onWaitOnline(response.name);
         clearInterval(timer);
         if (online) {
           setPhase('online');
-          // 1.5 秒后自动关闭
           setTimeout(() => {
             resetForm();
             onOpenChange(false);
@@ -116,6 +138,16 @@ export function CreateHostDialog({
   };
 
   const canSubmit = name.trim() !== '' && selectedTools.length > 0 && !isCreating && phase === 'form';
+
+  const statusLabel = (): string => {
+    switch (hostStatus) {
+      case 'pending': return 'FABRICATION QUEUED';
+      case 'deploying': return 'FABRICATION IN PROGRESS';
+      case 'online': return 'CONSCIOUSNESS ONLINE';
+      case 'offline': return 'CONSCIOUSNESS DRIFT';
+      case 'failed': return 'FABRICATION FAILED';
+    }
+  };
 
   return (
     <Dialog
@@ -139,7 +171,6 @@ export function CreateHostDialog({
         {/* 表单阶段 */}
         {phase === 'form' && (
         <div className="space-y-5 max-h-[60vh] overflow-y-auto pr-1">
-          {/* Host 名称 */}
           <div className="space-y-2">
             <label className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">
               HOST DESIGNATION
@@ -152,7 +183,6 @@ export function CreateHostDialog({
             />
           </div>
 
-          {/* 工具选择 */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">
@@ -212,7 +242,6 @@ export function CreateHostDialog({
             </div>
           </div>
 
-          {/* 资源配置 */}
           <div className="space-y-2">
             <label className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">
               RESOURCE LIMITS
@@ -247,46 +276,47 @@ export function CreateHostDialog({
         </div>
         )}
 
-        {/* 等待上线阶段 — Westworld 觉醒动画 */}
+        {/* 等待上线阶段 — Westworld 觉醒动画 + 实时构建日志 */}
         {phase === 'waiting' && (
-        <div
-          className="relative overflow-hidden py-10 flex flex-col items-center justify-center min-h-[280px]"
-          style={{ clipPath: CLIP_PATH }}
-        >
-          {/* 深色背景 + 微弱脉冲 */}
-          <div className="absolute inset-0 bg-black/60 animate-pulse" />
-
-          {/* 扫描线动画：从顶部到底部循环扫过 */}
+        <div className="space-y-3">
           <div
-            className="absolute left-0 w-full h-px bg-primary/60"
-            style={{
-              animation: 'host-scanline 2.5s ease-in-out infinite',
-            }}
-          />
-
-          {/* Host 名称 */}
-          <div className="relative z-10 font-mono text-primary text-lg uppercase tracking-[0.3em] mb-4">
-            {createdHostName}
-          </div>
-
-          {/* 呼吸闪烁的文字 */}
-          <div
-            className="relative z-10 font-mono text-sm uppercase tracking-[0.4em] text-primary/80"
-            style={{
-              animation: 'host-breathe 2s ease-in-out infinite',
-            }}
+            className="relative overflow-hidden py-6 flex flex-col items-center justify-center"
+            style={{ clipPath: CLIP_PATH }}
           >
-            CONSCIOUSNESS INITIALIZING...
+            <div className="absolute inset-0 bg-black/40" />
+            <div
+              className="absolute left-0 w-full h-px bg-primary/60"
+              style={{ animation: 'host-scanline 2.5s ease-in-out infinite' }}
+            />
+
+            <div className="relative z-10 font-mono text-primary text-lg uppercase tracking-[0.3em] mb-2">
+              {createdHostName}
+            </div>
+            <div
+              className="relative z-10 font-mono text-sm uppercase tracking-[0.4em] text-primary/80"
+              style={{ animation: 'host-breathe 2s ease-in-out infinite' }}
+            >
+              {statusLabel()}
+            </div>
+            <div className="absolute bottom-2 z-10 font-mono text-[10px] uppercase tracking-[0.3em] text-primary/40">
+              ELAPSED: {formatElapsed(elapsedSeconds)}
+            </div>
           </div>
 
-          {/* 已用时间 */}
-          <div className="absolute bottom-4 z-10 font-mono text-[10px] uppercase tracking-[0.3em] text-primary/40">
-            ELAPSED: {formatElapsed(elapsedSeconds)}
-          </div>
+          {/* 构建日志终端 */}
+          {buildLog && (
+            <div
+              className="bg-black/80 border border-primary/20 p-3 max-h-40 overflow-y-auto font-mono text-[11px] text-green-400/90 leading-relaxed"
+              style={{ clipPath: CLIP_PATH }}
+            >
+              <pre className="whitespace-pre-wrap break-all">{buildLog}</pre>
+              <div ref={logEndRef} />
+            </div>
+          )}
         </div>
         )}
 
-        {/* 上线成功阶段 — 绿色觉醒闪光 */}
+        {/* 上线成功阶段 */}
         {phase === 'online' && (
         <div
           className="relative overflow-hidden py-10 flex flex-col items-center justify-center min-h-[280px]"
@@ -295,16 +325,11 @@ export function CreateHostDialog({
             animation: 'host-online-glow 0.6s ease-out',
           }}
         >
-          {/* 绿色脉冲背景 */}
           <div className="absolute inset-0 bg-green-500/5" />
-          {/* 绿色闪光 */}
           <div
             className="absolute inset-0 bg-green-400/20"
-            style={{
-              animation: 'host-flash 0.4s ease-out forwards',
-            }}
+            style={{ animation: 'host-flash 0.4s ease-out forwards' }}
           />
-
           <div className="relative z-10 text-center space-y-3">
             <div className="font-mono text-green-400 text-2xl uppercase tracking-[0.3em] font-bold">
               HOST ONLINE
@@ -323,7 +348,6 @@ export function CreateHostDialog({
           style={{ clipPath: CLIP_PATH }}
         >
           <div className="absolute inset-0 bg-amber-500/5" />
-
           <div className="relative z-10 text-center space-y-4">
             <div className="font-mono text-amber-400 text-lg uppercase tracking-[0.3em] font-bold">
               CONNECTION TIMEOUT
@@ -369,7 +393,7 @@ export function CreateHostDialog({
                 {isCreating ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    BUILDING IMAGE...
+                    CREATING...
                   </>
                 ) : (
                   'CREATE HOST'
@@ -377,22 +401,21 @@ export function CreateHostDialog({
               </Button>
             </>
           ) : phase === 'waiting' ? (
-            // 等待中允许用户关闭（取消等待）
             <Button
               variant="ghost"
-              className="font-mono uppercase tracking-widest text-xs rounded-none text-primary/50 hover:text-primary"
+              className="font-mono uppercase tracking-widest text-xs rounded-none text-primary/50 hover:text-primary flex items-center gap-1.5"
               onClick={() => {
                 resetForm();
                 onOpenChange(false);
               }}
             >
-              DISMISS
+              <X className="w-3 h-3" />
+              CLOSE
             </Button>
           ) : null}
         </DialogFooter>
       </DialogContent>
 
-      {/* 自定义 CSS keyframes — 扫描线、呼吸、上线闪光 */}
       <style>{`
         @keyframes host-scanline {
           0% { top: 0; opacity: 0; }

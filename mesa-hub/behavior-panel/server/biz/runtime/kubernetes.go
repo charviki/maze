@@ -10,6 +10,7 @@ import (
 
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/maze-cradle/protocol"
+	"github.com/charviki/mesa-hub-behavior-panel/biz/builder"
 	"github.com/charviki/mesa-hub-behavior-panel/biz/config"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -71,10 +72,32 @@ func (k *KubernetesRuntime) checkClient() error {
 	return nil
 }
 
+// imageExistsLocally 检查指定镜像是否已存在于本地 docker 中
+func (k *KubernetesRuntime) imageExistsLocally(imageName string) bool {
+	cmd := exec.Command("docker", "image", "inspect", imageName)
+	return cmd.Run() == nil
+}
+
 // buildDockerImage 使用 docker build 从 Dockerfile 内容构建镜像
 // 复用 Docker 模式相同的动态构建逻辑，K8s 模式下只是把 docker run 换成创建 Deployment
 func (k *KubernetesRuntime) buildDockerImage(spec *protocol.HostDeploySpec, dockerfileContent string) (string, error) {
 	imageName := fmt.Sprintf("maze-agent:%s", spec.Name)
+
+	// 优先检查 Host 专属镜像是否已存在
+	if k.imageExistsLocally(imageName) {
+		k.logger.Infof("image %s already exists, skip build", imageName)
+		return imageName, nil
+	}
+
+	// 检查工具组合镜像是否已存在（相同工具组合的 Host 共享同一镜像）
+	comboTag := builder.ToolsetImageTag(spec.Tools)
+	if k.imageExistsLocally(comboTag) {
+		k.logger.Infof("combo image %s exists, tagging as %s", comboTag, imageName)
+		cmd := exec.Command("docker", "tag", comboTag, imageName)
+		if cmd.Run() == nil {
+			return imageName, nil
+		}
+	}
 
 	// 创建临时构建上下文目录
 	tmpDir, err := os.MkdirTemp("", "maze-agent-build-*")
@@ -89,14 +112,20 @@ func (k *KubernetesRuntime) buildDockerImage(spec *protocol.HostDeploySpec, dock
 		return "", fmt.Errorf("write dockerfile: %w", err)
 	}
 
-	// 执行 docker build
-	cmd := exec.Command("docker", "build", "-f", dockerfilePath, "-t", imageName, tmpDir)
+	// 执行 docker build，启用 BuildKit 加速构建
+	cmd := exec.Command("docker", "build", "-f", dockerfilePath, "-t", imageName, "--cache-from", imageName, tmpDir)
+	cmd.Env = append(os.Environ(), "DOCKER_BUILDKIT=1")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("docker build failed: %s: %w", string(output), err)
 	}
 
 	k.logger.Infof("built image %s for host %s", imageName, spec.Name)
+
+	// 构建完成后打上组合标签，供后续相同组合的 Host 复用
+	tagCmd := exec.Command("docker", "tag", imageName, comboTag)
+	tagCmd.Run()
+
 	return imageName, nil
 }
 
@@ -337,7 +366,8 @@ func (k *KubernetesRuntime) createService(ctx context.Context, ns, appName, host
 }
 
 // RemoveHost 按顺序删除 Service → Deployment → PVC，忽略 "not found"
-func (k *KubernetesRuntime) RemoveHost(ctx context.Context, name string) error {
+// StopHost 停止运行时资源（Deployment + Service），保留持久化数据
+func (k *KubernetesRuntime) StopHost(ctx context.Context, name string) error {
 	if err := k.checkClient(); err != nil {
 		return err
 	}
@@ -347,7 +377,6 @@ func (k *KubernetesRuntime) RemoveHost(ctx context.Context, name string) error {
 	deletePolicy := metav1.DeletePropagationBackground
 	deleteOpts := metav1.DeleteOptions{PropagationPolicy: &deletePolicy}
 
-	// 删除 Service
 	if err := k.clientset.CoreV1().Services(ns).Delete(ctx, appName, deleteOpts); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return fmt.Errorf("delete service: %w", err)
@@ -355,7 +384,6 @@ func (k *KubernetesRuntime) RemoveHost(ctx context.Context, name string) error {
 		k.logger.Infof("service %s not found, skip", appName)
 	}
 
-	// 删除 Deployment
 	if err := k.clientset.AppsV1().Deployments(ns).Delete(ctx, appName, deleteOpts); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return fmt.Errorf("delete deployment: %w", err)
@@ -363,10 +391,20 @@ func (k *KubernetesRuntime) RemoveHost(ctx context.Context, name string) error {
 		k.logger.Infof("deployment %s not found, skip", appName)
 	}
 
-	// 删除 PVC（hostPath 模式下跳过）
+	return nil
+}
+
+// RemoveHost 销毁 Host：停止运行时 + 清理持久化数据 + 清理镜像
+func (k *KubernetesRuntime) RemoveHost(ctx context.Context, name string) error {
+	if err := k.StopHost(ctx, name); err != nil {
+		return err
+	}
+
 	if k.kube.VolumeType == "pvc" {
-		pvcName := appName + "-data"
-		if err := k.clientset.CoreV1().PersistentVolumeClaims(ns).Delete(ctx, pvcName, deleteOpts); err != nil {
+		pvcName := fmt.Sprintf("maze-agent-%s-data", name)
+		deletePolicy := metav1.DeletePropagationBackground
+		deleteOpts := metav1.DeleteOptions{PropagationPolicy: &deletePolicy}
+		if err := k.clientset.CoreV1().PersistentVolumeClaims(k.kube.Namespace).Delete(ctx, pvcName, deleteOpts); err != nil {
 			if !apierrors.IsNotFound(err) {
 				return fmt.Errorf("delete pvc: %w", err)
 			}
@@ -374,8 +412,6 @@ func (k *KubernetesRuntime) RemoveHost(ctx context.Context, name string) error {
 		}
 	}
 
-	// 清理 hostPath 目录（hostPath 模式下 K8s 不会自动删除）
-	// 使用容器内挂载路径来删除，而非宿主机路径
 	if k.kube.VolumeType == "hostpath" && k.workspace.MountDir != "" {
 		agentDir := filepath.Join(k.workspace.MountDir, "agents", name)
 		if err := os.RemoveAll(agentDir); err != nil {
@@ -385,7 +421,6 @@ func (k *KubernetesRuntime) RemoveHost(ctx context.Context, name string) error {
 		}
 	}
 
-	// 清理动态构建的镜像
 	k.removeDockerImage(name)
 
 	return nil
@@ -460,4 +495,66 @@ func mapPodPhase(phase corev1.PodPhase) string {
 	default:
 		return "unknown"
 	}
+}
+
+// GetRuntimeLogs 通过 K8s Pod logs 获取运行日志
+func (k *KubernetesRuntime) GetRuntimeLogs(ctx context.Context, name string, tailLines int) (string, error) {
+	if err := k.checkClient(); err != nil {
+		return "", err
+	}
+
+	ns := k.kube.Namespace
+	pods, err := k.clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("maze-agent-name=%s", name),
+	})
+	if err != nil {
+		return "", fmt.Errorf("list pods: %w", err)
+	}
+	if len(pods.Items) == 0 {
+		return "", fmt.Errorf("no pod found for host %s", name)
+	}
+
+	tail := int64(tailLines)
+	req := k.clientset.CoreV1().Pods(ns).GetLogs(pods.Items[0].Name, &corev1.PodLogOptions{
+		TailLines: &tail,
+	})
+	stream, err := req.Stream(ctx)
+	if err != nil {
+		return "", fmt.Errorf("stream pod logs: %w", err)
+	}
+	defer stream.Close()
+
+	data := make([]byte, 0, 4096)
+	buf := make([]byte, 4096)
+	for {
+		n, readErr := stream.Read(buf)
+		if n > 0 {
+			data = append(data, buf[:n]...)
+		}
+		if readErr != nil {
+			break
+		}
+	}
+	return string(data), nil
+}
+
+// IsHealthy 检查 K8s Deployment 是否存在且 ReadyReplicas > 0。
+// Deployment 存在时（即使 ReadyReplicas == 0）也返回 true，由 K8s 自身处理 Pod 调度。
+func (k *KubernetesRuntime) IsHealthy(ctx context.Context, name string) (bool, error) {
+	if err := k.checkClient(); err != nil {
+		return false, err
+	}
+
+	ns := k.kube.Namespace
+	appName := fmt.Sprintf("maze-agent-%s", name)
+	deploy, err := k.clientset.AppsV1().Deployments(ns).Get(ctx, appName, metav1.GetOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return false, nil
+		}
+		return false, fmt.Errorf("get deployment: %w", err)
+	}
+	// Deployment 存在即视为健康（K8s 会自行处理 Pod 调度）
+	_ = deploy.Status.ReadyReplicas
+	return true, nil
 }

@@ -72,6 +72,13 @@ func TestKubernetesRuntime_NilClient(t *testing.T) {
 		}
 	})
 
+	t.Run("StopHost returns error", func(t *testing.T) {
+		err := rt.StopHost(context.Background(), "test-agent")
+		if err == nil {
+			t.Fatal("期望 clientset 为 nil 时返回错误，实际返回 nil")
+		}
+	})
+
 	t.Run("InspectHost returns error", func(t *testing.T) {
 		_, err := rt.InspectHost(context.Background(), "test-agent")
 		if err == nil {

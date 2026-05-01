@@ -21,7 +21,7 @@ func newTestNodeHandler(t *testing.T) *NodeHandler {
 		filepath.Join(t.TempDir(), "nodes.json"),
 		logutil.NewNop(),
 	)
-	return NewNodeHandler(registry, "")
+	return NewNodeHandler(registry, "", logutil.NewNop())
 }
 
 // newTestNodeHandlerWithNodes 创建一个预注册了指定节点的 NodeHandler
@@ -34,7 +34,7 @@ func newTestNodeHandlerWithNodes(t *testing.T, nodes map[string]string) *NodeHan
 	for name, addr := range nodes {
 		registry.Register(protocol.RegisterRequest{Name: name, Address: addr})
 	}
-	return NewNodeHandler(registry, "")
+	return NewNodeHandler(registry, "", logutil.NewNop())
 }
 
 // newPostContext 创建一个携带 JSON body 的 POST 请求上下文

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/charviki/maze-cradle/protocol"
+	"github.com/charviki/mesa-hub-behavior-panel/biz/builder"
 	"github.com/charviki/mesa-hub-behavior-panel/biz/config"
 )
 
@@ -30,29 +31,51 @@ func (d *DockerRuntime) dockerCmd(args ...string) *exec.Cmd {
 	return exec.Command("docker", args...)
 }
 
+// imageExistsLocally 检查指定镜像是否已存在于本地 docker 中
+func (d *DockerRuntime) imageExistsLocally(imageName string) bool {
+	cmd := d.dockerCmd("image", "inspect", imageName)
+	return cmd.Run() == nil
+}
+
 // DeployHost 部署一个 Host：构建镜像 → 创建持久化目录 → 启动容器
 func (d *DockerRuntime) DeployHost(ctx context.Context, spec *protocol.HostDeploySpec, dockerfileContent string) (*protocol.CreateHostResponse, error) {
 	imageTag := fmt.Sprintf("maze-host-%s:latest", strings.ReplaceAll(spec.Name, "_", "-"))
 
-	// 构建镜像
-	tmpDir, err := os.MkdirTemp("", "maze-build-*")
-	if err != nil {
-		return nil, fmt.Errorf("create temp dir: %w", err)
-	}
-	defer os.RemoveAll(tmpDir)
+	// 检查工具组合镜像是否已存在，命中则直接 tag 复用，跳过 docker build
+	comboTag := builder.ToolsetImageTag(spec.Tools)
+	if d.imageExistsLocally(comboTag) {
+		tagCmd := d.dockerCmd("tag", comboTag, imageTag)
+		if tagCmd.Run() == nil {
+			// 组合镜像 tag 成功，跳过构建
+		}
+	} else if d.imageExistsLocally(imageTag) {
+		// Host 专属镜像已存在，跳过构建
+	} else {
+		// 需要执行 docker build
+		tmpDir, err := os.MkdirTemp("", "maze-build-*")
+		if err != nil {
+			return nil, fmt.Errorf("create temp dir: %w", err)
+		}
+		defer os.RemoveAll(tmpDir)
 
-	dockerfilePath := filepath.Join(tmpDir, "Dockerfile")
-	if err := os.WriteFile(dockerfilePath, []byte(dockerfileContent), 0644); err != nil {
-		return nil, fmt.Errorf("write dockerfile: %w", err)
-	}
+		dockerfilePath := filepath.Join(tmpDir, "Dockerfile")
+		if err := os.WriteFile(dockerfilePath, []byte(dockerfileContent), 0644); err != nil {
+			return nil, fmt.Errorf("write dockerfile: %w", err)
+		}
 
-	buildArgs := []string{"build", "-f", dockerfilePath, "-t", imageTag, tmpDir}
-	buildCmd := d.dockerCmd(buildArgs...)
-	var buildOutput strings.Builder
-	buildCmd.Stdout = &buildOutput
-	buildCmd.Stderr = &buildOutput
-	if err := buildCmd.Run(); err != nil {
-		return nil, fmt.Errorf("docker build failed: %s", buildOutput.String())
+		buildArgs := []string{"build", "-f", dockerfilePath, "-t", imageTag, tmpDir}
+		buildCmd := d.dockerCmd(buildArgs...)
+		buildCmd.Env = append(os.Environ(), "DOCKER_BUILDKIT=1")
+		var buildOutput strings.Builder
+		buildCmd.Stdout = &buildOutput
+		buildCmd.Stderr = &buildOutput
+		if err := buildCmd.Run(); err != nil {
+			return nil, fmt.Errorf("docker build failed: %s", buildOutput.String())
+		}
+
+		// 构建完成后也打上组合标签，供后续相同组合的 Host 复用
+		tagCmd := d.dockerCmd("tag", imageTag, comboTag)
+		tagCmd.Run()
 	}
 
 	// 创建持久化目录（容器内挂载路径）
@@ -113,8 +136,8 @@ func (d *DockerRuntime) DeployHost(ctx context.Context, spec *protocol.HostDeplo
 	}, nil
 }
 
-// RemoveHost 先尝试停止容器（忽略已停止的错误），再强制移除，最后清理镜像和持久化目录
-func (d *DockerRuntime) RemoveHost(ctx context.Context, name string) error {
+// StopHost 停止并移除容器，保留持久化数据和镜像
+func (d *DockerRuntime) StopHost(ctx context.Context, name string) error {
 	stopCmd := d.dockerCmd("stop", name)
 	_ = stopCmd.Run()
 
@@ -122,13 +145,17 @@ func (d *DockerRuntime) RemoveHost(ctx context.Context, name string) error {
 	if err := rmCmd.Run(); err != nil {
 		return fmt.Errorf("docker rm failed: %w", err)
 	}
+	return nil
+}
 
-	// 清理构建镜像
+// RemoveHost 销毁 Host：停止容器 + 清理镜像 + 清理持久化数据
+func (d *DockerRuntime) RemoveHost(ctx context.Context, name string) error {
+	_ = d.StopHost(ctx, name)
+
 	imageTag := fmt.Sprintf("maze-host-%s:latest", strings.ReplaceAll(name, "_", "-"))
 	rmiCmd := d.dockerCmd("rmi", "-f", imageTag)
 	_ = rmiCmd.Run()
 
-	// 清理持久化目录（容器内挂载路径）
 	hostMountDir := filepath.Join(d.workspace.MountDir, name)
 	os.RemoveAll(hostMountDir)
 
@@ -178,4 +205,25 @@ func (d *DockerRuntime) InspectHost(ctx context.Context, name string) (*protocol
 		Image:     r.Config.Image,
 		CreatedAt: createdAt,
 	}, nil
+}
+
+// GetRuntimeLogs 通过 docker logs 获取容器运行日志
+func (d *DockerRuntime) GetRuntimeLogs(ctx context.Context, name string, tailLines int) (string, error) {
+	args := []string{"logs", "--tail", fmt.Sprintf("%d", tailLines)}
+	cmd := d.dockerCmd(append(args, name)...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("docker logs failed: %w", err)
+	}
+	return string(output), nil
+}
+
+// IsHealthy 检查 Docker 容器是否存在且 running
+func (d *DockerRuntime) IsHealthy(ctx context.Context, name string) (bool, error) {
+	info, err := d.InspectHost(ctx, name)
+	if err != nil {
+		// 容器不存在视为不健康，不返回错误
+		return false, nil
+	}
+	return info.Status == "running", nil
 }

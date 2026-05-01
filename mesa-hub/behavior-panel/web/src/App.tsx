@@ -2,13 +2,13 @@ import { useState, useMemo, useCallback } from 'react';
 import { NodeList } from './components/NodeList';
 import { createAgentApi } from './api/agent';
 import { controllerApi } from './api/controller';
-import { AgentPanel, DecryptText, RadarView, BootSequence, TerrainBackground, ErrorBoundary, Button, AnimationSettingsProvider, AnimationSettingsPanel, ToastProvider, CreateHostDialog } from '@maze/fabrication';
-import type { Node, RadarNode, Tool, CreateHostRequest, CreateHostResponse } from '@maze/fabrication';
+import { AgentPanel, DecryptText, RadarView, BootSequence, TerrainBackground, ErrorBoundary, Button, AnimationSettingsProvider, AnimationSettingsPanel, ToastProvider, CreateHostDialog, HostLogPanel } from '@maze/fabrication';
+import type { Host, RadarNode, Tool, CreateHostRequest } from '@maze/fabrication';
 import { Server, Activity, Menu, Settings, Plus } from 'lucide-react';
 import './index.css';
 
 function App() {
-  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [selectedHost, setSelectedHost] = useState<Host | null>(null);
   const [isBooting, setIsBooting] = useState(true);
   const [radarNodes, setRadarNodes] = useState<RadarNode[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -16,23 +16,22 @@ function App() {
   const [showCreateHost, setShowCreateHost] = useState(false);
   const [availableTools, setAvailableTools] = useState<Tool[]>([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [logPanelHost, setLogPanelHost] = useState<string | null>(null);
 
-  // 选中节点后自动收起侧边栏（仅小屏幕生效）
-  const handleSelectNode = useCallback((node: Node) => {
-    setSelectedNode(node);
+  const handleSelectNode = useCallback((node: Host) => {
+    setSelectedHost(node);
     if (window.innerWidth < 768) {
       setSidebarOpen(false);
     }
   }, []);
 
-  const handleNodesChange = useCallback((nodes: Node[]) => {
+  const handleNodesChange = useCallback((nodes: Host[]) => {
     setRadarNodes(nodes.map(n => ({ name: n.name, status: n.status === 'online' ? 'online' : 'offline' })));
   }, []);
 
-  // 缓存 apiClient，避免每次渲染创建新实例导致 XtermTerminal 的 wsUrl effect 重复触发
   const agentApi = useMemo(
-    () => selectedNode ? createAgentApi('', selectedNode.name) : null,
-    [selectedNode]
+    () => selectedHost ? createAgentApi('', selectedHost.name) : null,
+    [selectedHost]
   );
 
   const terminalBg = useMemo(() => <TerrainBackground />, []);
@@ -49,11 +48,12 @@ function App() {
     }
   }, []);
 
-  const handleCreateHost = useCallback(async (data: CreateHostRequest): Promise<CreateHostResponse> => {
+  const handleCreateHost = useCallback(async (data: CreateHostRequest): Promise<Host> => {
     const res = await controllerApi.createHost(data);
     if (res.status === 'error') {
       throw new Error(res.message || '创建失败');
     }
+    setRefreshTrigger((n) => n + 1);
     return res.data!;
   }, []);
 
@@ -65,7 +65,7 @@ function App() {
 
     while (Date.now() - startTime < maxWaitMs) {
       try {
-        const res = await controllerApi.getNode(hostName);
+        const res = await controllerApi.getHost(hostName);
         if (res.status === 'ok' && res.data && res.data.status === 'online') {
           setRefreshTrigger((n) => n + 1);
           return true;
@@ -76,10 +76,25 @@ function App() {
       await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
     }
 
-    // 超时，仍刷新一次列表
     setRefreshTrigger((n) => n + 1);
     return false;
   }, []);
+
+  const handleViewLog = useCallback((hostName: string) => {
+    setLogPanelHost(hostName);
+  }, []);
+
+  const handleFetchBuildLog = useCallback(async (): Promise<string> => {
+    if (!logPanelHost) return '';
+    const res = await controllerApi.getHostBuildLog(logPanelHost);
+    return res.status === 'ok' && res.data ? res.data : '';
+  }, [logPanelHost]);
+
+  const handleFetchRuntimeLog = useCallback(async (): Promise<string> => {
+    if (!logPanelHost) return '';
+    const res = await controllerApi.getHostRuntimeLog(logPanelHost);
+    return res.status === 'ok' && res.data ? res.data : '';
+  }, [logPanelHost]);
 
   if (isBooting) {
     return (
@@ -111,7 +126,6 @@ function App() {
 
       {/* Top Navbar */}
       <div className="col-span-2 border-b border-border/50 flex items-center justify-between px-6 bg-background relative overflow-hidden z-10">
-        {/* Decorative sci-fi scanline */}
         <div className="absolute top-0 left-0 w-full h-[1px] bg-primary/20"></div>
         <div className="flex items-center gap-3 font-bold text-lg tracking-wider text-primary">
           <Button variant="ghost" size="icon" className="md:hidden text-primary hover:text-primary hover:bg-primary/20" onClick={() => setSidebarOpen(!sidebarOpen)}>
@@ -125,7 +139,7 @@ function App() {
         </Button>
       </div>
 
-      {/* Pane 1: Nodes */}
+      {/* Pane 1: Hosts */}
       <div className={`border-r border-border/50 ${!sidebarOpen ? 'hidden md:flex' : 'flex'} flex-col bg-background/50 relative z-10 overflow-hidden`}>
         <div className="absolute right-0 top-0 w-[1px] h-full bg-gradient-to-b from-primary/20 to-transparent"></div>
         <div className="p-3 border-b border-border/50 font-bold flex items-center justify-between text-xs uppercase tracking-widest text-primary/80">
@@ -146,9 +160,10 @@ function App() {
         <div className="flex-1 overflow-y-auto p-2">
           <NodeList 
             onSelectNode={handleSelectNode} 
-            selectedNodeName={selectedNode?.name || null}
+            selectedNodeName={selectedHost?.name || null}
             onNodesChange={handleNodesChange}
             refreshTrigger={refreshTrigger}
+            onViewLog={handleViewLog}
           />
         </div>
         {/* Radar View */}
@@ -163,7 +178,7 @@ function App() {
         {agentApi ? (
           <AgentPanel 
             apiClient={agentApi} 
-            nodeName={selectedNode!.name}
+            nodeName={selectedHost!.name}
             terminalBackground={terminalBg}
           />
         ) : (
@@ -183,6 +198,17 @@ function App() {
       tools={availableTools}
       onSubmit={handleCreateHost}
       onWaitOnline={handleWaitOnline}
+      getHostBuildLog={async (name: string) => {
+        const res = await controllerApi.getHostBuildLog(name);
+        return res.status === 'ok' && res.data ? res.data : '';
+      }}
+    />
+    <HostLogPanel
+      open={!!logPanelHost}
+      onOpenChange={(v) => { if (!v) setLogPanelHost(null); }}
+      hostName={logPanelHost || ''}
+      fetchBuildLog={handleFetchBuildLog}
+      fetchRuntimeLog={handleFetchRuntimeLog}
     />
     <AnimationSettingsPanel open={showAnimSettings} onOpenChange={setShowAnimSettings} />
     </AnimationSettingsProvider>
