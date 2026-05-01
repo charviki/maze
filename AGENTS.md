@@ -9,10 +9,20 @@ The Maze — 基于 Westworld 概念构建的 AI Agent 管理平台。Manager (b
 - **Pipeline 驱动 (Pipeline-Driven)** — 会话创建/恢复由三层 Pipeline（system/template/user）编排，而非散落的 shell 命令
 - **共享基础 (Shared Foundation)** — Go 公共库 (cradle) 和 UI 组件库 (fabrication) 跨模块复用，修改时须考虑向后兼容
 - **先读后改 (Read Before Modify)** — 修改模块代码前，先阅读该模块的 AGENTS.md 了解上下文
-- **验证后交付 (Verify Before Deliver)** — 修改代码后必须验证编译通过、测试通过，不要仅靠推理，自验证通过后再交付
-- **双环境验证 (Dual Environment Verification)** — 涉及运行时、部署、网络、配置的变更，必须在 Docker Compose 和 Kubernetes 两种环境下都验证通过
 - **构建规范 (Build Standards)** — 新增或修改 Dockerfile 必须遵循 [Docker 构建规范](fabrication/docs/docker-build-guide.md)（拆分 COPY + Cache Mount + 供应商镜像多阶段构建）
 - **声明式编排 (Declarative Orchestration)** — Host 规格持久化为 HostSpec，Reconciler 确保实际状态趋近期望状态（启动恢复 + 健康巡检 + 自动重试）
+
+## 交付铁律（强制执行）
+
+每次代码变更交付前，必须按以下清单逐项完成，缺一不可：
+
+1. **编译通过** — `make build-go` 零错误
+2. **静态检查** — `make vet` 零警告
+3. **全量测试** — `make test` 全部 PASS，新增逻辑必须补充单测
+4. **文档同步** — 就近检查并更新对应模块的 AGENTS.md、docs/、关键文件表格
+5. **双环境验证** — 涉及运行时、部署、网络、配置的变更，必须在 Docker Compose 和 Kubernetes 两种环境下都验证通过
+
+快捷命令：`make check` = 编译 + 静态检查 + 测试（交付铁律 1-3 项）
 
 ## 模块索引
 
@@ -22,8 +32,11 @@ The Maze — 基于 Westworld 概念构建的 AI Agent 管理平台。Manager (b
 | Cradle | fabrication/cradle/ | Go 共享库（HTTP/Pipeline/Config/Auth） | [AGENTS.md](fabrication/cradle/AGENTS.md) + [docs/](fabrication/cradle/docs/) |
 | Black Ridge | sweetwater/black-ridge/ | Agent 运行时节点（tmux + Web UI） | [AGENTS.md](sweetwater/black-ridge/AGENTS.md) + [docs/](sweetwater/black-ridge/docs/) |
 | Fabrication | fabrication/ | 制造部（UI 组件库 + Go 共享库 + Docker 构建 + K8s 部署基础设施） | [AGENTS.md](fabrication/AGENTS.md) + [docs/](fabrication/docs/) |
+| Integration Tests | fabrication/tests/integration/ | 跨模块集成测试（Go testing + kit 辅助包） | — |
 
 ## 文档维护
 
-- 修改代码后，就近检查并更新对应模块的 AGENTS.md 或 docs/（参考关键文件表格的"文档同步"列）
-- 跨模块变更时更新本文件
+- 新增源码文件（`.go`）→ 必须在对应模块 AGENTS.md 的关键文件表格中添加条目
+- 修改函数签名 / 接口 / 核心流程 → 必须检查并更新对应 AGENTS.md 和 docs/ 中的描述
+- 跨模块变更 → 更新本文件的模块索引
+- 新增机制（如缓存、限流、hash 校验）→ 必须在关键文件表格中记录，并在 docs/ 中补充说明

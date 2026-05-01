@@ -29,14 +29,16 @@
 | server/biz/handler/proxy_ws.go | WebSocket 双向代理（前端-Manager-Agent） | [architecture.md#WebSocket终端](docs/architecture.md) |
 | server/biz/handler/audit_logger.go | 审计日志：append-only JSON Lines 持久化 | [architecture.md#审计日志](docs/architecture.md) |
 | server/biz/model/node.go | NodeRegistry：节点注册表、dirty flush 持久化 | [architecture.md#节点注册表](docs/architecture.md) |
-| server/biz/model/host_spec.go | HostSpecManager：Host 规格持久化（CRUD + dirty flush + ListMerged 合并视图） | [architecture.md#HostSpec持久化](docs/architecture.md) |
+| server/biz/model/host_spec.go | HostSpecManager：Host 规格持久化（CRUD + dirty flush + GetMerged/ListMerged 合并视图） | [architecture.md#HostSpec持久化](docs/architecture.md) |
+| server/biz/service/deploy.go | 公共构建部署方法 BuildAndDeploy（消除 handler/reconciler 的重复逻辑） | [architecture.md#动态Host](docs/architecture.md) |
 | server/biz/reconciler/reconciler.go | Reconciler：启动恢复 + 60s 健康巡检 + deploying 保护窗口 + failed 自动重试 | [architecture.md#Reconciler](docs/architecture.md) |
 | server/biz/config/config.go | 配置加载：YAML + 环境变量覆盖 + 校验 | [architecture.md#配置](docs/architecture.md) |
 | server/biz/builder/registry.go | 工具配置注册表（claude/codex/go/python/node） | [architecture.md#动态Host](docs/architecture.md) |
 | server/biz/builder/host.go | Dockerfile 动态生成器（工具排序稳定化 + ToolsetImageTag 组合镜像标签） | [architecture.md#动态Host](docs/architecture.md) |
 | server/biz/runtime/runtime.go | HostRuntime 抽象接口（DeployHost/RemoveHost/InspectHost/GetRuntimeLogs/IsHealthy） | [architecture.md#动态Host](docs/architecture.md) |
-| server/biz/runtime/docker.go | Docker 运行时（docker CLI + socket + BuildKit + 组合镜像缓存） | [architecture.md#动态Host](docs/architecture.md) |
-| server/biz/runtime/kubernetes.go | K8s 运行时（client-go Deployment/Service + BuildKit + 组合镜像缓存 + imageExistsLocally） | [architecture.md#动态Host](docs/architecture.md) |
+| server/biz/runtime/docker.go | Docker 运行时（docker CLI + socket + BuildKit + 组合镜像缓存 + Dockerfile hash 校验） | [architecture.md#动态Host](docs/architecture.md) |
+| server/biz/runtime/kubernetes.go | K8s 运行时（client-go Deployment/Service + BuildKit + 组合镜像缓存 + Dockerfile hash 校验） | [architecture.md#动态Host](docs/architecture.md) |
+| server/biz/runtime/semaphore.go | 构建信号量（并发限流，防止镜像重建风暴） | [architecture.md#动态Host](docs/architecture.md) |
 | web/src/App.tsx | 前端入口：HostList + AgentPanel + RadarView + CreateHostDialog + HostLogPanel | [architecture.md#前端](docs/architecture.md) |
 | web/src/api/controller.ts | Manager API 客户端（listHosts/getHost/createHost/getHostBuildLog/getHostRuntimeLog/deleteHost） | [api.md#Host管理](docs/api.md) |
 | web/src/api/agent.ts | 通过 Manager 代理的 Agent API 客户端 | [api.md](docs/api.md) |
