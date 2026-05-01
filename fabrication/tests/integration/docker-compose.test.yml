@@ -1,0 +1,18 @@
+services:
+  agent-manager:
+    build:
+      context: ../../..
+      dockerfile: mesa-hub/behavior-panel/Dockerfile
+    container_name: maze-test-manager
+    ports:
+      - "9090:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${HOME}/.maze-test/docker/agents:/data
+    environment:
+      AGENT_MANAGER_SERVER_AUTH_TOKEN: test-integration-token
+      AGENT_MANAGER_ALLOW_PRIVATE_NETWORKS: "true"
+      AGENT_MANAGER_DOCKER_NETWORK: "${COMPOSE_PROJECT_NAME:-maze-test}_default"
+      AGENT_MANAGER_WORKSPACE_BASE_DIR: ${HOME}/.maze-test/docker/agents
+      AGENT_MANAGER_WORKSPACE_MOUNT_DIR: /data
+      AGENT_MANAGER_DOCKER_AGENT_BASE_IMAGE: maze-agent:latest

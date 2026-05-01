@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# 将所有资源的 namespace 替换为 maze-test
+namespace: maze-test
+
+resources:
+  - ../../base
+  - manager-configmap.yaml
+
+patches:
+  - path: manager-deployment-patch.yaml
