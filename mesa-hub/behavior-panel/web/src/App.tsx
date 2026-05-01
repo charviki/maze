@@ -3,7 +3,7 @@ import { NodeList } from './components/NodeList';
 import { createAgentApi } from './api/agent';
 import { controllerApi } from './api/controller';
 import { AgentPanel, DecryptText, RadarView, BootSequence, TerrainBackground, ErrorBoundary, Button, AnimationSettingsProvider, AnimationSettingsPanel, ToastProvider, CreateHostDialog } from '@maze/fabrication';
-import type { Node, RadarNode, Tool, CreateHostRequest } from '@maze/fabrication';
+import type { Node, RadarNode, Tool, CreateHostRequest, CreateHostResponse } from '@maze/fabrication';
 import { Server, Activity, Menu, Settings, Plus } from 'lucide-react';
 import './index.css';
 
@@ -49,12 +49,36 @@ function App() {
     }
   }, []);
 
-  const handleCreateHost = useCallback(async (data: CreateHostRequest) => {
+  const handleCreateHost = useCallback(async (data: CreateHostRequest): Promise<CreateHostResponse> => {
     const res = await controllerApi.createHost(data);
     if (res.status === 'error') {
       throw new Error(res.message || '创建失败');
     }
+    return res.data!;
+  }, []);
+
+  // 轮询等待 Host 上线，3 分钟超时，每 2 秒轮询一次
+  const handleWaitOnline = useCallback(async (hostName: string): Promise<boolean> => {
+    const maxWaitMs = 3 * 60 * 1000;
+    const pollIntervalMs = 2000;
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < maxWaitMs) {
+      try {
+        const res = await controllerApi.getNode(hostName);
+        if (res.status === 'ok' && res.data && res.data.status === 'online') {
+          setRefreshTrigger((n) => n + 1);
+          return true;
+        }
+      } catch {
+        // 节点可能还未注册，继续等待
+      }
+      await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
+    }
+
+    // 超时，仍刷新一次列表
     setRefreshTrigger((n) => n + 1);
+    return false;
   }, []);
 
   if (isBooting) {
@@ -158,6 +182,7 @@ function App() {
       onOpenChange={setShowCreateHost}
       tools={availableTools}
       onSubmit={handleCreateHost}
+      onWaitOnline={handleWaitOnline}
     />
     <AnimationSettingsPanel open={showAnimSettings} onOpenChange={setShowAnimSettings} />
     </AnimationSettingsProvider>
