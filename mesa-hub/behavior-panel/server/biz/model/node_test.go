@@ -459,8 +459,8 @@ func TestNodeRegistry_PersistAndRecover(t *testing.T) {
 		Address: "http://192.168.1.20:9090",
 	})
 
-	// 等待异步 save 完成
-	time.Sleep(100 * time.Millisecond)
+	// 同步刷盘确保数据持久化
+	reg1.WaitSave()
 
 	// 验证文件已创建
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -514,7 +514,7 @@ func TestNodeRegistry_CorruptedFile(t *testing.T) {
 		Address: "http://10.0.0.1:9090",
 	})
 
-	time.Sleep(100 * time.Millisecond)
+	reg.WaitSave()
 
 	got := reg.Get("agent-after-corrupt")
 	if got == nil {
@@ -531,11 +531,10 @@ func TestNodeRegistry_DeletePersistence(t *testing.T) {
 	reg1.Register(protocol.RegisterRequest{Name: "agent-del", Address: "http://10.0.0.1:9090"})
 	reg1.Register(protocol.RegisterRequest{Name: "agent-keep", Address: "http://10.0.0.2:9090"})
 
-	time.Sleep(100 * time.Millisecond)
-
 	reg1.Delete("agent-del")
 
-	time.Sleep(100 * time.Millisecond)
+	// 同步刷盘确保删除操作持久化
+	reg1.WaitSave()
 
 	// 从文件重新加载，验证 agent-del 已被删除
 	reg2 := NewNodeRegistry(filePath, logutil.NewNop())
@@ -545,6 +544,7 @@ func TestNodeRegistry_DeletePersistence(t *testing.T) {
 	if reg2.Get("agent-keep") == nil {
 		t.Error("期望 agent-keep 仍存在")
 	}
+	reg2.WaitSave()
 }
 
 // TestNodeRegistry_FileContents 验证持久化文件内容格式正确
@@ -558,7 +558,7 @@ func TestNodeRegistry_FileContents(t *testing.T) {
 		Address: "http://10.0.0.1:9090",
 	})
 
-	time.Sleep(100 * time.Millisecond)
+	reg.WaitSave()
 
 	data, err := os.ReadFile(filePath)
 	if err != nil {
@@ -608,7 +608,7 @@ func TestNodeRegistry_RegisterPersistWithCapabilities(t *testing.T) {
 		},
 	})
 
-	time.Sleep(100 * time.Millisecond)
+	reg1.WaitSave()
 
 	reg2 := NewNodeRegistry(filePath, logutil.NewNop())
 	got := reg2.Get("agent-persist-enh")

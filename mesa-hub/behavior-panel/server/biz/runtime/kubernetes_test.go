@@ -22,7 +22,7 @@ func newNilClientRuntime() *KubernetesRuntime {
 		Namespace:   "maze",
 		ManagerAddr: "agent-manager.maze.svc.cluster.local:8080",
 	}
-	return NewKubernetesRuntime(kube, config.WorkspaceConfig{}, "test-token", logutil.NewNop())
+	return NewKubernetesRuntime(kube, config.WorkspaceConfig{}, logutil.NewNop())
 }
 
 // newFakeClientRuntime 使用 fake K8s client 创建 KubernetesRuntime
@@ -38,7 +38,6 @@ func newFakeClientRuntime() *KubernetesRuntime {
 	return &KubernetesRuntime{
 		kube:      kube,
 		workspace: config.WorkspaceConfig{MountDir: "/data"},
-		authToken: "test-token",
 		logger:    logutil.NewNop(),
 		clientset: fake.NewClientset(),
 	}
@@ -215,7 +214,6 @@ func TestKubernetesRuntime_RemoveHost_HostPathCleansDir(t *testing.T) {
 	rt := &KubernetesRuntime{
 		kube:      kube,
 		workspace: config.WorkspaceConfig{MountDir: tmpDir},
-		authToken: "test-token",
 		logger:    logutil.NewNop(),
 		clientset: fake.NewClientset(),
 	}
