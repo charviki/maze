@@ -78,10 +78,7 @@ func TestListAvailableTools_ReturnsAll(t *testing.T) {
 }
 
 func TestGenerateHostDockerfile_SingleTool(t *testing.T) {
-	result, err := GenerateHostDockerfile([]string{"claude"}, "test-base:latest")
-	if err != nil {
-		t.Fatalf("GenerateHostDockerfile 失败: %v", err)
-	}
+	result := GenerateHostDockerfile([]string{"claude"}, "test-base:latest")
 
 	if !strings.Contains(result, "FROM test-base:latest") {
 		t.Error("Dockerfile 应包含 FROM test-base:latest")
@@ -95,10 +92,7 @@ func TestGenerateHostDockerfile_SingleTool(t *testing.T) {
 }
 
 func TestGenerateHostDockerfile_MultipleTools(t *testing.T) {
-	result, err := GenerateHostDockerfile([]string{"claude", "go"}, "test-base:latest")
-	if err != nil {
-		t.Fatalf("GenerateHostDockerfile 失败: %v", err)
-	}
+	result := GenerateHostDockerfile([]string{"claude", "go"}, "test-base:latest")
 
 	claudeCopyCount := strings.Count(result, "COPY --from=maze-deps-claude:latest")
 	if claudeCopyCount != 1 {
@@ -119,10 +113,7 @@ func TestGenerateHostDockerfile_MultipleTools(t *testing.T) {
 }
 
 func TestGenerateHostDockerfile_GoEnvVars(t *testing.T) {
-	result, err := GenerateHostDockerfile([]string{"go"}, "test-base:latest")
-	if err != nil {
-		t.Fatalf("GenerateHostDockerfile 失败: %v", err)
-	}
+	result := GenerateHostDockerfile([]string{"go"}, "test-base:latest")
 
 	if !strings.Contains(result, "ENV GOROOT=/opt/go") {
 		t.Error("Go 工具应设置 GOROOT")
@@ -133,10 +124,7 @@ func TestGenerateHostDockerfile_GoEnvVars(t *testing.T) {
 }
 
 func TestGenerateHostDockerfile_EmptyTools(t *testing.T) {
-	result, err := GenerateHostDockerfile([]string{}, "test-base:latest")
-	if err != nil {
-		t.Fatalf("GenerateHostDockerfile 失败: %v", err)
-	}
+	result := GenerateHostDockerfile([]string{}, "test-base:latest")
 
 	if !strings.Contains(result, "FROM test-base:latest") {
 		t.Error("即使无工具也应包含 FROM 指令")
@@ -147,10 +135,7 @@ func TestGenerateHostDockerfile_EmptyTools(t *testing.T) {
 }
 
 func TestGenerateHostDockerfile_UnknownToolSkipped(t *testing.T) {
-	result, err := GenerateHostDockerfile([]string{"claude", "nonexistent"}, "test-base:latest")
-	if err != nil {
-		t.Fatalf("GenerateHostDockerfile 失败: %v", err)
-	}
+	result := GenerateHostDockerfile([]string{"claude", "nonexistent"}, "test-base:latest")
 
 	claudeCopyCount := strings.Count(result, "COPY --from=maze-deps-claude:latest")
 	if claudeCopyCount != 1 {
@@ -159,4 +144,88 @@ func TestGenerateHostDockerfile_UnknownToolSkipped(t *testing.T) {
 	if strings.Contains(result, "nonexistent") {
 		t.Error("未知工具不应出现在 Dockerfile 中")
 	}
+}
+
+func TestGenerateHostDockerfile_ContainsHashLabel(t *testing.T) {
+	result := GenerateHostDockerfile([]string{"claude"}, "test-base:latest")
+
+	if !strings.Contains(result, "LABEL maze.dockerfile-hash=") {
+		t.Error("Dockerfile 应包含 maze.dockerfile-hash label")
+	}
+}
+
+func TestGenerateHostDockerfile_HashChangesWithTools(t *testing.T) {
+	result1 := GenerateHostDockerfile([]string{"claude"}, "test-base:latest")
+	result2 := GenerateHostDockerfile([]string{"go"}, "test-base:latest")
+
+	hash1 := extractHashFromDockerfile(result1)
+	hash2 := extractHashFromDockerfile(result2)
+
+	if hash1 == "" || hash2 == "" {
+		t.Fatal("hash 不应为空")
+	}
+	if hash1 == hash2 {
+		t.Errorf("不同工具组合应产生不同的 hash: %s == %s", hash1, hash2)
+	}
+}
+
+func TestGenerateHostDockerfile_HashChangesWithBaseImage(t *testing.T) {
+	result1 := GenerateHostDockerfile([]string{"claude"}, "base-v1:latest")
+	result2 := GenerateHostDockerfile([]string{"claude"}, "base-v2:latest")
+
+	hash1 := extractHashFromDockerfile(result1)
+	hash2 := extractHashFromDockerfile(result2)
+
+	if hash1 == hash2 {
+		t.Errorf("不同基础镜像应产生不同的 hash: %s == %s", hash1, hash2)
+	}
+}
+
+func TestGenerateHostDockerfile_SameInputSameHash(t *testing.T) {
+	tools := []string{"claude", "go"}
+	result1 := GenerateHostDockerfile(tools, "test-base:latest")
+	result2 := GenerateHostDockerfile(tools, "test-base:latest")
+
+	hash1 := extractHashFromDockerfile(result1)
+	hash2 := extractHashFromDockerfile(result2)
+
+	if hash1 != hash2 {
+		t.Errorf("相同输入应产生相同的 hash: %s != %s", hash1, hash2)
+	}
+}
+
+func TestDockerfileHash_Deterministic(t *testing.T) {
+	content := "FROM test-base\nRUN echo hello"
+	hash1 := DockerfileHash(content)
+	hash2 := DockerfileHash(content)
+
+	if hash1 != hash2 {
+		t.Errorf("DockerfileHash 应是确定性的: %s != %s", hash1, hash2)
+	}
+}
+
+func TestDockerfileHash_DifferentContent(t *testing.T) {
+	hash1 := DockerfileHash("FROM base-v1\nRUN echo 1")
+	hash2 := DockerfileHash("FROM base-v2\nRUN echo 2")
+
+	if hash1 == hash2 {
+		t.Errorf("不同内容应产生不同的 hash")
+	}
+}
+
+func TestDockerfileHash_Length(t *testing.T) {
+	hash := DockerfileHash("some content")
+	if len(hash) != 16 {
+		t.Errorf("hash 长度应为 16, 实际=%d", len(hash))
+	}
+}
+
+// extractHashFromDockerfile 从生成的 Dockerfile 中提取 hash label 值
+func extractHashFromDockerfile(dockerfile string) string {
+	for _, line := range strings.Split(dockerfile, "\n") {
+		if strings.HasPrefix(line, "LABEL maze.dockerfile-hash=") {
+			return strings.TrimPrefix(line, "LABEL maze.dockerfile-hash=")
+		}
+	}
+	return ""
 }

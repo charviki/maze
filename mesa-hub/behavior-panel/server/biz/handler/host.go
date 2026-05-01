@@ -19,6 +19,7 @@ import (
 	"github.com/charviki/mesa-hub-behavior-panel/biz/config"
 	"github.com/charviki/mesa-hub-behavior-panel/biz/model"
 	"github.com/charviki/mesa-hub-behavior-panel/biz/runtime"
+	"github.com/charviki/mesa-hub-behavior-panel/biz/service"
 )
 
 type HostHandler struct {
@@ -67,12 +68,8 @@ func (h *HostHandler) CreateHost(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	// 名称唯一性校验（优先检查 HostSpec，再检查 NodeRegistry）
+	// 名称唯一性校验
 	if h.specMgr.Get(req.Name) != nil {
-		httputil.Error(c, http.StatusConflict, fmt.Sprintf("host %q already exists", req.Name))
-		return
-	}
-	if existing := h.registry.Get(req.Name); existing != nil {
 		httputil.Error(c, http.StatusConflict, fmt.Sprintf("host %q already exists", req.Name))
 		return
 	}
@@ -145,35 +142,14 @@ func (h *HostHandler) deployHostAsync(spec *protocol.HostSpec) {
 	}
 	defer logFile.Close()
 
-	// 生成 Dockerfile
-	dockerfileContent, err := builder.GenerateHostDockerfile(spec.Tools, h.cfg.Docker.AgentBaseImage)
-	if err != nil {
-		errMsg := fmt.Sprintf("generate dockerfile: %v", err)
-		h.specMgr.UpdateStatus(spec.Name, protocol.HostStatusFailed, errMsg)
-		fmt.Fprintf(logFile, "[ERROR] %s\n", errMsg)
-		return
-	}
-
-	// 构建部署规格
-	deploySpec := &protocol.HostDeploySpec{
-		Name:            spec.Name,
-		Tools:           spec.Tools,
-		Resources:       spec.Resources,
-		AuthToken:       spec.AuthToken,
-		ServerAuthToken: h.cfg.Server.AuthToken,
-	}
-
-	// 部署（构建日志通过 io.MultiWriter 同时写文件和 logger）
 	multiWriter := io.MultiWriter(logFile, writerFunc(func(p []byte) (int, error) {
 		h.logger.Infof("[host-deploy] %s", string(p))
 		return len(p), nil
 	}))
 
-	// 通过修改 runtime 的输出来捕获构建日志比较复杂，
-	// 这里直接用多 writer 记录状态变化
 	fmt.Fprintf(multiWriter, "[INFO] Host %s: starting deployment, tools=%v\n", spec.Name, spec.Tools)
 
-	_, deployErr := h.runtime.DeployHost(context.Background(), deploySpec, dockerfileContent)
+	_, deployErr := service.BuildAndDeploy(context.Background(), h.runtime, spec, h.cfg)
 
 	if deployErr != nil {
 		errMsg := fmt.Sprintf("deploy failed: %v", deployErr)
@@ -191,7 +167,6 @@ func (h *HostHandler) deployHostAsync(spec *protocol.HostSpec) {
 		return
 	}
 
-	// 部署成功，保持 deploying 状态等待 Agent 注册
 	fmt.Fprintf(multiWriter, "[INFO] Host %s: deployment complete, waiting for agent registration\n", spec.Name)
 
 	h.auditLog.Log(protocol.AuditLogEntry{
@@ -218,28 +193,10 @@ func (h *HostHandler) GetHost(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	spec := h.specMgr.Get(name)
-	if spec == nil {
+	info := h.specMgr.GetMerged(name, h.registry)
+	if info == nil {
 		httputil.Error(c, http.StatusNotFound, fmt.Sprintf("host %q not found", name))
 		return
-	}
-
-	info := &protocol.HostInfo{HostSpec: *spec}
-	// 如果 deploying 状态，合并 NodeRegistry 心跳
-	if spec.Status == protocol.HostStatusDeploying {
-		node := h.registry.Get(name)
-		if node != nil {
-			if node.Status == model.NodeStatusOnline {
-				info.Status = protocol.HostStatusOnline
-			} else {
-				info.Status = protocol.HostStatusOffline
-			}
-			info.Address = node.Address
-			info.SessionCount = node.AgentStatus.ActiveSessions
-			if !node.LastHeartbeat.IsZero() {
-				info.LastHeartbeat = node.LastHeartbeat.Format(time.RFC3339)
-			}
-		}
 	}
 	httputil.Success(c, info)
 }

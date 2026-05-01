@@ -9,10 +9,10 @@ import (
 
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/maze-cradle/protocol"
-	"github.com/charviki/mesa-hub-behavior-panel/biz/builder"
 	"github.com/charviki/mesa-hub-behavior-panel/biz/config"
 	"github.com/charviki/mesa-hub-behavior-panel/biz/model"
 	"github.com/charviki/mesa-hub-behavior-panel/biz/runtime"
+	"github.com/charviki/mesa-hub-behavior-panel/biz/service"
 )
 
 const (
@@ -205,14 +205,6 @@ func (r *Reconciler) redeploy(ctx context.Context, spec *protocol.HostSpec) {
 
 	r.specMgr.UpdateStatus(spec.Name, protocol.HostStatusDeploying, "")
 
-	// 生成 Dockerfile
-	dockerfileContent, err := builder.GenerateHostDockerfile(spec.Tools, r.cfg.Docker.AgentBaseImage)
-	if err != nil {
-		r.specMgr.UpdateStatus(spec.Name, protocol.HostStatusFailed, fmt.Sprintf("generate dockerfile: %v", err))
-		return
-	}
-
-	// 写入构建日志
 	if err := os.MkdirAll(r.logDir, 0755); err == nil {
 		logPath := filepath.Join(r.logDir, spec.Name+".log")
 		f, ferr := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -222,15 +214,7 @@ func (r *Reconciler) redeploy(ctx context.Context, spec *protocol.HostSpec) {
 		}
 	}
 
-	deploySpec := &protocol.HostDeploySpec{
-		Name:            spec.Name,
-		Tools:           spec.Tools,
-		Resources:       spec.Resources,
-		AuthToken:       spec.AuthToken,
-		ServerAuthToken: r.cfg.Server.AuthToken,
-	}
-
-	_, deployErr := r.runtime.DeployHost(context.Background(), deploySpec, dockerfileContent)
+	_, deployErr := service.BuildAndDeploy(context.Background(), r.runtime, spec, r.cfg)
 	if deployErr != nil {
 		errMsg := fmt.Sprintf("redeploy failed: %v", deployErr)
 		r.specMgr.UpdateStatus(spec.Name, protocol.HostStatusFailed, errMsg)

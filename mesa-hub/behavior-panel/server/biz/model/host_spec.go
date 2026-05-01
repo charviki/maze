@@ -174,6 +174,32 @@ func (m *HostSpecManager) ListMerged(registry *NodeRegistry) []*protocol.HostInf
 	return result
 }
 
+// GetMerged 获取指定名称的 HostSpec 并合并 NodeRegistry 心跳状态。
+// 不存在时返回 nil。
+func (m *HostSpecManager) GetMerged(name string, registry *NodeRegistry) *protocol.HostInfo {
+	spec := m.Get(name)
+	if spec == nil {
+		return nil
+	}
+	info := &protocol.HostInfo{HostSpec: *spec}
+	if spec.Status == protocol.HostStatusDeploying {
+		node := registry.Get(spec.Name)
+		if node != nil {
+			if node.Status == NodeStatusOnline {
+				info.Status = protocol.HostStatusOnline
+			} else {
+				info.Status = protocol.HostStatusOffline
+			}
+			info.Address = node.Address
+			info.SessionCount = node.AgentStatus.ActiveSessions
+			if !node.LastHeartbeat.IsZero() {
+				info.LastHeartbeat = node.LastHeartbeat.Format(time.RFC3339)
+			}
+		}
+	}
+	return info
+}
+
 // WaitSave 停止后台 flush loop 并执行最终刷盘。
 func (m *HostSpecManager) WaitSave() {
 	close(m.stopCh)

@@ -167,17 +167,6 @@ func TestHostHandler_CreateHost_ConflictInSpecMgr(t *testing.T) {
 	}
 }
 
-func TestHostHandler_CreateHost_ConflictInRegistry(t *testing.T) {
-	h := newTestHostHandlerWithNode(t, &mockHostRuntime{}, "existing-host", "http://localhost:8080")
-
-	c := newPostContext(`{"name":"existing-host","tools":["claude"]}`)
-	h.CreateHost(nil, c)
-
-	if c.Response.StatusCode() != http.StatusConflict {
-		t.Fatalf("期望 409, 实际=%d", c.Response.StatusCode())
-	}
-}
-
 func TestHostHandler_CreateHost_UnknownTools(t *testing.T) {
 	h := newTestHostHandler(t, &mockHostRuntime{})
 
