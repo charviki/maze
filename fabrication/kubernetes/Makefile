@@ -103,9 +103,11 @@ proxy: ## 启动 port-forward 代理（Web:10800 + Manager:8090），Ctrl+C 停�
 	@echo "\033[0;32m[INFO]\033[0m Starting port-forward..."
 	@echo "  Web:      http://localhost:$(PORT_WEB)"
 	@echo "  Manager:  http://localhost:$(PORT_MANAGER)/health"
-	@kubectl port-forward svc/web $(PORT_WEB):80 -n $(NAMESPACE) &
-	@kubectl port-forward svc/agent-manager $(PORT_MANAGER):8080 -n $(NAMESPACE) &
-	@wait
+	@bash -c '\
+		trap "kill 0" SIGINT SIGTERM; \
+		kubectl port-forward svc/web $(PORT_WEB):80 -n $(NAMESPACE) & \
+		kubectl port-forward svc/agent-manager $(PORT_MANAGER):8080 -n $(NAMESPACE) & \
+		wait'
 
 proxy-web: ## 只代理 Web 前端
 	kubectl port-forward svc/web $(PORT_WEB):80 -n $(NAMESPACE)
