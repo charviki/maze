@@ -1,6 +1,5 @@
 FROM public.ecr.aws/docker/library/golang:1.24-bookworm AS backend-builder
 
-# client-go 要求 Go >= 1.26，通过 GOTOOLCHAIN 自动下载匹配的工具链
 ENV GOTOOLCHAIN=auto
 
 WORKDIR /src
@@ -21,20 +20,16 @@ RUN sed -i 's|../../../fabrication/cradle|./mesa-hub/cradle|g' go.mod
 RUN --mount=type=cache,id=go-pkg-mod,target=/go/pkg/mod \
     CGO_ENABLED=0 go build -o /bin/agent-manager .
 
+FROM public.ecr.aws/docker/library/docker:cli AS docker-cli
+
 FROM public.ecr.aws/docker/library/debian:bookworm-slim
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
-    curl \
-    gnupg \
-    && install -m 0755 -d /etc/apt/keyrings \
-    && curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
-    && chmod a+r /etc/apt/keyrings/docker.gpg \
-    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null \
-    && apt-get update \
-    && apt-get install -y docker-ce-cli \
     && rm -rf /var/lib/apt/lists/*
 
+COPY --from=docker-cli /usr/local/bin/docker /usr/local/bin/docker
+COPY --from=docker-cli /usr/local/libexec/docker/cli-plugins/docker-buildx /usr/local/libexec/docker/cli-plugins/docker-buildx
 COPY --from=backend-builder /bin/agent-manager /usr/local/bin/agent-manager
 COPY mesa-hub/behavior-panel/server/config.yaml /usr/local/bin/config.yaml
 
