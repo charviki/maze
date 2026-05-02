@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"embed"
 	"io/fs"
 	"net/http"
 	"path/filepath"
@@ -17,10 +16,6 @@ import (
 	"github.com/charviki/sweetwater-black-ridge/biz/model"
 	"github.com/charviki/sweetwater-black-ridge/biz/service"
 )
-
-// staticFiles 嵌入前端构建产物，实现单二进制部署
-//go:embed all:web-dist
-var staticFiles embed.FS
 
 // register 注册业务路由和 SPA 静态文件服务。
 // 静态文件通过 go:embed 嵌入，NoRoute 处理 SPA fallback：
