@@ -66,6 +66,8 @@ type RegisterRequest struct {
 	Address string `json:"address"`
 	// ExternalAddr Agent 的外部可访问地址（前端可能需要）
 	ExternalAddr string `json:"external_addr"`
+	// GrpcAddress Agent gRPC 监听地址（Manager 用于 gRPC 回调）
+	GrpcAddress string `json:"grpc_address"`
 	// Capabilities Agent 能力声明
 	Capabilities AgentCapabilities `json:"capabilities"`
 	// Status Agent 当前状态快照

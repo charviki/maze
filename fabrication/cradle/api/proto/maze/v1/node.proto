@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package maze.v1;
+
+option go_package = "github.com/charviki/maze-cradle/api/gen/maze/v1";
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "maze/v1/agent.proto";
+
+// 与 model.Node 对齐
+message NodeInfo {
+  string name = 1;
+  string address = 2;
+  string external_addr = 3;
+  string grpc_address = 11;
+  string auth_token = 4;
+  string status = 5;
+  string registered_at = 6;
+  string last_heartbeat = 7;
+  AgentCapabilities capabilities = 8;
+  AgentStatus agent_status = 9;
+  AgentMetadata metadata = 10;
+}
+
+message ListNodesRequest {}
+
+message ListNodesResponse {
+  repeated NodeInfo nodes = 1;
+}
+
+message GetNodeRequest {
+  string name = 1;
+}
+
+message DeleteNodeRequest {
+  string name = 1;
+}
+
+service NodeService {
+  rpc ListNodes(ListNodesRequest) returns (ListNodesResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/nodes"
+    };
+  }
+
+  rpc GetNode(GetNodeRequest) returns (NodeInfo) {
+    option (google.api.http) = {
+      get: "/api/v1/nodes/{name}"
+    };
+  }
+
+  rpc DeleteNode(DeleteNodeRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/api/v1/nodes/{name}"
+    };
+  }
+}

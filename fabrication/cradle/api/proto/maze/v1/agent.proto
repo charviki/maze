@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package maze.v1;
+
+option go_package = "github.com/charviki/maze-cradle/api/gen/maze/v1";
+
+import "google/api/annotations.proto";
+import "maze/v1/config.proto";
+
+// 与 protocol.AgentCapabilities 对齐
+message AgentCapabilities {
+  repeated string supported_templates = 1;
+  int32 max_sessions = 2;
+  repeated string tools = 3;
+}
+
+// 与 protocol.AgentStatus 对齐
+message AgentStatus {
+  int32 active_sessions = 1;
+  double cpu_usage = 2;
+  double memory_usage_mb = 3;
+  string workspace_root = 4;
+  repeated SessionDetail session_details = 5;
+  LocalAgentConfig local_config = 6;
+}
+
+// 与 protocol.SessionDetail 对齐
+message SessionDetail {
+  string id = 1;
+  string template = 2;
+  string working_dir = 3;
+  int64 uptime_seconds = 4;
+}
+
+// 与 protocol.AgentMetadata 对齐
+message AgentMetadata {
+  string version = 1;
+  string hostname = 2;
+  string started_at = 3;
+}
+
+// LocalAgentConfig 定义在 config.proto 中
+
+// 与 protocol.RegisterRequest 对齐
+message RegisterRequest {
+  string name = 1;
+  string address = 2;
+  string external_addr = 3;
+  string grpc_address = 7;
+  AgentCapabilities capabilities = 4;
+  AgentStatus status = 5;
+  AgentMetadata metadata = 6;
+}
+
+message RegisterResponse {
+  string name = 1;
+  string status = 2;
+}
+
+// 与 protocol.HeartbeatRequest 对齐
+message HeartbeatRequest {
+  string name = 1;
+  AgentStatus status = 2;
+}
+
+message HeartbeatResponse {
+  string name = 1;
+  string status = 2;
+}
+
+service AgentService {
+  rpc Register(RegisterRequest) returns (RegisterResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/nodes/register"
+      body: "*"
+    };
+  }
+
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/nodes/heartbeat"
+      body: "*"
+    };
+  }
+}

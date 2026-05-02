@@ -1,0 +1,232 @@
+syntax = "proto3";
+
+package maze.v1;
+
+option go_package = "github.com/charviki/maze-cradle/api/gen/maze/v1";
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+
+// 与 model.Session 对齐
+message Session {
+  string id = 1;
+  string name = 2;
+  string status = 3;
+  string created_at = 4;
+  int32 window_count = 5;
+  string template_id = 6;
+  string working_dir = 7;
+}
+
+// 与 model.ConfigItem 对齐
+message ConfigItem {
+  string type = 1;
+  string key = 2;
+  string value = 3;
+}
+
+// 与 model.CreateSessionRequest 对齐
+message CreateSessionRequest {
+  string node_name = 1;
+  string name = 2;
+  string command = 3;
+  string working_dir = 4;
+  repeated ConfigItem session_confs = 5;
+  string restore_strategy = 6;
+  string template_id = 7;
+}
+
+message ListSessionsRequest {
+  string node_name = 1;
+}
+
+message ListSessionsResponse {
+  repeated Session sessions = 1;
+}
+
+message GetSessionRequest {
+  string node_name = 1;
+  string id = 2;
+}
+
+message DeleteSessionRequest {
+  string node_name = 1;
+  string id = 2;
+}
+
+message GetSessionConfigRequest {
+  string node_name = 1;
+  string id = 2;
+}
+
+message ConfigFileSnapshot {
+  string path = 1;
+  string content = 2;
+  bool exists = 3;
+  string hash = 4;
+}
+
+message ConfigFileUpdate {
+  string path = 1;
+  string content = 2;
+  string base_hash = 3;
+}
+
+message SessionConfigView {
+  string session_id = 1;
+  string template_id = 2;
+  string working_dir = 3;
+  string scope = 4;
+  repeated ConfigFileSnapshot files = 5;
+}
+
+message UpdateSessionConfigRequest {
+  string node_name = 1;
+  string id = 2;
+  repeated ConfigFileUpdate files = 3;
+}
+
+message RestoreSessionRequest {
+  string node_name = 1;
+  string id = 2;
+}
+
+message SaveSessionsRequest {
+  string node_name = 1;
+}
+
+message SaveSessionsResponse {
+  string saved_at = 1;
+}
+
+message GetSavedSessionsRequest {
+  string node_name = 1;
+}
+
+// 与 model.SessionState 对齐
+message SessionState {
+  string session_name = 1;
+  bytes pipeline = 2;
+  string restore_strategy = 3;
+  string restore_command = 4;
+  string working_dir = 5;
+  string template_id = 6;
+  string cli_session_id = 7;
+  map<string, string> env_snapshot = 8;
+  string terminal_snapshot = 9;
+  string saved_at = 10;
+}
+
+message GetSavedSessionsResponse {
+  repeated SessionState sessions = 1;
+}
+
+// Terminal 操作
+
+// 与 model.TerminalOutput 对齐
+message TerminalOutput {
+  string session_id = 1;
+  int32 lines = 2;
+  string output = 3;
+}
+
+message GetOutputRequest {
+  string node_name = 1;
+  string id = 2;
+  int32 lines = 3;
+}
+
+message SendInputRequest {
+  string node_name = 1;
+  string id = 2;
+  string command = 3;
+}
+
+message SendSignalRequest {
+  string node_name = 1;
+  string id = 2;
+  string signal = 3;
+}
+
+message GetEnvRequest {
+  string node_name = 1;
+  string id = 2;
+}
+
+message GetEnvResponse {
+  map<string, string> env = 1;
+}
+
+// SessionService — Agent 端实现，Manager 通过 gRPC client 调用
+service SessionService {
+  rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/nodes/{node_name}/sessions"
+    };
+  }
+  rpc CreateSession(CreateSessionRequest) returns (Session) {
+    option (google.api.http) = {
+      post: "/api/v1/nodes/{node_name}/sessions"
+      body: "*"
+    };
+  }
+  rpc GetSession(GetSessionRequest) returns (Session) {
+    option (google.api.http) = {
+      get: "/api/v1/nodes/{node_name}/sessions/{id}"
+    };
+  }
+  rpc DeleteSession(DeleteSessionRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/api/v1/nodes/{node_name}/sessions/{id}"
+    };
+  }
+  rpc GetSessionConfig(GetSessionConfigRequest) returns (SessionConfigView) {
+    option (google.api.http) = {
+      get: "/api/v1/nodes/{node_name}/sessions/{id}/config"
+    };
+  }
+  rpc UpdateSessionConfig(UpdateSessionConfigRequest) returns (SessionConfigView) {
+    option (google.api.http) = {
+      put: "/api/v1/nodes/{node_name}/sessions/{id}/config"
+      body: "*"
+    };
+  }
+  rpc RestoreSession(RestoreSessionRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/v1/nodes/{node_name}/sessions/{id}/restore"
+      body: "*"
+    };
+  }
+  rpc SaveSessions(SaveSessionsRequest) returns (SaveSessionsResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/nodes/{node_name}/sessions/save"
+    };
+  }
+  rpc GetSavedSessions(GetSavedSessionsRequest) returns (GetSavedSessionsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/nodes/{node_name}/sessions/saved"
+    };
+  }
+  rpc GetOutput(GetOutputRequest) returns (TerminalOutput) {
+    option (google.api.http) = {
+      get: "/api/v1/nodes/{node_name}/sessions/{id}/output"
+    };
+  }
+  rpc SendInput(SendInputRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/v1/nodes/{node_name}/sessions/{id}/input"
+      body: "*"
+    };
+  }
+  rpc SendSignal(SendSignalRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/v1/nodes/{node_name}/sessions/{id}/signal"
+      body: "*"
+    };
+  }
+  rpc GetEnv(GetEnvRequest) returns (GetEnvResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/nodes/{node_name}/sessions/{id}/env"
+    };
+  }
+}

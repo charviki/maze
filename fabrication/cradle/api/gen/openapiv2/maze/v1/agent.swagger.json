@@ -1,0 +1,284 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "maze/v1/agent.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "AgentService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/api/v1/nodes/heartbeat": {
+      "post": {
+        "operationId": "AgentService_Heartbeat",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1HeartbeatResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1HeartbeatRequest"
+            }
+          }
+        ],
+        "tags": [
+          "AgentService"
+        ]
+      }
+    },
+    "/api/v1/nodes/register": {
+      "post": {
+        "operationId": "AgentService_Register",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1RegisterResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1RegisterRequest"
+            }
+          }
+        ],
+        "tags": [
+          "AgentService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1AgentCapabilities": {
+      "type": "object",
+      "properties": {
+        "supportedTemplates": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "maxSessions": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "title": "与 protocol.AgentCapabilities 对齐"
+    },
+    "v1AgentMetadata": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "hostname": {
+          "type": "string"
+        },
+        "startedAt": {
+          "type": "string"
+        }
+      },
+      "title": "与 protocol.AgentMetadata 对齐"
+    },
+    "v1AgentStatus": {
+      "type": "object",
+      "properties": {
+        "activeSessions": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "cpuUsage": {
+          "type": "number",
+          "format": "double"
+        },
+        "memoryUsageMb": {
+          "type": "number",
+          "format": "double"
+        },
+        "workspaceRoot": {
+          "type": "string"
+        },
+        "sessionDetails": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1SessionDetail"
+          }
+        },
+        "localConfig": {
+          "$ref": "#/definitions/v1LocalAgentConfig"
+        }
+      },
+      "title": "与 protocol.AgentStatus 对齐"
+    },
+    "v1HeartbeatRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/definitions/v1AgentStatus"
+        }
+      },
+      "title": "与 protocol.HeartbeatRequest 对齐"
+    },
+    "v1HeartbeatResponse": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        }
+      }
+    },
+    "v1LocalAgentConfig": {
+      "type": "object",
+      "properties": {
+        "workingDir": {
+          "type": "string"
+        },
+        "defaultShell": {
+          "type": "string"
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "defaultTemplateId": {
+          "type": "string"
+        },
+        "maxSessions": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "与 protocol.LocalAgentConfig 对齐"
+    },
+    "v1RegisterRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "externalAddr": {
+          "type": "string"
+        },
+        "capabilities": {
+          "$ref": "#/definitions/v1AgentCapabilities"
+        },
+        "status": {
+          "$ref": "#/definitions/v1AgentStatus"
+        },
+        "metadata": {
+          "$ref": "#/definitions/v1AgentMetadata"
+        }
+      },
+      "title": "与 protocol.RegisterRequest 对齐"
+    },
+    "v1RegisterResponse": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        }
+      }
+    },
+    "v1SessionDetail": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "template": {
+          "type": "string"
+        },
+        "workingDir": {
+          "type": "string"
+        },
+        "uptimeSeconds": {
+          "type": "string",
+          "format": "int64"
+        }
+      },
+      "title": "与 protocol.SessionDetail 对齐"
+    }
+  }
+}

@@ -1,0 +1,2277 @@
+openapi: 3.0.1
+info:
+  title: maze/v1/config.proto
+  version: version not set
+servers:
+- url: /
+tags:
+- name: ConfigService
+- name: AgentService
+- name: AuditService
+- name: HostService
+- name: NodeService
+- name: SessionService
+- name: TemplateService
+paths:
+  /api/v1/audit/logs:
+    get:
+      operationId: AuditService_GetAuditLogs
+      parameters:
+      - in: query
+        name: page
+        schema:
+          format: int32
+          type: integer
+      - in: query
+        name: pageSize
+        schema:
+          format: int32
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1GetAuditLogsResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - AuditService
+  /api/v1/host/tools:
+    get:
+      operationId: HostService_ListTools
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1ListToolsResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - HostService
+  /api/v1/hosts:
+    get:
+      operationId: HostService_ListHosts
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1ListHostsResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - HostService
+    post:
+      operationId: HostService_CreateHost
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/v1CreateHostRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1HostSpec"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - HostService
+      x-codegen-request-body-name: body
+  /api/v1/hosts/{name}:
+    delete:
+      operationId: HostService_DeleteHost
+      parameters:
+      - in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - HostService
+    get:
+      operationId: HostService_GetHost
+      parameters:
+      - in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1HostInfo"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - HostService
+  /api/v1/hosts/{name}/logs/build:
+    get:
+      operationId: HostService_GetBuildLog
+      parameters:
+      - in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1GetBuildLogResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - HostService
+  /api/v1/hosts/{name}/logs/runtime:
+    get:
+      operationId: HostService_GetRuntimeLog
+      parameters:
+      - in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1GetRuntimeLogResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - HostService
+  /api/v1/nodes:
+    get:
+      operationId: NodeService_ListNodes
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1ListNodesResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - NodeService
+  /api/v1/nodes/heartbeat:
+    post:
+      operationId: AgentService_Heartbeat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/v1HeartbeatRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1HeartbeatResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - AgentService
+      x-codegen-request-body-name: body
+  /api/v1/nodes/register:
+    post:
+      operationId: AgentService_Register
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/v1RegisterRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1RegisterResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - AgentService
+      x-codegen-request-body-name: body
+  /api/v1/nodes/{name}:
+    delete:
+      operationId: NodeService_DeleteNode
+      parameters:
+      - in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - NodeService
+    get:
+      operationId: NodeService_GetNode
+      parameters:
+      - in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1NodeInfo"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - NodeService
+  /api/v1/nodes/{nodeName}/local-config:
+    get:
+      operationId: ConfigService_GetConfig
+      parameters:
+      - in: path
+        name: nodeName
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1LocalAgentConfig"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - ConfigService
+    put:
+      operationId: ConfigService_UpdateConfig
+      parameters:
+      - in: path
+        name: nodeName
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfigServiceUpdateConfigBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1LocalAgentConfig"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - ConfigService
+      x-codegen-request-body-name: body
+  /api/v1/nodes/{nodeName}/sessions:
+    get:
+      operationId: SessionService_ListSessions
+      parameters:
+      - in: path
+        name: nodeName
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1ListSessionsResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SessionService
+    post:
+      operationId: SessionService_CreateSession
+      parameters:
+      - in: path
+        name: nodeName
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SessionServiceCreateSessionBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1Session"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SessionService
+      x-codegen-request-body-name: body
+  /api/v1/nodes/{nodeName}/sessions/save:
+    post:
+      operationId: SessionService_SaveSessions
+      parameters:
+      - in: path
+        name: nodeName
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1SaveSessionsResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SessionService
+  /api/v1/nodes/{nodeName}/sessions/saved:
+    get:
+      operationId: SessionService_GetSavedSessions
+      parameters:
+      - in: path
+        name: nodeName
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1GetSavedSessionsResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SessionService
+  /api/v1/nodes/{nodeName}/sessions/{id}:
+    delete:
+      operationId: SessionService_DeleteSession
+      parameters:
+      - in: path
+        name: nodeName
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SessionService
+    get:
+      operationId: SessionService_GetSession
+      parameters:
+      - in: path
+        name: nodeName
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1Session"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SessionService
+  /api/v1/nodes/{nodeName}/sessions/{id}/config:
+    get:
+      operationId: SessionService_GetSessionConfig
+      parameters:
+      - in: path
+        name: nodeName
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1SessionConfigView"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SessionService
+    put:
+      operationId: SessionService_UpdateSessionConfig
+      parameters:
+      - in: path
+        name: nodeName
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SessionServiceUpdateSessionConfigBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1SessionConfigView"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SessionService
+      x-codegen-request-body-name: body
+  /api/v1/nodes/{nodeName}/sessions/{id}/env:
+    get:
+      operationId: SessionService_GetEnv
+      parameters:
+      - in: path
+        name: nodeName
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1GetEnvResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SessionService
+  /api/v1/nodes/{nodeName}/sessions/{id}/input:
+    post:
+      operationId: SessionService_SendInput
+      parameters:
+      - in: path
+        name: nodeName
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SessionServiceSendInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SessionService
+      x-codegen-request-body-name: body
+  /api/v1/nodes/{nodeName}/sessions/{id}/output:
+    get:
+      operationId: SessionService_GetOutput
+      parameters:
+      - in: path
+        name: nodeName
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: lines
+        schema:
+          format: int32
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1TerminalOutput"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SessionService
+  /api/v1/nodes/{nodeName}/sessions/{id}/restore:
+    post:
+      operationId: SessionService_RestoreSession
+      parameters:
+      - in: path
+        name: nodeName
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SessionServiceRestoreSessionBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SessionService
+      x-codegen-request-body-name: body
+  /api/v1/nodes/{nodeName}/sessions/{id}/signal:
+    post:
+      operationId: SessionService_SendSignal
+      parameters:
+      - in: path
+        name: nodeName
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SessionServiceSendSignalBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SessionService
+      x-codegen-request-body-name: body
+  /api/v1/nodes/{nodeName}/templates:
+    get:
+      operationId: TemplateService_ListTemplates
+      parameters:
+      - in: path
+        name: nodeName
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1ListTemplatesResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - TemplateService
+    post:
+      operationId: TemplateService_CreateTemplate
+      parameters:
+      - in: path
+        name: nodeName
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TemplateServiceCreateTemplateBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1SessionTemplate"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - TemplateService
+      x-codegen-request-body-name: body
+  /api/v1/nodes/{nodeName}/templates/{id}:
+    delete:
+      operationId: TemplateService_DeleteTemplate
+      parameters:
+      - in: path
+        name: nodeName
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - TemplateService
+    get:
+      operationId: TemplateService_GetTemplate
+      parameters:
+      - in: path
+        name: nodeName
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1SessionTemplate"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - TemplateService
+    put:
+      operationId: TemplateService_UpdateTemplate
+      parameters:
+      - in: path
+        name: nodeName
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TemplateServiceUpdateTemplateBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1SessionTemplate"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - TemplateService
+      x-codegen-request-body-name: body
+  /api/v1/nodes/{nodeName}/templates/{id}/config:
+    get:
+      operationId: TemplateService_GetTemplateConfig
+      parameters:
+      - in: path
+        name: nodeName
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1TemplateConfigView"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - TemplateService
+    put:
+      operationId: TemplateService_UpdateTemplateConfig
+      parameters:
+      - in: path
+        name: nodeName
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TemplateServiceUpdateTemplateConfigBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1TemplateConfigView"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - TemplateService
+      x-codegen-request-body-name: body
+components:
+  schemas:
+    ConfigServiceUpdateConfigBody:
+      example:
+        workingDir: workingDir
+        env:
+          key: env
+      properties:
+        workingDir:
+          type: string
+        env:
+          additionalProperties:
+            type: string
+          type: object
+      type: object
+    SessionServiceCreateSessionBody:
+      example:
+        sessionConfs:
+        - type: type
+          value: value
+          key: key
+        - type: type
+          value: value
+          key: key
+        workingDir: workingDir
+        name: name
+        restoreStrategy: restoreStrategy
+        templateId: templateId
+        command: command
+      properties:
+        name:
+          type: string
+        command:
+          type: string
+        workingDir:
+          type: string
+        sessionConfs:
+          items:
+            $ref: "#/components/schemas/v1ConfigItem"
+          type: array
+        restoreStrategy:
+          type: string
+        templateId:
+          type: string
+      title: 与 model.CreateSessionRequest 对齐
+      type: object
+    SessionServiceRestoreSessionBody:
+      type: object
+    SessionServiceSendInputBody:
+      example:
+        command: command
+      properties:
+        command:
+          type: string
+      type: object
+    SessionServiceSendSignalBody:
+      example:
+        signal: signal
+      properties:
+        signal:
+          type: string
+      type: object
+    SessionServiceUpdateSessionConfigBody:
+      example:
+        files:
+        - path: path
+          baseHash: baseHash
+          content: content
+        - path: path
+          baseHash: baseHash
+          content: content
+      properties:
+        files:
+          items:
+            $ref: "#/components/schemas/v1ConfigFileUpdate"
+          type: array
+      type: object
+    TemplateServiceCreateTemplateBody:
+      example:
+        template:
+          defaults:
+            files:
+            - path: path
+              content: content
+            - path: path
+              content: content
+            env:
+              key: env
+          sessionSchema:
+            envDefs:
+            - label: label
+              placeholder: placeholder
+              sensitive: true
+              key: key
+              required: true
+            - label: label
+              placeholder: placeholder
+              sensitive: true
+              key: key
+              required: true
+            fileDefs:
+            - path: path
+              defaultContent: defaultContent
+              label: label
+              required: true
+            - path: path
+              defaultContent: defaultContent
+              label: label
+              required: true
+          restoreCommand: restoreCommand
+          builtin: true
+          name: name
+          icon: icon
+          description: description
+          id: id
+          command: command
+          sessionFilePattern: sessionFilePattern
+      properties:
+        template:
+          $ref: "#/components/schemas/v1SessionTemplate"
+      type: object
+    TemplateServiceUpdateTemplateBody:
+      example:
+        template:
+          defaults:
+            files:
+            - path: path
+              content: content
+            - path: path
+              content: content
+            env:
+              key: env
+          sessionSchema:
+            envDefs:
+            - label: label
+              placeholder: placeholder
+              sensitive: true
+              key: key
+              required: true
+            - label: label
+              placeholder: placeholder
+              sensitive: true
+              key: key
+              required: true
+            fileDefs:
+            - path: path
+              defaultContent: defaultContent
+              label: label
+              required: true
+            - path: path
+              defaultContent: defaultContent
+              label: label
+              required: true
+          restoreCommand: restoreCommand
+          builtin: true
+          name: name
+          icon: icon
+          description: description
+          id: id
+          command: command
+          sessionFilePattern: sessionFilePattern
+      properties:
+        template:
+          $ref: "#/components/schemas/v1SessionTemplate"
+      type: object
+    TemplateServiceUpdateTemplateConfigBody:
+      example:
+        files:
+        - path: path
+          baseHash: baseHash
+          content: content
+        - path: path
+          baseHash: baseHash
+          content: content
+      properties:
+        files:
+          items:
+            $ref: "#/components/schemas/v1ConfigFileUpdate"
+          type: array
+      type: object
+    protobufAny:
+      additionalProperties:
+        type: object
+      example:
+        '@type': '@type'
+      properties:
+        '@type':
+          type: string
+      type: object
+    rpcStatus:
+      example:
+        code: 5
+        details:
+        - '@type': '@type'
+        - '@type': '@type'
+        message: message
+      properties:
+        code:
+          format: int32
+          type: integer
+        message:
+          type: string
+        details:
+          items:
+            $ref: "#/components/schemas/protobufAny"
+          type: array
+      type: object
+    v1AgentCapabilities:
+      example:
+        supportedTemplates:
+        - supportedTemplates
+        - supportedTemplates
+        maxSessions: 0
+        tools:
+        - tools
+        - tools
+      properties:
+        supportedTemplates:
+          items:
+            type: string
+          type: array
+        maxSessions:
+          format: int32
+          type: integer
+        tools:
+          items:
+            type: string
+          type: array
+      title: 与 protocol.AgentCapabilities 对齐
+      type: object
+    v1AgentMetadata:
+      example:
+        hostname: hostname
+        startedAt: startedAt
+        version: version
+      properties:
+        version:
+          type: string
+        hostname:
+          type: string
+        startedAt:
+          type: string
+      title: 与 protocol.AgentMetadata 对齐
+      type: object
+    v1AgentStatus:
+      example:
+        cpuUsage: 1.4658129805029452
+        memoryUsageMb: 5.962133916683182
+        activeSessions: 6
+        sessionDetails:
+        - template: template
+          workingDir: workingDir
+          id: id
+          uptimeSeconds: uptimeSeconds
+        - template: template
+          workingDir: workingDir
+          id: id
+          uptimeSeconds: uptimeSeconds
+        workspaceRoot: workspaceRoot
+        localConfig:
+          workingDir: workingDir
+          env:
+            key: env
+      properties:
+        activeSessions:
+          format: int32
+          type: integer
+        cpuUsage:
+          format: double
+          type: number
+        memoryUsageMb:
+          format: double
+          type: number
+        workspaceRoot:
+          type: string
+        sessionDetails:
+          items:
+            $ref: "#/components/schemas/v1SessionDetail"
+          type: array
+        localConfig:
+          $ref: "#/components/schemas/v1LocalAgentConfig"
+      title: 与 protocol.AgentStatus 对齐
+      type: object
+    v1AuditLogEntry:
+      example:
+        result: result
+        payloadSummary: payloadSummary
+        action: action
+        id: id
+        targetNode: targetNode
+        operator: operator
+        timestamp: timestamp
+        statusCode: 0
+      properties:
+        id:
+          type: string
+        timestamp:
+          type: string
+        operator:
+          type: string
+        targetNode:
+          type: string
+        action:
+          type: string
+        payloadSummary:
+          type: string
+        result:
+          type: string
+        statusCode:
+          format: int32
+          type: integer
+      title: 与 protocol.AuditLogEntry 对齐
+      type: object
+    v1ConfigFile:
+      example:
+        path: path
+        content: content
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+      type: object
+    v1ConfigFileSnapshot:
+      example:
+        path: path
+        exists: true
+        content: content
+        hash: hash
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+        exists:
+          type: boolean
+        hash:
+          type: string
+      type: object
+    v1ConfigFileUpdate:
+      example:
+        path: path
+        baseHash: baseHash
+        content: content
+      properties:
+        path:
+          type: string
+        content:
+          type: string
+        baseHash:
+          type: string
+      type: object
+    v1ConfigItem:
+      example:
+        type: type
+        value: value
+        key: key
+      properties:
+        type:
+          type: string
+        key:
+          type: string
+        value:
+          type: string
+      title: 与 model.ConfigItem 对齐
+      type: object
+    v1ConfigLayer:
+      example:
+        files:
+        - path: path
+          content: content
+        - path: path
+          content: content
+        env:
+          key: env
+      properties:
+        env:
+          additionalProperties:
+            type: string
+          type: object
+        files:
+          items:
+            $ref: "#/components/schemas/v1ConfigFile"
+          type: array
+      type: object
+    v1CreateHostRequest:
+      properties:
+        name:
+          type: string
+        tools:
+          items:
+            type: string
+          type: array
+        displayName:
+          type: string
+        resources:
+          $ref: "#/components/schemas/v1ResourceLimits"
+      type: object
+    v1EnvDef:
+      example:
+        label: label
+        placeholder: placeholder
+        sensitive: true
+        key: key
+        required: true
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        required:
+          type: boolean
+        placeholder:
+          type: string
+        sensitive:
+          type: boolean
+      type: object
+    v1FileDef:
+      example:
+        path: path
+        defaultContent: defaultContent
+        label: label
+        required: true
+      properties:
+        path:
+          type: string
+        label:
+          type: string
+        required:
+          type: boolean
+        defaultContent:
+          type: string
+      type: object
+    v1GetAuditLogsResponse:
+      example:
+        total: 6
+        pageSize: 5
+        page: 1
+        logs:
+        - result: result
+          payloadSummary: payloadSummary
+          action: action
+          id: id
+          targetNode: targetNode
+          operator: operator
+          timestamp: timestamp
+          statusCode: 0
+        - result: result
+          payloadSummary: payloadSummary
+          action: action
+          id: id
+          targetNode: targetNode
+          operator: operator
+          timestamp: timestamp
+          statusCode: 0
+      properties:
+        logs:
+          items:
+            $ref: "#/components/schemas/v1AuditLogEntry"
+          type: array
+        total:
+          format: int32
+          type: integer
+        page:
+          format: int32
+          type: integer
+        pageSize:
+          format: int32
+          type: integer
+      type: object
+    v1GetBuildLogResponse:
+      example:
+        log: log
+      properties:
+        log:
+          type: string
+      type: object
+    v1GetEnvResponse:
+      example:
+        env:
+          key: env
+      properties:
+        env:
+          additionalProperties:
+            type: string
+          type: object
+      type: object
+    v1GetRuntimeLogResponse:
+      example:
+        log: log
+      properties:
+        log:
+          type: string
+      type: object
+    v1GetSavedSessionsResponse:
+      example:
+        sessions:
+        - pipeline: pipeline
+          terminalSnapshot: terminalSnapshot
+          sessionName: sessionName
+          restoreCommand: restoreCommand
+          workingDir: workingDir
+          envSnapshot:
+            key: envSnapshot
+          restoreStrategy: restoreStrategy
+          savedAt: savedAt
+          cliSessionId: cliSessionId
+          templateId: templateId
+        - pipeline: pipeline
+          terminalSnapshot: terminalSnapshot
+          sessionName: sessionName
+          restoreCommand: restoreCommand
+          workingDir: workingDir
+          envSnapshot:
+            key: envSnapshot
+          restoreStrategy: restoreStrategy
+          savedAt: savedAt
+          cliSessionId: cliSessionId
+          templateId: templateId
+      properties:
+        sessions:
+          items:
+            $ref: "#/components/schemas/v1SessionState"
+          type: array
+      type: object
+    v1HeartbeatRequest:
+      properties:
+        name:
+          type: string
+        status:
+          $ref: "#/components/schemas/v1AgentStatus"
+      title: 与 protocol.HeartbeatRequest 对齐
+      type: object
+    v1HeartbeatResponse:
+      example:
+        name: name
+        status: status
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+      type: object
+    v1HostInfo:
+      example:
+        createdAt: createdAt
+        address: address
+        lastHeartbeat: lastHeartbeat
+        sessionCount: 6
+        displayName: displayName
+        retryCount: 0
+        name: name
+        resources:
+          cpuLimit: cpuLimit
+          memoryLimit: memoryLimit
+        tools:
+        - tools
+        - tools
+        updatedAt: updatedAt
+        status: status
+        errorMsg: errorMsg
+      properties:
+        name:
+          type: string
+        displayName:
+          type: string
+        tools:
+          items:
+            type: string
+          type: array
+        resources:
+          $ref: "#/components/schemas/v1ResourceLimits"
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        status:
+          type: string
+        errorMsg:
+          type: string
+        retryCount:
+          format: int32
+          type: integer
+        address:
+          type: string
+        sessionCount:
+          format: int32
+          type: integer
+        lastHeartbeat:
+          type: string
+      title: 与 protocol.HostInfo 对齐（HostSpec + 运行时状态合并视图）
+      type: object
+    v1HostSpec:
+      example:
+        createdAt: createdAt
+        displayName: displayName
+        retryCount: 0
+        authToken: authToken
+        name: name
+        resources:
+          cpuLimit: cpuLimit
+          memoryLimit: memoryLimit
+        tools:
+        - tools
+        - tools
+        updatedAt: updatedAt
+        status: status
+        errorMsg: errorMsg
+      properties:
+        name:
+          type: string
+        displayName:
+          type: string
+        tools:
+          items:
+            type: string
+          type: array
+        resources:
+          $ref: "#/components/schemas/v1ResourceLimits"
+        authToken:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        status:
+          type: string
+        errorMsg:
+          type: string
+        retryCount:
+          format: int32
+          type: integer
+      title: 与 protocol.HostSpec 对齐
+      type: object
+    v1ListHostsResponse:
+      example:
+        hosts:
+        - createdAt: createdAt
+          address: address
+          lastHeartbeat: lastHeartbeat
+          sessionCount: 6
+          displayName: displayName
+          retryCount: 0
+          name: name
+          resources:
+            cpuLimit: cpuLimit
+            memoryLimit: memoryLimit
+          tools:
+          - tools
+          - tools
+          updatedAt: updatedAt
+          status: status
+          errorMsg: errorMsg
+        - createdAt: createdAt
+          address: address
+          lastHeartbeat: lastHeartbeat
+          sessionCount: 6
+          displayName: displayName
+          retryCount: 0
+          name: name
+          resources:
+            cpuLimit: cpuLimit
+            memoryLimit: memoryLimit
+          tools:
+          - tools
+          - tools
+          updatedAt: updatedAt
+          status: status
+          errorMsg: errorMsg
+      properties:
+        hosts:
+          items:
+            $ref: "#/components/schemas/v1HostInfo"
+          type: array
+      type: object
+    v1ListNodesResponse:
+      example:
+        nodes:
+        - metadata:
+            hostname: hostname
+            startedAt: startedAt
+            version: version
+          address: address
+          lastHeartbeat: lastHeartbeat
+          capabilities:
+            supportedTemplates:
+            - supportedTemplates
+            - supportedTemplates
+            maxSessions: 0
+            tools:
+            - tools
+            - tools
+          externalAddr: externalAddr
+          authToken: authToken
+          name: name
+          registeredAt: registeredAt
+          grpcAddress: grpcAddress
+          agentStatus:
+            cpuUsage: 1.4658129805029452
+            memoryUsageMb: 5.962133916683182
+            activeSessions: 6
+            sessionDetails:
+            - template: template
+              workingDir: workingDir
+              id: id
+              uptimeSeconds: uptimeSeconds
+            - template: template
+              workingDir: workingDir
+              id: id
+              uptimeSeconds: uptimeSeconds
+            workspaceRoot: workspaceRoot
+            localConfig:
+              workingDir: workingDir
+              env:
+                key: env
+          status: status
+        - metadata:
+            hostname: hostname
+            startedAt: startedAt
+            version: version
+          address: address
+          lastHeartbeat: lastHeartbeat
+          capabilities:
+            supportedTemplates:
+            - supportedTemplates
+            - supportedTemplates
+            maxSessions: 0
+            tools:
+            - tools
+            - tools
+          externalAddr: externalAddr
+          authToken: authToken
+          name: name
+          registeredAt: registeredAt
+          grpcAddress: grpcAddress
+          agentStatus:
+            cpuUsage: 1.4658129805029452
+            memoryUsageMb: 5.962133916683182
+            activeSessions: 6
+            sessionDetails:
+            - template: template
+              workingDir: workingDir
+              id: id
+              uptimeSeconds: uptimeSeconds
+            - template: template
+              workingDir: workingDir
+              id: id
+              uptimeSeconds: uptimeSeconds
+            workspaceRoot: workspaceRoot
+            localConfig:
+              workingDir: workingDir
+              env:
+                key: env
+          status: status
+      properties:
+        nodes:
+          items:
+            $ref: "#/components/schemas/v1NodeInfo"
+          type: array
+      type: object
+    v1ListSessionsResponse:
+      example:
+        sessions:
+        - createdAt: createdAt
+          workingDir: workingDir
+          name: name
+          id: id
+          windowCount: 0
+          templateId: templateId
+          status: status
+        - createdAt: createdAt
+          workingDir: workingDir
+          name: name
+          id: id
+          windowCount: 0
+          templateId: templateId
+          status: status
+      properties:
+        sessions:
+          items:
+            $ref: "#/components/schemas/v1Session"
+          type: array
+      type: object
+    v1ListTemplatesResponse:
+      example:
+        templates:
+        - defaults:
+            files:
+            - path: path
+              content: content
+            - path: path
+              content: content
+            env:
+              key: env
+          sessionSchema:
+            envDefs:
+            - label: label
+              placeholder: placeholder
+              sensitive: true
+              key: key
+              required: true
+            - label: label
+              placeholder: placeholder
+              sensitive: true
+              key: key
+              required: true
+            fileDefs:
+            - path: path
+              defaultContent: defaultContent
+              label: label
+              required: true
+            - path: path
+              defaultContent: defaultContent
+              label: label
+              required: true
+          restoreCommand: restoreCommand
+          builtin: true
+          name: name
+          icon: icon
+          description: description
+          id: id
+          command: command
+          sessionFilePattern: sessionFilePattern
+        - defaults:
+            files:
+            - path: path
+              content: content
+            - path: path
+              content: content
+            env:
+              key: env
+          sessionSchema:
+            envDefs:
+            - label: label
+              placeholder: placeholder
+              sensitive: true
+              key: key
+              required: true
+            - label: label
+              placeholder: placeholder
+              sensitive: true
+              key: key
+              required: true
+            fileDefs:
+            - path: path
+              defaultContent: defaultContent
+              label: label
+              required: true
+            - path: path
+              defaultContent: defaultContent
+              label: label
+              required: true
+          restoreCommand: restoreCommand
+          builtin: true
+          name: name
+          icon: icon
+          description: description
+          id: id
+          command: command
+          sessionFilePattern: sessionFilePattern
+      properties:
+        templates:
+          items:
+            $ref: "#/components/schemas/v1SessionTemplate"
+          type: array
+      type: object
+    v1ListToolsResponse:
+      example:
+        tools:
+        - image: image
+          destPath: destPath
+          envVars:
+            key: envVars
+          description: description
+          id: id
+          binPaths:
+          - binPaths
+          - binPaths
+          category: category
+          sourcePath: sourcePath
+        - image: image
+          destPath: destPath
+          envVars:
+            key: envVars
+          description: description
+          id: id
+          binPaths:
+          - binPaths
+          - binPaths
+          category: category
+          sourcePath: sourcePath
+      properties:
+        tools:
+          items:
+            $ref: "#/components/schemas/v1ToolConfig"
+          type: array
+      type: object
+    v1LocalAgentConfig:
+      example:
+        workingDir: workingDir
+        env:
+          key: env
+      properties:
+        workingDir:
+          type: string
+        env:
+          additionalProperties:
+            type: string
+          type: object
+      title: 与 protocol.LocalAgentConfig 对齐
+      type: object
+    v1NodeInfo:
+      example:
+        metadata:
+          hostname: hostname
+          startedAt: startedAt
+          version: version
+        address: address
+        lastHeartbeat: lastHeartbeat
+        capabilities:
+          supportedTemplates:
+          - supportedTemplates
+          - supportedTemplates
+          maxSessions: 0
+          tools:
+          - tools
+          - tools
+        externalAddr: externalAddr
+        authToken: authToken
+        name: name
+        registeredAt: registeredAt
+        grpcAddress: grpcAddress
+        agentStatus:
+          cpuUsage: 1.4658129805029452
+          memoryUsageMb: 5.962133916683182
+          activeSessions: 6
+          sessionDetails:
+          - template: template
+            workingDir: workingDir
+            id: id
+            uptimeSeconds: uptimeSeconds
+          - template: template
+            workingDir: workingDir
+            id: id
+            uptimeSeconds: uptimeSeconds
+          workspaceRoot: workspaceRoot
+          localConfig:
+            workingDir: workingDir
+            env:
+              key: env
+        status: status
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+        externalAddr:
+          type: string
+        grpcAddress:
+          type: string
+        authToken:
+          type: string
+        status:
+          type: string
+        registeredAt:
+          type: string
+        lastHeartbeat:
+          type: string
+        capabilities:
+          $ref: "#/components/schemas/v1AgentCapabilities"
+        agentStatus:
+          $ref: "#/components/schemas/v1AgentStatus"
+        metadata:
+          $ref: "#/components/schemas/v1AgentMetadata"
+      title: 与 model.Node 对齐
+      type: object
+    v1RegisterRequest:
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+        externalAddr:
+          type: string
+        grpcAddress:
+          type: string
+        capabilities:
+          $ref: "#/components/schemas/v1AgentCapabilities"
+        status:
+          $ref: "#/components/schemas/v1AgentStatus"
+        metadata:
+          $ref: "#/components/schemas/v1AgentMetadata"
+      title: 与 protocol.RegisterRequest 对齐
+      type: object
+    v1RegisterResponse:
+      example:
+        name: name
+        status: status
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+      type: object
+    v1ResourceLimits:
+      example:
+        cpuLimit: cpuLimit
+        memoryLimit: memoryLimit
+      properties:
+        cpuLimit:
+          type: string
+        memoryLimit:
+          type: string
+      title: 与 protocol.ResourceLimits 对齐
+      type: object
+    v1SaveSessionsResponse:
+      example:
+        savedAt: savedAt
+      properties:
+        savedAt:
+          type: string
+      type: object
+    v1Session:
+      example:
+        createdAt: createdAt
+        workingDir: workingDir
+        name: name
+        id: id
+        windowCount: 0
+        templateId: templateId
+        status: status
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+        windowCount:
+          format: int32
+          type: integer
+        templateId:
+          type: string
+        workingDir:
+          type: string
+      title: 与 model.Session 对齐
+      type: object
+    v1SessionConfigView:
+      example:
+        workingDir: workingDir
+        scope: scope
+        files:
+        - path: path
+          exists: true
+          content: content
+          hash: hash
+        - path: path
+          exists: true
+          content: content
+          hash: hash
+        sessionId: sessionId
+        templateId: templateId
+      properties:
+        sessionId:
+          type: string
+        templateId:
+          type: string
+        workingDir:
+          type: string
+        scope:
+          type: string
+        files:
+          items:
+            $ref: "#/components/schemas/v1ConfigFileSnapshot"
+          type: array
+      type: object
+    v1SessionDetail:
+      example:
+        template: template
+        workingDir: workingDir
+        id: id
+        uptimeSeconds: uptimeSeconds
+      properties:
+        id:
+          type: string
+        template:
+          type: string
+        workingDir:
+          type: string
+        uptimeSeconds:
+          format: int64
+          type: string
+      title: 与 protocol.SessionDetail 对齐
+      type: object
+    v1SessionSchema:
+      example:
+        envDefs:
+        - label: label
+          placeholder: placeholder
+          sensitive: true
+          key: key
+          required: true
+        - label: label
+          placeholder: placeholder
+          sensitive: true
+          key: key
+          required: true
+        fileDefs:
+        - path: path
+          defaultContent: defaultContent
+          label: label
+          required: true
+        - path: path
+          defaultContent: defaultContent
+          label: label
+          required: true
+      properties:
+        envDefs:
+          items:
+            $ref: "#/components/schemas/v1EnvDef"
+          type: array
+        fileDefs:
+          items:
+            $ref: "#/components/schemas/v1FileDef"
+          type: array
+      type: object
+    v1SessionState:
+      example:
+        pipeline: pipeline
+        terminalSnapshot: terminalSnapshot
+        sessionName: sessionName
+        restoreCommand: restoreCommand
+        workingDir: workingDir
+        envSnapshot:
+          key: envSnapshot
+        restoreStrategy: restoreStrategy
+        savedAt: savedAt
+        cliSessionId: cliSessionId
+        templateId: templateId
+      properties:
+        sessionName:
+          type: string
+        pipeline:
+          format: byte
+          pattern: "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"
+          type: string
+        restoreStrategy:
+          type: string
+        restoreCommand:
+          type: string
+        workingDir:
+          type: string
+        templateId:
+          type: string
+        cliSessionId:
+          type: string
+        envSnapshot:
+          additionalProperties:
+            type: string
+          type: object
+        terminalSnapshot:
+          type: string
+        savedAt:
+          type: string
+      title: 与 model.SessionState 对齐
+      type: object
+    v1SessionTemplate:
+      example:
+        defaults:
+          files:
+          - path: path
+            content: content
+          - path: path
+            content: content
+          env:
+            key: env
+        sessionSchema:
+          envDefs:
+          - label: label
+            placeholder: placeholder
+            sensitive: true
+            key: key
+            required: true
+          - label: label
+            placeholder: placeholder
+            sensitive: true
+            key: key
+            required: true
+          fileDefs:
+          - path: path
+            defaultContent: defaultContent
+            label: label
+            required: true
+          - path: path
+            defaultContent: defaultContent
+            label: label
+            required: true
+        restoreCommand: restoreCommand
+        builtin: true
+        name: name
+        icon: icon
+        description: description
+        id: id
+        command: command
+        sessionFilePattern: sessionFilePattern
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        command:
+          type: string
+        restoreCommand:
+          type: string
+        sessionFilePattern:
+          type: string
+        description:
+          type: string
+        icon:
+          type: string
+        builtin:
+          type: boolean
+        defaults:
+          $ref: "#/components/schemas/v1ConfigLayer"
+        sessionSchema:
+          $ref: "#/components/schemas/v1SessionSchema"
+      title: 与 model.SessionTemplate 对齐
+      type: object
+    v1TemplateConfigView:
+      example:
+        scope: scope
+        files:
+        - path: path
+          exists: true
+          content: content
+          hash: hash
+        - path: path
+          exists: true
+          content: content
+          hash: hash
+        templateId: templateId
+      properties:
+        templateId:
+          type: string
+        scope:
+          type: string
+        files:
+          items:
+            $ref: "#/components/schemas/v1ConfigFileSnapshot"
+          type: array
+      type: object
+    v1TerminalOutput:
+      example:
+        output: output
+        sessionId: sessionId
+        lines: 0
+      properties:
+        sessionId:
+          type: string
+        lines:
+          format: int32
+          type: integer
+        output:
+          type: string
+      title: 与 model.TerminalOutput 对齐
+      type: object
+    v1ToolConfig:
+      example:
+        image: image
+        destPath: destPath
+        envVars:
+          key: envVars
+        description: description
+        id: id
+        binPaths:
+        - binPaths
+        - binPaths
+        category: category
+        sourcePath: sourcePath
+      properties:
+        id:
+          type: string
+        image:
+          type: string
+        sourcePath:
+          type: string
+        destPath:
+          type: string
+        binPaths:
+          items:
+            type: string
+          type: array
+        envVars:
+          additionalProperties:
+            type: string
+          type: object
+        description:
+          type: string
+        category:
+          type: string
+      title: 与 protocol.ToolConfig 对齐
+      type: object
+x-original-swagger-version: "2.0"

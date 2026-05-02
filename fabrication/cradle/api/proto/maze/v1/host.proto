@@ -1,0 +1,148 @@
+syntax = "proto3";
+
+package maze.v1;
+
+option go_package = "github.com/charviki/maze-cradle/api/gen/maze/v1";
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+
+// 与 protocol.HostSpec 对齐
+message HostSpec {
+  string name = 1;
+  string display_name = 2;
+  repeated string tools = 3;
+  ResourceLimits resources = 4;
+  string auth_token = 5;
+  string created_at = 6;
+  string updated_at = 7;
+  string status = 8;
+  string error_msg = 9;
+  int32 retry_count = 10;
+}
+
+// 与 protocol.ResourceLimits 对齐
+message ResourceLimits {
+  string cpu_limit = 1;
+  string memory_limit = 2;
+}
+
+// 与 protocol.ToolConfig 对齐
+message ToolConfig {
+  string id = 1;
+  string image = 2;
+  string source_path = 3;
+  string dest_path = 4;
+  repeated string bin_paths = 5;
+  map<string, string> env_vars = 6;
+  string description = 7;
+  string category = 8;
+}
+
+// 与 protocol.HostInfo 对齐（HostSpec + 运行时状态合并视图）
+message HostInfo {
+  string name = 1;
+  string display_name = 2;
+  repeated string tools = 3;
+  ResourceLimits resources = 4;
+  string created_at = 5;
+  string updated_at = 6;
+  string status = 7;
+  string error_msg = 8;
+  int32 retry_count = 9;
+  string address = 10;
+  int32 session_count = 11;
+  string last_heartbeat = 12;
+}
+
+message CreateHostRequest {
+  string name = 1;
+  repeated string tools = 2;
+  string display_name = 3;
+  ResourceLimits resources = 4;
+}
+
+message ListHostsRequest {}
+
+message ListHostsResponse {
+  repeated HostInfo hosts = 1;
+}
+
+message GetHostRequest {
+  string name = 1;
+}
+
+message DeleteHostRequest {
+  string name = 1;
+}
+
+message DeleteHostResponse {
+  bool success = 1;
+}
+
+message GetBuildLogRequest {
+  string name = 1;
+}
+
+message GetBuildLogResponse {
+  string log = 1;
+}
+
+message GetRuntimeLogRequest {
+  string name = 1;
+}
+
+message GetRuntimeLogResponse {
+  string log = 1;
+}
+
+message ListToolsRequest {}
+
+message ListToolsResponse {
+  repeated ToolConfig tools = 1;
+}
+
+service HostService {
+  rpc CreateHost(CreateHostRequest) returns (HostSpec) {
+    option (google.api.http) = {
+      post: "/api/v1/hosts"
+      body: "*"
+    };
+  }
+
+  rpc ListHosts(ListHostsRequest) returns (ListHostsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/hosts"
+    };
+  }
+
+  rpc GetHost(GetHostRequest) returns (HostInfo) {
+    option (google.api.http) = {
+      get: "/api/v1/hosts/{name}"
+    };
+  }
+
+  rpc DeleteHost(DeleteHostRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/api/v1/hosts/{name}"
+    };
+  }
+
+  rpc GetBuildLog(GetBuildLogRequest) returns (GetBuildLogResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/hosts/{name}/logs/build"
+    };
+  }
+
+  rpc GetRuntimeLog(GetRuntimeLogRequest) returns (GetRuntimeLogResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/hosts/{name}/logs/runtime"
+    };
+  }
+
+  rpc ListTools(ListToolsRequest) returns (ListToolsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/host/tools"
+    };
+  }
+}

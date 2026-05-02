@@ -1,0 +1,25 @@
+version: v2
+managed:
+  enabled: true
+  disable:
+    - file_option: go_package
+      module: buf.build/googleapis/googleapis
+  override:
+    - file_option: go_package_prefix
+      value: github.com/charviki/maze-cradle/api/gen
+plugins:
+  - remote: buf.build/protocolbuffers/go
+    out: gen
+    opt: paths=source_relative
+  - remote: buf.build/grpc/go
+    out: gen
+    opt: paths=source_relative
+  - remote: buf.build/grpc-ecosystem/gateway
+    out: gen
+    opt:
+      - paths=source_relative
+  - remote: buf.build/grpc-ecosystem/openapiv2
+    out: gen/openapiv2
+    opt:
+      - allow_merge=true
+      - merge_file_name=maze

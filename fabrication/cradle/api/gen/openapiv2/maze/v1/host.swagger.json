@@ -1,0 +1,453 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "maze/v1/host.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "HostService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/api/v1/host/tools": {
+      "get": {
+        "operationId": "HostService_ListTools",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListToolsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "HostService"
+        ]
+      }
+    },
+    "/api/v1/hosts": {
+      "get": {
+        "operationId": "HostService_ListHosts",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListHostsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "HostService"
+        ]
+      },
+      "post": {
+        "operationId": "HostService_CreateHost",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1CreateHostResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreateHostRequest"
+            }
+          }
+        ],
+        "tags": [
+          "HostService"
+        ]
+      }
+    },
+    "/api/v1/hosts/{name}": {
+      "get": {
+        "operationId": "HostService_GetHost",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1HostInfo"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "HostService"
+        ]
+      },
+      "delete": {
+        "operationId": "HostService_DeleteHost",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "HostService"
+        ]
+      }
+    },
+    "/api/v1/hosts/{name}/logs/build": {
+      "get": {
+        "operationId": "HostService_GetBuildLog",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetBuildLogResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "HostService"
+        ]
+      }
+    },
+    "/api/v1/hosts/{name}/logs/runtime": {
+      "get": {
+        "operationId": "HostService_GetRuntimeLog",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetRuntimeLogResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "HostService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1CreateHostRequest": {
+      "type": "object",
+      "properties": {
+        "spec": {
+          "$ref": "#/definitions/v1HostSpec"
+        }
+      }
+    },
+    "v1CreateHostResponse": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "imageTag": {
+          "type": "string"
+        },
+        "containerId": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "buildLog": {
+          "type": "string"
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1ToolConfig"
+          }
+        }
+      },
+      "title": "与 protocol.CreateHostResponse 对齐"
+    },
+    "v1GetBuildLogResponse": {
+      "type": "object",
+      "properties": {
+        "log": {
+          "type": "string"
+        }
+      }
+    },
+    "v1GetRuntimeLogResponse": {
+      "type": "object",
+      "properties": {
+        "log": {
+          "type": "string"
+        }
+      }
+    },
+    "v1HostInfo": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "spec": {
+          "$ref": "#/definitions/v1HostSpec"
+        },
+        "containerId": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "title": "与 protocol.HostInfo 对齐（HostSpec + 运行时状态合并视图）"
+    },
+    "v1HostSpec": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "image": {
+          "type": "string"
+        },
+        "command": {
+          "type": "string"
+        },
+        "workingDir": {
+          "type": "string"
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "resources": {
+          "$ref": "#/definitions/v1ResourceLimits"
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1ToolConfig"
+          }
+        },
+        "status": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        },
+        "errorMsg": {
+          "type": "string"
+        },
+        "retryCount": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "与 protocol.HostSpec 对齐"
+    },
+    "v1ListHostsResponse": {
+      "type": "object",
+      "properties": {
+        "hosts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1HostInfo"
+          }
+        }
+      }
+    },
+    "v1ListToolsResponse": {
+      "type": "object",
+      "properties": {
+        "tools": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1ToolConfig"
+          }
+        }
+      }
+    },
+    "v1ResourceLimits": {
+      "type": "object",
+      "properties": {
+        "cpuLimit": {
+          "type": "string"
+        },
+        "memoryLimit": {
+          "type": "string"
+        }
+      },
+      "title": "与 protocol.ResourceLimits 对齐"
+    },
+    "v1ToolConfig": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "baseImage": {
+          "type": "string"
+        },
+        "defaultPackages": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sourcePath": {
+          "type": "string"
+        },
+        "destPath": {
+          "type": "string"
+        },
+        "binPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "envVars": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "title": "与 protocol.ToolConfig 对齐"
+    }
+  }
+}

@@ -1,0 +1,140 @@
+syntax = "proto3";
+
+package maze.v1;
+
+option go_package = "github.com/charviki/maze-cradle/api/gen/maze/v1";
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "maze/v1/session.proto";
+
+message ListTemplatesRequest {
+  string node_name = 1;
+}
+
+message ListTemplatesResponse {
+  repeated SessionTemplate templates = 1;
+}
+
+message CreateTemplateRequest {
+  string node_name = 1;
+  SessionTemplate template = 2;
+}
+
+message GetTemplateRequest {
+  string node_name = 1;
+  string id = 2;
+}
+
+message UpdateTemplateRequest {
+  string node_name = 1;
+  string id = 2;
+  SessionTemplate template = 3;
+}
+
+message DeleteTemplateRequest {
+  string node_name = 1;
+  string id = 2;
+}
+
+message GetTemplateConfigRequest {
+  string node_name = 1;
+  string id = 2;
+}
+
+message UpdateTemplateConfigRequest {
+  string node_name = 1;
+  string id = 2;
+  repeated ConfigFileUpdate files = 3;
+}
+
+message TemplateConfigView {
+  string template_id = 1;
+  string scope = 2;
+  repeated ConfigFileSnapshot files = 3;
+}
+
+message ConfigFile {
+  string path = 1;
+  string content = 2;
+}
+
+message ConfigLayer {
+  map<string, string> env = 1;
+  repeated ConfigFile files = 2;
+}
+
+message EnvDef {
+  string key = 1;
+  string label = 2;
+  bool required = 3;
+  string placeholder = 4;
+  bool sensitive = 5;
+}
+
+message FileDef {
+  string path = 1;
+  string label = 2;
+  bool required = 3;
+  string default_content = 4;
+}
+
+message SessionSchema {
+  repeated EnvDef env_defs = 1;
+  repeated FileDef file_defs = 2;
+}
+
+// 与 model.SessionTemplate 对齐
+message SessionTemplate {
+  string id = 1;
+  string name = 2;
+  string command = 3;
+  string restore_command = 4;
+  string session_file_pattern = 5;
+  string description = 6;
+  string icon = 7;
+  bool builtin = 8;
+  ConfigLayer defaults = 9;
+  SessionSchema session_schema = 10;
+}
+
+service TemplateService {
+  rpc ListTemplates(ListTemplatesRequest) returns (ListTemplatesResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/nodes/{node_name}/templates"
+    };
+  }
+  rpc CreateTemplate(CreateTemplateRequest) returns (SessionTemplate) {
+    option (google.api.http) = {
+      post: "/api/v1/nodes/{node_name}/templates"
+      body: "*"
+    };
+  }
+  rpc GetTemplate(GetTemplateRequest) returns (SessionTemplate) {
+    option (google.api.http) = {
+      get: "/api/v1/nodes/{node_name}/templates/{id}"
+    };
+  }
+  rpc UpdateTemplate(UpdateTemplateRequest) returns (SessionTemplate) {
+    option (google.api.http) = {
+      put: "/api/v1/nodes/{node_name}/templates/{id}"
+      body: "*"
+    };
+  }
+  rpc DeleteTemplate(DeleteTemplateRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/api/v1/nodes/{node_name}/templates/{id}"
+    };
+  }
+  rpc GetTemplateConfig(GetTemplateConfigRequest) returns (TemplateConfigView) {
+    option (google.api.http) = {
+      get: "/api/v1/nodes/{node_name}/templates/{id}/config"
+    };
+  }
+  rpc UpdateTemplateConfig(UpdateTemplateConfigRequest) returns (TemplateConfigView) {
+    option (google.api.http) = {
+      put: "/api/v1/nodes/{node_name}/templates/{id}/config"
+      body: "*"
+    };
+  }
+}
