@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/behavior-panel/',
+  base: '/portal/',
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -12,17 +12,7 @@ export default defineConfig({
     dedupe: ['react', 'react-dom'],
   },
   server: {
-    port: 3000,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-      },
-      '/health': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-      },
-    },
+    port: 3002,
   },
   build: {
     outDir: '../web-dist',
