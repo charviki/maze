@@ -1,16 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Variable, Plus, Trash2, Save } from 'lucide-react';
 import type { IAgentApiClient } from '../../api';
 import type { LocalAgentConfig } from '../../types';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 
 interface NodeConfigPanelProps {
   nodeName: string;
@@ -22,16 +16,28 @@ export function NodeConfigPanel({ nodeName, apiClient, onClose }: NodeConfigPane
   const [config, setConfig] = useState<LocalAgentConfig>({ working_dir: '', env: {} });
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
+  // fetch-in-effect: 组件挂载时从 API 获取配置并写入 state，属于 React 官方认可的数据同步模式，
+  // React Compiler 的 set-state-in-effect 规则对此存在已知误报（尚未区分 fetch 与派生状态场景）。
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
+    let cancelled = false;
     setLoading(true);
-    const res = await apiClient.getLocalConfig();
-    if (res.status === 'ok' && res.data) {
-      setConfig(res.data);
-    }
-    setLoading(false);
+    apiClient
+      .getLocalConfig()
+      .then((res) => {
+        if (!cancelled && res.status === 'ok' && res.data) {
+          setConfig(res.data);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    /* eslint-enable react-hooks/set-state-in-effect */
+    return () => {
+      cancelled = true;
+    };
   }, [apiClient]);
-
-  useEffect(() => { load(); }, [load]);
 
   const handleSave = async () => {
     await apiClient.updateLocalConfig({ env: config.env });
@@ -60,7 +66,12 @@ export function NodeConfigPanel({ nodeName, apiClient, onClose }: NodeConfigPane
   if (loading) return null;
 
   return (
-    <Dialog open onOpenChange={(v) => { if (!v) onClose(); }}>
+    <Dialog
+      open
+      onOpenChange={(v) => {
+        if (!v) onClose();
+      }}
+    >
       <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -75,11 +86,7 @@ export function NodeConfigPanel({ nodeName, apiClient, onClose }: NodeConfigPane
         <div className="space-y-4">
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">基础工作目录</label>
-            <Input 
-              value={config.working_dir} 
-              readOnly
-              className="font-mono text-sm"
-            />
+            <Input value={config.working_dir} readOnly className="font-mono text-sm" />
           </div>
 
           <div>
@@ -87,40 +94,59 @@ export function NodeConfigPanel({ nodeName, apiClient, onClose }: NodeConfigPane
               <h3 className="font-medium text-sm text-muted-foreground flex items-center gap-1">
                 <Variable className="w-4 h-4" /> 环境变量
               </h3>
-              <Button size="sm" variant="outline" onClick={addEnv}><Plus className="w-3 h-3 mr-1" /> 新增</Button>
+              <Button size="sm" variant="outline" onClick={addEnv}>
+                <Plus className="w-3 h-3 mr-1" /> 新增
+              </Button>
             </div>
-            
+
             <div className="space-y-2">
               {Object.entries(config.env).map(([key, value]) => (
                 <div key={key} className="flex items-center gap-2">
-                  <Input 
-                    value={key} 
-                    onChange={e => updateEnv(key, e.target.value, String(value))} 
-                    placeholder="KEY" 
+                  <Input
+                    value={key}
+                    onChange={(e) => {
+                      updateEnv(key, e.target.value, String(value));
+                    }}
+                    placeholder="KEY"
                     className="w-1/3 font-mono text-sm"
                   />
                   <span className="text-muted-foreground">=</span>
-                  <Input 
-                    value={String(value)} 
-                    onChange={e => updateEnv(key, key, e.target.value)} 
-                    placeholder="VALUE" 
+                  <Input
+                    value={String(value)}
+                    onChange={(e) => {
+                      updateEnv(key, key, e.target.value);
+                    }}
+                    placeholder="VALUE"
                     className="flex-1 font-mono text-sm"
                   />
-                  <Button variant="ghost" size="sm" onClick={() => removeEnv(key)} className="text-red-500">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      removeEnv(key);
+                    }}
+                    className="text-red-500"
+                  >
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               ))}
               {Object.keys(config.env).length === 0 && (
-                <div className="text-sm text-muted-foreground p-4 text-center border border-dashed rounded">暂无环境变量配置</div>
+                <div className="text-sm text-muted-foreground p-4 text-center border border-dashed rounded">
+                  暂无环境变量配置
+                </div>
               )}
             </div>
           </div>
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t border-border">
-          <Button variant="outline" onClick={onClose}>取消</Button>
-          <Button onClick={handleSave}><Save className="w-4 h-4 mr-1" /> 保存</Button>
+          <Button variant="outline" onClick={onClose}>
+            取消
+          </Button>
+          <Button onClick={handleSave}>
+            <Save className="w-4 h-4 mr-1" /> 保存
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

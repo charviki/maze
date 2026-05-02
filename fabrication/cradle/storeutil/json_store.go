@@ -9,6 +9,8 @@ import (
 	"github.com/charviki/maze-cradle/logutil"
 )
 
+// JSONStore 泛型 JSON 文件持久化存储，通过原子写入保证数据完整性。
+// T 为存储的数据类型，Get/Update/View 等方法提供并发安全的数据访问。
 type JSONStore[T any] struct {
 	mu     sync.RWMutex
 	data   T

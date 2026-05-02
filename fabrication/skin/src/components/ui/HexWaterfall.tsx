@@ -30,11 +30,12 @@ export function HexWaterfall({ className, opacity = 0.15, color }: HexWaterfallP
 
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.parentElement?.getBoundingClientRect() || document.body.getBoundingClientRect();
-      
+      const rect =
+        canvas.parentElement?.getBoundingClientRect() || document.body.getBoundingClientRect();
+
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
-      
+
       ctx.scale(dpr, dpr);
       canvas.style.width = `${rect.width}px`;
       canvas.style.height = `${rect.height}px`;
@@ -67,8 +68,9 @@ export function HexWaterfall({ className, opacity = 0.15, color }: HexWaterfallP
       if (timestamp - lastDrawTime < 50) return; // 约 20 fps
       lastDrawTime = timestamp;
 
-      const rect = canvas.parentElement?.getBoundingClientRect() || document.body.getBoundingClientRect();
-      
+      const rect =
+        canvas.parentElement?.getBoundingClientRect() || document.body.getBoundingClientRect();
+
       // 半透明黑色背景，形成尾迹效果
       ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
       ctx.fillRect(0, 0, rect.width, rect.height);
@@ -76,10 +78,10 @@ export function HexWaterfall({ className, opacity = 0.15, color }: HexWaterfallP
       // 获取主题颜色
       let primaryColor = color;
       if (!primaryColor) {
-         const primaryVar = getComputedStyle(document.body).getPropertyValue('--primary').trim();
-         primaryColor = primaryVar ? `hsl(${primaryVar})` : '#0f0';
+        const primaryVar = getComputedStyle(document.body).getPropertyValue('--primary').trim();
+        primaryColor = primaryVar ? `hsl(${primaryVar})` : '#0f0';
       }
-      
+
       ctx.font = `${fontSize}px monospace`;
 
       for (let i = 0; i < drops.length; i++) {
@@ -89,9 +91,9 @@ export function HexWaterfall({ className, opacity = 0.15, color }: HexWaterfallP
 
         // 随机高亮部分字符
         if (Math.random() > 0.98) {
-           ctx.fillStyle = '#ffffff';
+          ctx.fillStyle = '#ffffff';
         } else {
-           ctx.fillStyle = primaryColor;
+          ctx.fillStyle = primaryColor;
         }
 
         ctx.fillText(text, x, y);

@@ -1,61 +1,51 @@
-import { useState, useEffect } from 'react'
-import { cn } from '@maze/fabrication'
+import { useState, useEffect } from 'react';
+import { cn } from '@maze/fabrication';
 
 /** Maze orbit radii — must match MazeCanvas */
-const RADII = [90, 75, 60, 45, 30, 18]
+const RADII = [90, 75, 60, 45, 30, 18];
 
 /** Ring labels for hover */
-const RING_LABELS = [
-  'MEMORY',
-  'REVERIE',
-  'IMPROVISATION',
-  'SELF',
-  'CONSCIOUSNESS',
-  '...',
-]
+const RING_LABELS = ['MEMORY', 'REVERIE', 'IMPROVISATION', 'SELF', 'CONSCIOUSNESS', '...'];
 
 /** Spoke angles */
-const SPOKES = [0, 60, 120, 180, 240, 300]
+const SPOKES = [0, 60, 120, 180, 240, 300];
 
 interface MazeSvgProps {
-  className?: string
-  centerActive: boolean
-  hoveredRing: number | null
+  className?: string;
+  centerActive: boolean;
+  hoveredRing: number | null;
 }
 
 export function MazeSvg({ className, centerActive, hoveredRing }: MazeSvgProps) {
-  // Orbiting light dots
-  const [lightDots, setLightDots] = useState<{ ring: number; angle: number; speed: number }[]>([])
-
-  useEffect(() => {
-    // Generate random light dots that orbit along paths
-    const dots: typeof lightDots = []
-    for (let i = 0; i < 4; i++) {
-      const ring = Math.floor(Math.random() * RADII.length)
-      dots.push({
-        ring,
-        angle: Math.random() * Math.PI * 2,
-        speed: 0.003 + Math.random() * 0.004,
-      })
-    }
-    setLightDots(dots)
-  }, [])
+  const [lightDots, setLightDots] = useState<{ ring: number; angle: number; speed: number }[]>(
+    () => {
+      const dots: { ring: number; angle: number; speed: number }[] = [];
+      for (let i = 0; i < 4; i++) {
+        dots.push({
+          ring: Math.floor(Math.random() * RADII.length),
+          angle: Math.random() * Math.PI * 2,
+          speed: 0.003 + Math.random() * 0.004,
+        });
+      }
+      return dots;
+    },
+  );
 
   // Animate light dots
   useEffect(() => {
-    let animId: number
+    let animId: number;
     const animate = () => {
-      setLightDots(prev =>
-        prev.map(d => ({
+      setLightDots((prev) =>
+        prev.map((d) => ({
           ...d,
           angle: d.angle + d.speed,
-        }))
-      )
-      animId = requestAnimationFrame(animate)
-    }
-    animId = requestAnimationFrame(animate)
-    return () => cancelAnimationFrame(animId)
-  }, [])
+        })),
+      );
+      animId = requestAnimationFrame(animate);
+    };
+    animId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animId);
+  }, []);
 
   return (
     <div className={cn('relative', className)}>
@@ -108,10 +98,10 @@ export function MazeSvg({ className, centerActive, hoveredRing }: MazeSvgProps) 
 
         {/* Concentric rings with multi-layer glow */}
         {RADII.map((r, i) => {
-          const isHovered = hoveredRing === i
-          const isInner = i >= 3
-          const baseOpacity = isHovered ? 0.95 : 0.15 + i * 0.08
-          const filterAttr = isInner ? 'url(#maze-glow-inner)' : 'url(#maze-glow)'
+          const isHovered = hoveredRing === i;
+          const isInner = i >= 3;
+          const baseOpacity = isHovered ? 0.95 : 0.15 + i * 0.08;
+          const filterAttr = isInner ? 'url(#maze-glow-inner)' : 'url(#maze-glow)';
 
           return (
             <g key={i}>
@@ -149,7 +139,7 @@ export function MazeSvg({ className, centerActive, hoveredRing }: MazeSvgProps) 
                 }}
               />
             </g>
-          )
+          );
         })}
 
         {/* Radial spokes with subtle glow */}
@@ -169,10 +159,10 @@ export function MazeSvg({ className, centerActive, hoveredRing }: MazeSvgProps) 
 
         {/* Orbiting light dots along paths */}
         {lightDots.map((dot, i) => {
-          const r = RADII[dot.ring]
-          const x = 100 + Math.cos(dot.angle) * r
-          const y = 100 + Math.sin(dot.angle) * r
-          const isHoveredRing = hoveredRing === dot.ring
+          const r = RADII[dot.ring];
+          const x = 100 + Math.cos(dot.angle) * r;
+          const y = 100 + Math.sin(dot.angle) * r;
+          const isHoveredRing = hoveredRing === dot.ring;
           return (
             <g key={`dot-${i}`}>
               {/* Glow halo */}
@@ -200,7 +190,7 @@ export function MazeSvg({ className, centerActive, hoveredRing }: MazeSvgProps) 
                 }}
               />
             </g>
-          )
+          );
         })}
 
         {/* Center — the awakening point */}
@@ -289,5 +279,5 @@ export function MazeSvg({ className, centerActive, hoveredRing }: MazeSvgProps) 
         }
       `}</style>
     </div>
-  )
+  );
 }

@@ -19,12 +19,17 @@ export function HostVitalSign({ status, size = 'sm', className }: HostVitalSignP
   if (!settings.glitchEffect) {
     return (
       <div className={cn('relative flex shrink-0', s.ring, className)}>
-        <span className={cn(
-          'relative inline-flex rounded-[1px]',
-          s.core,
-          status === 'running' ? 'bg-primary' :
-          status === 'saved' ? 'bg-yellow-500' : 'bg-gray-500',
-        )} />
+        <span
+          className={cn(
+            'relative inline-flex rounded-[1px]',
+            s.core,
+            status === 'running'
+              ? 'bg-primary'
+              : status === 'saved'
+                ? 'bg-yellow-500'
+                : 'bg-gray-500',
+          )}
+        />
       </div>
     );
   }

@@ -65,7 +65,7 @@ func (s *LocalConfigStore) load() {
 // 确保父目录存在后原子写入。
 func (s *LocalConfigStore) save() error {
 	dir := filepath.Dir(s.path)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0750); err != nil {
 		return err
 	}
 

@@ -1,16 +1,16 @@
 server:
-  listen_addr: ":8080"
-  auth_token: ""
+  listen_addr: ':8080'
+  auth_token: ''
 
 tmux:
-  socket_path: ""
-  default_shell: "/bin/bash"
+  socket_path: ''
+  default_shell: '/bin/bash'
 
 terminal:
   default_lines: 50
 
 controller:
-  addr: ""
+  addr: ''
   enabled: false
   heartbeat_interval: 10
-  auth_token: ""
+  auth_token: ''

@@ -12,7 +12,11 @@ export type { SessionDisplay } from './SessionList';
 export interface AgentPanelProps {
   apiClient: IAgentApiClient;
   nodeName?: string;
-  renderCreateDialog?: (props: { open: boolean; onOpenChange: (open: boolean) => void; onSuccess: (sessionName: string) => void }) => ReactNode;
+  renderCreateDialog?: (props: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSuccess: (sessionName: string) => void;
+  }) => ReactNode;
   headerActions?: ReactNode;
   listHeaderActions?: ReactNode;
   terminalBackground?: ReactNode;
@@ -49,7 +53,10 @@ type AgentAction =
   | { type: 'SET_KILLING'; payload: boolean }
   | { type: 'SET_RESTORE_TARGET'; payload: SessionDisplay | null }
   | { type: 'SET_RESTORING'; payload: boolean }
-  | { type: 'SET_VIEW_PIPELINE'; payload: { session: SessionDisplay | null; steps: PipelineStep[] } }
+  | {
+      type: 'SET_VIEW_PIPELINE';
+      payload: { session: SessionDisplay | null; steps: PipelineStep[] };
+    }
   | { type: 'SET_CONFIG_OPEN'; payload: boolean }
   | { type: 'SET_LOADING_CONFIG'; payload: boolean }
   | { type: 'SET_SAVING'; payload: boolean }
@@ -101,7 +108,11 @@ function agentReducer(state: AgentState, action: AgentAction): AgentState {
     case 'SET_RESTORING':
       return { ...state, restoring: action.payload };
     case 'SET_VIEW_PIPELINE':
-      return { ...state, viewPipelineSession: action.payload.session, viewPipelineSteps: action.payload.steps };
+      return {
+        ...state,
+        viewPipelineSession: action.payload.session,
+        viewPipelineSteps: action.payload.steps,
+      };
     case 'SET_CONFIG_OPEN':
       return { ...state, configOpen: action.payload };
     case 'SET_LOADING_CONFIG':
@@ -125,9 +136,9 @@ function agentReducer(state: AgentState, action: AgentAction): AgentState {
   }
 }
 
-function getSnapshotSummary(snapshot?: string, lines: number = 5): string {
+function getSnapshotSummary(snapshot?: string, lines = 5): string {
   if (!snapshot) return '(无快照)';
-  const allLines = snapshot.split('\n').filter(l => l.trim() !== '');
+  const allLines = snapshot.split('\n').filter((l) => l.trim() !== '');
   return allLines.slice(-lines).join('\n');
 }
 
@@ -137,7 +148,7 @@ export function AgentPanel({
   renderCreateDialog,
   headerActions,
   listHeaderActions,
-  terminalBackground
+  terminalBackground,
 }: AgentPanelProps) {
   const [state, dispatch] = useReducer(agentReducer, initialState);
   const { showToast } = useToast();
@@ -149,7 +160,10 @@ export function AgentPanel({
 
   const fetchSavedSessions = useCallback(async () => {
     const res = await apiClient.getSavedSessions();
-    if (res.status === 'ok' && res.data) dispatch({ type: 'SET_SAVED_SESSIONS', payload: res.data });
+    if (res.status === 'ok' && res.data) {
+      const valid = res.data.filter((ss) => ss.session_name);
+      dispatch({ type: 'SET_SAVED_SESSIONS', payload: valid });
+    }
   }, [apiClient]);
 
   const pollingFetch = useCallback(async () => {
@@ -165,20 +179,24 @@ export function AgentPanel({
   // 选中会话后刷新最后保存时间
   useEffect(() => {
     if (state.selectedSessionId) {
-      apiClient.getSavedSessions().then(res => {
-        if (res.status === 'ok' && res.data) {
-          const found = res.data.find(s => s.session_name === state.selectedSessionId);
-          if (found) {
-            dispatch({ type: 'SET_LAST_SAVE_TIME', payload: found.saved_at });
+      apiClient
+        .getSavedSessions()
+        .then((res) => {
+          if (res.status === 'ok' && res.data) {
+            const valid = res.data.filter((ss) => ss.session_name);
+            const found = valid.find((s) => s.session_name === state.selectedSessionId);
+            if (found) {
+              dispatch({ type: 'SET_LAST_SAVE_TIME', payload: found.saved_at });
+            }
           }
-        }
-      }).catch(() => {});
+        })
+        .catch(() => {});
     }
   }, [state.selectedSessionId, apiClient]);
 
   // 合并运行中和已保存的会话列表
   const mergedSessions: SessionDisplay[] = (() => {
-    const runningSet = new Set(state.sessions.map(s => s.name));
+    const runningSet = new Set(state.sessions.map((s) => s.name));
     const result: SessionDisplay[] = [];
 
     for (const s of state.sessions) {
@@ -192,6 +210,7 @@ export function AgentPanel({
     }
 
     for (const ss of state.savedSessions) {
+      if (!ss.session_name) continue;
       if (!runningSet.has(ss.session_name) && ss.restore_strategy !== 'running') {
         result.push({
           id: ss.session_name,
@@ -209,7 +228,7 @@ export function AgentPanel({
   })();
 
   const confirmKill = async () => {
-    if (!state.killTarget) return;
+    if (!state.killTarget || !state.killTarget.name) return;
     const s = state.killTarget;
     dispatch({ type: 'SET_KILLING', payload: true });
     dispatch({ type: 'SET_ACTION_ERROR', payload: null });
@@ -231,7 +250,9 @@ export function AgentPanel({
     const message = res.message || '删除失败';
     dispatch({ type: 'SET_ACTION_ERROR', payload: message });
     showToast('error', `删除 Loop 失败: ${s.name}`);
-    setTimeout(() => dispatch({ type: 'SET_ACTION_ERROR', payload: null }), 3000);
+    setTimeout(() => {
+      dispatch({ type: 'SET_ACTION_ERROR', payload: null });
+    }, 3000);
   };
 
   const confirmRestore = async () => {
@@ -241,13 +262,13 @@ export function AgentPanel({
     await apiClient.restoreSession(targetName);
     dispatch({ type: 'SET_RESTORING', payload: false });
     dispatch({ type: 'SET_RESTORE_TARGET', payload: null });
-    refreshAll();
+    void refreshAll();
     dispatch({ type: 'SELECT_SESSION', payload: targetName });
   };
 
   const handleViewPipeline = (e: React.MouseEvent, session: SessionDisplay) => {
     e.stopPropagation();
-    const saved = state.savedSessions.find(s => s.session_name === session.id);
+    const saved = state.savedSessions.find((s) => s.session_name === session.id);
     dispatch({
       type: 'SET_VIEW_PIPELINE',
       payload: { session, steps: saved?.pipeline || [] },
@@ -262,14 +283,18 @@ export function AgentPanel({
     if (res.status === 'ok' && res.data) {
       dispatch({ type: 'SET_LAST_SAVE_TIME', payload: res.data.saved_at });
       dispatch({ type: 'SET_SAVE_COOLDOWN', payload: true });
-      setTimeout(() => dispatch({ type: 'SET_SAVE_COOLDOWN', payload: false }), 3000);
+      setTimeout(() => {
+        dispatch({ type: 'SET_SAVE_COOLDOWN', payload: false });
+      }, 3000);
     } else {
       dispatch({ type: 'SET_ACTION_ERROR', payload: res.message || '保存失败' });
-      setTimeout(() => dispatch({ type: 'SET_ACTION_ERROR', payload: null }), 3000);
+      setTimeout(() => {
+        dispatch({ type: 'SET_ACTION_ERROR', payload: null });
+      }, 3000);
     }
   };
 
-  const handleOpenConfig = async (open: boolean) => {
+  const handleOpenConfig = (open: boolean) => {
     if (!open) {
       dispatch({ type: 'SET_CONFIG_OPEN', payload: false });
       return;
@@ -278,7 +303,7 @@ export function AgentPanel({
   };
 
   const handleSessionCreated = (sessionName: string) => {
-    refreshAll();
+    void refreshAll();
     dispatch({ type: 'SELECT_SESSION', payload: sessionName });
   };
 
@@ -287,14 +312,26 @@ export function AgentPanel({
       <SessionList
         sessions={mergedSessions}
         search={state.search}
-        onSearchChange={(v) => dispatch({ type: 'SET_SEARCH', payload: v })}
+        onSearchChange={(v) => {
+          dispatch({ type: 'SET_SEARCH', payload: v });
+        }}
         selectedSessionId={state.selectedSessionId}
-        onSelectSession={(id) => dispatch({ type: 'SELECT_SESSION', payload: id })}
+        onSelectSession={(id) => {
+          dispatch({ type: 'SELECT_SESSION', payload: id });
+        }}
         nodeName={nodeName}
-        onCreateClick={() => dispatch({ type: 'SET_SHOW_CREATE', payload: true })}
-        onNodeConfigClick={() => dispatch({ type: 'SET_SHOW_NODE_CONFIG', payload: true })}
-        onKill={(session) => dispatch({ type: 'SET_KILL_TARGET', payload: session })}
-        onRestore={(session) => dispatch({ type: 'SET_RESTORE_TARGET', payload: session })}
+        onCreateClick={() => {
+          dispatch({ type: 'SET_SHOW_CREATE', payload: true });
+        }}
+        onNodeConfigClick={() => {
+          dispatch({ type: 'SET_SHOW_NODE_CONFIG', payload: true });
+        }}
+        onKill={(session) => {
+          dispatch({ type: 'SET_KILL_TARGET', payload: session });
+        }}
+        onRestore={(session) => {
+          dispatch({ type: 'SET_RESTORE_TARGET', payload: session });
+        }}
         onViewPipeline={handleViewPipeline}
         listHeaderActions={listHeaderActions}
       />
@@ -325,20 +362,34 @@ export function AgentPanel({
         nodeName={nodeName}
         restoring={state.restoring}
         showCreate={state.showCreate}
-        onShowCreateChange={(v) => dispatch({ type: 'SET_SHOW_CREATE', payload: v })}
+        onShowCreateChange={(v) => {
+          dispatch({ type: 'SET_SHOW_CREATE', payload: v });
+        }}
         showTemplateManager={state.showTemplateManager}
-        onShowTemplateManagerChange={(v) => dispatch({ type: 'SET_SHOW_TEMPLATE_MANAGER', payload: v })}
+        onShowTemplateManagerChange={(v) => {
+          dispatch({ type: 'SET_SHOW_TEMPLATE_MANAGER', payload: v });
+        }}
         showNodeConfig={state.showNodeConfig}
-        onShowNodeConfigClose={() => dispatch({ type: 'SET_SHOW_NODE_CONFIG', payload: false })}
+        onShowNodeConfigClose={() => {
+          dispatch({ type: 'SET_SHOW_NODE_CONFIG', payload: false });
+        }}
         apiClient={apiClient}
         renderCreateDialog={renderCreateDialog}
         onSessionCreated={handleSessionCreated}
         onKillConfirm={confirmKill}
-        onKillCancel={() => dispatch({ type: 'SET_KILL_TARGET', payload: null })}
+        onKillCancel={() => {
+          dispatch({ type: 'SET_KILL_TARGET', payload: null });
+        }}
         onRestoreConfirm={confirmRestore}
-        onRestoreCancel={() => dispatch({ type: 'SET_RESTORE_TARGET', payload: null })}
-        onPipelineClose={() => dispatch({ type: 'SET_VIEW_PIPELINE', payload: { session: null, steps: [] } })}
-        onConfigClose={(open) => dispatch({ type: 'SET_CONFIG_OPEN', payload: open })}
+        onRestoreCancel={() => {
+          dispatch({ type: 'SET_RESTORE_TARGET', payload: null });
+        }}
+        onPipelineClose={() => {
+          dispatch({ type: 'SET_VIEW_PIPELINE', payload: { session: null, steps: [] } });
+        }}
+        onConfigClose={(open) => {
+          dispatch({ type: 'SET_CONFIG_OPEN', payload: open });
+        }}
         getSnapshotSummary={getSnapshotSummary}
       />
     </>

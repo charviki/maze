@@ -164,14 +164,14 @@ func (h *TerminalHandler) HandleWs(_ context.Context, c *app.RequestContext) {
 	upgrader := websocket.HertzUpgrader{CheckOrigin: httputil.CheckOrigin(h.allowedOrigins)}
 
 	err := upgrader.Upgrade(c, func(conn *websocket.Conn) {
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 
 		ptmx, err := h.tmuxService.AttachSession(id, defaultTerminalRows, defaultTerminalCols)
 		if err != nil {
 			h.logger.Errorf("[ws] attach session %s failed: %v", id, err)
 			return
 		}
-		defer ptmx.Close()
+		defer func() { _ = ptmx.Close() }()
 
 		// 在 attach 之后立即检查 tmux 进程是否存活，捕获 session 不存在等快速失败场景
 		// AttachSession 返回后 tmux 进程已在后台运行，若 session 不存在，进程会立即退出
@@ -179,8 +179,8 @@ func (h *TerminalHandler) HandleWs(_ context.Context, c *app.RequestContext) {
 		var once sync.Once
 		cleanup := func() {
 			once.Do(func() {
-				conn.Close()
-				ptmx.Close()
+				_ = conn.Close()
+				_ = ptmx.Close()
 			})
 		}
 		defer cleanup()

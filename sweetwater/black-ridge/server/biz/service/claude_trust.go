@@ -18,6 +18,7 @@ type claudeProjectEntry struct {
 // 修改 ~/.claude.json 中的 projects 字段，标记指定目录的信任状态。
 type ClaudeTrustBootstrapper struct{}
 
+// TrustDir 为指定工作目录设置 Claude Code 信任
 func (c *ClaudeTrustBootstrapper) TrustDir(workingDir string) error {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -26,7 +27,7 @@ func (c *ClaudeTrustBootstrapper) TrustDir(workingDir string) error {
 	configPath := filepath.Join(home, ".claude.json")
 
 	config := make(map[string]json.RawMessage)
-	data, err := os.ReadFile(configPath)
+	data, err := os.ReadFile(filepath.Clean(configPath))
 	if err != nil {
 		if !os.IsNotExist(err) {
 			return err

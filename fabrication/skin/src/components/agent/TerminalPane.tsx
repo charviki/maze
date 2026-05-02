@@ -40,7 +40,10 @@ export const TerminalPane = memo(function TerminalPane({
       <Panel className="flex-1 flex flex-col h-full overflow-hidden" cornerSize={24}>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,255,255,0.03)_0,transparent_100%)] pointer-events-none"></div>
         {selectedSessionId ? (
-          <div key={selectedSessionId} className="flex flex-col h-full overflow-hidden relative terminal-pane-animate">
+          <div
+            key={selectedSessionId}
+            className="flex flex-col h-full overflow-hidden relative terminal-pane-animate"
+          >
             <div className="h-14 border-b border-primary/20 flex items-center justify-between px-6 shrink-0 bg-black/40 backdrop-blur-md z-10 relative">
               <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
               <div className="flex items-center gap-3">
@@ -62,11 +65,28 @@ export const TerminalPane = memo(function TerminalPane({
                     SYNCED: {new Date(lastSaveTime).toLocaleString()}
                   </span>
                 )}
-                <Button variant="ghost" size="sm" className="text-primary hover:text-primary hover:bg-primary/20 rounded-none border border-transparent hover:border-primary/30 uppercase tracking-widest text-[10px] font-mono transition-all" onClick={onSave} disabled={saving || saveCooldown} title="保存所有 Loops">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-primary hover:text-primary hover:bg-primary/20 rounded-none border border-transparent hover:border-primary/30 uppercase tracking-widest text-[10px] font-mono transition-all"
+                  onClick={onSave}
+                  disabled={saving || saveCooldown}
+                  title="保存所有 Loops"
+                >
                   <Save className="w-3.5 h-3.5 mr-1" />
-                  <DecryptText text={saving ? 'SYNCING...' : saveCooldown ? 'SYNCED ✓' : 'SYNC STATE'} />
+                  <DecryptText
+                    text={saving ? 'SYNCING...' : saveCooldown ? 'SYNCED ✓' : 'SYNC STATE'}
+                  />
                 </Button>
-                <Button variant="ghost" size="sm" className="text-primary hover:text-primary hover:bg-primary/20 rounded-none border border-transparent hover:border-primary/30 uppercase tracking-widest text-[10px] font-mono transition-all" onClick={() => onOpenConfig(true)} disabled={loadingConfig}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-primary hover:text-primary hover:bg-primary/20 rounded-none border border-transparent hover:border-primary/30 uppercase tracking-widest text-[10px] font-mono transition-all"
+                  onClick={() => {
+                    onOpenConfig(true);
+                  }}
+                  disabled={loadingConfig}
+                >
                   <Info className="w-3.5 h-3.5 mr-1" />
                   <DecryptText text={loadingConfig ? 'LOADING...' : 'VIEW CONFIG'} />
                 </Button>
@@ -76,7 +96,9 @@ export const TerminalPane = memo(function TerminalPane({
             <div className="flex-1 p-4 overflow-hidden relative z-0">
               <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none"></div>
               <Panel className="w-full h-full" cornerSize={16} transparent={!!terminalBackground}>
-                <div className={`w-full h-full overflow-hidden relative z-10 ${terminalBackground ? 'bg-transparent' : 'bg-[hsl(var(--terminal-background))]'} text-[hsl(var(--terminal-foreground))]`}>
+                <div
+                  className={`w-full h-full overflow-hidden relative z-10 ${terminalBackground ? 'bg-transparent' : 'bg-[hsl(var(--terminal-background))]'} text-[hsl(var(--terminal-foreground))]`}
+                >
                   <XtermTerminal
                     wsUrl={apiClient.buildWsUrl(selectedSessionId)}
                     backgroundComponent={terminalBackground}

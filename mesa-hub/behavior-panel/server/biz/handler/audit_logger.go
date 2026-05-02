@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -49,7 +50,7 @@ func NewAuditLogger(filePath string, logger ...logutil.Logger) *AuditLogger {
 	}
 
 	// 从已有文件加载历史日志
-	if data, err := os.ReadFile(filePath); err == nil {
+	if data, err := os.ReadFile(filepath.Clean(filePath)); err == nil {
 		for _, line := range bytes.Split(data, []byte("\n")) {
 			line = bytes.TrimSpace(line)
 			if len(line) == 0 {
@@ -63,7 +64,7 @@ func NewAuditLogger(filePath string, logger ...logutil.Logger) *AuditLogger {
 	}
 
 	// 打开文件用于 append 写入（O_CREATE: 不存在时创建，O_APPEND: 追加写入）
-	f, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	f, err := os.OpenFile(filepath.Clean(filePath), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
 		// 文件打开失败不阻塞启动，降级为纯内存模式
 		return a

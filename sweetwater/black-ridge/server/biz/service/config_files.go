@@ -1,6 +1,7 @@
 package service
 
 import (
+	//nolint:gosec // md5 used for file content fingerprinting, not security
 	"crypto/md5"
 	"encoding/hex"
 	"errors"
@@ -32,6 +33,7 @@ func (e *ConfigConflictError) Error() string {
 // ConfigFileService 负责固定路径配置文件的真实读写与 hash 冲突检测。
 type ConfigFileService struct{}
 
+// NewConfigFileService 创建 ConfigFileService
 func NewConfigFileService() *ConfigFileService {
 	return &ConfigFileService{}
 }
@@ -90,7 +92,7 @@ func (s *ConfigFileService) readTargets(targets []configTarget) ([]model.ConfigF
 	return files, nil
 }
 
-func (s *ConfigFileService) validateAndWriteTargets(targets []configTarget, targetMap map[string]configTarget, updates []model.ConfigFileUpdate) error {
+func (s *ConfigFileService) validateAndWriteTargets(_ []configTarget, targetMap map[string]configTarget, updates []model.ConfigFileUpdate) error {
 	if len(updates) == 0 {
 		return nil
 	}
@@ -202,7 +204,7 @@ func buildProjectTargets(workingDir string, defs []model.FileDef) ([]configTarge
 }
 
 func readConfigSnapshot(displayPath string, diskPath string) (model.ConfigFileSnapshot, error) {
-	data, err := os.ReadFile(diskPath)
+	data, err := os.ReadFile(filepath.Clean(diskPath))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return model.ConfigFileSnapshot{
@@ -225,7 +227,7 @@ func readConfigSnapshot(displayPath string, diskPath string) (model.ConfigFileSn
 }
 
 func writeConfigFile(path string, content string) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0750); err != nil {
 		return fmt.Errorf("create config parent dir for %s: %w", path, err)
 	}
 	if err := model.AtomicWriteFile(path, []byte(content), 0644); err != nil {
@@ -238,6 +240,7 @@ func contentHash(content string) string {
 	if content == "" {
 		return "md5:empty"
 	}
+	//nolint:gosec
 	sum := md5.Sum([]byte(content))
 	return "md5:" + hex.EncodeToString(sum[:])
 }

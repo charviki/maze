@@ -18,29 +18,29 @@ The Maze 的统一入口门户，模拟 Delos 的 Mesa Hub 控制中心。通过
 
 ## 关键文件
 
-| 路径 | 职责 |
-|------|------|
-| web/src/App.tsx | 主组件：两阶段渲染（Landing → PortalLayout），LandingPage 内部处理登录 |
-| web/src/auth/auth.ts | 认证服务：login/logout/isAuthenticated/getCurrentUser（OIDC 预留接口） |
-| web/src/data/mock-data.ts | 集中 Mock 数据源：节点、主机、会话、台词、诊断、事件等 |
-| web/src/components/LandingPage.tsx | Landing 页：迷宫（Canvas+SVG）+ 台词轮播 + ENTER THE PARK + 内嵌登录表单 |
-| web/src/components/MazeCanvas.tsx | Canvas 粒子系统：200+ 轨道粒子、鼠标斥力场、中心涟漪爆发、拖尾效果 |
-| web/src/components/MazeSvg.tsx | 增强版 SVG 迷宫：多层发光、路径光点动画、中心光晕、环标签 |
-| web/src/components/ModuleCard.tsx | 模块入口卡片：在线/锁定两种状态，hover 展示诊断信息 |
-| web/src/components/SystemMetric.tsx | 侧栏指标卡片：Panel 容器 + 数值展示 |
-| web/src/components/StatusBar.tsx | 底部状态栏：实时时钟 + 状态指标 + Westworld 台词轮播 |
-| web/src/components/EventFeed.tsx | 侧栏事件流：随机系统事件 15-30s 间隔，DecryptText 解密最新条目 |
+| 路径                                    | 职责                                                                              |
+| --------------------------------------- | --------------------------------------------------------------------------------- |
+| web/src/App.tsx                         | 主组件：两阶段渲染（Landing → PortalLayout），LandingPage 内部处理登录            |
+| web/src/auth/auth.ts                    | 认证服务：login/logout/isAuthenticated/getCurrentUser（OIDC 预留接口）            |
+| web/src/data/mock-data.ts               | 集中 Mock 数据源：节点、主机、会话、台词、诊断、事件等                            |
+| web/src/components/LandingPage.tsx      | Landing 页：迷宫（Canvas+SVG）+ 台词轮播 + ENTER THE PARK + 内嵌登录表单          |
+| web/src/components/MazeCanvas.tsx       | Canvas 粒子系统：200+ 轨道粒子、鼠标斥力场、中心涟漪爆发、拖尾效果                |
+| web/src/components/MazeSvg.tsx          | 增强版 SVG 迷宫：多层发光、路径光点动画、中心光晕、环标签                         |
+| web/src/components/ModuleCard.tsx       | 模块入口卡片：在线/锁定两种状态，hover 展示诊断信息                               |
+| web/src/components/SystemMetric.tsx     | 侧栏指标卡片：Panel 容器 + 数值展示                                               |
+| web/src/components/StatusBar.tsx        | 底部状态栏：实时时钟 + 状态指标 + Westworld 台词轮播                              |
+| web/src/components/EventFeed.tsx        | 侧栏事件流：随机系统事件 15-30s 间隔，DecryptText 解密最新条目                    |
 | web/src/components/ConsciousnessBar.tsx | 意识层级进度条：0-100 刻度 + 呼吸光效 + DORMANT/STIRRING/AWAKENING/CONSCIOUS 标签 |
-| web/package.json | 包配置：@maze/portal-web，依赖 @maze/fabrication |
-| web/vite.config.ts | Vite 配置：port 3002，build to ../web-dist |
-| web/tailwind.config.js | Tailwind 配置：复用 fabrication preset |
+| web/package.json                        | 包配置：@maze/portal-web，依赖 @maze/fabrication                                  |
+| web/vite.config.ts                      | Vite 配置：port 3002，build to ../web-dist                                        |
+| web/tailwind.config.js                  | Tailwind 配置：复用 fabrication preset                                            |
 
 ### 保留但不再参与主流程
 
-| 路径 | 说明 |
-|------|------|
-| web/src/auth/AuthGate.tsx | 认证网关：登录已内嵌 LandingPage，此组件保留供未来独立使用 |
-| web/src/auth/LoginPage.tsx | 独立登录页：保留供未来 OIDC 回调等场景使用 |
+| 路径                       | 说明                                                       |
+| -------------------------- | ---------------------------------------------------------- |
+| web/src/auth/AuthGate.tsx  | 认证网关：登录已内嵌 LandingPage，此组件保留供未来独立使用 |
+| web/src/auth/LoginPage.tsx | 独立登录页：保留供未来 OIDC 回调等场景使用                 |
 
 ## 设计要点
 
@@ -80,21 +80,21 @@ Landing 页左右各两层 HexWaterfall：外层宽 8rem / opacity 0.08，内层
 
 ### Dockerfile
 
-| 文件 | 说明 |
-|------|------|
-| `mesa-hub/portal/Dockerfile.web` | Portal 独立构建（仅 Portal + nginx） |
+| 文件                                     | 说明                                                             |
+| ---------------------------------------- | ---------------------------------------------------------------- |
+| `mesa-hub/portal/Dockerfile.web`         | Portal 独立构建（仅 Portal + nginx）                             |
 | `mesa-hub/behavior-panel/Dockerfile.web` | 组合构建（Portal + Behavior Panel + nginx），docker-compose 使用 |
 
 两个 Dockerfile 都需要复制 `pnpm-workspace.yaml` 中声明的**所有**子项目的 `package.json`（pnpm 要求完整 workspace 声明），但只复制当前构建所需的源码。Vite 不设 `base`，由 nginx `alias` 指令处理 `/portal/` 子路径映射。
 
 ### nginx 路由（组合构建）
 
-| 路径 | 说明 |
-|------|------|
-| `/` | 302 重定向到 `/portal/` |
-| `/portal/` | Portal 首页（alias → nginx/html/portal/） |
-| `/behavior-panel/` | Behavior Panel SPA |
-| `/api/` | 反向代理到 agent-manager:8080 |
+| 路径               | 说明                                      |
+| ------------------ | ----------------------------------------- |
+| `/`                | 302 重定向到 `/portal/`                   |
+| `/portal/`         | Portal 首页（alias → nginx/html/portal/） |
+| `/behavior-panel/` | Behavior Panel SPA                        |
+| `/api/`            | 反向代理到 agent-manager:8080             |
 
 ### 开发环境
 

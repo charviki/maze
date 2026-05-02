@@ -99,10 +99,35 @@ build-go: ## 编译所有 Go 模块
 		go build ./$$m/... || exit 1; \
 	done
 
-vet: ## Go 静态检查
+vet: ## Go 静态检查（快速模式，仅 go vet）
 	@for m in $(MODULES); do \
 		echo "\033[0;32m[vet]\033[0m $$m"; \
 		go vet ./$$m/... || exit 1; \
+	done
+
+lint: ## Go 全量代码检查（golangci-lint v2，含 gosec + staticcheck + 30+ linter）
+	@echo "\033[0;32m[lint]\033[0m Running golangci-lint on all Go modules..."
+	@for m in $(MODULES); do \
+		echo "  --> Linting $$m"; \
+		cd $$m && golangci-lint run --timeout=5m ./... || exit 1; \
+		cd $(PROJECT_ROOT); \
+	done
+	@echo "  --> Linting integration tests"
+	@cd fabrication/tests/integration && golangci-lint run --timeout=5m ./... || exit 1; cd $(PROJECT_ROOT)
+
+lint-fix: ## Go 自动修复可修 lint 问题
+	@echo "\033[0;32m[lint-fix]\033[0m Auto-fixing lint issues..."
+	@for m in $(MODULES); do \
+		cd $$m && golangci-lint run --fix --timeout=5m ./... || exit 1; \
+		cd $(PROJECT_ROOT); \
+	done
+
+vulncheck: ## Go 漏洞扫描（govulncheck）
+	@echo "\033[0;32m[vulncheck]\033[0m Running govulncheck..."
+	@for m in $(MODULES); do \
+		echo "  --> Scanning $$m"; \
+		cd $$m && govulncheck ./... || exit 1; \
+		cd $(PROJECT_ROOT); \
 	done
 
 test: ## 运行所有 Go 单元测试
@@ -111,8 +136,16 @@ test: ## 运行所有 Go 单元测试
 		go test ./$$m/... -count=1 || exit 1; \
 	done
 
-check: build-go vet test ## 编译 + 静态检查 + 单元测试
+check: build-go lint test ## 编译 + golangci-lint + 单元测试（交付铁律）
 	@echo "\033[0;32m[check]\033[0m All checks passed!"
+
+format-js: ## 格式化所有 TS/TSX/JSON/MD 文件
+	@echo "\033[0;32m[format-js]\033[0m Formatting with Prettier..."
+	pnpm run format
+
+format-js-check: ## 检查 TS 格式（CI 用）
+	@echo "\033[0;32m[format-js-check]\033[0m Checking formatting..."
+	pnpm run format:check
 
 # ============================================================
 #  Docker 镜像构建

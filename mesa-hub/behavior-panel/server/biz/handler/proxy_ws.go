@@ -37,7 +37,7 @@ func (h *SessionProxyHandler) ProxyWebSocket(_ context.Context, c *app.RequestCo
 		Operator:       auditOperator,
 		TargetNode:     nodeName,
 		Action:         "websocket_connect",
-		PayloadSummary: fmt.Sprintf("session=%s", sessionID),
+		PayloadSummary: "session=" + sessionID,
 		Result:         "connecting",
 		StatusCode:     http.StatusSwitchingProtocols,
 	})
@@ -46,7 +46,7 @@ func (h *SessionProxyHandler) ProxyWebSocket(_ context.Context, c *app.RequestCo
 	upgrader := websocket.HertzUpgrader{CheckOrigin: httputil.CheckOrigin(h.allowedOrigins)}
 
 	err := upgrader.Upgrade(c, func(frontendConn *websocket.Conn) {
-		defer frontendConn.Close()
+		defer func() { _ = frontendConn.Close() }()
 
 		// 构建 Agent WebSocket URL：scheme 替换（http→ws, https→wss），node.Address 已含 scheme
 		agentURL := strings.Replace(node.Address, "http://", "ws://", 1)
@@ -68,7 +68,7 @@ func (h *SessionProxyHandler) ProxyWebSocket(_ context.Context, c *app.RequestCo
 			h.logger.Errorf("[ws-proxy] dial agent %s failed: %v", agentURL, err)
 			return
 		}
-		defer agentConn.Close()
+		defer func() { _ = agentConn.Close() }()
 
 		var wg sync.WaitGroup
 		wg.Add(2)
@@ -83,7 +83,7 @@ func (h *SessionProxyHandler) ProxyWebSocket(_ context.Context, c *app.RequestCo
 				// gorilla websocket 的 TextMessage=1, BinaryMessage=2
 				// hertz-contrib websocket 的 TextMessage=1, BinaryMessage=2
 				// 两者值相同，可直接传递
-				if err := frontendConn.WriteMessage(int(msgType), msg); err != nil {
+				if err := frontendConn.WriteMessage(msgType, msg); err != nil {
 					return
 				}
 			}
@@ -96,7 +96,7 @@ func (h *SessionProxyHandler) ProxyWebSocket(_ context.Context, c *app.RequestCo
 				if err != nil {
 					return
 				}
-				if err := agentConn.WriteMessage(int(msgType), msg); err != nil {
+				if err := agentConn.WriteMessage(msgType, msg); err != nil {
 					return
 				}
 			}

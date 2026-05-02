@@ -102,26 +102,27 @@ func (s *Server) GrpcServer() *grpc.Server {
 
 // AgentService — 保持 Unimplemented
 
+// Register Agent 注册 gRPC 接口（Manager 端由 HTTP 处理）
 func (s *Server) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "use HTTP POST /api/v1/nodes/register")
 }
 
+// Heartbeat Agent 心跳 gRPC 接口（Manager 端由 HTTP 处理）
 func (s *Server) Heartbeat(ctx context.Context, req *pb.HeartbeatRequest) (*pb.HeartbeatResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "use HTTP POST /api/v1/nodes/heartbeat")
 }
 
-// HostService — 调用 service.HostService（内部做 proto ↔ protocol 转换）
-
+// CreateHost 创建 Host（异步：持久化 HostSpec → Reconciler 构建/启动容器）
 func (s *Server) CreateHost(ctx context.Context, req *pb.CreateHostRequest) (*pb.HostSpec, error) {
 	protoReq := &protocol.CreateHostRequest{
-		Name:        req.Name,
-		Tools:       req.Tools,
-		DisplayName: req.DisplayName,
+		Name:        req.GetName(),
+		Tools:       req.GetTools(),
+		DisplayName: req.GetDisplayName(),
 	}
-	if req.Resources != nil {
+	if req.GetResources() != nil {
 		protoReq.Resources = protocol.ResourceLimits{
-			CPULimit:    req.Resources.CpuLimit,
-			MemoryLimit: req.Resources.MemoryLimit,
+			CPULimit:    req.GetResources().GetCpuLimit(),
+			MemoryLimit: req.GetResources().GetMemoryLimit(),
 		}
 	}
 
@@ -133,6 +134,7 @@ func (s *Server) CreateHost(ctx context.Context, req *pb.CreateHostRequest) (*pb
 	return hostSpecToProto(spec), nil
 }
 
+// ListHosts 返回所有 Host 信息列表
 func (s *Server) ListHosts(ctx context.Context, req *pb.ListHostsRequest) (*pb.ListHostsResponse, error) {
 	hosts, err := s.hostSvc.ListHosts(ctx)
 	if err != nil {
@@ -145,37 +147,42 @@ func (s *Server) ListHosts(ctx context.Context, req *pb.ListHostsRequest) (*pb.L
 	return &pb.ListHostsResponse{Hosts: pbHosts}, nil
 }
 
+// GetHost 根据 Host 名称获取详情
 func (s *Server) GetHost(ctx context.Context, req *pb.GetHostRequest) (*pb.HostInfo, error) {
-	info, err := s.hostSvc.GetHost(ctx, req.Name)
+	info, err := s.hostSvc.GetHost(ctx, req.GetName())
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 	return hostInfoToProto(info), nil
 }
 
+// DeleteHost 删除指定 Host 及其关联资源
 func (s *Server) DeleteHost(ctx context.Context, req *pb.DeleteHostRequest) (*emptypb.Empty, error) {
-	if err := s.hostSvc.DeleteHost(ctx, req.Name); err != nil {
+	if err := s.hostSvc.DeleteHost(ctx, req.GetName()); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &emptypb.Empty{}, nil
 }
 
+// GetBuildLog 获取 Host 构建日志
 func (s *Server) GetBuildLog(ctx context.Context, req *pb.GetBuildLogRequest) (*pb.GetBuildLogResponse, error) {
-	log, err := s.hostSvc.GetBuildLog(ctx, req.Name)
+	log, err := s.hostSvc.GetBuildLog(ctx, req.GetName())
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 	return &pb.GetBuildLogResponse{Log: log}, nil
 }
 
+// GetRuntimeLog 获取 Host 运行时日志
 func (s *Server) GetRuntimeLog(ctx context.Context, req *pb.GetRuntimeLogRequest) (*pb.GetRuntimeLogResponse, error) {
-	log, err := s.hostSvc.GetRuntimeLog(ctx, req.Name)
+	log, err := s.hostSvc.GetRuntimeLog(ctx, req.GetName())
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 	return &pb.GetRuntimeLogResponse{Log: log}, nil
 }
 
+// ListTools 返回所有可用的工具配置
 func (s *Server) ListTools(ctx context.Context, req *pb.ListToolsRequest) (*pb.ListToolsResponse, error) {
 	tools, err := s.hostSvc.ListTools(ctx)
 	if err != nil {
@@ -190,6 +197,7 @@ func (s *Server) ListTools(ctx context.Context, req *pb.ListToolsRequest) (*pb.L
 
 // NodeService — 调用 service.NodeService
 
+// ListNodes 返回所有 Agent 节点信息
 func (s *Server) ListNodes(ctx context.Context, req *pb.ListNodesRequest) (*pb.ListNodesResponse, error) {
 	nodes, err := s.nodeSvc.ListNodes(ctx)
 	if err != nil {
@@ -202,16 +210,18 @@ func (s *Server) ListNodes(ctx context.Context, req *pb.ListNodesRequest) (*pb.L
 	return &pb.ListNodesResponse{Nodes: pbNodes}, nil
 }
 
+// GetNode 根据节点名称获取节点信息
 func (s *Server) GetNode(ctx context.Context, req *pb.GetNodeRequest) (*pb.NodeInfo, error) {
-	node, err := s.nodeSvc.GetNode(ctx, req.Name)
+	node, err := s.nodeSvc.GetNode(ctx, req.GetName())
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 	return modelNodeToProto(node), nil
 }
 
+// DeleteNode 删除指定节点
 func (s *Server) DeleteNode(ctx context.Context, req *pb.DeleteNodeRequest) (*emptypb.Empty, error) {
-	if err := s.nodeSvc.DeleteNode(ctx, req.Name); err != nil {
+	if err := s.nodeSvc.DeleteNode(ctx, req.GetName()); err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 	return &emptypb.Empty{}, nil
@@ -219,9 +229,10 @@ func (s *Server) DeleteNode(ctx context.Context, req *pb.DeleteNodeRequest) (*em
 
 // AuditService — 调用 service.AuditService
 
+// GetAuditLogs 分页查询审计日志
 func (s *Server) GetAuditLogs(ctx context.Context, req *pb.GetAuditLogsRequest) (*pb.GetAuditLogsResponse, error) {
-	page := int(req.Page)
-	pageSize := int(req.PageSize)
+	page := int(req.GetPage())
+	pageSize := int(req.GetPageSize())
 	result, err := s.auditSvc.GetAuditLogs(ctx, page, pageSize)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -232,102 +243,124 @@ func (s *Server) GetAuditLogs(ctx context.Context, req *pb.GetAuditLogsRequest) 
 	}
 	return &pb.GetAuditLogsResponse{
 		Logs:     pbLogs,
-		Total:    int32(result.Total),
-		Page:     int32(result.Page),
-		PageSize: int32(result.PageSize),
+		Total:    safeInt32(result.Total),
+		Page:     safeInt32(result.Page),
+		PageSize: safeInt32(result.PageSize),
 	}, nil
 }
 
 // SessionService — gRPC 转发到 Agent
 
+// ListSessions 查询指定节点的 Session 列表
 func (s *Server) ListSessions(ctx context.Context, req *pb.ListSessionsRequest) (*pb.ListSessionsResponse, error) {
 	return s.proxy.ListSessions(ctx, req)
 }
 
+// CreateSession 创建新的 Session
 func (s *Server) CreateSession(ctx context.Context, req *pb.CreateSessionRequest) (*pb.Session, error) {
 	return s.proxy.CreateSession(ctx, req)
 }
 
+// GetSession 获取 Session 详情
 func (s *Server) GetSession(ctx context.Context, req *pb.GetSessionRequest) (*pb.Session, error) {
 	return s.proxy.GetSession(ctx, req)
 }
 
+// DeleteSession 删除 Session
 func (s *Server) DeleteSession(ctx context.Context, req *pb.DeleteSessionRequest) (*emptypb.Empty, error) {
 	return s.proxy.DeleteSession(ctx, req)
 }
 
+// GetSessionConfig 获取 Session 配置
 func (s *Server) GetSessionConfig(ctx context.Context, req *pb.GetSessionConfigRequest) (*pb.SessionConfigView, error) {
 	return s.proxy.GetSessionConfig(ctx, req)
 }
 
+// UpdateSessionConfig 更新 Session 配置
 func (s *Server) UpdateSessionConfig(ctx context.Context, req *pb.UpdateSessionConfigRequest) (*pb.SessionConfigView, error) {
 	return s.proxy.UpdateSessionConfig(ctx, req)
 }
 
+// RestoreSession 恢复已终止的 Session
 func (s *Server) RestoreSession(ctx context.Context, req *pb.RestoreSessionRequest) (*emptypb.Empty, error) {
 	return s.proxy.RestoreSession(ctx, req)
 }
 
+// SaveSessions 保存 Session 快照
 func (s *Server) SaveSessions(ctx context.Context, req *pb.SaveSessionsRequest) (*pb.SaveSessionsResponse, error) {
 	return s.proxy.SaveSessions(ctx, req)
 }
 
+// GetSavedSessions 获取已保存的 Session 列表
 func (s *Server) GetSavedSessions(ctx context.Context, req *pb.GetSavedSessionsRequest) (*pb.GetSavedSessionsResponse, error) {
 	return s.proxy.GetSavedSessions(ctx, req)
 }
 
+// GetOutput 获取终端输出
 func (s *Server) GetOutput(ctx context.Context, req *pb.GetOutputRequest) (*pb.TerminalOutput, error) {
 	return s.proxy.GetOutput(ctx, req)
 }
 
+// SendInput 发送终端输入
 func (s *Server) SendInput(ctx context.Context, req *pb.SendInputRequest) (*emptypb.Empty, error) {
 	return s.proxy.SendInput(ctx, req)
 }
 
+// SendSignal 发送终端信号
 func (s *Server) SendSignal(ctx context.Context, req *pb.SendSignalRequest) (*emptypb.Empty, error) {
 	return s.proxy.SendSignal(ctx, req)
 }
 
+// GetEnv 获取 Agent 环境变量
 func (s *Server) GetEnv(ctx context.Context, req *pb.GetEnvRequest) (*pb.GetEnvResponse, error) {
 	return s.proxy.GetEnv(ctx, req)
 }
 
 // TemplateService — gRPC 转发到 Agent
 
+// ListTemplates 查询模板列表
 func (s *Server) ListTemplates(ctx context.Context, req *pb.ListTemplatesRequest) (*pb.ListTemplatesResponse, error) {
 	return s.proxy.ListTemplates(ctx, req)
 }
 
+// CreateTemplate 创建新模板
 func (s *Server) CreateTemplate(ctx context.Context, req *pb.CreateTemplateRequest) (*pb.SessionTemplate, error) {
 	return s.proxy.CreateTemplate(ctx, req)
 }
 
+// GetTemplate 获取模板详情
 func (s *Server) GetTemplate(ctx context.Context, req *pb.GetTemplateRequest) (*pb.SessionTemplate, error) {
 	return s.proxy.GetTemplate(ctx, req)
 }
 
+// UpdateTemplate 更新模板
 func (s *Server) UpdateTemplate(ctx context.Context, req *pb.UpdateTemplateRequest) (*pb.SessionTemplate, error) {
 	return s.proxy.UpdateTemplate(ctx, req)
 }
 
+// DeleteTemplate 删除模板
 func (s *Server) DeleteTemplate(ctx context.Context, req *pb.DeleteTemplateRequest) (*emptypb.Empty, error) {
 	return s.proxy.DeleteTemplate(ctx, req)
 }
 
+// GetTemplateConfig 获取模板配置
 func (s *Server) GetTemplateConfig(ctx context.Context, req *pb.GetTemplateConfigRequest) (*pb.TemplateConfigView, error) {
 	return s.proxy.GetTemplateConfig(ctx, req)
 }
 
+// UpdateTemplateConfig 更新模板配置
 func (s *Server) UpdateTemplateConfig(ctx context.Context, req *pb.UpdateTemplateConfigRequest) (*pb.TemplateConfigView, error) {
 	return s.proxy.UpdateTemplateConfig(ctx, req)
 }
 
 // ConfigService — gRPC 转发到 Agent
 
+// GetConfig 获取 Agent 本地配置
 func (s *Server) GetConfig(ctx context.Context, req *pb.GetConfigRequest) (*pb.LocalAgentConfig, error) {
 	return s.proxy.GetConfig(ctx, req)
 }
 
+// UpdateConfig 更新 Agent 本地配置
 func (s *Server) UpdateConfig(ctx context.Context, req *pb.UpdateConfigRequest) (*pb.LocalAgentConfig, error) {
 	return s.proxy.UpdateConfig(ctx, req)
 }
@@ -352,7 +385,7 @@ func modelNodeToProto(n *model.Node) *pb.NodeInfo {
 func protocolCapabilitiesToProto(c protocol.AgentCapabilities) *pb.AgentCapabilities {
 	return &pb.AgentCapabilities{
 		SupportedTemplates: c.SupportedTemplates,
-		MaxSessions:        int32(c.MaxSessions),
+		MaxSessions:        safeInt32(c.MaxSessions),
 		Tools:              c.Tools,
 	}
 }
@@ -375,9 +408,9 @@ func hostInfoToProto(info *protocol.HostInfo) *pb.HostInfo {
 		UpdatedAt:     info.UpdatedAt.Format(time.RFC3339),
 		Status:        info.Status,
 		ErrorMsg:      info.ErrorMsg,
-		RetryCount:    int32(info.RetryCount),
+		RetryCount:    safeInt32(info.RetryCount),
 		Address:       info.Address,
-		SessionCount:  int32(info.SessionCount),
+		SessionCount:  safeInt32(info.SessionCount),
 		LastHeartbeat: info.LastHeartbeat,
 	}
 }
@@ -404,7 +437,7 @@ func auditEntryToProto(e protocol.AuditLogEntry) *pb.AuditLogEntry {
 		Action:         e.Action,
 		PayloadSummary: e.PayloadSummary,
 		Result:         e.Result,
-		StatusCode:     int32(e.StatusCode),
+		StatusCode:     safeInt32(e.StatusCode),
 	}
 }
 
@@ -422,7 +455,7 @@ func hostSpecToProto(spec *protocol.HostSpec) *pb.HostSpec {
 		UpdatedAt:   spec.UpdatedAt.Format(time.RFC3339),
 		Status:      spec.Status,
 		ErrorMsg:    spec.ErrorMsg,
-		RetryCount:  int32(spec.RetryCount),
+		RetryCount:  safeInt32(spec.RetryCount),
 	}
 }
 
@@ -445,3 +478,8 @@ var (
 	_ pb.TemplateServiceServer = (*Server)(nil)
 	_ pb.ConfigServiceServer   = (*Server)(nil)
 )
+
+//nolint:gosec
+func safeInt32(n int) int32 {
+	return int32(n)
+}

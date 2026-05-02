@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/mesa-hub-behavior-panel/biz/model"
@@ -30,11 +30,11 @@ func (s *NodeService) ListNodes(ctx context.Context) ([]*model.Node, error) {
 // GetNode 返回指定节点信息
 func (s *NodeService) GetNode(ctx context.Context, name string) (*model.Node, error) {
 	if name == "" {
-		return nil, fmt.Errorf("name is required")
+		return nil, errors.New("name is required")
 	}
 	node := s.registry.Get(name)
 	if node == nil {
-		return nil, fmt.Errorf("node not found")
+		return nil, errors.New("node not found")
 	}
 	return node, nil
 }
@@ -42,10 +42,10 @@ func (s *NodeService) GetNode(ctx context.Context, name string) (*model.Node, er
 // DeleteNode 从注册表删除指定节点
 func (s *NodeService) DeleteNode(ctx context.Context, name string) error {
 	if name == "" {
-		return fmt.Errorf("name is required")
+		return errors.New("name is required")
 	}
 	if !s.registry.Delete(name) {
-		return fmt.Errorf("node not found")
+		return errors.New("node not found")
 	}
 	return nil
 }

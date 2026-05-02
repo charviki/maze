@@ -26,14 +26,14 @@ The Maze — 基于 Westworld 概念构建的 AI Agent 管理平台。Manager (b
 
 ## 模块索引
 
-| 模块 | 目录 | 职责 | 详细文档 |
-|------|------|------|----------|
-| Portal | mesa-hub/portal/ | 统一入口门户（Landing 含登录 → 主界面） | [AGENTS.md](mesa-hub/portal/AGENTS.md) |
-| Behavior Panel | mesa-hub/behavior-panel/ | Agent 管理面板 + Host 编排引擎（Go + React） | [AGENTS.md](mesa-hub/behavior-panel/AGENTS.md) + [docs/](mesa-hub/behavior-panel/docs/) |
-| Cradle | fabrication/cradle/ | Go 共享库（HTTP/Pipeline/Config/Auth + gRPC/Protobuf IDL 代码生成） | [AGENTS.md](fabrication/cradle/AGENTS.md) + [docs/](fabrication/cradle/docs/) |
-| Black Ridge | sweetwater/black-ridge/ | Agent 运行时节点（tmux + Web UI） | [AGENTS.md](sweetwater/black-ridge/AGENTS.md) + [docs/](sweetwater/black-ridge/docs/) |
-| Fabrication | fabrication/ | 制造部（UI 组件库 + Go 共享库 + Docker 构建 + K8s 部署基础设施） | [AGENTS.md](fabrication/AGENTS.md) + [docs/](fabrication/docs/) |
-| Integration Tests | fabrication/tests/integration/ | 跨模块集成测试（Go testing + kit 辅助包） | — |
+| 模块              | 目录                           | 职责                                                                | 详细文档                                                                                |
+| ----------------- | ------------------------------ | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Portal            | mesa-hub/portal/               | 统一入口门户（Landing 含登录 → 主界面）                             | [AGENTS.md](mesa-hub/portal/AGENTS.md)                                                  |
+| Behavior Panel    | mesa-hub/behavior-panel/       | Agent 管理面板 + Host 编排引擎（Go + React）                        | [AGENTS.md](mesa-hub/behavior-panel/AGENTS.md) + [docs/](mesa-hub/behavior-panel/docs/) |
+| Cradle            | fabrication/cradle/            | Go 共享库（HTTP/Pipeline/Config/Auth + gRPC/Protobuf IDL 代码生成） | [AGENTS.md](fabrication/cradle/AGENTS.md) + [docs/](fabrication/cradle/docs/)           |
+| Black Ridge       | sweetwater/black-ridge/        | Agent 运行时节点（tmux + Web UI）                                   | [AGENTS.md](sweetwater/black-ridge/AGENTS.md) + [docs/](sweetwater/black-ridge/docs/)   |
+| Fabrication       | fabrication/                   | 制造部（UI 组件库 + Go 共享库 + Docker 构建 + K8s 部署基础设施）    | [AGENTS.md](fabrication/AGENTS.md) + [docs/](fabrication/docs/)                         |
+| Integration Tests | fabrication/tests/integration/ | 跨模块集成测试（Go testing + kit 辅助包）                           | —                                                                                       |
 
 ## 文档维护
 

@@ -18,6 +18,7 @@ import (
 
 // --- SessionService ---
 
+// ListSessions 返回所有 tmux Session 列表
 func (s *Server) ListSessions(ctx context.Context, req *pb.ListSessionsRequest) (*pb.ListSessionsResponse, error) {
 	sessions, err := s.tmuxService.ListSessions()
 	if err != nil {
@@ -30,20 +31,21 @@ func (s *Server) ListSessions(ctx context.Context, req *pb.ListSessionsRequest) 
 	return &pb.ListSessionsResponse{Sessions: pbSessions}, nil
 }
 
+// CreateSession 创建新的 tmux Session
 func (s *Server) CreateSession(ctx context.Context, req *pb.CreateSessionRequest) (*pb.Session, error) {
-	sessionName := req.Name
+	sessionName := req.GetName()
 	if sessionName == "" {
 		return nil, status.Error(codes.InvalidArgument, "name is required")
 	}
 
-	confs := make([]model.ConfigItem, len(req.SessionConfs))
-	for i, c := range req.SessionConfs {
-		confs[i] = model.ConfigItem{Type: c.Type, Key: c.Key, Value: c.Value}
+	confs := make([]model.ConfigItem, len(req.GetSessionConfs()))
+	for i, c := range req.GetSessionConfs() {
+		confs[i] = model.ConfigItem{Type: c.GetType(), Key: c.GetKey(), Value: c.GetValue()}
 	}
 
 	session, err := s.tmuxService.CreateSession(
-		sessionName, req.Command, req.WorkingDir,
-		confs, req.RestoreStrategy, req.TemplateId, "",
+		sessionName, req.GetCommand(), req.GetWorkingDir(),
+		confs, req.GetRestoreStrategy(), req.GetTemplateId(), "",
 	)
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate session") {
@@ -54,34 +56,38 @@ func (s *Server) CreateSession(ctx context.Context, req *pb.CreateSessionRequest
 	return modelSessionToProto(session), nil
 }
 
+// GetSession 获取指定 Session 详情
 func (s *Server) GetSession(ctx context.Context, req *pb.GetSessionRequest) (*pb.Session, error) {
-	session, err := s.tmuxService.GetSession(req.Id)
+	session, err := s.tmuxService.GetSession(req.GetId())
 	if err != nil {
 		return nil, errToStatus(err)
 	}
 	return modelSessionToProto(session), nil
 }
 
+// DeleteSession 删除指定 Session
 func (s *Server) DeleteSession(ctx context.Context, req *pb.DeleteSessionRequest) (*emptypb.Empty, error) {
 	if err := s.tmuxService.SaveAllPipelineStates(); err != nil {
-		s.logger.Warnf("[grpc] save pipeline states before delete %s: %v", req.Id, err)
+		s.logger.Warnf("[grpc] save pipeline states before delete %s: %v", req.GetId(), err)
 	}
-	if err := s.tmuxService.KillSession(req.Id); err != nil {
+	if err := s.tmuxService.KillSession(req.GetId()); err != nil {
 		return nil, errToStatus(err)
 	}
-	if err := s.tmuxService.DeleteSessionState(req.Id); err != nil {
-		s.logger.Warnf("[grpc] delete session state %s: %v", req.Id, err)
+	if err := s.tmuxService.DeleteSessionState(req.GetId()); err != nil {
+		s.logger.Warnf("[grpc] delete session state %s: %v", req.GetId(), err)
 	}
 	return &emptypb.Empty{}, nil
 }
 
+// RestoreSession 恢复已终止的 Session
 func (s *Server) RestoreSession(ctx context.Context, req *pb.RestoreSessionRequest) (*emptypb.Empty, error) {
-	if err := s.tmuxService.RestoreSession(req.Id); err != nil {
+	if err := s.tmuxService.RestoreSession(req.GetId()); err != nil {
 		return nil, errToStatus(err)
 	}
 	return &emptypb.Empty{}, nil
 }
 
+// SaveSessions 保存所有 Session 管线状态
 func (s *Server) SaveSessions(ctx context.Context, req *pb.SaveSessionsRequest) (*pb.SaveSessionsResponse, error) {
 	if err := s.tmuxService.SaveAllPipelineStates(); err != nil {
 		return nil, errToStatus(err)
@@ -89,6 +95,7 @@ func (s *Server) SaveSessions(ctx context.Context, req *pb.SaveSessionsRequest) 
 	return &pb.SaveSessionsResponse{SavedAt: time.Now().Format(time.RFC3339)}, nil
 }
 
+// GetSavedSessions 获取已保存的 Session 列表
 func (s *Server) GetSavedSessions(ctx context.Context, req *pb.GetSavedSessionsRequest) (*pb.GetSavedSessionsResponse, error) {
 	states, err := s.tmuxService.GetSavedSessions()
 	if err != nil {
@@ -113,8 +120,9 @@ func (s *Server) GetSavedSessions(ctx context.Context, req *pb.GetSavedSessionsR
 	return &pb.GetSavedSessionsResponse{Sessions: pbStates}, nil
 }
 
+// GetSessionConfig 获取 Session 项目配置
 func (s *Server) GetSessionConfig(ctx context.Context, req *pb.GetSessionConfigRequest) (*pb.SessionConfigView, error) {
-	state, err := s.tmuxService.GetSessionState(req.Id)
+	state, err := s.tmuxService.GetSessionState(req.GetId())
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, status.Error(codes.NotFound, "session state not found")
@@ -134,7 +142,7 @@ func (s *Server) GetSessionConfig(ctx context.Context, req *pb.GetSessionConfigR
 		return nil, errToStatus(err)
 	}
 	return &pb.SessionConfigView{
-		SessionId:  req.Id,
+		SessionId:  req.GetId(),
 		TemplateId: tpl.ID,
 		WorkingDir: state.WorkingDir,
 		Scope:      string(model.ConfigScopeProject),
@@ -142,8 +150,9 @@ func (s *Server) GetSessionConfig(ctx context.Context, req *pb.GetSessionConfigR
 	}, nil
 }
 
+// UpdateSessionConfig 更新 Session 项目配置
 func (s *Server) UpdateSessionConfig(ctx context.Context, req *pb.UpdateSessionConfigRequest) (*pb.SessionConfigView, error) {
-	state, err := s.tmuxService.GetSessionState(req.Id)
+	state, err := s.tmuxService.GetSessionState(req.GetId())
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, status.Error(codes.NotFound, "session state not found")
@@ -161,13 +170,13 @@ func (s *Server) UpdateSessionConfig(ctx context.Context, req *pb.UpdateSessionC
 	files, err := service.NewConfigFileService().SaveProjectFiles(
 		state.WorkingDir,
 		tpl.SessionSchema.FileDefs,
-		protoConfigUpdatesToModel(req.Files),
+		protoConfigUpdatesToModel(req.GetFiles()),
 	)
 	if err != nil {
 		return nil, errToStatus(err)
 	}
 	return &pb.SessionConfigView{
-		SessionId:  req.Id,
+		SessionId:  req.GetId(),
 		TemplateId: tpl.ID,
 		WorkingDir: state.WorkingDir,
 		Scope:      string(model.ConfigScopeProject),
@@ -177,44 +186,48 @@ func (s *Server) UpdateSessionConfig(ctx context.Context, req *pb.UpdateSessionC
 
 // --- Terminal ---
 
+// GetOutput 获取终端输出
 func (s *Server) GetOutput(ctx context.Context, req *pb.GetOutputRequest) (*pb.TerminalOutput, error) {
-	lines := int(req.Lines)
+	lines := int(req.GetLines())
 	if lines <= 0 {
 		lines = 100
 	}
-	output, err := s.tmuxService.CapturePane(req.Id, lines)
+	output, err := s.tmuxService.CapturePane(req.GetId(), lines)
 	if err != nil {
 		return nil, errToStatus(err)
 	}
 	return &pb.TerminalOutput{
-		SessionId: req.Id,
+		SessionId: req.GetId(),
 		Lines:     int32(lines),
 		Output:    output,
 	}, nil
 }
 
+// SendInput 发送终端输入
 func (s *Server) SendInput(ctx context.Context, req *pb.SendInputRequest) (*emptypb.Empty, error) {
-	if req.Command == "" {
+	if req.GetCommand() == "" {
 		return nil, status.Error(codes.InvalidArgument, "command is required")
 	}
-	if err := s.tmuxService.SendKeys(req.Id, req.Command); err != nil {
+	if err := s.tmuxService.SendKeys(req.GetId(), req.GetCommand()); err != nil {
 		return nil, errToStatus(err)
 	}
 	return &emptypb.Empty{}, nil
 }
 
+// SendSignal 发送终端信号
 func (s *Server) SendSignal(ctx context.Context, req *pb.SendSignalRequest) (*emptypb.Empty, error) {
-	if req.Signal == "" {
+	if req.GetSignal() == "" {
 		return nil, status.Error(codes.InvalidArgument, "signal is required")
 	}
-	if err := s.tmuxService.SendSignal(req.Id, req.Signal); err != nil {
+	if err := s.tmuxService.SendSignal(req.GetId(), req.GetSignal()); err != nil {
 		return nil, errToStatus(err)
 	}
 	return &emptypb.Empty{}, nil
 }
 
+// GetEnv 获取 Session 环境变量
 func (s *Server) GetEnv(ctx context.Context, req *pb.GetEnvRequest) (*pb.GetEnvResponse, error) {
-	env, err := s.tmuxService.GetSessionEnv(req.Id)
+	env, err := s.tmuxService.GetSessionEnv(req.GetId())
 	if err != nil {
 		return nil, errToStatus(err)
 	}
@@ -223,6 +236,7 @@ func (s *Server) GetEnv(ctx context.Context, req *pb.GetEnvRequest) (*pb.GetEnvR
 
 // --- ConfigService ---
 
+// GetConfig 获取 Agent 本地配置
 func (s *Server) GetConfig(ctx context.Context, req *pb.GetConfigRequest) (*pb.LocalAgentConfig, error) {
 	cfg := s.localConfig.Get()
 	return &pb.LocalAgentConfig{
@@ -231,13 +245,14 @@ func (s *Server) GetConfig(ctx context.Context, req *pb.GetConfigRequest) (*pb.L
 	}, nil
 }
 
+// UpdateConfig 更新 Agent 本地配置
 func (s *Server) UpdateConfig(ctx context.Context, req *pb.UpdateConfigRequest) (*pb.LocalAgentConfig, error) {
 	current := s.localConfig.Get()
-	if req.WorkingDir != "" && req.WorkingDir != current.WorkingDir {
+	if req.GetWorkingDir() != "" && req.GetWorkingDir() != current.WorkingDir {
 		return nil, status.Error(codes.InvalidArgument, "working_dir is read-only")
 	}
 	if req.Env != nil {
-		if err := s.localConfig.UpdateEnv(req.Env); err != nil {
+		if err := s.localConfig.UpdateEnv(req.GetEnv()); err != nil {
 			return nil, errToStatus(err)
 		}
 	}
@@ -258,6 +273,7 @@ func modelSessionToProto(sess *model.Session) *pb.Session {
 		Name:        sess.Name,
 		Status:      sess.Status,
 		CreatedAt:   sess.CreatedAt,
+		//nolint:gosec
 		WindowCount: int32(sess.WindowCount),
 	}
 }
@@ -279,9 +295,9 @@ func protoConfigUpdatesToModel(files []*pb.ConfigFileUpdate) []model.ConfigFileU
 	updates := make([]model.ConfigFileUpdate, len(files))
 	for i, file := range files {
 		updates[i] = model.ConfigFileUpdate{
-			Path:     file.Path,
-			Content:  file.Content,
-			BaseHash: file.BaseHash,
+			Path:     file.GetPath(),
+			Content:  file.GetContent(),
+			BaseHash: file.GetBaseHash(),
 		}
 	}
 	return updates

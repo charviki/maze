@@ -1,4 +1,4 @@
-@import "./effects.css";
+@import './effects.css';
 
 @tailwind base;
 @tailwind components;
@@ -129,29 +129,39 @@
     @apply bg-background text-foreground font-mono antialiased;
     /* 全局网格背景 */
     background-size: 40px 40px;
-    background-image: 
+    background-image:
       linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
     position: relative;
     min-height: 100vh;
   }
-  
+
   /* CRT 扫描线和噪点特效伪元素 */
   body::before {
-    content: "";
+    content: '';
     position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     pointer-events: none;
     z-index: 9998;
     /* 扫描线：大幅降低透明度以减少视觉负担 */
-    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.01), rgba(0, 255, 0, 0.005), rgba(0, 0, 255, 0.01));
-    background-size: 100% 4px, 3px 100%;
+    background:
+      linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%),
+      linear-gradient(90deg, rgba(255, 0, 0, 0.01), rgba(0, 255, 0, 0.005), rgba(0, 0, 255, 0.01));
+    background-size:
+      100% 4px,
+      3px 100%;
   }
 
   body::after {
-    content: "";
+    content: '';
     position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     pointer-events: none;
     z-index: 9999;
     /* SVG 噪点：极微弱的质感 */

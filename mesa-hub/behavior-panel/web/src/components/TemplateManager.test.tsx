@@ -22,7 +22,12 @@ const builtinClaudeTemplate: SessionTemplate = {
     env_defs: [],
     file_defs: [
       { path: 'CLAUDE.md', label: 'Project Memory', required: false, default_content: '' },
-      { path: '.claude/settings.json', label: 'Project Settings', required: false, default_content: '' },
+      {
+        path: '.claude/settings.json',
+        label: 'Project Settings',
+        required: false,
+        default_content: '',
+      },
     ],
   },
 };
@@ -54,23 +59,42 @@ function createMockApi(overrides: Partial<IAgentApiClient> = {}): IAgentApiClien
     listTemplates: vi.fn(() => ok([builtinClaudeTemplate])),
     createTemplate: vi.fn((tpl: SessionTemplate) => ok(tpl)),
     getTemplate: vi.fn((id: string) => ok({ ...builtinClaudeTemplate, id })),
-    getTemplateConfig: vi.fn(() => ok({
-      template_id: 'claude',
-      scope: 'global' as const,
-      files: [
-        { path: '~/.claude.json', content: '{"hasCompletedOnboarding":true}', exists: true, hash: 'md5:claude-json' },
-        { path: '~/.claude/settings.json', content: '{}', exists: true, hash: 'md5:settings' },
-      ],
-    })),
+    getTemplateConfig: vi.fn(() =>
+      ok({
+        template_id: 'claude',
+        scope: 'global' as const,
+        files: [
+          {
+            path: '~/.claude.json',
+            content: '{"hasCompletedOnboarding":true}',
+            exists: true,
+            hash: 'md5:claude-json',
+          },
+          { path: '~/.claude/settings.json', content: '{}', exists: true, hash: 'md5:settings' },
+        ],
+      }),
+    ),
     updateTemplate: vi.fn((id: string, tpl: SessionTemplate) => ok({ ...tpl, id })),
-    updateTemplateConfig: vi.fn(() => ok({
-      template_id: 'claude',
-      scope: 'global' as const,
-      files: [
-        { path: '~/.claude.json', content: '{"hasCompletedOnboarding":true}', exists: true, hash: 'md5:claude-json' },
-        { path: '~/.claude/settings.json', content: '{"theme":"dark"}', exists: true, hash: 'md5:new-settings' },
-      ],
-    })),
+    updateTemplateConfig: vi.fn(() =>
+      ok({
+        template_id: 'claude',
+        scope: 'global' as const,
+        files: [
+          {
+            path: '~/.claude.json',
+            content: '{"hasCompletedOnboarding":true}',
+            exists: true,
+            hash: 'md5:claude-json',
+          },
+          {
+            path: '~/.claude/settings.json',
+            content: '{"theme":"dark"}',
+            exists: true,
+            hash: 'md5:new-settings',
+          },
+        ],
+      }),
+    ),
     deleteTemplate: vi.fn(noop),
     getSessionConfig: vi.fn(noop),
     updateSessionConfig: vi.fn(noop),
@@ -96,16 +120,22 @@ describe('TemplateManager', () => {
     fireEvent.click(screen.getByText('保存'));
 
     expect(await screen.findByText('确认保存真实全局配置')).toBeInTheDocument();
-    expect(screen.getByText('本次保存会直接修改节点上的真实全局配置文件。若这些文件在你编辑期间已被其他来源修改，系统会拒绝覆盖并要求重新加载。')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        '本次保存会直接修改节点上的真实全局配置文件。若这些文件在你编辑期间已被其他来源修改，系统会拒绝覆盖并要求重新加载。',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('真实全局配置保存冲突时，会提示重新加载', async () => {
-    const updateTemplateConfig = vi.fn(() => Promise.resolve({
-      status: 'error' as const,
-      code: 'config_conflict',
-      message: '配置已变更，请重新加载后再修改',
-      conflicts: [{ path: '~/.claude/settings.json', current_hash: 'md5:conflict' }],
-    }));
+    const updateTemplateConfig = vi.fn(() =>
+      Promise.resolve({
+        status: 'error' as const,
+        code: 'config_conflict',
+        message: '配置已变更，请重新加载后再修改',
+        conflicts: [{ path: '~/.claude/settings.json', current_hash: 'md5:conflict' }],
+      }),
+    );
     const apiClient = createMockApi({ updateTemplateConfig });
     renderTemplateManager(apiClient);
 
@@ -117,7 +147,9 @@ describe('TemplateManager', () => {
     fireEvent.click(await screen.findByText('确认保存'));
 
     await waitFor(() => {
-      expect(screen.getAllByText('配置已变更，请重新加载后再修改：~/.claude/settings.json').length).toBeGreaterThan(0);
+      expect(
+        screen.getAllByText('配置已变更，请重新加载后再修改：~/.claude/settings.json').length,
+      ).toBeGreaterThan(0);
     });
     expect(updateTemplateConfig).toHaveBeenCalledTimes(1);
   });

@@ -1,53 +1,46 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import {
-  TerrainBackground,
-  HexWaterfall,
-  DecryptText,
-  Button,
-  Input,
-  cn,
-} from '@maze/fabrication'
-import { WESTWORLD_QUOTES } from '../data/mock-data'
-import { MazeCanvas } from './MazeCanvas'
-import { MazeSvg } from './MazeSvg'
-import { login } from '../auth/auth'
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { TerrainBackground, HexWaterfall, DecryptText, Button, Input, cn } from '@maze/fabrication';
+import { WESTWORLD_QUOTES } from '../data/mock-data';
+import { MazeCanvas } from './MazeCanvas';
+import { MazeSvg } from './MazeSvg';
+import { login } from '../auth/auth';
 
 /** Maze orbit radii — must match MazeCanvas and MazeSvg */
-const RADII = [90, 75, 60, 45, 30, 18]
+const RADII = [90, 75, 60, 45, 30, 18];
 /** Center activation radius */
-const CENTER_RADIUS = 22
+const CENTER_RADIUS = 22;
 
 interface LandingPageProps {
-  onEnter: () => void
+  onEnter: () => void;
 }
 
 export function LandingPage({ onEnter }: LandingPageProps) {
-  const [quoteIndex, setQuoteIndex] = useState(0)
-  const [phase, setPhase] = useState<'landing' | 'login'>('landing')
-  const [exiting, setExiting] = useState(false)
+  const [quoteIndex, setQuoteIndex] = useState(0);
+  const [phase, setPhase] = useState<'landing' | 'login'>('landing');
+  const [exiting, setExiting] = useState(false);
 
   // Quote carousel
   useEffect(() => {
     const timer = setInterval(() => {
-      setQuoteIndex((i) => (i + 1) % WESTWORLD_QUOTES.length)
-    }, 8000)
-    return () => clearInterval(timer)
-  }, [])
+      setQuoteIndex((i) => (i + 1) % WESTWORLD_QUOTES.length);
+    }, 8000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleEnterPark = useCallback(() => {
-    setPhase('login')
-  }, [])
+    setPhase('login');
+  }, []);
 
   const handleLoginSuccess = useCallback(() => {
-    setExiting(true)
-    setTimeout(onEnter, 500)
-  }, [onEnter])
+    setExiting(true);
+    setTimeout(onEnter, 500);
+  }, [onEnter]);
 
   const handleBack = useCallback(() => {
-    setPhase('landing')
-  }, [])
+    setPhase('landing');
+  }, []);
 
-  const isLanding = phase === 'landing'
+  const isLanding = phase === 'landing';
 
   return (
     <div
@@ -144,47 +137,42 @@ export function LandingPage({ onEnter }: LandingPageProps) {
         <div
           className={cn(
             'w-full max-w-md px-4 transition-all duration-700 delay-200',
-            isLanding
-              ? 'opacity-0 translate-y-8 scale-95'
-              : 'opacity-100 translate-y-0 scale-100',
+            isLanding ? 'opacity-0 translate-y-8 scale-95' : 'opacity-100 translate-y-0 scale-100',
           )}
         >
           <LoginForm onSuccess={handleLoginSuccess} />
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 /**
  * Login form — embedded in LandingPage, no separate page.
  */
 function LoginForm({ onSuccess }: { onSuccess: () => void }) {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [shaking, setShaking] = useState(false)
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [shaking, setShaking] = useState(false);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
-      e.preventDefault()
+      e.preventDefault();
       if (login(username, password)) {
-        onSuccess()
+        onSuccess();
       } else {
-        setError('ACCESS DENIED // MOTOR FUNCTIONS SUSPENDED')
-        setShaking(true)
-        setTimeout(() => setShaking(false), 500)
+        setError('ACCESS DENIED // MOTOR FUNCTIONS SUSPENDED');
+        setShaking(true);
+        setTimeout(() => setShaking(false), 500);
       }
     },
     [username, password, onSuccess],
-  )
+  );
 
   return (
     <div
-      className={cn(
-        'relative p-px',
-        shaking && 'animate-pulse',
-      )}
+      className={cn('relative p-px', shaking && 'animate-pulse')}
       style={{
         clipPath:
           'polygon(16px 0, calc(100% - 16px) 0, 100% 16px, 100% calc(100% - 16px), calc(100% - 16px) 100%, 16px 100%, 0 calc(100% - 16px), 0 16px)',
@@ -210,11 +198,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
               <DecryptText text="IDENTITY VERIFICATION" />
             </h1>
             <p className="text-[11px] text-primary/60 font-mono italic">
-              <DecryptText
-                text="Bring yourself back online."
-                speed={60}
-                maxIterations={2}
-              />
+              <DecryptText text="Bring yourself back online." speed={60} maxIterations={2} />
             </p>
           </div>
 
@@ -274,53 +258,50 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
         </form>
       </div>
     </div>
-  )
+  );
 }
 
 /**
  * MazeContainer — manages mouse state and composites Canvas + SVG layers.
  */
 function MazeContainer({ className, onClick }: { className?: string; onClick?: () => void }) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null)
-  const [centerActive, setCenterActive] = useState(false)
-  const [hoveredRing, setHoveredRing] = useState<number | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
+  const [centerActive, setCenterActive] = useState(false);
+  const [hoveredRing, setHoveredRing] = useState<number | null>(null);
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      const el = containerRef.current
-      if (!el) return
-      const rect = el.getBoundingClientRect()
-      const x = ((e.clientX - rect.left) / rect.width) * 200
-      const y = ((e.clientY - rect.top) / rect.height) * 200
-      const cx = 100
-      const cy = 100
-      const dx = x - cx
-      const dy = y - cy
-      const dist = Math.sqrt(dx * dx + dy * dy)
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 200;
+    const y = ((e.clientY - rect.top) / rect.height) * 200;
+    const cx = 100;
+    const cy = 100;
+    const dx = x - cx;
+    const dy = y - cy;
+    const dist = Math.sqrt(dx * dx + dy * dy);
 
-      setMousePos({ x, y })
-      setCenterActive(dist < CENTER_RADIUS)
+    setMousePos({ x, y });
+    setCenterActive(dist < CENTER_RADIUS);
 
-      let closest: number | null = null
-      let minDelta = Infinity
-      for (let i = 0; i < RADII.length; i++) {
-        const delta = Math.abs(dist - RADII[i])
-        if (delta < 12 && delta < minDelta) {
-          minDelta = delta
-          closest = i
-        }
+    let closest: number | null = null;
+    let minDelta = Infinity;
+    for (let i = 0; i < RADII.length; i++) {
+      const delta = Math.abs(dist - RADII[i]);
+      if (delta < 12 && delta < minDelta) {
+        minDelta = delta;
+        closest = i;
       }
-      setHoveredRing(closest)
-    },
-    [],
-  )
+    }
+    setHoveredRing(closest);
+  }, []);
 
   const handleMouseLeave = useCallback(() => {
-    setMousePos(null)
-    setCenterActive(false)
-    setHoveredRing(null)
-  }, [])
+    setMousePos(null);
+    setCenterActive(false);
+    setHoveredRing(null);
+  }, []);
 
   return (
     <div
@@ -331,10 +312,7 @@ function MazeContainer({ className, onClick }: { className?: string; onClick?: (
       onClick={onClick}
     >
       <MazeCanvas mousePos={mousePos} centerActive={centerActive} />
-      <MazeSvg
-        centerActive={centerActive}
-        hoveredRing={hoveredRing}
-      />
+      <MazeSvg centerActive={centerActive} hoveredRing={hoveredRing} />
     </div>
-  )
+  );
 }

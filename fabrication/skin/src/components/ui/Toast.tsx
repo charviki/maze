@@ -40,17 +40,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const showToast = useCallback((type: ToastType, message: string) => {
     // 用时间戳 + 随机数生成唯一 ID，避免极端并发下的碰撞
     const id = Date.now() + Math.random();
-    setToasts(prev => [...prev, { id, type, message }]);
+    setToasts((prev) => [...prev, { id, type, message }]);
     setTimeout(() => {
-      setToasts(prev => prev.map(t => t.id === id ? { ...t, exiting: true } : t));
+      setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, exiting: true } : t)));
     }, 3700);
     setTimeout(() => {
-      setToasts(prev => prev.filter(t => t.id !== id));
+      setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 4000);
   }, []);
 
   const removeToast = (id: number) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
+    setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
   return (
@@ -58,11 +58,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       {/* Toast 容器：固定在右下角，不影响布局流 */}
       <div className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none">
-        {toasts.map(toast => (
+        {toasts.map((toast) => (
           <div
             key={toast.id}
             className={`pointer-events-auto ${toast.exiting ? 'animate-out fade-out-0 slide-out-to-right-5 duration-300' : 'animate-in slide-in-from-right-5 fade-in-0 duration-300'}`}
-            onClick={() => removeToast(toast.id)}
+            onClick={() => {
+              removeToast(toast.id);
+            }}
           >
             <Panel variant={variantMap[toast.type]} cornerSize={8} className="min-w-[280px]">
               <div className="flex items-center gap-2 text-xs font-mono">

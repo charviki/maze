@@ -21,7 +21,10 @@ export function usePollingWithBackoff<T>({
   const isFetchingRef = useRef(false);
 
   const fetchFnRef = useRef(fetchFn);
-  fetchFnRef.current = fetchFn;
+
+  useEffect(() => {
+    fetchFnRef.current = fetchFn;
+  });
 
   const executeFetch = useCallback(async () => {
     if (isFetchingRef.current) return;
@@ -47,14 +50,14 @@ export function usePollingWithBackoff<T>({
     mountedRef.current = true;
     if (!enabled) return;
 
-    executeFetch();
+    void executeFetch();
 
     let timeoutId: ReturnType<typeof setTimeout>;
 
     const scheduleNext = () => {
       const backoff = Math.min(
         baseInterval * Math.pow(2, consecutiveFailures.current),
-        maxInterval
+        maxInterval,
       );
       timeoutId = setTimeout(async () => {
         await executeFetch();
@@ -67,7 +70,7 @@ export function usePollingWithBackoff<T>({
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
         clearTimeout(timeoutId);
-        executeFetch().then(() => {
+        void executeFetch().then(() => {
           if (mountedRef.current) scheduleNext();
         });
       } else {

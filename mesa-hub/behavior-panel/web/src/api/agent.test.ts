@@ -38,7 +38,13 @@ describe('agent API - 通过 Manager 代理成功请求', () => {
   });
 
   it('createSession 应发送 POST 到代理路径', async () => {
-    const newSession = { id: 'new', name: 'new', status: 'running', created_at: '2024-01-01', window_count: 1 };
+    const newSession = {
+      id: 'new',
+      name: 'new',
+      status: 'running',
+      created_at: '2024-01-01',
+      window_count: 1,
+    };
     mockFetch.mockResolvedValueOnce({
       ok: true,
       text: () => Promise.resolve(JSON.stringify({ status: 'ok', data: newSession })),
@@ -57,7 +63,13 @@ describe('agent API - 通过 Manager 代理成功请求', () => {
   });
 
   it('getSession 应请求代理路径 /api/v1/nodes/:name/sessions/:id', async () => {
-    const session = { id: 'abc', name: 'abc', status: 'running', created_at: '2024-01-01', window_count: 1 };
+    const session = {
+      id: 'abc',
+      name: 'abc',
+      status: 'running',
+      created_at: '2024-01-01',
+      window_count: 1,
+    };
     mockFetch.mockResolvedValueOnce({
       ok: true,
       text: () => Promise.resolve(JSON.stringify({ status: 'ok', data: session })),
@@ -78,7 +90,10 @@ describe('agent API - 通过 Manager 代理成功请求', () => {
   it('saveSessions 应发送 POST 到代理路径', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      text: () => Promise.resolve(JSON.stringify({ status: 'ok', data: { saved_at: '2025-04-21T12:00:00Z' } })),
+      text: () =>
+        Promise.resolve(
+          JSON.stringify({ status: 'ok', data: { saved_at: '2025-04-21T12:00:00Z' } }),
+        ),
     });
 
     const result = await agentApi.saveSessions();
@@ -95,7 +110,9 @@ describe('agent API - 通过 Manager 代理成功请求', () => {
     const savedSessions = [
       {
         session_name: 'saved-1',
-        pipeline: [{ id: 'sys-cd', type: 'cd', phase: 'system', order: 0, key: '/home/agent', value: '' }],
+        pipeline: [
+          { id: 'sys-cd', type: 'cd', phase: 'system', order: 0, key: '/home/agent', value: '' },
+        ],
         restore_strategy: 'manual',
         working_dir: '/home/agent',
         terminal_snapshot: '$ claude\n> Hello',
@@ -111,10 +128,7 @@ describe('agent API - 通过 Manager 代理成功请求', () => {
 
     expect(result.status).toBe('ok');
     expect(result.data).toHaveLength(1);
-    expect(mockFetch).toHaveBeenCalledWith(
-      `${proxyBase}/saved`,
-      expect.anything(),
-    );
+    expect(mockFetch).toHaveBeenCalledWith(`${proxyBase}/saved`, expect.anything());
   });
 
   it('restoreSession 应发送 POST 到代理路径', async () => {
@@ -150,41 +164,53 @@ describe('agent API - 通过 Manager 代理成功请求', () => {
   it('getSessionConfig 应请求 session 配置代理路径', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      text: () => Promise.resolve(JSON.stringify({
-        status: 'ok',
-        data: {
-          session_id: 'sess-1',
-          template_id: 'claude',
-          working_dir: '/home/agent/sess-1',
-          scope: 'project',
-          files: [{ path: '.claude/settings.json', content: '{}', exists: true, hash: 'md5:abc' }],
-        },
-      })),
+      text: () =>
+        Promise.resolve(
+          JSON.stringify({
+            status: 'ok',
+            data: {
+              session_id: 'sess-1',
+              template_id: 'claude',
+              working_dir: '/home/agent/sess-1',
+              scope: 'project',
+              files: [
+                { path: '.claude/settings.json', content: '{}', exists: true, hash: 'md5:abc' },
+              ],
+            },
+          }),
+        ),
     });
 
     const result = await agentApi.getSessionConfig('sess-1');
 
     expect(result.status).toBe('ok');
     expect(result.data?.files[0].path).toBe('.claude/settings.json');
-    expect(mockFetch).toHaveBeenCalledWith(
-      `${proxyBase}/sess-1/config`,
-      expect.anything(),
-    );
+    expect(mockFetch).toHaveBeenCalledWith(`${proxyBase}/sess-1/config`, expect.anything());
   });
 
   it('updateSessionConfig 应发送 PUT 到 session 配置代理路径', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      text: () => Promise.resolve(JSON.stringify({
-        status: 'ok',
-        data: {
-          session_id: 'sess-1',
-          template_id: 'claude',
-          working_dir: '/home/agent/sess-1',
-          scope: 'project',
-          files: [{ path: '.claude/settings.json', content: '{"theme":"dark"}', exists: true, hash: 'md5:def' }],
-        },
-      })),
+      text: () =>
+        Promise.resolve(
+          JSON.stringify({
+            status: 'ok',
+            data: {
+              session_id: 'sess-1',
+              template_id: 'claude',
+              working_dir: '/home/agent/sess-1',
+              scope: 'project',
+              files: [
+                {
+                  path: '.claude/settings.json',
+                  content: '{"theme":"dark"}',
+                  exists: true,
+                  hash: 'md5:def',
+                },
+              ],
+            },
+          }),
+        ),
     });
 
     const result = await agentApi.updateSessionConfig('sess-1', {
@@ -201,14 +227,19 @@ describe('agent API - 通过 Manager 代理成功请求', () => {
   it('getTemplateConfig 应请求模板配置代理路径', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      text: () => Promise.resolve(JSON.stringify({
-        status: 'ok',
-        data: {
-          template_id: 'claude',
-          scope: 'global',
-          files: [{ path: '~/.claude/settings.json', content: '{}', exists: true, hash: 'md5:abc' }],
-        },
-      })),
+      text: () =>
+        Promise.resolve(
+          JSON.stringify({
+            status: 'ok',
+            data: {
+              template_id: 'claude',
+              scope: 'global',
+              files: [
+                { path: '~/.claude/settings.json', content: '{}', exists: true, hash: 'md5:abc' },
+              ],
+            },
+          }),
+        ),
     });
 
     const result = await agentApi.getTemplateConfig('claude');
@@ -253,12 +284,15 @@ describe('agent API - HTTP 错误', () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 409,
-      text: () => Promise.resolve(JSON.stringify({
-        status: 'error',
-        code: 'config_conflict',
-        message: '配置已变更，请重新加载后再修改',
-        conflicts: [{ path: '.claude/settings.json', current_hash: 'md5:def' }],
-      })),
+      text: () =>
+        Promise.resolve(
+          JSON.stringify({
+            status: 'error',
+            code: 'config_conflict',
+            message: '配置已变更，请重新加载后再修改',
+            conflicts: [{ path: '.claude/settings.json', current_hash: 'md5:def' }],
+          }),
+        ),
     });
 
     const result = await agentApi.updateSessionConfig('sess-1', {
@@ -288,25 +322,28 @@ describe('agent API - 代理路径验证', () => {
     const api2 = createAgentApi('', 'agent-beta');
 
     // 验证内部 base 路径正确（通过 fetch 调用验证）
-    mockFetch.mockResolvedValueOnce({ ok: true, text: () => Promise.resolve(JSON.stringify({ status: 'ok', data: [] })) });
-    api1.listSessions();
-    expect(mockFetch).toHaveBeenCalledWith(
-      '/api/v1/nodes/agent-alpha/sessions',
-      expect.anything(),
-    );
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: () => Promise.resolve(JSON.stringify({ status: 'ok', data: [] })),
+    });
+    void api1.listSessions();
+    expect(mockFetch).toHaveBeenCalledWith('/api/v1/nodes/agent-alpha/sessions', expect.anything());
 
-    mockFetch.mockResolvedValueOnce({ ok: true, text: () => Promise.resolve(JSON.stringify({ status: 'ok', data: [] })) });
-    api2.listSessions();
-    expect(mockFetch).toHaveBeenCalledWith(
-      '/api/v1/nodes/agent-beta/sessions',
-      expect.anything(),
-    );
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: () => Promise.resolve(JSON.stringify({ status: 'ok', data: [] })),
+    });
+    void api2.listSessions();
+    expect(mockFetch).toHaveBeenCalledWith('/api/v1/nodes/agent-beta/sessions', expect.anything());
   });
 
   it('nodeName 含特殊字符应被编码', () => {
     const api = createAgentApi('', 'agent name');
-    mockFetch.mockResolvedValueOnce({ ok: true, text: () => Promise.resolve(JSON.stringify({ status: 'ok', data: [] })) });
-    api.listSessions();
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: () => Promise.resolve(JSON.stringify({ status: 'ok', data: [] })),
+    });
+    void api.listSessions();
     expect(mockFetch).toHaveBeenCalledWith(
       '/api/v1/nodes/agent%20name/sessions',
       expect.anything(),

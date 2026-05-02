@@ -14,7 +14,7 @@ import (
 //go:embed templates/*.yaml
 var builtinTemplatesFS embed.FS
 
-// 会话模板，定义创建 Agent 会话时需要的命令、配置和用户输入字段
+// SessionTemplate 会话模板，定义创建 Agent 会话时需要的命令、配置和用户输入字段
 type SessionTemplate struct {
 	ID                 string        `json:"id"`
 	Name               string        `json:"name"`
@@ -28,7 +28,7 @@ type SessionTemplate struct {
 	SessionSchema      SessionSchema `json:"session_schema"`
 }
 
-// 模板持久化存储。内置模板在每次启动时会被无条件覆盖
+// TemplateStore 模板持久化存储。内置模板在每次启动时会被无条件覆盖
 type TemplateStore struct {
 	mu        sync.RWMutex
 	templates map[string]*SessionTemplate
@@ -36,10 +36,10 @@ type TemplateStore struct {
 	logger    logutil.Logger
 }
 
-// 创建 TemplateStore，加载已有数据后注入内置模板
+// NewTemplateStore 创建 TemplateStore，加载已有数据后注入内置模板
 func NewTemplateStore(filePath string, logger logutil.Logger) *TemplateStore {
 	dir := filepath.Dir(filePath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0750); err != nil {
 		logger.Warnf("[template] create dir %s: %v", dir, err)
 	}
 	s := &TemplateStore{
@@ -261,7 +261,7 @@ func hardcodedBuiltins() []SessionTemplate {
 	}
 }
 
-// 列出所有模板
+// List 列出所有模板
 func (s *TemplateStore) List() []*SessionTemplate {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -272,14 +272,14 @@ func (s *TemplateStore) List() []*SessionTemplate {
 	return result
 }
 
-// 获取指定 ID 的模板
+// Get 获取指定 ID 的模板
 func (s *TemplateStore) Get(id string) *SessionTemplate {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.templates[id]
 }
 
-// 保存模板
+// Set 保存模板
 func (s *TemplateStore) Set(t *SessionTemplate) error {
 	s.mu.Lock()
 	s.templates[t.ID] = t
@@ -287,7 +287,7 @@ func (s *TemplateStore) Set(t *SessionTemplate) error {
 	return s.save()
 }
 
-// 删除模板。内置模板静默返回 nil（不报错也不删除）
+// Delete 删除模板。内置模板静默返回 nil（不报错也不删除）
 func (s *TemplateStore) Delete(id string) error {
 	s.mu.Lock()
 	t, exists := s.templates[id]

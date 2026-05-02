@@ -2,7 +2,10 @@ import * as React from 'react';
 import { cn } from '../../utils';
 
 // variant 对应的边框颜色和装饰文本样式映射
-const variantStyles: Record<string, { border: string; corner: string; label: string; hash: string }> = {
+const variantStyles: Record<
+  string,
+  { border: string; corner: string; label: string; hash: string }
+> = {
   default: {
     border: 'border-primary/30 group-hover:border-primary/50',
     corner: 'border-primary/70',
@@ -73,32 +76,64 @@ export function Panel({
 
   return (
     <div className={cn('relative group', className)} {...props}>
-      <div 
-        className={cn('w-full h-full border transition-colors', transparent ? 'bg-transparent' : 'bg-card/80 backdrop-blur-sm', vs.border)}
+      <div
+        className={cn(
+          'w-full h-full border transition-colors',
+          transparent ? 'bg-transparent' : 'bg-card/80 backdrop-blur-sm',
+          vs.border,
+        )}
         style={clipPathStyle}
       >
-        <div className="p-4 h-full">
-          {children}
-        </div>
+        <div className="p-4 h-full">{children}</div>
       </div>
 
       {showCrosshairs && (
         <>
-          <div className={cn('absolute top-0 left-0 w-3 h-3 border-t border-l -translate-x-1 -translate-y-1 pointer-events-none', vs.corner)} />
-          <div className={cn('absolute top-0 right-0 w-3 h-3 border-t border-r translate-x-1 -translate-y-1 pointer-events-none', vs.corner)} />
-          <div className={cn('absolute bottom-0 left-0 w-3 h-3 border-b border-l -translate-x-1 translate-y-1 pointer-events-none', vs.corner)} />
-          <div className={cn('absolute bottom-0 right-0 w-3 h-3 border-b border-r translate-x-1 translate-y-1 pointer-events-none', vs.corner)} />
-          
-          <div className={cn('absolute -top-3 left-4 text-[8px] font-mono tracking-widest whitespace-nowrap pointer-events-none', vs.label)}>
+          <div
+            className={cn(
+              'absolute top-0 left-0 w-3 h-3 border-t border-l -translate-x-1 -translate-y-1 pointer-events-none',
+              vs.corner,
+            )}
+          />
+          <div
+            className={cn(
+              'absolute top-0 right-0 w-3 h-3 border-t border-r translate-x-1 -translate-y-1 pointer-events-none',
+              vs.corner,
+            )}
+          />
+          <div
+            className={cn(
+              'absolute bottom-0 left-0 w-3 h-3 border-b border-l -translate-x-1 translate-y-1 pointer-events-none',
+              vs.corner,
+            )}
+          />
+          <div
+            className={cn(
+              'absolute bottom-0 right-0 w-3 h-3 border-b border-r translate-x-1 translate-y-1 pointer-events-none',
+              vs.corner,
+            )}
+          />
+
+          <div
+            className={cn(
+              'absolute -top-3 left-4 text-[8px] font-mono tracking-widest whitespace-nowrap pointer-events-none',
+              vs.label,
+            )}
+          >
             {vl.auth}
           </div>
-          
-          <div className={cn('absolute -bottom-3 right-4 text-[8px] font-mono tracking-widest whitespace-nowrap pointer-events-none', vs.hash)}>
+
+          <div
+            className={cn(
+              'absolute -bottom-3 right-4 text-[8px] font-mono tracking-widest whitespace-nowrap pointer-events-none',
+              vs.hash,
+            )}
+          >
             {vl.hash}
           </div>
-          
+
           <div className="absolute top-1/2 left-0 -translate-x-2 -translate-y-1/2 flex flex-col gap-1 opacity-40 pointer-events-none">
-            {[...Array(5)].map((_, i) => (
+            {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className={`h-[1px] bg-primary ${i === 2 ? 'w-2' : 'w-1'}`}></div>
             ))}
           </div>

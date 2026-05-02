@@ -33,7 +33,7 @@ function loadSettings(): AnimationSettings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+      return { ...DEFAULT_SETTINGS, ...(JSON.parse(raw) as Partial<AnimationSettings>) };
     }
   } catch {
     // JSON 解析失败，忽略并使用默认值
@@ -126,7 +126,9 @@ export function AnimationSettingsPanel({ open, onOpenChange }: AnimationSettings
                 </div>
                 <button
                   type="button"
-                  onClick={() => updateSetting(key, !settings[key])}
+                  onClick={() => {
+                    updateSetting(key, !settings[key]);
+                  }}
                   className={`w-10 h-5 rounded-full transition-colors relative ${
                     settings[key] ? 'bg-primary' : 'bg-muted'
                   }`}

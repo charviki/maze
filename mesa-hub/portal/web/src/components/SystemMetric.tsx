@@ -1,11 +1,11 @@
-import type { LucideIcon } from 'lucide-react'
-import { Panel } from '@maze/fabrication'
+import type { LucideIcon } from 'lucide-react';
+import { Panel } from '@maze/fabrication';
 
 interface SystemMetricProps {
-  label: string
-  value: string
-  subValue?: string
-  icon: LucideIcon
+  label: string;
+  value: string;
+  subValue?: string;
+  icon: LucideIcon;
 }
 
 export function SystemMetric({ label, value, subValue, icon: Icon }: SystemMetricProps) {
@@ -17,16 +17,12 @@ export function SystemMetric({ label, value, subValue, icon: Icon }: SystemMetri
           <span className="text-[10px] font-mono tracking-widest text-muted-foreground uppercase">
             {label}
           </span>
-          <span className="text-2xl font-bold text-primary font-mono tabular-nums">
-            {value}
-          </span>
+          <span className="text-2xl font-bold text-primary font-mono tabular-nums">{value}</span>
           {subValue && (
-            <span className="text-[9px] font-mono text-muted-foreground/60">
-              {subValue}
-            </span>
+            <span className="text-[9px] font-mono text-muted-foreground/60">{subValue}</span>
           )}
         </div>
       </div>
     </Panel>
-  )
+  );
 }

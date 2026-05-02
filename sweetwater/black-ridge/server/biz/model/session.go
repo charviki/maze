@@ -31,6 +31,7 @@ type SendInputRequest struct {
 	Command string `json:"command"`
 }
 
+// SendSignalRequest 发送信号请求
 type SendSignalRequest struct {
 	Signal string `json:"signal"`
 }
@@ -47,7 +48,9 @@ type TerminalOutput struct {
 type ConfigScope string
 
 const (
+	// ConfigScopeGlobal 全局配置作用域
 	ConfigScopeGlobal  ConfigScope = "global"
+	// ConfigScopeProject 项目级配置作用域
 	ConfigScopeProject ConfigScope = "project"
 )
 

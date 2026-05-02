@@ -29,7 +29,7 @@ func GenerateHostDockerfile(toolIDs []string, baseImage string) string {
 	var buf strings.Builder
 
 	// 使用 agent 基础镜像（含 agent 二进制、entrypoint、Claude Code 等）
-	buf.WriteString(fmt.Sprintf("FROM %s\n", baseImage))
+	fmt.Fprintf(&buf, "FROM %s\n", baseImage)
 
 	var allBinPaths []string
 	var extraEnvs []string
@@ -41,7 +41,7 @@ func GenerateHostDockerfile(toolIDs []string, baseImage string) string {
 		}
 
 		// COPY --from 供应商镜像
-		buf.WriteString(fmt.Sprintf("COPY --from=%s %s %s\n", cfg.Image, cfg.SourcePath, cfg.DestPath))
+		fmt.Fprintf(&buf, "COPY --from=%s %s %s\n", cfg.Image, cfg.SourcePath, cfg.DestPath)
 		allBinPaths = append(allBinPaths, cfg.BinPaths...)
 
 		// 工具特定的 ENV（按 key 排序确保确定性）
@@ -60,7 +60,7 @@ func GenerateHostDockerfile(toolIDs []string, baseImage string) string {
 	// 动态拼接 PATH（各工具 bin 目录 + 原始 PATH）
 	if len(allBinPaths) > 0 {
 		pathValue := strings.Join(allBinPaths, ":") + ":${PATH}"
-		buf.WriteString(fmt.Sprintf("ENV PATH=\"%s\"\n", pathValue))
+		fmt.Fprintf(&buf, "ENV PATH=\"%s\"\n", pathValue)
 	}
 
 	// 写入额外环境变量
@@ -70,7 +70,7 @@ func GenerateHostDockerfile(toolIDs []string, baseImage string) string {
 
 	// 注入 Dockerfile 内容 hash 作为 LABEL，供应商镜像更新时自动触发重建
 	contentHash := DockerfileHash(buf.String())
-	buf.WriteString(fmt.Sprintf("LABEL maze.dockerfile-hash=%s\n", contentHash))
+	fmt.Fprintf(&buf, "LABEL maze.dockerfile-hash=%s\n", contentHash)
 
 	return buf.String()
 }

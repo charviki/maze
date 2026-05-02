@@ -17,26 +17,39 @@ export function ReverieEffect({ children, isActive = false, className }: Reverie
   const [isRevering, setIsRevering] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const scheduleNext = useCallback(() => {
-    if (!isActive || !settings.glitchEffect) return;
-
-    const delay = REVERIE_MIN_INTERVAL + Math.random() * (REVERIE_MAX_INTERVAL - REVERIE_MIN_INTERVAL);
-    timerRef.current = setTimeout(() => {
-      setIsRevering(true);
-      timerRef.current = setTimeout(() => {
-        setIsRevering(false);
-        scheduleNext();
-      }, REVERIE_DURATION);
-    }, delay);
-  }, [isActive, settings.glitchEffect]);
+  const scheduleNextRef = useRef<() => void>(() => {});
 
   useEffect(() => {
+    scheduleNextRef.current = () => {
+      if (!isActive || !settings.glitchEffect) return;
+
+      const delay =
+        REVERIE_MIN_INTERVAL + Math.random() * (REVERIE_MAX_INTERVAL - REVERIE_MIN_INTERVAL);
+      timerRef.current = setTimeout(() => {
+        setIsRevering(true);
+        timerRef.current = setTimeout(() => {
+          setIsRevering(false);
+          scheduleNextRef.current();
+        }, REVERIE_DURATION);
+      }, delay);
+    };
+  });
+
+  const scheduleNext = useCallback(() => {
+    scheduleNextRef.current();
+  }, []);
+
+  // cleanup-in-effect: 动画关闭时需同步重置 isRevering 状态，防止下次激活时残留错误的动画帧。
+  // React Compiler 的 set-state-in-effect 规则对 effect 清理中的 setState 存在已知误报。
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (!isActive || !settings.glitchEffect) {
       if (timerRef.current) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
       }
       setIsRevering(false);
+      /* eslint-enable react-hooks/set-state-in-effect */
       return;
     }
 

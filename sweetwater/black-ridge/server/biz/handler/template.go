@@ -13,13 +13,13 @@ import (
 	"github.com/charviki/sweetwater-black-ridge/biz/service"
 )
 
-// 模板管理 handler
+// TemplateHandler 模板管理 HTTP handler
 type TemplateHandler struct {
 	store       *model.TemplateStore
 	configFiles *service.ConfigFileService
 }
 
-// 创建 TemplateHandler
+// NewTemplateHandler 创建 TemplateHandler
 func NewTemplateHandler(store *model.TemplateStore) *TemplateHandler {
 	return &TemplateHandler{
 		store:       store,
@@ -27,13 +27,13 @@ func NewTemplateHandler(store *model.TemplateStore) *TemplateHandler {
 	}
 }
 
-// 列出所有模板
+// ListTemplates 列出所有模板
 func (h *TemplateHandler) ListTemplates(_ context.Context, c *app.RequestContext) {
 	templates := h.store.List()
 	httputil.Success(c, templates)
 }
 
-// 获取指定模板
+// GetTemplate 获取指定模板
 func (h *TemplateHandler) GetTemplate(_ context.Context, c *app.RequestContext) {
 	id := c.Param("id")
 	if id == "" {
@@ -125,7 +125,7 @@ func (h *TemplateHandler) UpdateTemplateConfig(_ context.Context, c *app.Request
 	})
 }
 
-// 创建新模板（自动设置 builtin=false）
+// CreateTemplate 创建新模板（自动设置 builtin=false）
 func (h *TemplateHandler) CreateTemplate(_ context.Context, c *app.RequestContext) {
 	var tpl model.SessionTemplate
 	if err := c.Bind(&tpl); err != nil {
@@ -155,7 +155,7 @@ func (h *TemplateHandler) CreateTemplate(_ context.Context, c *app.RequestContex
 	httputil.Success(c, tpl)
 }
 
-// 更新模板（保留 builtin 标记）
+// UpdateTemplate 更新模板（保留 builtin 标记）
 func (h *TemplateHandler) UpdateTemplate(_ context.Context, c *app.RequestContext) {
 	id := c.Param("id")
 	if id == "" {
@@ -189,7 +189,7 @@ func (h *TemplateHandler) UpdateTemplate(_ context.Context, c *app.RequestContex
 	httputil.Success(c, tpl)
 }
 
-// 删除模板（禁止删除内置模板）
+// DeleteTemplate 删除模板（禁止删除内置模板）
 func (h *TemplateHandler) DeleteTemplate(_ context.Context, c *app.RequestContext) {
 	id := c.Param("id")
 	if id == "" {

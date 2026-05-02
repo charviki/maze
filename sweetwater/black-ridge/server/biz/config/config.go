@@ -67,9 +67,7 @@ func LoadFromExe(filename ...string) (*Config, error) {
 		return nil, err
 	}
 	applyEnvOverrides(&cfg)
-	if err := validate(&cfg); err != nil {
-		return nil, err
-	}
+	validate(&cfg)
 	return &cfg, nil
 }
 
@@ -80,9 +78,7 @@ func Load(path string) (*Config, error) {
 		return nil, err
 	}
 	applyEnvOverrides(&cfg)
-	if err := validate(&cfg); err != nil {
-		return nil, err
-	}
+	validate(&cfg)
 	return &cfg, nil
 }
 
@@ -147,7 +143,7 @@ func applyEnvOverrides(cfg *Config) {
 }
 
 // validate 校验配置完整性，对未设置必填字段填充默认值
-func validate(cfg *Config) error {
+func validate(cfg *Config) {
 	if cfg.Server.ListenAddr == "" {
 		cfg.Server.ListenAddr = ":8080"
 	}
@@ -170,5 +166,4 @@ func validate(cfg *Config) error {
 	if cfg.AutoSave.Interval <= 0 {
 		cfg.AutoSave.Interval = 60
 	}
-	return nil
-}
+	}

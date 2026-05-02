@@ -10,7 +10,7 @@ const DEFAULT_TIMEOUT_MS = 30000;
  * 创建带 baseUrl 前缀的请求函数。
  * 所有 API client 共享统一的错误处理和响应解析逻辑。
  */
-export function createRequest(baseUrl: string = '') {
+export function createRequest(baseUrl = '') {
   return async function request<T>(url: string, options?: RequestInit): Promise<ApiResponse<T>> {
     try {
       // 如果调用方提供了 signal（自定义超时控制），直接使用；否则用默认超时
@@ -22,7 +22,9 @@ export function createRequest(baseUrl: string = '') {
         // 外部控制超时，不创建内部 AbortController
       } else {
         controller = new AbortController();
-        timeoutId = setTimeout(() => controller!.abort(), DEFAULT_TIMEOUT_MS);
+        timeoutId = setTimeout(() => {
+          controller!.abort();
+        }, DEFAULT_TIMEOUT_MS);
       }
 
       const signal = externalSignal || controller!.signal;
@@ -44,15 +46,17 @@ export function createRequest(baseUrl: string = '') {
           return { status: 'error', message: `HTTP ${response.status}` };
         }
         try {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
           return JSON.parse(text);
         } catch {
           return { status: 'error', message: `HTTP ${response.status}` };
         }
       }
       if (!text) {
-        return { status: 'ok', data: undefined } as ApiResponse<T>;
+        return { status: 'ok', data: undefined };
       }
       try {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return JSON.parse(text);
       } catch {
         return { status: 'error', message: '响应解析失败' };

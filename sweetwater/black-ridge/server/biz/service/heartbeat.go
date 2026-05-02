@@ -3,6 +3,7 @@ package service
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -18,7 +19,9 @@ import (
 )
 
 const (
+	// AgentVersion Agent 当前版本号
 	AgentVersion = "0.1.0"
+	// MaxSessions Agent 最大并行 Session 数
 	MaxSessions  = 10
 
 	backoffBase       = 10 * time.Second
@@ -75,7 +78,7 @@ func (s *HeartbeatService) Start(stopCh <-chan struct{}) {
 	addr := s.cfg.Server.ListenAddr
 	externalAddr := s.cfg.Server.ExternalAddr
 	if externalAddr == "" {
-		externalAddr = fmt.Sprintf("http://localhost%s", addr)
+		externalAddr = "http://localhost" + addr
 	}
 
 	baseInterval := time.Duration(s.cfg.Controller.HeartbeatInterval) * time.Second
@@ -108,7 +111,7 @@ func (s *HeartbeatService) Start(stopCh <-chan struct{}) {
 
 		// 失败后指数退避
 		if !s.registered {
-			s.currentDelay = s.currentDelay * backoffMultiplier
+			s.currentDelay *= backoffMultiplier
 			if s.currentDelay > backoffMax {
 				s.currentDelay = backoffMax
 			}
@@ -218,7 +221,7 @@ func (s *HeartbeatService) register(name, addr, externalAddr string) error {
 		return fmt.Errorf("marshal register body: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/api/v1/nodes/register", s.cfg.Controller.Addr)
+	url := s.cfg.Controller.Addr + "/api/v1/nodes/register"
 	return s.doRequest(url, body)
 }
 
@@ -234,7 +237,7 @@ func (s *HeartbeatService) heartbeat(name string) error {
 		return fmt.Errorf("marshal heartbeat body: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/api/v1/nodes/heartbeat", s.cfg.Controller.Addr)
+	url := s.cfg.Controller.Addr + "/api/v1/nodes/heartbeat"
 	return s.doRequest(url, body)
 }
 
@@ -253,10 +256,10 @@ func (s *HeartbeatService) doRequest(url string, body []byte) error {
 	if err != nil {
 		return fmt.Errorf("post request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == 401 {
-		return fmt.Errorf("authentication failed: check controller.auth_token config")
+		return errors.New("authentication failed: check controller.auth_token config")
 	}
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("request returned status %d", resp.StatusCode)

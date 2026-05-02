@@ -127,6 +127,7 @@ Reconciler 在 [reconciler.go](../server/biz/reconciler/reconciler.go) 中实现
 ### 启动恢复（RecoverOnStartup）
 
 Manager 启动时执行一次：
+
 1. 遍历所有 HostSpec，预存 AuthToken 到 NodeRegistry
 2. 根据 HostSpec.Status 决定恢复策略：
    - `pending`/`deploying` → 检查运行时是否存在，不存在则重新部署
@@ -136,6 +137,7 @@ Manager 启动时执行一次：
 ### 健康巡检（StartHealthCheck）
 
 后台 goroutine 每 60 秒执行一次：
+
 - `deploying` — **保护窗口**（5 分钟内不干预，让 deployHostAsync 完成）；超过保护期仍未上线则重新部署
 - `online`/`offline` — 检查运行时健康，不健康则重新部署
 - `failed` — RetryCount < 3 时自动重试
@@ -164,6 +166,7 @@ Manager 启动时执行一次：
 ### 工具组合镜像缓存
 
 `ToolsetImageTag` 为工具组合生成稳定标签（如 `maze-agent:claude-go`）。构建前先检查组合镜像是否存在：
+
 - 存在 → `docker tag` 复用，跳过构建（相同工具组合的后续 Host 创建从 77 秒降到 ~5 秒）
 - 不存在 → 执行 `docker build`，构建后打上组合标签
 
@@ -186,16 +189,19 @@ Manager 启动时执行一次：
 ## 前端架构
 
 ### 技术栈
+
 - React + TypeScript
 - UI 组件库：`@maze/fabrication`（AgentPanel, NodeList, RadarView, BootSequence 等）
 - HTTP 请求：`@maze/fabrication` 的 `createRequest` 封装
 
 ### API 客户端分层
+
 - **controller.ts** — Manager 节点管理 API（listNodes, getNode, deleteNode），直连 Manager
 - **agent.ts** — 通过 Manager 代理的 Agent API（sessions, templates, local-config, ws），路径前缀 `/api/v1/nodes/:name/`
 - **manager.ts** — Manager 模板管理 API（注释说明节点配置和 Session 元数据已移除，由 Agent 本地管理）
 
 ### 关键交互
+
 - `NodeList` 组件使用 `usePollingWithBackoff` 轮询节点列表
 - 选中节点后构建 `createAgentApi('', nodeName)` 实例，传给 `AgentPanel`
 - WebSocket URL 由 `buildWsUrl()` 根据当前页面协议（ws/wss）动态构建
@@ -220,6 +226,7 @@ Agent 实例（动态创建）
 ```
 
 ### Docker Compose 编排（来自 docker-compose.yml）
+
 - **web** — Nginx 容器，构建前端资产并托管静态文件 + 反向代理 API
 - **agent-manager** — Go 后端容器，监听 8080 端口
   - 挂载 `/var/run/docker.sock` 以动态创建/销毁 Host 容器
@@ -228,6 +235,7 @@ Agent 实例（动态创建）
 - **Agent 实例** — 全部通过 Manager UI 动态创建，不再在 docker-compose.yml 中静态定义
 
 ### Nginx 配置要点（来自 nginx.conf）
+
 - Portal 首页：`/` → 302 重定向到 `/portal/`，`/portal/` → alias + `try_files`
 - Behavior Panel：`/behavior-panel/` → `alias` + `try_files $uri $uri/ /behavior-panel/index.html`
 - WebSocket 支持：`proxy_http_version 1.1` + `Upgrade/Connection` 头处理
@@ -236,27 +244,31 @@ Agent 实例（动态创建）
 ## 配置
 
 ### 配置来源（优先级从高到低）
+
 1. 环境变量（`AGENT_MANAGER_SERVER_LISTEN_ADDR` 等）
 2. YAML 配置文件（`config.yaml`，位于可执行文件同目录）
 3. 默认值（`validate()` 函数填充）
 
 ### 配置项
-| 配置项 | 环境变量 | 默认值 | 说明 |
-|--------|----------|--------|------|
-| server.listen_addr | AGENT_MANAGER_SERVER_LISTEN_ADDR | :8080 | HTTP 监听地址 |
-| server.auth_token | AGENT_MANAGER_SERVER_AUTH_TOKEN | "" | API 鉴权 Token，空为开发模式 |
-| server.allowed_origins | AGENT_MANAGER_SERVER_ALLOWED_ORIGINS | [] | CORS/WebSocket 允许的来源列表 |
-| server.allow_private_networks | AGENT_MANAGER_ALLOW_PRIVATE_NETWORKS | false | 是否允许代理到内网 IP |
-| workspace.base_dir | AGENT_MANAGER_WORKSPACE_BASE_DIR | ~/.maze/docker | Manager 元数据根目录（nodes.json / host_specs.json / audit.log / host_logs；容器化部署通常挂载到 `/data`） |
-| workspace.mount_dir | AGENT_MANAGER_WORKSPACE_MOUNT_DIR | 同 base_dir | Manager 容器内的元数据挂载路径（用于文件操作） |
-| docker.socket_path | AGENT_MANAGER_DOCKER_SOCKET_PATH | /var/run/docker.sock | Docker socket 路径 |
-| docker.network | AGENT_MANAGER_DOCKER_NETWORK | "" | Docker 网络名（Host 容器加入此网络） |
-| docker.agent_base_image | AGENT_MANAGER_DOCKER_AGENT_BASE_IMAGE | "" | Agent 基础镜像名（含 agent 二进制和 entrypoint） |
-| docker.agent_data_dir | AGENT_MANAGER_DOCKER_AGENT_DATA_DIR | `<workspace.base_dir>/agents` | Docker Agent 宿主机根目录；容器化部署中常显式指向宿主机的 `.../docker/agents` |
-| docker.manager_addr | AGENT_MANAGER_DOCKER_MANAGER_ADDR | http://agent-manager:8080 | Manager 在容器网络中的地址 |
+
+| 配置项                        | 环境变量                              | 默认值                        | 说明                                                                                                       |
+| ----------------------------- | ------------------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| server.listen_addr            | AGENT_MANAGER_SERVER_LISTEN_ADDR      | :8080                         | HTTP 监听地址                                                                                              |
+| server.auth_token             | AGENT_MANAGER_SERVER_AUTH_TOKEN       | ""                            | API 鉴权 Token，空为开发模式                                                                               |
+| server.allowed_origins        | AGENT_MANAGER_SERVER_ALLOWED_ORIGINS  | []                            | CORS/WebSocket 允许的来源列表                                                                              |
+| server.allow_private_networks | AGENT_MANAGER_ALLOW_PRIVATE_NETWORKS  | false                         | 是否允许代理到内网 IP                                                                                      |
+| workspace.base_dir            | AGENT_MANAGER_WORKSPACE_BASE_DIR      | ~/.maze/docker                | Manager 元数据根目录（nodes.json / host_specs.json / audit.log / host_logs；容器化部署通常挂载到 `/data`） |
+| workspace.mount_dir           | AGENT_MANAGER_WORKSPACE_MOUNT_DIR     | 同 base_dir                   | Manager 容器内的元数据挂载路径（用于文件操作）                                                             |
+| docker.socket_path            | AGENT_MANAGER_DOCKER_SOCKET_PATH      | /var/run/docker.sock          | Docker socket 路径                                                                                         |
+| docker.network                | AGENT_MANAGER_DOCKER_NETWORK          | ""                            | Docker 网络名（Host 容器加入此网络）                                                                       |
+| docker.agent_base_image       | AGENT_MANAGER_DOCKER_AGENT_BASE_IMAGE | ""                            | Agent 基础镜像名（含 agent 二进制和 entrypoint）                                                           |
+| docker.agent_data_dir         | AGENT_MANAGER_DOCKER_AGENT_DATA_DIR   | `<workspace.base_dir>/agents` | Docker Agent 宿主机根目录；容器化部署中常显式指向宿主机的 `.../docker/agents`                              |
+| docker.manager_addr           | AGENT_MANAGER_DOCKER_MANAGER_ADDR     | http://agent-manager:8080     | Manager 在容器网络中的地址                                                                                 |
 
 ### 开发模式
+
 当 `auth_token` 为空时进入开发模式：
+
 - 所有 API 端点无鉴权保护（Auth 中间件空 token 时 pass-through）
 - CORS 和 WebSocket 允许所有来源
 - Manager 启动时打印 DEV mode 警告日志
@@ -264,6 +276,7 @@ Agent 实例（动态创建）
 ## 安全设计
 
 ### Auth Token 认证
+
 - **分层令牌校验** — 注册和心跳端点使用 `validateHostToken()` 进行分层校验：
   1. 开发模式（全局 `auth_token` 为空）→ 放行所有请求
   2. 已知 Host（`hostTokens` 中有预存令牌）→ 精确匹配 Host 专属令牌
@@ -275,6 +288,7 @@ Agent 实例（动态创建）
 - Manager 到 Agent 代理时透传 Auth Token
 
 ### SSRF 防护
+
 - `validateAgentURL()` 校验代理目标 URL：
   - 仅允许 http/https/ws/wss 协议
   - 解析主机名 IP，检查是否为内网地址
@@ -282,6 +296,7 @@ Agent 实例（动态创建）
 - Docker/Kubernetes 环境下设置 `allow_private_networks: true` 跳过内网检查
 
 ### CORS
+
 - 配置 `allowed_origins` 时使用白名单 CORS 中间件（`cradlemw.CORSWithOrigins`）
 - 未配置时使用 `cradlemw.CORS()` 允许所有来源（开发模式）
 - WebSocket 通过 `httputil.CheckOrigin()` 复用相同的 origins 配置

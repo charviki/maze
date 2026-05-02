@@ -16,6 +16,7 @@ import (
 	"github.com/charviki/sweetwater-black-ridge/biz/service"
 )
 
+// Server Agent 端 gRPC 服务器
 type Server struct {
 	pb.UnimplementedSessionServiceServer
 	pb.UnimplementedTemplateServiceServer
@@ -29,6 +30,7 @@ type Server struct {
 	grpcServer *grpc.Server
 }
 
+// NewServer 创建 Agent gRPC Server
 func NewServer(
 	tmuxService service.TmuxService,
 	localConfig *service.LocalConfigStore,

@@ -8,8 +8,7 @@ export const controllerApi = {
 
   getNode: (name: string) => request<Node>(`/nodes/${name}`),
 
-  deleteNode: (name: string) =>
-    request<void>(`/nodes/${name}`, { method: 'DELETE' }),
+  deleteNode: (name: string) => request<void>(`/nodes/${name}`, { method: 'DELETE' }),
 
   listTools: () => request<Tool[]>('/host/tools'),
 
@@ -23,12 +22,9 @@ export const controllerApi = {
 
   getHost: (name: string) => request<Host>(`/hosts/${name}`),
 
-  getHostBuildLog: (name: string) =>
-    request<string>(`/hosts/${name}/logs/build`),
+  getHostBuildLog: (name: string) => request<string>(`/hosts/${name}/logs/build`),
 
-  getHostRuntimeLog: (name: string) =>
-    request<string>(`/hosts/${name}/logs/runtime`),
+  getHostRuntimeLog: (name: string) => request<string>(`/hosts/${name}/logs/runtime`),
 
-  deleteHost: (name: string) =>
-    request<void>(`/hosts/${name}`, { method: 'DELETE' }),
+  deleteHost: (name: string) => request<void>(`/hosts/${name}`, { method: 'DELETE' }),
 };

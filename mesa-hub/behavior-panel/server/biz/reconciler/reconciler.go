@@ -205,12 +205,12 @@ func (r *Reconciler) redeploy(ctx context.Context, spec *protocol.HostSpec) {
 
 	r.specMgr.UpdateStatus(spec.Name, protocol.HostStatusDeploying, "")
 
-	if err := os.MkdirAll(r.logDir, 0755); err == nil {
+	if err := os.MkdirAll(r.logDir, 0750); err == nil {
 		logPath := filepath.Join(r.logDir, spec.Name+".log")
-		f, ferr := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		f, ferr := os.OpenFile(filepath.Clean(logPath), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 		if ferr == nil {
-			fmt.Fprintf(f, "\n[%s] === RECONCILER REDEPLOY ===\n", time.Now().Format(time.RFC3339))
-			f.Close()
+			_, _ = fmt.Fprintf(f, "\n[%s] === RECONCILER REDEPLOY ===\n", time.Now().Format(time.RFC3339))
+			func() { _ = f.Close() }()
 		}
 	}
 

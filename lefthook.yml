@@ -1,0 +1,79 @@
+# Lefthook git hooks 配置
+# 文档: https://github.com/evilmartians/lefthook/blob/master/docs/configuration.md
+#
+# pre-commit: 快速门禁（仅检查暂存文件）
+#   - go-vet:   按变更的 Go 模块执行 go vet
+#   - eslint:   按变更的 web 项目执行 ESLint
+#   - prettier: 格式检查
+#
+# pre-push: 完整门禁（交付铁律）
+#   - go-lint:  golangci-lint 全量扫描
+#   - go-test:  Go 单元测试
+
+min_version: 1.11.0
+
+pre-commit:
+  parallel: true
+  commands:
+    go-vet:
+      tags: [go, fast]
+      run: |
+        STAGED=$(git diff --name-only --cached --diff-filter=ACMR '*.go')
+        if [ -z "$STAGED" ]; then exit 0; fi
+        MODULES=""
+        for f in $STAGED; do
+          case "$f" in
+            fabrication/cradle/*) MODULES="$MODULES fabrication/cradle" ;;
+            mesa-hub/behavior-panel/server/*) MODULES="$MODULES mesa-hub/behavior-panel/server" ;;
+            sweetwater/black-ridge/server/*) MODULES="$MODULES sweetwater/black-ridge/server" ;;
+            fabrication/tests/integration/*) MODULES="$MODULES fabrication/tests/integration" ;;
+          esac
+        done
+        for m in $(echo "$MODULES" | tr ' ' '\n' | sort -u); do
+          [ -z "$m" ] && continue
+          echo "\033[0;32m[vet]\033[0m $m"
+          go vet "./$m/..." || exit 1
+        done
+
+    eslint:
+      tags: [typescript, fast]
+      glob: '*.{ts,tsx}'
+      run: |
+        STAGED=$(git diff --name-only --cached --diff-filter=ACMR -- '*.ts' '*.tsx' | head -50)
+        if [ -z "$STAGED" ]; then exit 0; fi
+        WEB_PROJECTS="mesa-hub/portal/web mesa-hub/behavior-panel/web sweetwater/black-ridge/web fabrication/skin"
+        for proj in $WEB_PROJECTS; do
+          FILES=""
+          for f in $STAGED; do
+            case "$f" in
+              ${proj}/*) [ -f "$f" ] && FILES="$FILES $f" ;;
+            esac
+          done
+          if [ -n "$FILES" ]; then
+            echo "\033[0;32m[eslint]\033[0m $proj"
+            npx eslint --no-warn-ignored $FILES || exit 1
+          fi
+        done
+
+    prettier:
+      tags: [format, fast]
+      glob: '*.{ts,tsx,js,jsx,json,css,md}'
+      run: |
+        STAGED=$(git diff --name-only --cached --diff-filter=ACMR -- '*.ts' '*.tsx' '*.js' '*.jsx' '*.json' '*.css' '*.md' | head -50)
+        if [ -z "$STAGED" ]; then exit 0; fi
+        VALID_FILES=""
+        for f in $STAGED; do
+          [ -f "$f" ] && VALID_FILES="$VALID_FILES $f"
+        done
+        if [ -z "$VALID_FILES" ]; then exit 0; fi
+        pnpm exec prettier --check $VALID_FILES || { echo "\033[0;31m[prettier]\033[0m Format check failed. Run: pnpm run format"; exit 1; }
+
+pre-push:
+  commands:
+    go-lint:
+      tags: [go, slow]
+      run: make lint
+
+    go-test:
+      tags: [go, slow]
+      run: make test

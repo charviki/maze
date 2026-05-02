@@ -17,11 +17,13 @@ import (
 	"github.com/charviki/sweetwater-black-ridge/biz/service"
 )
 
+// Register 注册所有 API 路由
 func Register(h *server.Hertz, cfg *config.Config, logger logutil.Logger) *model.TemplateStore {
 	tmuxService := service.NewTmuxService(&cfg.Tmux, cfg.Workspace.StateDir, logger)
 	return RegisterWithService(h, cfg, tmuxService, logger)
 }
 
+// RegisterWithService 注册所有 API 路由（含外部 TmuxService）
 func RegisterWithService(h *server.Hertz, cfg *config.Config, tmuxService service.TmuxService, logger logutil.Logger) *model.TemplateStore {
 	templateStore := model.NewTemplateStore(filepath.Join(cfg.Workspace.StateDir, "templates.json"), logger)
 	sessionHandler := handler.NewSessionHandler(tmuxService, templateStore, cfg, logger)

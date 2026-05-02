@@ -1,4 +1,15 @@
-import type { Session, CreateSessionRequest, TerminalOutput, SavedSession, SessionTemplate, LocalAgentConfig, IAgentApiClient, SaveConfigRequest, SessionConfigView, TemplateConfigView } from '@maze/fabrication';
+import type {
+  Session,
+  CreateSessionRequest,
+  TerminalOutput,
+  SavedSession,
+  SessionTemplate,
+  LocalAgentConfig,
+  IAgentApiClient,
+  SaveConfigRequest,
+  SessionConfigView,
+  TemplateConfigView,
+} from '@maze/fabrication';
 import { createRequest } from '@maze/fabrication';
 
 /**
@@ -24,9 +35,12 @@ export function createAgentApi(managerBase: string, nodeName: string): IAgentApi
     deleteSession: (id: string) => request<void>(`${base}/${id}`, { method: 'DELETE' }),
 
     updateSessionConfig: (id: string, req: SaveConfigRequest) =>
-      request<SessionConfigView>(`${base}/${id}/config`, { method: 'PUT', body: JSON.stringify(req) }),
+      request<SessionConfigView>(`${base}/${id}/config`, {
+        method: 'PUT',
+        body: JSON.stringify(req),
+      }),
 
-    getOutput: (id: string, lines: number = 50) =>
+    getOutput: (id: string, lines = 50) =>
       request<TerminalOutput>(`${base}/${id}/output?lines=${lines}`),
 
     sendInput: (id: string, command: string) =>
@@ -48,15 +62,32 @@ export function createAgentApi(managerBase: string, nodeName: string): IAgentApi
     },
 
     listTemplates: () => request<SessionTemplate[]>(`${nodeBase}/templates`),
-    createTemplate: (tpl: SessionTemplate) => request<SessionTemplate>(`${nodeBase}/templates`, { method: 'POST', body: JSON.stringify(tpl) }),
+    createTemplate: (tpl: SessionTemplate) =>
+      request<SessionTemplate>(`${nodeBase}/templates`, {
+        method: 'POST',
+        body: JSON.stringify(tpl),
+      }),
     getTemplate: (id: string) => request<SessionTemplate>(`${nodeBase}/templates/${id}`),
-    getTemplateConfig: (id: string) => request<TemplateConfigView>(`${nodeBase}/templates/${id}/config`),
-    updateTemplate: (id: string, tpl: SessionTemplate) => request<SessionTemplate>(`${nodeBase}/templates/${id}`, { method: 'PUT', body: JSON.stringify(tpl) }),
+    getTemplateConfig: (id: string) =>
+      request<TemplateConfigView>(`${nodeBase}/templates/${id}/config`),
+    updateTemplate: (id: string, tpl: SessionTemplate) =>
+      request<SessionTemplate>(`${nodeBase}/templates/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(tpl),
+      }),
     updateTemplateConfig: (id: string, req: SaveConfigRequest) =>
-      request<TemplateConfigView>(`${nodeBase}/templates/${id}/config`, { method: 'PUT', body: JSON.stringify(req) }),
-    deleteTemplate: (id: string) => request<void>(`${nodeBase}/templates/${id}`, { method: 'DELETE' }),
+      request<TemplateConfigView>(`${nodeBase}/templates/${id}/config`, {
+        method: 'PUT',
+        body: JSON.stringify(req),
+      }),
+    deleteTemplate: (id: string) =>
+      request<void>(`${nodeBase}/templates/${id}`, { method: 'DELETE' }),
 
     getLocalConfig: () => request<LocalAgentConfig>(`${nodeBase}/local-config`),
-    updateLocalConfig: (cfg: Partial<LocalAgentConfig>) => request<LocalAgentConfig>(`${nodeBase}/local-config`, { method: 'PUT', body: JSON.stringify(cfg) }),
+    updateLocalConfig: (cfg: Partial<LocalAgentConfig>) =>
+      request<LocalAgentConfig>(`${nodeBase}/local-config`, {
+        method: 'PUT',
+        body: JSON.stringify(cfg),
+      }),
   };
 }

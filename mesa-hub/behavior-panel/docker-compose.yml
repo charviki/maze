@@ -4,7 +4,7 @@ services:
       context: ../..
       dockerfile: mesa-hub/behavior-panel/Dockerfile.web
     ports:
-      - "${PORT_WEB:-10800}:80"
+      - '${PORT_WEB:-10800}:80'
     depends_on:
       - agent-manager
 
@@ -13,17 +13,17 @@ services:
       context: ../..
       dockerfile: mesa-hub/behavior-panel/Dockerfile
     ports:
-      - "${PORT_MANAGER:-8090}:8080"
-      - "${PORT_GATEWAY:-8091}:8081"
+      - '${PORT_MANAGER:-8090}:8080'
+      - '${PORT_GATEWAY:-8091}:8081'
     container_name: agent-manager
     environment:
-      AGENT_MANAGER_SERVER_AUTH_TOKEN: "${MAZE_AUTH_TOKEN:-}"
-      AGENT_MANAGER_ALLOW_PRIVATE_NETWORKS: "true"
-      AGENT_MANAGER_DOCKER_NETWORK: "${COMPOSE_PROJECT_NAME:-behavior-panel}_default"
-      AGENT_MANAGER_WORKSPACE_BASE_DIR: "/data"
-      AGENT_MANAGER_WORKSPACE_MOUNT_DIR: "/data"
-      AGENT_MANAGER_DOCKER_AGENT_BASE_IMAGE: "${AGENT_BASE_IMAGE:-behavior-panel-agent-1:latest}"
-      AGENT_MANAGER_DOCKER_AGENT_DATA_DIR: "${HOST_DATA_DIR:-~/.maze-prod}/docker/agents"
+      AGENT_MANAGER_SERVER_AUTH_TOKEN: '${MAZE_AUTH_TOKEN:-}'
+      AGENT_MANAGER_ALLOW_PRIVATE_NETWORKS: 'true'
+      AGENT_MANAGER_DOCKER_NETWORK: '${COMPOSE_PROJECT_NAME:-behavior-panel}_default'
+      AGENT_MANAGER_WORKSPACE_BASE_DIR: '/data'
+      AGENT_MANAGER_WORKSPACE_MOUNT_DIR: '/data'
+      AGENT_MANAGER_DOCKER_AGENT_BASE_IMAGE: '${AGENT_BASE_IMAGE:-behavior-panel-agent-1:latest}'
+      AGENT_MANAGER_DOCKER_AGENT_DATA_DIR: '${HOST_DATA_DIR:-~/.maze-prod}/docker/agents'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${HOST_DATA_DIR:-~/.maze-prod}/docker:/data

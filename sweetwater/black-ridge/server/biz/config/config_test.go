@@ -109,13 +109,8 @@ workspace:
 		"AGENT_WORKSPACE_ROOT_DIR":            "/env-workspace",
 	}
 	for k, v := range envVars {
-		os.Setenv(k, v)
+		t.Setenv(k, v)
 	}
-	defer func() {
-		for k := range envVars {
-			os.Unsetenv(k)
-		}
-	}()
 
 	cfg, err := Load(path)
 	if err != nil {
@@ -161,9 +156,7 @@ workspace:
 func TestValidate_Defaults(t *testing.T) {
 	cfg := &Config{}
 
-	if err := validate(cfg); err != nil {
-		t.Fatalf("validate 返回错误: %v", err)
-	}
+	validate(cfg)
 
 	if cfg.Server.ListenAddr != ":8080" {
 		t.Errorf("默认 Server.ListenAddr = %q, 期望 %q", cfg.Server.ListenAddr, ":8080")

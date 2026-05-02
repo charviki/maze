@@ -9,10 +9,10 @@ interface TerrainBackgroundProps {
 // 确定性伪随机数生成器，保证每次挂载生成一致的地形
 function mulberry32(seed: number) {
   return () => {
-    let t = seed += 0x6D2B79F5;
-    t = Math.imul(t ^ t >>> 15, t | 1);
-    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    let t = (seed += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
 
@@ -125,12 +125,12 @@ export function TerrainBackground({ className }: TerrainBackgroundProps) {
     };
 
     // 根据预计算的基础色快速生成带透明度的 hsla 字符串
-    const colorTpl = (alpha: number) =>
-      cachedPrimary.replace(')', `, ${alpha})`);
+    const colorTpl = (alpha: number) => cachedPrimary.replace(')', `, ${alpha})`);
 
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.parentElement?.getBoundingClientRect() || document.body.getBoundingClientRect();
+      const rect =
+        canvas.parentElement?.getBoundingClientRect() || document.body.getBoundingClientRect();
 
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
@@ -160,7 +160,10 @@ export function TerrainBackground({ className }: TerrainBackgroundProps) {
     const themeObserver = new MutationObserver(() => {
       updateColorCache();
     });
-    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'style'] });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class', 'style'],
+    });
 
     const startAnimation = () => {
       if (isRunning) return;
@@ -186,7 +189,7 @@ export function TerrainBackground({ className }: TerrainBackgroundProps) {
       ctx.clearRect(0, 0, w, h);
 
       // 第一层：低多边形地形网格
-      const posCache = vertices.map(v => getVertexPos(v, timestamp));
+      const posCache = vertices.map((v) => getVertexPos(v, timestamp));
 
       for (let row = 0; row < GRID_ROWS - 1; row++) {
         for (let col = 0; col < GRID_COLS - 1; col++) {
@@ -274,15 +277,20 @@ export function TerrainBackground({ className }: TerrainBackgroundProps) {
       // 第三层：监测信标
       for (const beacon of beacons) {
         // 非线性呼吸节奏：双频率正弦叠加
-        const breath = Math.sin(timestamp * 0.002 + beacon.phase)
-          * Math.sin(timestamp * 0.0045 + beacon.phase * 0.7);
+        const breath =
+          Math.sin(timestamp * 0.002 + beacon.phase) *
+          Math.sin(timestamp * 0.0045 + beacon.phase * 0.7);
         const intensity = 0.3 + 0.7 * (0.5 + 0.5 * breath);
         const glowRadius = 12 + breath * 6;
 
         // 外圈辉光
         const gradient = ctx.createRadialGradient(
-          beacon.x, beacon.y, 0,
-          beacon.x, beacon.y, glowRadius
+          beacon.x,
+          beacon.y,
+          0,
+          beacon.x,
+          beacon.y,
+          glowRadius,
         );
         gradient.addColorStop(0, colorTpl(0.4 * intensity));
         gradient.addColorStop(1, colorTpl(0));
@@ -355,7 +363,10 @@ export function TerrainBackground({ className }: TerrainBackgroundProps) {
     return (
       <div className={cn('absolute inset-0 pointer-events-none z-0', className)}>
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,255,255,0.05)_0%,transparent_70%)]" />
-        <div className="absolute bottom-2 left-3 text-[8px] font-mono tracking-widest whitespace-nowrap" style={{ color: 'hsl(var(--primary) / 0.3)' }}>
+        <div
+          className="absolute bottom-2 left-3 text-[8px] font-mono tracking-widest whitespace-nowrap"
+          style={{ color: 'hsl(var(--primary) / 0.3)' }}
+        >
           TERRAIN: SWEETWATER // RENDER: OFF
         </div>
       </div>
@@ -364,15 +375,17 @@ export function TerrainBackground({ className }: TerrainBackgroundProps) {
 
   return (
     <div className={cn('absolute inset-0 pointer-events-none z-0', className)}>
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 w-full h-full"
-        aria-hidden="true"
-      />
-      <div className="absolute bottom-2 left-3 text-[8px] font-mono tracking-widest whitespace-nowrap" style={{ color: 'hsl(var(--primary) / 0.3)' }}>
+      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" aria-hidden="true" />
+      <div
+        className="absolute bottom-2 left-3 text-[8px] font-mono tracking-widest whitespace-nowrap"
+        style={{ color: 'hsl(var(--primary) / 0.3)' }}
+      >
         TERRAIN: SWEETWATER // ELEV_SCAN: ACTIVE
       </div>
-      <div className="absolute bottom-2 right-3 text-[8px] font-mono tracking-widest whitespace-nowrap" style={{ color: 'hsl(var(--primary) / 0.3)' }}>
+      <div
+        className="absolute bottom-2 right-3 text-[8px] font-mono tracking-widest whitespace-nowrap"
+        style={{ color: 'hsl(var(--primary) / 0.3)' }}
+      >
         GRID_REF: 34.0522N // 118.2437W
       </div>
     </div>

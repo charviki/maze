@@ -1,8 +1,8 @@
 id: bash
 name: Bash Shell
-command: ""
-description: "纯 Bash 终端"
-icon: "🖥️"
+command: ''
+description: '纯 Bash 终端'
+icon: '🖥️'
 builtin: true
 defaults:
   env: {}

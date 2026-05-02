@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react'
-import type { LucideIcon } from 'lucide-react'
+import { useState, useCallback } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import {
   Panel,
   DecryptText,
@@ -7,27 +7,27 @@ import {
   GlitchEffect,
   HostVitalSign,
   cn,
-} from '@maze/fabrication'
-import { MODULE_DIAGNOSTICS } from '../data/mock-data'
+} from '@maze/fabrication';
+import { MODULE_DIAGNOSTICS } from '../data/mock-data';
 
 interface ModuleCardProps {
-  name: string
-  description: string
-  icon: LucideIcon
-  status: 'online' | 'locked'
-  href?: string
+  name: string;
+  description: string;
+  icon: LucideIcon;
+  status: 'online' | 'locked';
+  href?: string;
 }
 
 export function ModuleCard({ name, description, icon: Icon, status, href }: ModuleCardProps) {
-  const [hovered, setHovered] = useState(false)
-  const isLocked = status === 'locked'
-  const diagnostic = MODULE_DIAGNOSTICS[name]
+  const [hovered, setHovered] = useState(false);
+  const isLocked = status === 'locked';
+  const diagnostic = MODULE_DIAGNOSTICS[name];
 
   const handleClick = useCallback(() => {
     if (!isLocked && href) {
-      window.open(href, '_blank')
+      window.open(href, '_blank');
     }
-  }, [isLocked, href])
+  }, [isLocked, href]);
 
   const card = (
     <Panel
@@ -39,8 +39,12 @@ export function ModuleCard({ name, description, icon: Icon, status, href }: Modu
         isLocked && 'opacity-60 cursor-not-allowed',
         !isLocked && 'hover:-translate-y-0.5 hover:shadow-[0_0_24px_rgba(0,255,255,0.08)]',
       )}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={() => {
+        setHovered(true);
+      }}
+      onMouseLeave={() => {
+        setHovered(false);
+      }}
       onClick={handleClick}
     >
       <div className="flex flex-col gap-3 h-full">
@@ -91,19 +95,19 @@ export function ModuleCard({ name, description, icon: Icon, status, href }: Modu
         )}
       </div>
     </Panel>
-  )
+  );
 
   if (isLocked) {
     return (
       <GlitchEffect isActive={hovered} className="h-full">
         {card}
       </GlitchEffect>
-    )
+    );
   }
 
   return (
     <ReverieEffect isActive className="h-full">
       {card}
     </ReverieEffect>
-  )
+  );
 }

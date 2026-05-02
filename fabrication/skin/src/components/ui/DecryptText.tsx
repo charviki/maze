@@ -74,8 +74,8 @@ export function DecryptText({
   }, [text, animateOnHover, settings.decryptText]);
 
   return (
-    <span 
-      className={cn("font-mono tabular-nums inline-block", className)}
+    <span
+      className={cn('font-mono tabular-nums inline-block', className)}
       onMouseEnter={animateOnHover ? startAnimation : undefined}
     >
       {displayText}

@@ -3,6 +3,7 @@ package handler
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -53,6 +54,7 @@ func (h *SessionProxyHandler) DeleteSession(ctx context.Context, c *app.RequestC
 	h.proxyToAgent(c, "delete_session", http.MethodDelete, "/api/v1/sessions/"+sessionID, nil)
 }
 
+// GetSessionConfig 获取 Session 配置
 func (h *SessionProxyHandler) GetSessionConfig(ctx context.Context, c *app.RequestContext) {
 	sessionID := c.Param("id")
 	if sessionID == "" {
@@ -62,6 +64,7 @@ func (h *SessionProxyHandler) GetSessionConfig(ctx context.Context, c *app.Reque
 	h.proxyToAgent(c, "get_session_config", http.MethodGet, "/api/v1/sessions/"+sessionID+"/config", nil)
 }
 
+// UpdateSessionConfig 更新 Session 配置
 func (h *SessionProxyHandler) UpdateSessionConfig(ctx context.Context, c *app.RequestContext) {
 	sessionID := c.Param("id")
 	if sessionID == "" {
@@ -93,43 +96,50 @@ func (h *SessionProxyHandler) SaveAllSessions(ctx context.Context, c *app.Reques
 	h.proxyToAgent(c, "save_all_sessions", http.MethodPost, "/api/v1/sessions/save", nil)
 }
 
-// Templates proxy
+// ListTemplates 查询模板列表
 func (h *SessionProxyHandler) ListTemplates(ctx context.Context, c *app.RequestContext) {
 	h.proxyToAgent(c, "list_templates", http.MethodGet, "/api/v1/templates", nil)
 }
 
+// GetTemplate 获取模板详情
 func (h *SessionProxyHandler) GetTemplate(ctx context.Context, c *app.RequestContext) {
 	h.proxyToAgent(c, "get_template", http.MethodGet, "/api/v1/templates/"+c.Param("id"), nil)
 }
 
+// GetTemplateConfig 获取模板配置
 func (h *SessionProxyHandler) GetTemplateConfig(ctx context.Context, c *app.RequestContext) {
 	h.proxyToAgent(c, "get_template_config", http.MethodGet, "/api/v1/templates/"+c.Param("id")+"/config", nil)
 }
 
+// CreateTemplate 创建新模板
 func (h *SessionProxyHandler) CreateTemplate(ctx context.Context, c *app.RequestContext) {
 	body, _ := c.Body()
 	h.proxyToAgent(c, "create_template", http.MethodPost, "/api/v1/templates", body)
 }
 
+// UpdateTemplate 更新模板
 func (h *SessionProxyHandler) UpdateTemplate(ctx context.Context, c *app.RequestContext) {
 	body, _ := c.Body()
 	h.proxyToAgent(c, "update_template", http.MethodPut, "/api/v1/templates/"+c.Param("id"), body)
 }
 
+// UpdateTemplateConfig 更新模板配置
 func (h *SessionProxyHandler) UpdateTemplateConfig(ctx context.Context, c *app.RequestContext) {
 	body, _ := c.Body()
 	h.proxyToAgent(c, "update_template_config", http.MethodPut, "/api/v1/templates/"+c.Param("id")+"/config", body)
 }
 
+// DeleteTemplate 删除模板
 func (h *SessionProxyHandler) DeleteTemplate(ctx context.Context, c *app.RequestContext) {
 	h.proxyToAgent(c, "delete_template", http.MethodDelete, "/api/v1/templates/"+c.Param("id"), nil)
 }
 
-// Local Config proxy
+// GetLocalConfig 获取 Agent 本地配置
 func (h *SessionProxyHandler) GetLocalConfig(ctx context.Context, c *app.RequestContext) {
 	h.proxyToAgent(c, "get_local_config", http.MethodGet, "/api/v1/local-config", nil)
 }
 
+// UpdateLocalConfig 更新 Agent 本地配置
 func (h *SessionProxyHandler) UpdateLocalConfig(ctx context.Context, c *app.RequestContext) {
 	body, _ := c.Body()
 	h.proxyToAgent(c, "update_local_config", http.MethodPut, "/api/v1/local-config", body)
@@ -159,7 +169,7 @@ func (h *SessionProxyHandler) proxyToAgent(c *app.RequestContext, action, method
 
 	var req *http.Request
 	var err error
-	if body != nil && len(body) > 0 {
+	if len(body) > 0 {
 		req, err = http.NewRequest(method, url, bytes.NewReader(body))
 	} else {
 		req, err = http.NewRequest(method, url, nil)
@@ -188,7 +198,7 @@ func (h *SessionProxyHandler) proxyToAgent(c *app.RequestContext, action, method
 		httputil.Error(c, http.StatusBadGateway, "agent unreachable: "+err.Error())
 		return
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -256,7 +266,7 @@ func validateAgentURL(rawURL string, allowPrivate bool) error {
 	}
 	host := u.Hostname()
 	if host == "" {
-		return fmt.Errorf("empty host")
+		return errors.New("empty host")
 	}
 	ips, err := net.LookupIP(host)
 	if err != nil {

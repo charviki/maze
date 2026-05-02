@@ -1,30 +1,32 @@
-import { useState, useCallback } from 'react'
-import { TerrainBackground, Panel, DecryptText, Button, Input, cn } from '@maze/fabrication'
-import { login } from './auth'
+import { useState, useCallback } from 'react';
+import { TerrainBackground, Panel, DecryptText, Button, Input, cn } from '@maze/fabrication';
+import { login } from './auth';
 
 interface LoginPageProps {
-  onSuccess: () => void
+  onSuccess: () => void;
 }
 
 export function LoginPage({ onSuccess }: LoginPageProps) {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [shaking, setShaking] = useState(false)
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [shaking, setShaking] = useState(false);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
-      e.preventDefault()
+      e.preventDefault();
       if (login(username, password)) {
-        onSuccess()
+        onSuccess();
       } else {
-        setError('ACCESS DENIED // MOTOR FUNCTIONS SUSPENDED')
-        setShaking(true)
-        setTimeout(() => setShaking(false), 500)
+        setError('ACCESS DENIED // MOTOR FUNCTIONS SUSPENDED');
+        setShaking(true);
+        setTimeout(() => {
+          setShaking(false);
+        }, 500);
       }
     },
     [username, password, onSuccess],
-  )
+  );
 
   return (
     <div className="h-screen w-screen bg-background text-foreground dark relative overflow-hidden flex items-center justify-center">
@@ -45,11 +47,7 @@ export function LoginPage({ onSuccess }: LoginPageProps) {
                 <DecryptText text="IDENTITY VERIFICATION" />
               </h1>
               <p className="text-xs text-muted-foreground font-mono">
-                <DecryptText
-                  text="Bring yourself back online."
-                  speed={60}
-                  maxIterations={2}
-                />
+                <DecryptText text="Bring yourself back online." speed={60} maxIterations={2} />
               </p>
             </div>
 
@@ -62,7 +60,9 @@ export function LoginPage({ onSuccess }: LoginPageProps) {
                 <Input
                   type="text"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                  }}
                   className="bg-background/50 border-primary/20 focus:border-primary/50 font-mono"
                   autoComplete="username"
                   autoFocus
@@ -76,7 +76,9 @@ export function LoginPage({ onSuccess }: LoginPageProps) {
                 <Input
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                  }}
                   className="bg-background/50 border-primary/20 focus:border-primary/50 font-mono"
                   autoComplete="current-password"
                 />
@@ -91,10 +93,7 @@ export function LoginPage({ onSuccess }: LoginPageProps) {
             )}
 
             {/* Submit button */}
-            <Button
-              type="submit"
-              className="w-full font-mono tracking-widest uppercase text-sm"
-            >
+            <Button type="submit" className="w-full font-mono tracking-widest uppercase text-sm">
               AUTHENTICATE
             </Button>
 
@@ -115,5 +114,5 @@ export function LoginPage({ onSuccess }: LoginPageProps) {
         <span>SEC_LEVEL: 9</span>
       </div>
     </div>
-  )
+  );
 }

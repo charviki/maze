@@ -1,0 +1,17 @@
+dist/
+node_modules/
+coverage/
+*.min.js
+pnpm-lock.yaml
+
+# 项目文档（由作者手动维护，不自动格式化）
+*.md
+
+# 自动生成的代码和文档
+fabrication/cradle/api/gen/
+
+# 自动生成的嵌入资源（从 YAML 模板生成）
+sweetwater/black-ridge/server/templates.json
+
+# 配置模板（YAML/JSON 占位符不应被格式化）
+config.example.yaml

@@ -16,24 +16,28 @@ func AtomicWriteFile(path string, data []byte, perm os.FileMode) error {
 	}
 	tmpPath := tmpFile.Name()
 
+	// 写入失败时清理临时文件，Close/Remove 错误为次要清理，仅日志记录
 	if _, err := tmpFile.Write(data); err != nil {
-		tmpFile.Close()
-		os.Remove(tmpPath)
+		_ = tmpFile.Close()
+		_ = os.Remove(tmpPath)
 		return fmt.Errorf("write temp file %s: %w", tmpPath, err)
 	}
 	if err := tmpFile.Sync(); err != nil {
-		tmpFile.Close()
-		os.Remove(tmpPath)
+		_ = tmpFile.Close()
+		_ = os.Remove(tmpPath)
 		return fmt.Errorf("sync temp file %s: %w", tmpPath, err)
 	}
-	tmpFile.Close()
+	if err := tmpFile.Close(); err != nil {
+		_ = os.Remove(tmpPath)
+		return fmt.Errorf("close temp file %s: %w", tmpPath, err)
+	}
 
 	if err := os.Chmod(tmpPath, perm); err != nil {
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath)
 		return fmt.Errorf("chmod temp file %s: %w", tmpPath, err)
 	}
 	if err := os.Rename(tmpPath, path); err != nil {
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath)
 		return fmt.Errorf("rename %s to %s: %w", tmpPath, path, err)
 	}
 	return nil

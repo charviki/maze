@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"path/filepath"
@@ -70,7 +71,7 @@ func TestNodeHandler_Register(t *testing.T) {
 	h := newTestNodeHandler(t)
 
 	c := newPostContext(`{"name":"agent-1","address":"http://192.168.1.10:9090"}`)
-	h.Register(nil, c)
+	h.Register(context.TODO(), c)
 
 	if c.Response.StatusCode() != http.StatusOK {
 		t.Fatalf("期望状态码 200, 实际=%d", c.Response.StatusCode())
@@ -101,7 +102,7 @@ func TestNodeHandler_Register_MissingName(t *testing.T) {
 	h := newTestNodeHandler(t)
 
 	c := newPostContext(`{"address":"http://192.168.1.10:9090"}`)
-	h.Register(nil, c)
+	h.Register(context.TODO(), c)
 
 	if c.Response.StatusCode() != http.StatusBadRequest {
 		t.Fatalf("期望状态码 400, 实际=%d", c.Response.StatusCode())
@@ -121,7 +122,7 @@ func TestNodeHandler_Register_MissingAddress(t *testing.T) {
 	h := newTestNodeHandler(t)
 
 	c := newPostContext(`{"name":"agent-1"}`)
-	h.Register(nil, c)
+	h.Register(context.TODO(), c)
 
 	if c.Response.StatusCode() != http.StatusBadRequest {
 		t.Fatalf("期望状态码 400, 实际=%d", c.Response.StatusCode())
@@ -145,7 +146,7 @@ func TestNodeHandler_Heartbeat(t *testing.T) {
 	})
 
 	c := newPostContext(`{"name":"agent-1","status":{"cpu_usage":45.5,"memory_usage_mb":1024}}`)
-	h.Heartbeat(nil, c)
+	h.Heartbeat(context.TODO(), c)
 
 	if c.Response.StatusCode() != http.StatusOK {
 		t.Fatalf("期望状态码 200, 实际=%d", c.Response.StatusCode())
@@ -171,7 +172,7 @@ func TestNodeHandler_Heartbeat_NotFound(t *testing.T) {
 	h := newTestNodeHandler(t)
 
 	c := newPostContext(`{"name":"nonexistent","status":{}}`)
-	h.Heartbeat(nil, c)
+	h.Heartbeat(context.TODO(), c)
 
 	if c.Response.StatusCode() != http.StatusNotFound {
 		t.Fatalf("期望状态码 404, 实际=%d", c.Response.StatusCode())
@@ -197,7 +198,7 @@ func TestNodeHandler_ListNodes(t *testing.T) {
 
 	c := app.NewContext(0)
 	c.Request.SetMethod("GET")
-	h.ListNodes(nil, c)
+	h.ListNodes(context.TODO(), c)
 
 	if c.Response.StatusCode() != http.StatusOK {
 		t.Fatalf("期望状态码 200, 实际=%d", c.Response.StatusCode())
@@ -226,7 +227,7 @@ func TestNodeHandler_GetNode(t *testing.T) {
 	})
 
 	c := newRequestContextWithParams(param.Param{Key: "name", Value: "agent-1"})
-	h.GetNode(nil, c)
+	h.GetNode(context.TODO(), c)
 
 	if c.Response.StatusCode() != http.StatusOK {
 		t.Fatalf("期望状态码 200, 实际=%d", c.Response.StatusCode())
@@ -254,7 +255,7 @@ func TestNodeHandler_GetNode_NotFound(t *testing.T) {
 	h := newTestNodeHandler(t)
 
 	c := newRequestContextWithParams(param.Param{Key: "name", Value: "nonexistent"})
-	h.GetNode(nil, c)
+	h.GetNode(context.TODO(), c)
 
 	if c.Response.StatusCode() != http.StatusNotFound {
 		t.Fatalf("期望状态码 404, 实际=%d", c.Response.StatusCode())
@@ -278,7 +279,7 @@ func TestNodeHandler_DeleteNode(t *testing.T) {
 	})
 
 	c := newRequestContextWithParams(param.Param{Key: "name", Value: "agent-1"})
-	h.DeleteNode(nil, c)
+	h.DeleteNode(context.TODO(), c)
 
 	if c.Response.StatusCode() != http.StatusOK {
 		t.Fatalf("期望状态码 200, 实际=%d", c.Response.StatusCode())
@@ -291,7 +292,7 @@ func TestNodeHandler_DeleteNode(t *testing.T) {
 
 	// 验证删除后再次获取应返回 404
 	c2 := newRequestContextWithParams(param.Param{Key: "name", Value: "agent-1"})
-	h.GetNode(nil, c2)
+	h.GetNode(context.TODO(), c2)
 	if c2.Response.StatusCode() != http.StatusNotFound {
 		t.Errorf("删除后再次获取期望 404, 实际=%d", c2.Response.StatusCode())
 	}
@@ -302,7 +303,7 @@ func TestNodeHandler_DeleteNode_NotFound(t *testing.T) {
 	h := newTestNodeHandler(t)
 
 	c := newRequestContextWithParams(param.Param{Key: "name", Value: "nonexistent"})
-	h.DeleteNode(nil, c)
+	h.DeleteNode(context.TODO(), c)
 
 	if c.Response.StatusCode() != http.StatusNotFound {
 		t.Fatalf("期望状态码 404, 实际=%d", c.Response.StatusCode())

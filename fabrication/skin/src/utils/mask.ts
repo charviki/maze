@@ -1,12 +1,22 @@
 const SENSITIVE_KEYWORDS = [
-  'password', 'passwd', 'secret', 'token', 'api_key', 'apikey',
-  'auth', 'credential', 'private_key', 'access_key', 'session_key',
-  'private', 'key',
+  'password',
+  'passwd',
+  'secret',
+  'token',
+  'api_key',
+  'apikey',
+  'auth',
+  'credential',
+  'private_key',
+  'access_key',
+  'session_key',
+  'private',
+  'key',
 ];
 
 function isSensitiveKey(key: string): boolean {
   const lower = key.toLowerCase();
-  return SENSITIVE_KEYWORDS.some(kw => lower.includes(kw));
+  return SENSITIVE_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
 // 保留前4后4，不足8位全掩码
@@ -27,7 +37,7 @@ export function maskEnvValue(key: string, value: string, sensitive?: boolean): s
 // JSON 内容脱敏：递归扫描所有 key-value，对敏感 key 的 value 做脱敏
 function maskJsonValue(obj: unknown): unknown {
   if (typeof obj === 'string') return obj;
-  if (Array.isArray(obj)) return obj.map(item => maskJsonValue(item));
+  if (Array.isArray(obj)) return obj.map((item) => maskJsonValue(item));
   if (obj !== null && typeof obj === 'object') {
     const result: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
@@ -44,7 +54,7 @@ function maskJsonValue(obj: unknown): unknown {
 
 function maskJsonContent(content: string): string {
   try {
-    const parsed = JSON.parse(content);
+    const parsed: unknown = JSON.parse(content);
     const masked = maskJsonValue(parsed);
     return JSON.stringify(masked, null, 2);
   } catch {
@@ -57,12 +67,12 @@ function maskTextContent(content: string): string {
   // 匹配 "key": "value" / key=value / key: value 格式中 key 包含敏感词的行
   return content.replace(
     /(["']?)([\w.-]+)\1\s*[:=]\s*(["']?)(.+?)\3/gi,
-    (match, q1, key, q2, value) => {
+    (_match: string, q1: string, key: string, q2: string, value: string) => {
       if (isSensitiveKey(key)) {
-        return `${q1}${key}${q1} ${match.includes(':') ? ':' : '='} ${q2}${maskString(value)}${q2}`;
+        return `${q1}${key}${q1} ${_match.includes(':') ? ':' : '='} ${q2}${maskString(value)}${q2}`;
       }
-      return match;
-    }
+      return _match;
+    },
   );
 }
 

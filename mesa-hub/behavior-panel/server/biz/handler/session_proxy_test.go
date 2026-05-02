@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -164,7 +165,7 @@ func TestSessionProxyHandler_ProxySuccess(t *testing.T) {
 	})
 
 	c := newRequestContextWithParams(param.Param{Key: "name", Value: "agent-1"})
-	handler.ListSessions(nil, c)
+	handler.ListSessions(context.TODO(), c)
 
 	if c.Response.StatusCode() != http.StatusOK {
 		t.Errorf("期望状态码 200, 实际=%d", c.Response.StatusCode())
@@ -193,7 +194,7 @@ func TestSessionProxyHandler_ProxyAgentError(t *testing.T) {
 	})
 
 	c := newRequestContextWithParams(param.Param{Key: "name", Value: "agent-1"})
-	handler.ListSessions(nil, c)
+	handler.ListSessions(context.TODO(), c)
 
 	if c.Response.StatusCode() != http.StatusInternalServerError {
 		t.Errorf("期望状态码 500, 实际=%d", c.Response.StatusCode())
@@ -218,7 +219,7 @@ func TestSessionProxyHandler_ProxyAgentUnreachable(t *testing.T) {
 	handler := NewSessionProxyHandler(registry, auditLog, service.NewAuditService(auditLog), logutil.NewNop(), "", nil, true)
 
 	c := newRequestContextWithParams(param.Param{Key: "name", Value: "agent-dead"})
-	handler.ListSessions(nil, c)
+	handler.ListSessions(context.TODO(), c)
 
 	if c.Response.StatusCode() != http.StatusBadGateway {
 		t.Errorf("期望状态码 502, 实际=%d", c.Response.StatusCode())
@@ -240,7 +241,7 @@ func TestSessionProxyHandler_NodeNotFound(t *testing.T) {
 	handler := setupProxyHandler(t, nil)
 
 	c := newRequestContextWithParams(param.Param{Key: "name", Value: "nonexistent"})
-	handler.ListSessions(nil, c)
+	handler.ListSessions(context.TODO(), c)
 
 	if c.Response.StatusCode() != http.StatusNotFound {
 		t.Errorf("期望状态码 404, 实际=%d", c.Response.StatusCode())
@@ -274,7 +275,7 @@ func TestSessionProxyHandler_AddressSchemeFormat(t *testing.T) {
 	})
 
 	c := newRequestContextWithParams(param.Param{Key: "name", Value: "agent-1"})
-	handler.ListSessions(nil, c)
+	handler.ListSessions(context.TODO(), c)
 
 	// 验证请求成功到达 mock Agent（不会出现 DNS 解析失败）
 	if c.Response.StatusCode() != http.StatusOK {

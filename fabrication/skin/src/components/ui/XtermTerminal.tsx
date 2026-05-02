@@ -46,7 +46,9 @@ function readTerminalThemeFromDOM(element?: HTMLElement | null) {
     foreground: toThemeHslValue(style.getPropertyValue('--terminal-foreground')) ?? '#38bdf8',
     cursor: toThemeHslValue(style.getPropertyValue('--terminal-cursor')) ?? '#38bdf8',
     cursorAccent: toThemeHslValue(style.getPropertyValue('--terminal-cursor-accent')) ?? '#0d1117',
-    selectionBackground: toThemeHslValue(style.getPropertyValue('--terminal-selection'), 0.3) ?? 'rgba(56, 189, 248, 0.3)',
+    selectionBackground:
+      toThemeHslValue(style.getPropertyValue('--terminal-selection'), 0.3) ??
+      'rgba(56, 189, 248, 0.3)',
   };
 }
 
@@ -59,7 +61,12 @@ function isTransparentBackground(bg?: string) {
   return v === 'transparent' || v === 'rgba(0, 0, 0, 0)' || v === 'rgba(0,0,0,0)';
 }
 
-export function XtermTerminal({ wsUrl, backgroundComponent, theme, allowTransparency = false }: XtermTerminalProps) {
+export function XtermTerminal({
+  wsUrl,
+  backgroundComponent,
+  theme,
+  allowTransparency = false,
+}: XtermTerminalProps) {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -67,9 +74,14 @@ export function XtermTerminal({ wsUrl, backgroundComponent, theme, allowTranspar
   const resizeFrameRef = useRef<number | null>(null);
 
   const bgRef = useRef(backgroundComponent);
-  bgRef.current = backgroundComponent;
   const themeRef = useRef(theme);
-  themeRef.current = theme;
+
+  useEffect(() => {
+    bgRef.current = backgroundComponent;
+  }, [backgroundComponent]);
+  useEffect(() => {
+    themeRef.current = theme;
+  }, [theme]);
 
   const sendResize = useCallback((cols: number, rows: number) => {
     const ws = wsRef.current;
@@ -117,7 +129,10 @@ export function XtermTerminal({ wsUrl, backgroundComponent, theme, allowTranspar
     if (!terminalRef.current) return;
 
     const resolvedTheme = buildTerminalTheme(theme, terminalRef.current);
-    const transparent = !!backgroundComponent || allowTransparency || isTransparentBackground(resolvedTheme.background);
+    const transparent =
+      !!backgroundComponent ||
+      allowTransparency ||
+      isTransparentBackground(resolvedTheme.background);
 
     if (backgroundComponent) {
       resolvedTheme.background = 'transparent';
@@ -138,12 +153,12 @@ export function XtermTerminal({ wsUrl, backgroundComponent, theme, allowTranspar
     term.open(terminalRef.current);
 
     if (backgroundComponent) {
-      const viewport = terminalRef.current.querySelector('.xterm-viewport') as HTMLElement | null;
-      if (viewport) {
+      const viewport = terminalRef.current.querySelector('.xterm-viewport');
+      if (viewport instanceof HTMLElement) {
         viewport.style.backgroundColor = 'transparent';
       }
-      const scrollable = terminalRef.current.querySelector('.xterm-scrollable-element') as HTMLElement | null;
-      if (scrollable) {
+      const scrollable = terminalRef.current.querySelector('.xterm-scrollable-element');
+      if (scrollable instanceof HTMLElement) {
         scrollable.style.backgroundColor = 'transparent';
       }
     }
@@ -163,13 +178,11 @@ export function XtermTerminal({ wsUrl, backgroundComponent, theme, allowTranspar
       }
       return false;
     };
-    const csiSetHandler = term.parser.registerCsiHandler(
-      { prefix: '?', final: 'h' },
-      (params) => isMouseTracking(params),
+    const csiSetHandler = term.parser.registerCsiHandler({ prefix: '?', final: 'h' }, (params) =>
+      isMouseTracking(params),
     );
-    const csiResetHandler = term.parser.registerCsiHandler(
-      { prefix: '?', final: 'l' },
-      (params) => isMouseTracking(params),
+    const csiResetHandler = term.parser.registerCsiHandler({ prefix: '?', final: 'l' }, (params) =>
+      isMouseTracking(params),
     );
 
     // xterm.js 在 alternate screen 下会静默丢弃滚轮事件，
@@ -187,10 +200,14 @@ export function XtermTerminal({ wsUrl, backgroundComponent, theme, allowTranspar
       const rect = t.element?.getBoundingClientRect();
       if (!rect) return;
 
-      const col = Math.max(1, Math.min(t.cols,
-        Math.floor((e.clientX - rect.left) / (rect.width / t.cols)) + 1));
-      const row = Math.max(1, Math.min(t.rows,
-        Math.floor((e.clientY - rect.top) / (rect.height / t.rows)) + 1));
+      const col = Math.max(
+        1,
+        Math.min(t.cols, Math.floor((e.clientX - rect.left) / (rect.width / t.cols)) + 1),
+      );
+      const row = Math.max(
+        1,
+        Math.min(t.rows, Math.floor((e.clientY - rect.top) / (rect.height / t.rows)) + 1),
+      );
 
       // SGR 鼠标协议格式: CSI < Btn ; Col ; Row M
       // 注意必须有 '<' 前缀，否则 tmux 不识别为 SGR 序列
@@ -202,14 +219,15 @@ export function XtermTerminal({ wsUrl, backgroundComponent, theme, allowTranspar
       }
     };
 
-    const screenEl = terminalRef.current?.querySelector('.xterm-screen') as HTMLElement | null;
+    const screenEl = terminalRef.current?.querySelector('.xterm-screen');
     screenEl?.addEventListener('wheel', handleWheel as EventListener, { passive: false });
 
     const handleThemeChange = () => {
       if (!xtermRef.current || !terminalRef.current) return;
       const newTheme = buildTerminalTheme(themeRef.current, terminalRef.current);
       const currentTheme = xtermRef.current.options.theme;
-      const changed = !currentTheme ||
+      const changed =
+        !currentTheme ||
         currentTheme.foreground !== newTheme.foreground ||
         currentTheme.background !== newTheme.background ||
         currentTheme.cursor !== newTheme.cursor;
@@ -217,12 +235,15 @@ export function XtermTerminal({ wsUrl, backgroundComponent, theme, allowTranspar
         xtermRef.current.options.theme = newTheme;
       }
       if (bgRef.current) {
-        const viewport = terminalRef.current.querySelector('.xterm-viewport') as HTMLElement | null;
-        if (viewport && viewport.style.backgroundColor !== 'transparent') {
+        const viewport = terminalRef.current.querySelector('.xterm-viewport');
+        if (viewport instanceof HTMLElement && viewport.style.backgroundColor !== 'transparent') {
           viewport.style.backgroundColor = 'transparent';
         }
-        const scrollable = terminalRef.current.querySelector('.xterm-scrollable-element') as HTMLElement | null;
-        if (scrollable && scrollable.style.backgroundColor !== 'transparent') {
+        const scrollable = terminalRef.current.querySelector('.xterm-scrollable-element');
+        if (
+          scrollable instanceof HTMLElement &&
+          scrollable.style.backgroundColor !== 'transparent'
+        ) {
           scrollable.style.backgroundColor = 'transparent';
         }
       }

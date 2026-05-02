@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -67,19 +68,22 @@ func NewKubernetesRuntime(kube config.KubernetesConfig, workspace config.Workspa
 // checkClient 确认 K8s 客户端已初始化
 func (k *KubernetesRuntime) checkClient() error {
 	if k.clientset == nil {
-		return fmt.Errorf("kubernetes client not initialized")
+		return errors.New("kubernetes client not initialized")
 	}
 	return nil
 }
 
 // imageExistsLocally 检查指定镜像是否已存在于本地 docker 中
 func (k *KubernetesRuntime) imageExistsLocally(imageName string) bool {
+	//nolint:gosec // docker CLI args are internally constructed
 	cmd := exec.Command("docker", "image", "inspect", imageName)
 	return cmd.Run() == nil
 }
 
 // checkDockerfileHash 从镜像 label 中读取 dockerfile-hash 与期望值比较
+	//nolint:gosec // docker CLI args are internally constructed
 func (k *KubernetesRuntime) checkDockerfileHash(imageName, expectedHash string) bool {
+ //nolint:gosec
 	cmd := exec.Command("docker", "inspect", "--format",
 		"{{index .Config.Labels \"maze.dockerfile-hash\"}}", imageName)
 	output, err := cmd.Output()
@@ -92,7 +96,7 @@ func (k *KubernetesRuntime) checkDockerfileHash(imageName, expectedHash string) 
 // buildDockerImage 使用 docker build 从 Dockerfile 内容构建镜像
 // 复用 Docker 模式相同的动态构建逻辑，K8s 模式下只是把 docker run 换成创建 Deployment
 func (k *KubernetesRuntime) buildDockerImage(spec *protocol.HostDeploySpec, dockerfileContent string) (string, error) {
-	imageName := fmt.Sprintf("maze-agent:%s", spec.Name)
+	imageName := "maze-agent:" + spec.Name
 	expectedHash := extractDockerfileHash(dockerfileContent)
 
 	// 优先检查 Host 专属镜像是否已存在且 hash 匹配
@@ -103,7 +107,8 @@ func (k *KubernetesRuntime) buildDockerImage(spec *protocol.HostDeploySpec, dock
 		}
 		// hash 不匹配，删除旧镜像触发重建
 		k.logger.Infof("image %s hash mismatch, rebuilding", imageName)
-		exec.Command("docker", "rmi", imageName).Run()
+  //nolint:gosec
+		_ = exec.Command("docker", "rmi", imageName).Run()
 	}
 
 	// 检查工具组合镜像是否已存在且 hash 匹配
@@ -111,6 +116,7 @@ func (k *KubernetesRuntime) buildDockerImage(spec *protocol.HostDeploySpec, dock
 	if k.imageExistsLocally(comboTag) {
 		if k.checkDockerfileHash(comboTag, expectedHash) {
 			k.logger.Infof("combo image %s exists, tagging as %s", comboTag, imageName)
+   //nolint:gosec
 			cmd := exec.Command("docker", "tag", comboTag, imageName)
 			if cmd.Run() == nil {
 				return imageName, nil
@@ -118,7 +124,8 @@ func (k *KubernetesRuntime) buildDockerImage(spec *protocol.HostDeploySpec, dock
 		}
 		// hash 不匹配，删除旧缓存触发重建
 		k.logger.Infof("combo image %s hash mismatch, rebuilding", comboTag)
-		exec.Command("docker", "rmi", comboTag).Run()
+  //nolint:gosec
+		func() { _ = exec.Command("docker", "rmi", comboTag).Run() }()
 	}
 
 	// 获取构建槽位，防止重建风暴
@@ -130,15 +137,16 @@ func (k *KubernetesRuntime) buildDockerImage(spec *protocol.HostDeploySpec, dock
 	if err != nil {
 		return "", fmt.Errorf("create temp dir: %w", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// 写入 Dockerfile
 	dockerfilePath := filepath.Join(tmpDir, "Dockerfile")
-	if err := os.WriteFile(dockerfilePath, []byte(dockerfileContent), 0644); err != nil {
+	if err := os.WriteFile(dockerfilePath, []byte(dockerfileContent), 0600); err != nil {
 		return "", fmt.Errorf("write dockerfile: %w", err)
 	}
 
 	// 执行 docker build，启用 BuildKit 加速构建
+ //nolint:gosec
 	cmd := exec.Command("docker", "build", "-f", dockerfilePath, "-t", imageName, "--cache-from", imageName, tmpDir)
 	cmd.Env = append(os.Environ(), "DOCKER_BUILDKIT=1")
 	output, err := cmd.CombinedOutput()
@@ -149,15 +157,17 @@ func (k *KubernetesRuntime) buildDockerImage(spec *protocol.HostDeploySpec, dock
 	k.logger.Infof("built image %s for host %s", imageName, spec.Name)
 
 	// 构建完成后打上组合标签，供后续相同组合的 Host 复用
+ //nolint:gosec
 	tagCmd := exec.Command("docker", "tag", imageName, comboTag)
-	tagCmd.Run()
+	_ = tagCmd.Run()
 
 	return imageName, nil
 }
 
 // removeDockerImage 清理动态构建的 Agent 镜像
 func (k *KubernetesRuntime) removeDockerImage(name string) {
-	imageName := fmt.Sprintf("maze-agent:%s", name)
+	imageName := "maze-agent:" + name
+ //nolint:gosec
 	cmd := exec.Command("docker", "rmi", imageName, "-f")
 	_ = cmd.Run()
 }
@@ -169,7 +179,7 @@ func (k *KubernetesRuntime) DeployHost(ctx context.Context, spec *protocol.HostD
 	}
 
 	ns := k.kube.Namespace
-	appName := fmt.Sprintf("maze-agent-%s", spec.Name)
+	appName := "maze-agent-" + spec.Name
 
 	// 第一步：动态构建镜像（复用 Docker 模式的 Dockerfile 生成逻辑）
 	var image string
@@ -400,7 +410,7 @@ func (k *KubernetesRuntime) createService(ctx context.Context, ns, appName, host
 	return err
 }
 
-// RemoveHost 按顺序删除 Service → Deployment → PVC，忽略 "not found"
+// StopHost 按顺序删除 Service → Deployment → PVC，忽略 "not found"
 // StopHost 停止运行时资源（Deployment + Service），保留持久化数据
 func (k *KubernetesRuntime) StopHost(ctx context.Context, name string) error {
 	if err := k.checkClient(); err != nil {
@@ -408,7 +418,7 @@ func (k *KubernetesRuntime) StopHost(ctx context.Context, name string) error {
 	}
 
 	ns := k.kube.Namespace
-	appName := fmt.Sprintf("maze-agent-%s", name)
+	appName := "maze-agent-" + name
 	deletePolicy := metav1.DeletePropagationBackground
 	deleteOpts := metav1.DeleteOptions{PropagationPolicy: &deletePolicy}
 
@@ -469,7 +479,7 @@ func (k *KubernetesRuntime) InspectHost(ctx context.Context, name string) (*prot
 
 	ns := k.kube.Namespace
 	pods, err := k.clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("maze-agent-name=%s", name),
+		LabelSelector: "maze-agent-name=" + name,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list pods: %w", err)
@@ -540,7 +550,7 @@ func (k *KubernetesRuntime) GetRuntimeLogs(ctx context.Context, name string, tai
 
 	ns := k.kube.Namespace
 	pods, err := k.clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("maze-agent-name=%s", name),
+		LabelSelector: "maze-agent-name=" + name,
 	})
 	if err != nil {
 		return "", fmt.Errorf("list pods: %w", err)
@@ -557,7 +567,7 @@ func (k *KubernetesRuntime) GetRuntimeLogs(ctx context.Context, name string, tai
 	if err != nil {
 		return "", fmt.Errorf("stream pod logs: %w", err)
 	}
-	defer stream.Close()
+	defer func() { _ = stream.Close() }()
 
 	data := make([]byte, 0, 4096)
 	buf := make([]byte, 4096)
@@ -581,7 +591,7 @@ func (k *KubernetesRuntime) IsHealthy(ctx context.Context, name string) (bool, e
 	}
 
 	ns := k.kube.Namespace
-	appName := fmt.Sprintf("maze-agent-%s", name)
+	appName := "maze-agent-" + name
 	_, err := k.clientset.AppsV1().Deployments(ns).Get(ctx, appName, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {

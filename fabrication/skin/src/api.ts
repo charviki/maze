@@ -88,7 +88,10 @@ export interface IAgentApiClient {
   updateTemplate: (id: string, tpl: SessionTemplate) => Promise<ApiResponse<SessionTemplate>>;
 
   /** 保存模板的真实全局配置 */
-  updateTemplateConfig: (id: string, req: SaveConfigRequest) => Promise<ApiResponse<TemplateConfigView>>;
+  updateTemplateConfig: (
+    id: string,
+    req: SaveConfigRequest,
+  ) => Promise<ApiResponse<TemplateConfigView>>;
 
   /** 删除模板 */
   deleteTemplate: (id: string) => Promise<ApiResponse<void>>;
@@ -97,7 +100,10 @@ export interface IAgentApiClient {
   getSessionConfig: (id: string) => Promise<ApiResponse<SessionConfigView>>;
 
   /** 保存 session 的真实项目级配置 */
-  updateSessionConfig: (id: string, req: SaveConfigRequest) => Promise<ApiResponse<SessionConfigView>>;
+  updateSessionConfig: (
+    id: string,
+    req: SaveConfigRequest,
+  ) => Promise<ApiResponse<SessionConfigView>>;
 
   /** 获取节点本地配置 */
   getLocalConfig: () => Promise<ApiResponse<LocalAgentConfig>>;

@@ -1,7 +1,14 @@
 import { memo, useEffect, useState, type ReactNode } from 'react';
 import type { ConfigFileSnapshot, PipelineStep, SessionConfigView } from '../../types';
 import type { IAgentApiClient } from '../../api';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '../ui/dialog';
 import { SessionPipeline } from '../ui/SessionPipeline';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -28,7 +35,11 @@ export interface SessionDialogsProps {
   showNodeConfig: boolean;
   onShowNodeConfigClose: () => void;
   apiClient: IAgentApiClient;
-  renderCreateDialog?: (props: { open: boolean; onOpenChange: (open: boolean) => void; onSuccess: (sessionName: string) => void }) => ReactNode;
+  renderCreateDialog?: (props: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSuccess: (sessionName: string) => void;
+  }) => ReactNode;
   onSessionCreated: (sessionName: string) => void;
   onKillConfirm: () => void;
   onKillCancel: () => void;
@@ -82,14 +93,18 @@ export const SessionDialogs = memo(function SessionDialogs({
           apiClient={apiClient}
           nodeName={nodeName}
           onSuccess={onSessionCreated}
-          onOpenTemplateManager={() => onShowTemplateManagerChange(true)}
+          onOpenTemplateManager={() => {
+            onShowTemplateManagerChange(true);
+          }}
         />
       )}
 
       {showTemplateManager && (
         <TemplateManager
           open={showTemplateManager}
-          onClose={() => onShowTemplateManagerChange(false)}
+          onClose={() => {
+            onShowTemplateManagerChange(false);
+          }}
           apiClient={apiClient}
         />
       )}
@@ -112,7 +127,9 @@ export const SessionDialogs = memo(function SessionDialogs({
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
-              <Button variant="ghost" onClick={onKillCancel} disabled={killing}>取消</Button>
+              <Button variant="ghost" onClick={onKillCancel} disabled={killing}>
+                取消
+              </Button>
               {/* 删除请求期间显式展示进行中状态，避免用户误以为点击无效。 */}
               <Button variant="destructive" onClick={onKillConfirm} disabled={killing}>
                 {killing ? '终止中...' : '确认终止'}
@@ -140,7 +157,9 @@ export const SessionDialogs = memo(function SessionDialogs({
               </div>
             )}
             <DialogFooter>
-              <Button variant="ghost" onClick={onRestoreCancel}>取消</Button>
+              <Button variant="ghost" onClick={onRestoreCancel}>
+                取消
+              </Button>
               <Button onClick={onRestoreConfirm} disabled={restoring}>
                 {restoring ? '恢复中...' : '确认恢复'}
               </Button>
@@ -256,7 +275,7 @@ function SessionConfigEditorDialog({
               </div>
             )}
 
-            {files.map(file => (
+            {files.map((file) => (
               <div key={file.path} className="border border-border rounded p-3 space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex-1">
@@ -281,7 +300,14 @@ function SessionConfigEditorDialog({
         )}
 
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>关闭</Button>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              onOpenChange(false);
+            }}
+          >
+            关闭
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

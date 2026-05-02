@@ -42,7 +42,7 @@ type CleanupResources struct {
 	AuditSvc   *service.AuditService
 }
 
-// 注册所有 API 路由并初始化各 Store 和 Handler。
+// Register 注册所有 API 路由并初始化各 Store 和 Handler。
 // 通过构造函数注入 Store 依赖到 Handler，实现手动依赖注入。
 // 返回 CleanupResources 供调用方在优雅关闭时执行资源清理。
 func Register(h *server.Hertz, cfg *config.Config, logger logutil.Logger) *CleanupResources {

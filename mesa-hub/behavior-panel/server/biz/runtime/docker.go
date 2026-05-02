@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -29,7 +30,9 @@ func NewDockerRuntime(docker config.DockerConfig, workspace config.WorkspaceConf
 }
 
 func (d *DockerRuntime) dockerCmd(args ...string) *exec.Cmd {
+	//nolint:gosec // docker CLI args are internally constructed
 	args = append([]string{"-H", "unix://" + d.docker.SocketPath}, args...)
+	//nolint:gosec
 	return exec.Command("docker", args...)
 }
 
@@ -50,7 +53,7 @@ func (d *DockerRuntime) tryTagComboImage(comboTag, imageTag, expectedHash string
 			return tagCmd.Run() == nil
 		}
 		// hash 不匹配，删除旧缓存触发重建
-		d.dockerCmd("rmi", comboTag).Run()
+		_ = d.dockerCmd("rmi", comboTag).Run()
 	}
 	// 检查 Host 专属镜像
 	if d.imageExistsLocally(imageTag) {
@@ -58,7 +61,7 @@ func (d *DockerRuntime) tryTagComboImage(comboTag, imageTag, expectedHash string
 			return true
 		}
 		// hash 不匹配，删除旧镜像触发重建
-		d.dockerCmd("rmi", imageTag).Run()
+		_ = d.dockerCmd("rmi", imageTag).Run()
 	}
 	return false
 }
@@ -86,7 +89,7 @@ func extractDockerfileHash(dockerfileContent string) string {
 // DeployHost 部署一个 Host：构建镜像 → 创建持久化目录 → 启动容器
 func (d *DockerRuntime) DeployHost(ctx context.Context, spec *protocol.HostDeploySpec, dockerfileContent string) (*protocol.CreateHostResponse, error) {
 	deployStart := time.Now()
-	imageTag := fmt.Sprintf("maze-agent:%s", spec.Name)
+	imageTag := "maze-agent:" + spec.Name
 	comboTag := builder.ToolsetImageTag(spec.Tools)
 	expectedHash := extractDockerfileHash(dockerfileContent)
 
@@ -106,10 +109,10 @@ func (d *DockerRuntime) DeployHost(ctx context.Context, spec *protocol.HostDeplo
 		if err != nil {
 			return nil, fmt.Errorf("create temp dir: %w", err)
 		}
-		defer os.RemoveAll(tmpDir)
+		defer func() { _ = os.RemoveAll(tmpDir) }()
 
 		dockerfilePath := filepath.Join(tmpDir, "Dockerfile")
-		if err := os.WriteFile(dockerfilePath, []byte(dockerfileContent), 0644); err != nil {
+		if err := os.WriteFile(dockerfilePath, []byte(dockerfileContent), 0600); err != nil {
 			return nil, fmt.Errorf("write dockerfile: %w", err)
 		}
 
@@ -127,13 +130,13 @@ func (d *DockerRuntime) DeployHost(ctx context.Context, spec *protocol.HostDeplo
 
 		// 构建完成后打上组合标签，供后续相同工具组合的 Host 复用
 		tagCmd := d.dockerCmd("tag", imageTag, comboTag)
-		tagCmd.Run()
+		_ = tagCmd.Run()
 	}
 
 	// 统一目录模型下，workspace 只存放 Manager 元数据；Agent 数据始终位于 agents/<host>。
 	// Manager 容器通过 MountDir 访问宿主机 bind mount，因此本地目录操作要走容器内可见路径。
 	hostMountDir := filepath.Join(d.workspace.MountDir, "agents", spec.Name)
-	if err := os.MkdirAll(hostMountDir, 0755); err != nil {
+	if err := os.MkdirAll(hostMountDir, 0750); err != nil {
 		return nil, fmt.Errorf("create host dir: %w", err)
 	}
 
@@ -149,18 +152,19 @@ func (d *DockerRuntime) DeployHost(ctx context.Context, spec *protocol.HostDeplo
 	// AGENT_CONTROLLER_AUTH_TOKEN: Host 专属令牌，用于向 Manager 注册/心跳
 	// AGENT_SERVER_AUTH_TOKEN: 全局 auth token，用于 Agent 自身 API 鉴权
 	runArgs = append(runArgs,
-		"-e", fmt.Sprintf("AGENT_NAME=%s", spec.Name),
-		"-e", fmt.Sprintf("AGENT_EXTERNAL_ADDR=http://%s:8080", spec.Name),
-		"-e", fmt.Sprintf("AGENT_ADVERTISED_ADDR=http://%s:8080", spec.Name),
+		"-e", "AGENT_NAME="+spec.Name,
+		"-e", "AGENT_EXTERNAL_ADDR=http://"+spec.Name+":8080",
+		"-e", "AGENT_ADVERTISED_ADDR=http://"+spec.Name+":8080",
 		"-e", fmt.Sprintf("AGENT_GRPC_ADDR=%s:9090", spec.Name),
-		"-e", fmt.Sprintf("AGENT_CONTROLLER_ADDR=%s", d.docker.ManagerAddr),
-		"-e", fmt.Sprintf("AGENT_SERVER_AUTH_TOKEN=%s", spec.ServerAuthToken),
-		"-e", fmt.Sprintf("AGENT_CONTROLLER_AUTH_TOKEN=%s", spec.AuthToken),
+		"-e", "AGENT_CONTROLLER_ADDR="+d.docker.ManagerAddr,
+		"-e", "AGENT_SERVER_AUTH_TOKEN="+spec.ServerAuthToken,
+		"-e", "AGENT_CONTROLLER_AUTH_TOKEN="+spec.AuthToken,
 	)
 
-	// 卷挂载使用 Docker daemon 可见的宿主机路径；这与 Manager 自己的元数据目录是两个层级。
+	// 将宿主机数据目录挂载到 Agent 容器的 /home/agent，使 Agent 工作目录数据持久化到宿主机。
+	// -v 格式: host_path:container_path
 	hostBaseDir := filepath.Join(d.docker.AgentDataDir, spec.Name)
-	runArgs = append(runArgs, "-v", fmt.Sprintf("%s:/home/agent", hostBaseDir))
+	runArgs = append(runArgs, "-v", hostBaseDir+":/home/agent")
 
 	// 资源限制
 	if spec.Resources.CPULimit != "" {
@@ -210,7 +214,7 @@ func (d *DockerRuntime) StopHost(ctx context.Context, name string) error {
 func (d *DockerRuntime) RemoveHost(ctx context.Context, name string) error {
 	_ = d.StopHost(ctx, name)
 
-	imageTag := fmt.Sprintf("maze-agent:%s", name)
+	imageTag := "maze-agent:" + name
 	rmiCmd := d.dockerCmd("rmi", "-f", imageTag)
 	_ = rmiCmd.Run()
 
@@ -270,7 +274,8 @@ func (d *DockerRuntime) InspectHost(ctx context.Context, name string) (*protocol
 
 // GetRuntimeLogs 通过 docker logs 获取容器运行日志
 func (d *DockerRuntime) GetRuntimeLogs(ctx context.Context, name string, tailLines int) (string, error) {
-	args := []string{"logs", "--tail", fmt.Sprintf("%d", tailLines)}
+	args := make([]string, 0, 4)
+	args = append(args, "logs", "--tail", strconv.Itoa(tailLines))
 	cmd := d.dockerCmd(append(args, name)...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -284,7 +289,7 @@ func (d *DockerRuntime) IsHealthy(ctx context.Context, name string) (bool, error
 	info, err := d.InspectHost(ctx, name)
 	if err != nil {
 		// 容器不存在视为不健康，不返回错误
-		return false, nil
+		return false, err
 	}
 	return info.Status == "running", nil
 }

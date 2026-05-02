@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -37,7 +38,7 @@ func newHandlerMock() *mockTmuxService {
 }
 
 func (m *mockTmuxService) ListSessions() ([]model.Session, error) {
-	var result []model.Session
+	result := make([]model.Session, 0, len(m.sessions))
 	for _, s := range m.sessions {
 		result = append(result, *s)
 	}
@@ -46,7 +47,7 @@ func (m *mockTmuxService) ListSessions() ([]model.Session, error) {
 
 func (m *mockTmuxService) CreateSession(name string, command string, workingDir string, configs []model.ConfigItem, restoreStrategy string, templateID string, restoreCommand string) (*model.Session, error) {
 	if _, exists := m.sessions[name]; exists {
-		return nil, fmt.Errorf("duplicate session")
+		return nil, errors.New("duplicate session")
 	}
 	s := &model.Session{ID: name, Name: name, Status: "running"}
 	m.sessions[name] = s
@@ -168,6 +169,7 @@ func setupRouterWithTemplates(mock *mockTmuxService, templates map[string]*model
 	return r
 }
 
+//nolint:unparam // path is always same in tests
 func performPost(r *route.Engine, path string, body string) *ut.ResponseRecorder {
 	return ut.PerformRequest(r, http.MethodPost, path, &ut.Body{Body: strings.NewReader(body), Len: len(body)},
 		ut.Header{Key: "Content-Type", Value: "application/json"})
@@ -325,7 +327,7 @@ func TestSaveSessions_ReturnsTimestamp(t *testing.T) {
 // 验证 SaveSessions 保存失败时返回 500
 func TestSaveSessions_Error(t *testing.T) {
 	mock := newHandlerMock()
-	mock.saveAllErr = fmt.Errorf("tmux not available")
+	mock.saveAllErr = errors.New("tmux not available")
 	r := setupRouter(mock)
 
 	w := ut.PerformRequest(r, http.MethodPost, "/api/v1/sessions/save", nil)

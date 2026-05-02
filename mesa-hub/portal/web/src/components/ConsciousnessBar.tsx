@@ -1,12 +1,12 @@
-import { cn } from '@maze/fabrication'
+import { cn } from '@maze/fabrication';
 
 interface ConsciousnessBarProps {
-  level: number // 0-100
-  className?: string
+  level: number; // 0-100
+  className?: string;
 }
 
 export function ConsciousnessBar({ level, className }: ConsciousnessBarProps) {
-  const clamped = Math.max(0, Math.min(100, level))
+  const clamped = Math.max(0, Math.min(100, level));
 
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
@@ -14,9 +14,7 @@ export function ConsciousnessBar({ level, className }: ConsciousnessBarProps) {
         <span className="text-[8px] font-mono tracking-[0.2em] text-primary/30 uppercase">
           CONSCIOUSNESS
         </span>
-        <span className="text-[9px] font-mono text-primary/50 tabular-nums">
-          {clamped}%
-        </span>
+        <span className="text-[9px] font-mono text-primary/50 tabular-nums">{clamped}%</span>
       </div>
 
       {/* Progress bar */}
@@ -30,10 +28,7 @@ export function ConsciousnessBar({ level, className }: ConsciousnessBarProps) {
         {/* Tick marks */}
         <div className="absolute inset-0 flex">
           {Array.from({ length: 10 }).map((_, i) => (
-            <div
-              key={i}
-              className="flex-1 border-r border-primary/10 last:border-r-0"
-            />
+            <div key={i} className="flex-1 border-r border-primary/10 last:border-r-0" />
           ))}
         </div>
 
@@ -55,5 +50,5 @@ export function ConsciousnessBar({ level, className }: ConsciousnessBarProps) {
               : 'CONSCIOUS'}
       </span>
     </div>
-  )
+  );
 }

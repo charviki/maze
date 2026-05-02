@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go-check:
+    name: Go Build + Lint + Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: fabrication/cradle/go.mod
+
+      - name: Build
+        run: make build-go
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.1
+          args: --timeout=5m
+
+      - name: Test
+        run: make test
+
+  typescript-check:
+    name: TypeScript ESLint + Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: ESLint — portal/web
+        run: npx eslint src/
+        working-directory: mesa-hub/portal/web
+
+      - name: ESLint — behavior-panel/web
+        run: npx eslint src/
+        working-directory: mesa-hub/behavior-panel/web
+
+      - name: ESLint — black-ridge/web
+        run: npx eslint src/
+        working-directory: sweetwater/black-ridge/web
+
+      - name: ESLint — fabrication/skin
+        run: npx eslint src/
+        working-directory: fabrication/skin
+
+      - name: Format check
+        run: pnpm run format:check

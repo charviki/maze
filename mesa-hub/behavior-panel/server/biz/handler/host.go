@@ -13,10 +13,12 @@ import (
 	"github.com/charviki/mesa-hub-behavior-panel/biz/service"
 )
 
+// HostHandler Host 资源 HTTP handler
 type HostHandler struct {
 	svc *service.HostService
 }
 
+// NewHostHandler 创建 HostHandler 实例
 func NewHostHandler(svc *service.HostService) *HostHandler {
 	return &HostHandler{svc: svc}
 }

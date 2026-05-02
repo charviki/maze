@@ -15,7 +15,9 @@ import (
 
 const (
 	nodeOfflineThreshold = 30 * time.Second
+	// NodeStatusOnline 节点在线状态
 	NodeStatusOnline     = "online"
+	// NodeStatusOffline 节点离线状态
 	NodeStatusOffline    = "offline"
 )
 
@@ -108,6 +110,7 @@ func (r *NodeRegistry) load() {
 // 持久化失败时仅记录错误日志，不阻塞业务流程——内存中的数据仍然有效。
 func (r *NodeRegistry) save() {
 	r.mu.RLock()
+	//nolint:gosec // AuthToken is intentionally persisted
 	data, err := json.MarshalIndent(r.nodes, "", "  ")
 	tokensData, tokensErr := json.MarshalIndent(r.hostTokens, "", "  ")
 	r.mu.RUnlock()
@@ -205,6 +208,7 @@ func (r *NodeRegistry) Heartbeat(req protocol.HeartbeatRequest) *Node {
 	return node
 }
 
+// List 返回所有节点列表，含离线检测与持久化
 func (r *NodeRegistry) List() []*Node {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -225,6 +229,7 @@ func (r *NodeRegistry) List() []*Node {
 	return nodes
 }
 
+// Get 根据名称查找节点，含离线检测与持久化
 func (r *NodeRegistry) Get(name string) *Node {
 	r.mu.RLock()
 	node, ok := r.nodes[name]

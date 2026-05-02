@@ -10,7 +10,13 @@ export interface HostLogPanelProps {
   fetchRuntimeLog: () => Promise<string>;
 }
 
-export function HostLogPanel({ open, onOpenChange, hostName, fetchBuildLog, fetchRuntimeLog }: HostLogPanelProps) {
+export function HostLogPanel({
+  open,
+  onOpenChange,
+  hostName,
+  fetchBuildLog,
+  fetchRuntimeLog,
+}: HostLogPanelProps) {
   const [activeTab, setActiveTab] = useState<'build' | 'runtime'>('build');
   const [logs, setLogs] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -28,11 +34,19 @@ export function HostLogPanel({ open, onOpenChange, hostName, fetchBuildLog, fetc
     }
   }, [activeTab, fetchBuildLog, fetchRuntimeLog]);
 
+  // fetch-in-effect: 面板打开时从 API 拉取日志并定时刷新写入 state，属于合法的数据同步模式。
+  // React Compiler 的 set-state-in-effect 规则对 fetch-in-effect 场景存在已知误报。
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (!open) return;
-    fetchLogs();
-    const interval = setInterval(fetchLogs, 5000);
-    return () => clearInterval(interval);
+    void fetchLogs();
+    const interval = setInterval(() => {
+      void fetchLogs();
+    }, 5000);
+    /* eslint-enable react-hooks/set-state-in-effect */
+    return () => {
+      clearInterval(interval);
+    };
   }, [open, fetchLogs]);
 
   useEffect(() => {
@@ -45,7 +59,10 @@ export function HostLogPanel({ open, onOpenChange, hostName, fetchBuildLog, fetc
     <div className="fixed inset-0 z-50 flex items-end justify-center pointer-events-none">
       <div
         className="w-full max-w-3xl max-h-[60vh] flex flex-col bg-black/95 border border-primary/30 pointer-events-auto"
-        style={{ clipPath: 'polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px))' }}
+        style={{
+          clipPath:
+            'polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px))',
+        }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-2 border-b border-primary/20 bg-black/80">
@@ -61,7 +78,9 @@ export function HostLogPanel({ open, onOpenChange, hostName, fetchBuildLog, fetc
             {/* Tab buttons */}
             <div className="flex border border-primary/20">
               <button
-                onClick={() => setActiveTab('build')}
+                onClick={() => {
+                  setActiveTab('build');
+                }}
                 className={`px-3 py-1 font-mono text-[10px] uppercase tracking-widest transition-colors ${
                   activeTab === 'build'
                     ? 'bg-primary/20 text-primary'
@@ -71,7 +90,9 @@ export function HostLogPanel({ open, onOpenChange, hostName, fetchBuildLog, fetc
                 BUILD LOG
               </button>
               <button
-                onClick={() => setActiveTab('runtime')}
+                onClick={() => {
+                  setActiveTab('runtime');
+                }}
                 className={`px-3 py-1 font-mono text-[10px] uppercase tracking-widest transition-colors ${
                   activeTab === 'runtime'
                     ? 'bg-primary/20 text-primary'
@@ -85,7 +106,9 @@ export function HostLogPanel({ open, onOpenChange, hostName, fetchBuildLog, fetc
               variant="ghost"
               size="icon"
               className="h-6 w-6 rounded-none text-muted-foreground hover:text-primary"
-              onClick={() => onOpenChange(false)}
+              onClick={() => {
+                onOpenChange(false);
+              }}
             >
               <X className="w-3 h-3" />
             </Button>

@@ -20,6 +20,7 @@ import (
 	"github.com/charviki/mesa-hub-behavior-panel/biz/service"
 )
 
+// NodeHandler Agent 节点注册、心跳、查询 HTTP handler
 type NodeHandler struct {
 	svc             *service.NodeService
 	registry        *model.NodeRegistry
@@ -27,6 +28,7 @@ type NodeHandler struct {
 	logger          logutil.Logger
 }
 
+// NewNodeHandler 创建 NodeHandler 实例
 func NewNodeHandler(svc *service.NodeService, registry *model.NodeRegistry, globalAuthToken string, logger logutil.Logger) *NodeHandler {
 	return &NodeHandler{
 		svc:             svc,
@@ -60,6 +62,7 @@ func (h *NodeHandler) validateHostToken(c *app.RequestContext, name string) bool
 	return true
 }
 
+// Register 处理 Agent 节点注册请求
 func (h *NodeHandler) Register(ctx context.Context, c *app.RequestContext) {
 	var req protocol.RegisterRequest
 	if err := c.Bind(&req); err != nil {
@@ -85,6 +88,7 @@ func (h *NodeHandler) Register(ctx context.Context, c *app.RequestContext) {
 	go h.restoreAgentSessions(req.Name, req.Address)
 }
 
+// Heartbeat 处理 Agent 节点心跳请求
 func (h *NodeHandler) Heartbeat(ctx context.Context, c *app.RequestContext) {
 	var req protocol.HeartbeatRequest
 	if err := c.Bind(&req); err != nil {
@@ -108,6 +112,7 @@ func (h *NodeHandler) Heartbeat(ctx context.Context, c *app.RequestContext) {
 	httputil.Success(c, node)
 }
 
+// ListNodes 返回所有已注册节点
 func (h *NodeHandler) ListNodes(ctx context.Context, c *app.RequestContext) {
 	nodes, err := h.svc.ListNodes(ctx)
 	if err != nil {
@@ -117,6 +122,7 @@ func (h *NodeHandler) ListNodes(ctx context.Context, c *app.RequestContext) {
 	httputil.Success(c, nodes)
 }
 
+// GetNode 获取指定节点信息
 func (h *NodeHandler) GetNode(ctx context.Context, c *app.RequestContext) {
 	name := c.Param("name")
 	if name == "" {
@@ -132,6 +138,7 @@ func (h *NodeHandler) GetNode(ctx context.Context, c *app.RequestContext) {
 	httputil.Success(c, node)
 }
 
+// DeleteNode 删除指定节点
 func (h *NodeHandler) DeleteNode(ctx context.Context, c *app.RequestContext) {
 	name := c.Param("name")
 	if name == "" {
@@ -151,13 +158,13 @@ func (h *NodeHandler) DeleteNode(ctx context.Context, c *app.RequestContext) {
 func (h *NodeHandler) restoreAgentSessions(name, address string) {
 	client := &http.Client{Timeout: 10 * time.Second}
 
-	savedURL := fmt.Sprintf("%s/api/v1/sessions/saved", strings.TrimRight(address, "/"))
+	savedURL := strings.TrimRight(address, "/") + "/api/v1/sessions/saved"
 	resp, err := client.Get(savedURL)
 	if err != nil {
 		h.logger.Warnf("[session-restore] query saved sessions from %s failed: %v", name, err)
 		return
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -198,7 +205,7 @@ func (h *NodeHandler) restoreAgentSessions(name, address string) {
 			h.logger.Warnf("[session-restore] restore session %s/%s failed: %v", name, s.SessionName, err)
 			continue
 		}
-		resp.Body.Close()
+		func() { _ = resp.Body.Close() }()
 
 		if resp.StatusCode == http.StatusOK {
 			restored++

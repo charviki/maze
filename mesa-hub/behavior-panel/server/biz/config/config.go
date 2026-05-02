@@ -8,7 +8,7 @@ import (
 	"github.com/charviki/maze-cradle/configutil"
 )
 
-// 全局配置结构体
+// Config 全局配置结构体，含 Server、Workspace、Docker、Runtime、Kubernetes 五个维度
 type Config struct {
 	Server     ServerConfig     `yaml:"server"`
 	Workspace  WorkspaceConfig  `yaml:"workspace"`
@@ -51,7 +51,7 @@ type KubernetesConfig struct {
 	HostPathBase string `yaml:"host_path_base"`
 }
 
-// 工作区配置
+// WorkspaceConfig 工作区配置，指定 Manager 元数据和 Agent 工作目录的宿主机/容器路径
 type WorkspaceConfig struct {
 	// BaseDir Manager 元数据根目录（host_specs.json/nodes.json/audit.log/host_logs）
 	BaseDir string `yaml:"base_dir"`
@@ -59,7 +59,7 @@ type WorkspaceConfig struct {
 	MountDir string `yaml:"mount_dir"`
 }
 
-// Docker 配置（用于动态创建 Host 容器）
+// DockerConfig Docker 运行时配置，用于动态创建 Host 容器
 type DockerConfig struct {
 	// SocketPath Docker socket 路径
 	SocketPath string `yaml:"socket_path"`
@@ -75,7 +75,7 @@ type DockerConfig struct {
 	ManagerAddr string `yaml:"manager_addr"`
 }
 
-// HTTP 服务配置
+// ServerConfig HTTP 服务配置，含监听地址、鉴权令牌、CORS 白名单
 type ServerConfig struct {
 	ListenAddr           string   `yaml:"listen_addr"`
 	AuthToken            string   `yaml:"auth_token"`
@@ -93,27 +93,26 @@ func (c *Config) IsDevMode() bool {
 	return c.Server.AuthToken == ""
 }
 
+// LoadFromExe 搜索并加载配置文件（当前目录 → 可执行文件所在目录 → 上级目录），
+// 填充到 Config 结构体，可选择指定文件名（默认 config.yaml）。
 func LoadFromExe(filename ...string) (*Config, error) {
 	var cfg Config
 	if _, err := configutil.LoadFromExe(&cfg, filename...); err != nil {
 		return nil, err
 	}
 	applyEnvOverrides(&cfg)
-	if err := validate(&cfg); err != nil {
-		return nil, err
-	}
+	validate(&cfg)
 	return &cfg, nil
 }
 
+// Load 从指定路径加载 YAML 配置文件并填充到 Config 结构体
 func Load(path string) (*Config, error) {
 	var cfg Config
 	if err := configutil.LoadYAML(path, &cfg); err != nil {
 		return nil, err
 	}
 	applyEnvOverrides(&cfg)
-	if err := validate(&cfg); err != nil {
-		return nil, err
-	}
+	validate(&cfg)
 	return &cfg, nil
 }
 
@@ -198,8 +197,8 @@ func applyEnvOverrides(cfg *Config) {
 	}
 }
 
-// 校验配置完整性并填充默认值
-func validate(cfg *Config) error {
+// validate 校验配置完整性并填充默认值
+func validate(cfg *Config) {
 	if cfg.Server.ListenAddr == "" {
 		cfg.Server.ListenAddr = ":8080"
 	}
@@ -272,5 +271,4 @@ func validate(cfg *Config) error {
 		}
 	}
 
-	return nil
 }

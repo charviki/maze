@@ -13,8 +13,7 @@ export function createManagerApi() {
   return {
     listTemplates: () => request<SessionTemplate[]>('/templates'),
 
-    getTemplate: (id: string) =>
-      request<SessionTemplate>(`/templates/${encodeURIComponent(id)}`),
+    getTemplate: (id: string) => request<SessionTemplate>(`/templates/${encodeURIComponent(id)}`),
 
     createTemplate: (template: SessionTemplate) =>
       request<SessionTemplate>('/templates', {

@@ -15,6 +15,7 @@ import (
 
 // --- TemplateService ---
 
+// ListTemplates 返回所有模板列表
 func (s *Server) ListTemplates(ctx context.Context, req *pb.ListTemplatesRequest) (*pb.ListTemplatesResponse, error) {
 	templates := s.templateStore.List()
 	pbTemplates := make([]*pb.SessionTemplate, len(templates))
@@ -24,11 +25,12 @@ func (s *Server) ListTemplates(ctx context.Context, req *pb.ListTemplatesRequest
 	return &pb.ListTemplatesResponse{Templates: pbTemplates}, nil
 }
 
+// CreateTemplate 创建新模板
 func (s *Server) CreateTemplate(ctx context.Context, req *pb.CreateTemplateRequest) (*pb.SessionTemplate, error) {
-	if req.Template == nil {
+	if req.GetTemplate() == nil {
 		return nil, status.Error(codes.InvalidArgument, "template is required")
 	}
-	tpl := protoToModelTemplate(req.Template)
+	tpl := protoToModelTemplate(req.GetTemplate())
 	if tpl.ID == "" {
 		return nil, status.Error(codes.InvalidArgument, "id is required")
 	}
@@ -46,45 +48,49 @@ func (s *Server) CreateTemplate(ctx context.Context, req *pb.CreateTemplateReque
 	return modelTemplateToProto(saved), nil
 }
 
+// GetTemplate 获取指定模板
 func (s *Server) GetTemplate(ctx context.Context, req *pb.GetTemplateRequest) (*pb.SessionTemplate, error) {
-	tpl := s.templateStore.Get(req.Id)
+	tpl := s.templateStore.Get(req.GetId())
 	if tpl == nil {
 		return nil, status.Error(codes.NotFound, "template not found")
 	}
 	return modelTemplateToProto(tpl), nil
 }
 
+// UpdateTemplate 更新模板
 func (s *Server) UpdateTemplate(ctx context.Context, req *pb.UpdateTemplateRequest) (*pb.SessionTemplate, error) {
-	existing := s.templateStore.Get(req.Id)
+	existing := s.templateStore.Get(req.GetId())
 	if existing == nil {
 		return nil, status.Error(codes.NotFound, "template not found")
 	}
-	updated := protoToModelTemplate(req.Template)
-	updated.ID = req.Id
+	updated := protoToModelTemplate(req.GetTemplate())
+	updated.ID = req.GetId()
 	updated.Builtin = existing.Builtin
 	if err := s.templateStore.Set(&updated); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	saved := s.templateStore.Get(req.Id)
+	saved := s.templateStore.Get(req.GetId())
 	return modelTemplateToProto(saved), nil
 }
 
+// DeleteTemplate 删除模板（禁止删除内置模板）
 func (s *Server) DeleteTemplate(ctx context.Context, req *pb.DeleteTemplateRequest) (*emptypb.Empty, error) {
-	existing := s.templateStore.Get(req.Id)
+	existing := s.templateStore.Get(req.GetId())
 	if existing == nil {
 		return nil, status.Error(codes.NotFound, "template not found")
 	}
 	if existing.Builtin {
 		return nil, status.Error(codes.PermissionDenied, "cannot delete built-in template")
 	}
-	if err := s.templateStore.Delete(req.Id); err != nil {
+	if err := s.templateStore.Delete(req.GetId()); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &emptypb.Empty{}, nil
 }
 
+// GetTemplateConfig 获取模板全局配置
 func (s *Server) GetTemplateConfig(ctx context.Context, req *pb.GetTemplateConfigRequest) (*pb.TemplateConfigView, error) {
-	tpl := s.templateStore.Get(req.Id)
+	tpl := s.templateStore.Get(req.GetId())
 	if tpl == nil {
 		return nil, status.Error(codes.NotFound, "template not found")
 	}
@@ -100,13 +106,14 @@ func (s *Server) GetTemplateConfig(ctx context.Context, req *pb.GetTemplateConfi
 	}, nil
 }
 
+// UpdateTemplateConfig 更新模板全局配置
 func (s *Server) UpdateTemplateConfig(ctx context.Context, req *pb.UpdateTemplateConfigRequest) (*pb.TemplateConfigView, error) {
-	existing := s.templateStore.Get(req.Id)
+	existing := s.templateStore.Get(req.GetId())
 	if existing == nil {
 		return nil, status.Error(codes.NotFound, "template not found")
 	}
 
-	updates := protoConfigUpdatesToModel(req.Files)
+	updates := protoConfigUpdatesToModel(req.GetFiles())
 	files, err := service.NewConfigFileService().SaveGlobalFiles(existing.Defaults.Files, updates)
 	if err != nil {
 		return nil, errToStatus(err)
@@ -145,16 +152,16 @@ func protoToModelTemplate(t *pb.SessionTemplate) model.SessionTemplate {
 		return model.SessionTemplate{}
 	}
 	return model.SessionTemplate{
-		ID:                 t.Id,
-		Name:               t.Name,
-		Command:            t.Command,
-		RestoreCommand:     t.RestoreCommand,
-		SessionFilePattern: t.SessionFilePattern,
-		Description:        t.Description,
-		Icon:               t.Icon,
-		Builtin:            t.Builtin,
-		Defaults:           protoToConfigLayer(t.Defaults),
-		SessionSchema:      protoToSessionSchema(t.SessionSchema),
+		ID:                 t.GetId(),
+		Name:               t.GetName(),
+		Command:            t.GetCommand(),
+		RestoreCommand:     t.GetRestoreCommand(),
+		SessionFilePattern: t.GetSessionFilePattern(),
+		Description:        t.GetDescription(),
+		Icon:               t.GetIcon(),
+		Builtin:            t.GetBuiltin(),
+		Defaults:           protoToConfigLayer(t.GetDefaults()),
+		SessionSchema:      protoToSessionSchema(t.GetSessionSchema()),
 	}
 }
 
@@ -170,11 +177,11 @@ func protoToConfigLayer(layer *pb.ConfigLayer) model.ConfigLayer {
 	if layer == nil {
 		return model.ConfigLayer{}
 	}
-	files := make([]model.ConfigFile, len(layer.Files))
-	for i, file := range layer.Files {
-		files[i] = model.ConfigFile{Path: file.Path, Content: file.Content}
+	files := make([]model.ConfigFile, len(layer.GetFiles()))
+	for i, file := range layer.GetFiles() {
+		files[i] = model.ConfigFile{Path: file.GetPath(), Content: file.GetContent()}
 	}
-	return model.ConfigLayer{Env: layer.Env, Files: files}
+	return model.ConfigLayer{Env: layer.GetEnv(), Files: files}
 }
 
 func sessionSchemaToProto(schema model.SessionSchema) *pb.SessionSchema {
@@ -204,23 +211,23 @@ func protoToSessionSchema(schema *pb.SessionSchema) model.SessionSchema {
 	if schema == nil {
 		return model.SessionSchema{}
 	}
-	envDefs := make([]model.EnvDef, len(schema.EnvDefs))
-	for i, envDef := range schema.EnvDefs {
+	envDefs := make([]model.EnvDef, len(schema.GetEnvDefs()))
+	for i, envDef := range schema.GetEnvDefs() {
 		envDefs[i] = model.EnvDef{
-			Key:         envDef.Key,
-			Label:       envDef.Label,
-			Required:    envDef.Required,
-			Placeholder: envDef.Placeholder,
-			Sensitive:   envDef.Sensitive,
+			Key:         envDef.GetKey(),
+			Label:       envDef.GetLabel(),
+			Required:    envDef.GetRequired(),
+			Placeholder: envDef.GetPlaceholder(),
+			Sensitive:   envDef.GetSensitive(),
 		}
 	}
-	fileDefs := make([]model.FileDef, len(schema.FileDefs))
-	for i, fileDef := range schema.FileDefs {
+	fileDefs := make([]model.FileDef, len(schema.GetFileDefs()))
+	for i, fileDef := range schema.GetFileDefs() {
 		fileDefs[i] = model.FileDef{
-			Path:           fileDef.Path,
-			Label:          fileDef.Label,
-			Required:       fileDef.Required,
-			DefaultContent: fileDef.DefaultContent,
+			Path:           fileDef.GetPath(),
+			Label:          fileDef.GetLabel(),
+			Required:       fileDef.GetRequired(),
+			DefaultContent: fileDef.GetDefaultContent(),
 		}
 	}
 	return model.SessionSchema{EnvDefs: envDefs, FileDefs: fileDefs}

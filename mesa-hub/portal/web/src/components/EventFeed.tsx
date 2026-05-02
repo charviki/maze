@@ -1,49 +1,51 @@
-import { useState, useEffect, useRef } from 'react'
-import { DecryptText } from '@maze/fabrication'
-import { SYSTEM_EVENTS } from '../data/mock-data'
+import { useState, useEffect, useRef } from 'react';
+import { DecryptText } from '@maze/fabrication';
+import { SYSTEM_EVENTS } from '../data/mock-data';
 
 interface Event {
-  time: string
-  message: string
+  time: string;
+  message: string;
 }
 
 function formatTime(): string {
-  const now = new Date()
-  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
 }
 
 function randomEvent(): Event {
   return {
     time: formatTime(),
     message: SYSTEM_EVENTS[Math.floor(Math.random() * SYSTEM_EVENTS.length)],
-  }
+  };
 }
 
 export function EventFeed() {
-  const [events, setEvents] = useState<Event[]>(() => [randomEvent()])
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [events, setEvents] = useState<Event[]>(() => [randomEvent()]);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const schedule = () => {
-      const delay = 15000 + Math.random() * 15000 // 15-30s
+      const delay = 15000 + Math.random() * 15000; // 15-30s
       return setTimeout(() => {
         setEvents((prev) => {
-          const next = [...prev, randomEvent()]
-          return next.length > 20 ? next.slice(-20) : next
-        })
-        timer = schedule()
-      }, delay)
-    }
-    let timer = schedule()
-    return () => clearTimeout(timer)
-  }, [])
+          const next = [...prev, randomEvent()];
+          return next.length > 20 ? next.slice(-20) : next;
+        });
+        timer = schedule();
+      }, delay);
+    };
+    let timer = schedule();
+    return () => {
+      clearTimeout(timer);
+    };
+  }, []);
 
   // Auto-scroll to bottom
   useEffect(() => {
     if (containerRef.current) {
-      containerRef.current.scrollTop = containerRef.current.scrollHeight
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
-  }, [events])
+  }, [events]);
 
   return (
     <div className="flex flex-col gap-1 px-3">
@@ -69,5 +71,5 @@ export function EventFeed() {
         ))}
       </div>
     </div>
-  )
+  );
 }

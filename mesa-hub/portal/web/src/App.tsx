@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback } from 'react';
 import {
   ErrorBoundary,
   AnimationSettingsProvider,
@@ -8,7 +8,7 @@ import {
   RadarView,
   DecryptText,
   ToastProvider,
-} from '@maze/fabrication'
+} from '@maze/fabrication';
 import {
   Server,
   Database,
@@ -18,21 +18,21 @@ import {
   BookOpen,
   Settings,
   LogOut,
-} from 'lucide-react'
-import { LandingPage } from './components/LandingPage'
-import { ModuleCard } from './components/ModuleCard'
-import { SystemMetric } from './components/SystemMetric'
-import { StatusBar } from './components/StatusBar'
-import { EventFeed } from './components/EventFeed'
-import { ConsciousnessBar } from './components/ConsciousnessBar'
-import { isAuthenticated, getCurrentUser, logout } from './auth/auth'
+} from 'lucide-react';
+import { LandingPage } from './components/LandingPage';
+import { ModuleCard } from './components/ModuleCard';
+import { SystemMetric } from './components/SystemMetric';
+import { StatusBar } from './components/StatusBar';
+import { EventFeed } from './components/EventFeed';
+import { ConsciousnessBar } from './components/ConsciousnessBar';
+import { isAuthenticated, getCurrentUser, logout } from './auth/auth';
 import {
   MOCK_NODES,
   MOCK_HOSTS,
   MOCK_SESSIONS,
   MOCK_UPTIME,
   MOCK_CONSCIOUSNESS,
-} from './data/mock-data'
+} from './data/mock-data';
 
 /** Module definitions with Westworld descriptions */
 const MODULES = [
@@ -73,22 +73,22 @@ const MODULES = [
     icon: BookOpen,
     status: 'locked' as const,
   },
-]
+];
 
 export default function App() {
   const [phase, setPhase] = useState<'landing' | 'authenticated'>(() =>
     isAuthenticated() ? 'authenticated' : 'landing',
-  )
-  const [showAnimSettings, setShowAnimSettings] = useState(false)
+  );
+  const [showAnimSettings, setShowAnimSettings] = useState(false);
 
   const handleLoginSuccess = useCallback(() => {
-    setPhase('authenticated')
-  }, [])
+    setPhase('authenticated');
+  }, []);
 
   const handleLogout = useCallback(() => {
-    logout()
-    setPhase('landing')
-  }, [])
+    logout();
+    setPhase('landing');
+  }, []);
 
   return (
     <ErrorBoundary>
@@ -106,17 +106,17 @@ export default function App() {
         </ToastProvider>
       </AnimationSettingsProvider>
     </ErrorBoundary>
-  )
+  );
 }
 
 interface PortalLayoutProps {
-  onLogout: () => void
-  showAnimSettings: boolean
-  setShowAnimSettings: (open: boolean) => void
+  onLogout: () => void;
+  showAnimSettings: boolean;
+  setShowAnimSettings: (open: boolean) => void;
 }
 
 function PortalLayout({ onLogout, showAnimSettings, setShowAnimSettings }: PortalLayoutProps) {
-  const user = getCurrentUser()
+  const user = getCurrentUser();
 
   return (
     <div className="h-screen w-screen bg-background text-foreground dark relative overflow-hidden grid grid-rows-[56px_1fr] grid-cols-[288px_1fr]">
@@ -146,7 +146,9 @@ function PortalLayout({ onLogout, showAnimSettings, setShowAnimSettings }: Porta
             <LogOut className="w-4 h-4" />
           </button>
           <button
-            onClick={() => setShowAnimSettings(true)}
+            onClick={() => {
+              setShowAnimSettings(true);
+            }}
             className="p-1.5 text-primary/40 hover:text-primary/80 transition-colors"
             title="Animation Settings"
           >
@@ -186,12 +188,7 @@ function PortalLayout({ onLogout, showAnimSettings, setShowAnimSettings }: Porta
             subValue={`${MOCK_SESSIONS.active} active`}
             icon={Activity}
           />
-          <SystemMetric
-            label="Uptime"
-            value={MOCK_UPTIME}
-            subValue="30d rolling"
-            icon={Brain}
-          />
+          <SystemMetric label="Uptime" value={MOCK_UPTIME} subValue="30d rolling" icon={Brain} />
         </div>
 
         {/* Consciousness level */}
@@ -242,10 +239,7 @@ function PortalLayout({ onLogout, showAnimSettings, setShowAnimSettings }: Porta
       </footer>
 
       {/* Animation settings dialog */}
-      <AnimationSettingsPanel
-        open={showAnimSettings}
-        onOpenChange={setShowAnimSettings}
-      />
+      <AnimationSettingsPanel open={showAnimSettings} onOpenChange={setShowAnimSettings} />
     </div>
-  )
+  );
 }

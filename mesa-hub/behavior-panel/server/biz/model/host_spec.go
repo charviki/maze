@@ -55,6 +55,7 @@ func (m *HostSpecManager) load() {
 
 func (m *HostSpecManager) save() {
 	m.mu.RLock()
+	//nolint:gosec // AuthToken is intentionally persisted
 	data, err := json.MarshalIndent(m.specs, "", "  ")
 	m.mu.RUnlock()
 

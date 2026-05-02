@@ -11,19 +11,23 @@ import (
 	"github.com/charviki/sweetwater-black-ridge/biz/service"
 )
 
+// LocalConfigHandler 本地配置 HTTP handler
 type LocalConfigHandler struct {
 	store *service.LocalConfigStore
 }
 
+// NewLocalConfigHandler 创建 LocalConfigHandler
 func NewLocalConfigHandler(store *service.LocalConfigStore) *LocalConfigHandler {
 	return &LocalConfigHandler{store: store}
 }
 
+// GetConfig 获取 Agent 本地配置
 func (h *LocalConfigHandler) GetConfig(_ context.Context, c *app.RequestContext) {
 	cfg := h.store.Get()
 	httputil.Success(c, cfg)
 }
 
+// UpdateConfig 更新 Agent 本地配置
 func (h *LocalConfigHandler) UpdateConfig(_ context.Context, c *app.RequestContext) {
 	var req protocol.LocalAgentConfig
 	if err := c.Bind(&req); err != nil {

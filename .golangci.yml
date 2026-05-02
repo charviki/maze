@@ -1,0 +1,70 @@
+version: '2'
+
+run:
+  timeout: 5m
+  tests: true
+  modules-download-mode: readonly
+  go: '1.26'
+
+linters:
+  default: standard
+  enable:
+    - errcheck
+    - gosec
+    - staticcheck
+    - gocritic
+    - ineffassign
+    - revive
+    - unconvert
+    - unparam
+    - nilerr
+    - prealloc
+    - usetesting
+    - fatcontext
+    - canonicalheader
+    - protogetter
+    - perfsprint
+    - wastedassign
+
+  settings:
+    gosec:
+      excludes:
+        - G104
+    revive:
+      rules:
+        - name: exported
+          severity: warning
+          arguments:
+            - 'checkPrivateReceivers'
+        - name: blank-imports
+        - name: context-as-argument
+        - name: error-return
+        - name: error-strings
+        - name: receiver-naming
+        - name: increment-decrement
+        - name: range
+        - name: indent-error-flow
+
+  exclusions:
+    generated: lax
+    rules:
+      - path: _test\.go
+        linters:
+          - gosec
+          - errcheck
+      - path: api/gen/
+        linters:
+          - all
+      - path: logutil/logger\.go
+        linters:
+          - revive
+      - path: pipeline/pipeline\.go
+        linters:
+          - revive
+
+output:
+  formats:
+    text:
+      path: stdout
+      print-issued-lines: true
+      print-linter-name: true

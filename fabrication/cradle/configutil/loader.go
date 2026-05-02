@@ -33,7 +33,8 @@ func SearchConfigPaths(filename string) (string, error) {
 
 // LoadYAML 从指定路径加载 YAML 配置文件并反序列化到目标结构体
 func LoadYAML(path string, target interface{}) error {
-	data, err := os.ReadFile(path)
+	cleaned := filepath.Clean(path)
+	data, err := os.ReadFile(cleaned)
 	if err != nil {
 		return fmt.Errorf("read config file %s: %w", path, err)
 	}

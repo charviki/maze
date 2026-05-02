@@ -1,15 +1,15 @@
 id: claude
 name: Claude Code
-command: "IS_SANDBOX=1 claude --dangerously-skip-permissions --session-id {session_id}"
-restore_command: "IS_SANDBOX=1 claude --dangerously-skip-permissions --resume {session_id}"
-session_file_pattern: "~/.claude/projects/{encoded_working_dir}/*.jsonl"
-description: "Anthropic Claude CLI Agent"
-icon: "🤖"
+command: 'IS_SANDBOX=1 claude --dangerously-skip-permissions --session-id {session_id}'
+restore_command: 'IS_SANDBOX=1 claude --dangerously-skip-permissions --resume {session_id}'
+session_file_pattern: '~/.claude/projects/{encoded_working_dir}/*.jsonl'
+description: 'Anthropic Claude CLI Agent'
+icon: '🤖'
 builtin: true
 defaults:
   env: {}
   files:
-    - path: "~/.claude.json"
+    - path: '~/.claude.json'
       content: |
         {
           "hasCompletedOnboarding": true,
@@ -19,7 +19,7 @@ defaults:
           "migrationVersion": 11,
           "projects": {}
         }
-    - path: "~/.claude/settings.json"
+    - path: '~/.claude/settings.json'
       content: |
         {
           "permissions": {
@@ -38,16 +38,16 @@ defaults:
           "skipDangerousModePermissionPrompt": true,
           "theme": "dark"
         }
-    - path: "~/.claude/CLAUDE.md"
+    - path: '~/.claude/CLAUDE.md'
       content: "# Global Instructions\n"
 session_schema:
   env_defs: []
   file_defs:
-    - path: "CLAUDE.md"
-      label: "CLAUDE.md（项目记忆）"
+    - path: 'CLAUDE.md'
+      label: 'CLAUDE.md（项目记忆）'
       required: false
       default_content: "# Project Instructions\n"
-    - path: ".claude/settings.json"
-      label: "项目级 Settings"
+    - path: '.claude/settings.json'
+      label: '项目级 Settings'
       required: false
-      default_content: "{}"
+      default_content: '{}'

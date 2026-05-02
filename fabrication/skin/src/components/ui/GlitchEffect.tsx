@@ -17,9 +17,7 @@ export function GlitchEffect({ children, isActive = false, className }: GlitchEf
 
   return (
     <div className={cn('relative group', className)}>
-      <div className="glitch-base relative z-10">
-        {children}
-      </div>
+      <div className="glitch-base relative z-10">{children}</div>
 
       <div className="glitch-layer glitch-layer-1 z-20" aria-hidden="true">
         {children}

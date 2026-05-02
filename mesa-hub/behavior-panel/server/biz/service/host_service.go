@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -56,10 +57,10 @@ func NewHostService(
 // CreateHost 校验 → 持久化 HostSpec → 后台异步构建部署
 func (s *HostService) CreateHost(ctx context.Context, req *protocol.CreateHostRequest) (*protocol.HostSpec, error) {
 	if req.Name == "" {
-		return nil, fmt.Errorf("name is required")
+		return nil, errors.New("name is required")
 	}
 	if len(req.Tools) == 0 {
-		return nil, fmt.Errorf("at least one tool is required")
+		return nil, errors.New("at least one tool is required")
 	}
 	if s.specMgr.Get(req.Name) != nil {
 		return nil, fmt.Errorf("host %q already exists", req.Name)
@@ -95,7 +96,7 @@ func (s *HostService) CreateHost(ctx context.Context, req *protocol.CreateHostRe
 
 	s.registry.StoreHostToken(req.Name, hostToken)
 
-	go s.deployHostAsync(spec)
+	go s.deployHostAsync(spec) //nolint:gosec // async deployment OK
 
 	return spec, nil
 }
@@ -108,7 +109,7 @@ func (s *HostService) ListHosts(ctx context.Context) ([]*protocol.HostInfo, erro
 // GetHost 返回单个 Host 信息
 func (s *HostService) GetHost(ctx context.Context, name string) (*protocol.HostInfo, error) {
 	if name == "" {
-		return nil, fmt.Errorf("name is required")
+		return nil, errors.New("name is required")
 	}
 	info := s.specMgr.GetMerged(name, s.registry)
 	if info == nil {
@@ -120,7 +121,7 @@ func (s *HostService) GetHost(ctx context.Context, name string) (*protocol.HostI
 // DeleteHost 销毁 Host：删除 HostSpec + 清理令牌 + 停止容器 + 审计
 func (s *HostService) DeleteHost(ctx context.Context, name string) error {
 	if name == "" {
-		return fmt.Errorf("name is required")
+		return errors.New("name is required")
 	}
 
 	if err := s.runtime.RemoveHost(ctx, name); err != nil {
@@ -129,7 +130,7 @@ func (s *HostService) DeleteHost(ctx context.Context, name string) error {
 			Operator:       "frontend",
 			Action:         "delete_host",
 			TargetNode:     name,
-			PayloadSummary: fmt.Sprintf("container=%s", name),
+			PayloadSummary: "container=" + name,
 			Result:         "failed",
 		})
 		return fmt.Errorf("remove host %q: %w", name, err)
@@ -143,7 +144,7 @@ func (s *HostService) DeleteHost(ctx context.Context, name string) error {
 		Operator:       "frontend",
 		Action:         "delete_host",
 		TargetNode:     name,
-		PayloadSummary: fmt.Sprintf("container=%s", name),
+		PayloadSummary: "container=" + name,
 		Result:         "success",
 	})
 
@@ -154,7 +155,7 @@ func (s *HostService) DeleteHost(ctx context.Context, name string) error {
 // GetBuildLog 返回构建日志内容
 func (s *HostService) GetBuildLog(ctx context.Context, name string) (string, error) {
 	if name == "" {
-		return "", fmt.Errorf("name is required")
+		return "", errors.New("name is required")
 	}
 
 	if s.specMgr.Get(name) == nil {
@@ -162,9 +163,13 @@ func (s *HostService) GetBuildLog(ctx context.Context, name string) (string, err
 	}
 
 	logPath := filepath.Join(s.logDir, name+".log")
-	data, err := os.ReadFile(logPath)
+	// 异步部署期间日志文件可能尚未创建，此时返回空内容而非错误
+	data, err := os.ReadFile(filepath.Clean(logPath))
 	if err != nil {
-		return "", nil
+		if os.IsNotExist(err) {
+			return "", nil
+		}
+		return "", err
 	}
 	return string(data), nil
 }
@@ -172,7 +177,7 @@ func (s *HostService) GetBuildLog(ctx context.Context, name string) (string, err
 // GetRuntimeLog 返回运行时日志
 func (s *HostService) GetRuntimeLog(ctx context.Context, name string) (string, error) {
 	if name == "" {
-		return "", fmt.Errorf("name is required")
+		return "", errors.New("name is required")
 	}
 
 	if s.specMgr.Get(name) == nil {
@@ -200,31 +205,31 @@ func (s *HostService) deployHostAsync(spec *protocol.HostSpec) {
 		s.logger.Warnf("[host] stop old container for %s: %v", spec.Name, err)
 	}
 
-	if err := os.MkdirAll(s.logDir, 0755); err != nil {
+	if err := os.MkdirAll(s.logDir, 0750); err != nil {
 		s.specMgr.UpdateStatus(spec.Name, protocol.HostStatusFailed, fmt.Sprintf("create log dir: %v", err))
 		return
 	}
 	logPath := filepath.Join(s.logDir, spec.Name+".log")
-	logFile, err := os.Create(logPath)
+	logFile, err := os.Create(filepath.Clean(logPath))
 	if err != nil {
 		s.specMgr.UpdateStatus(spec.Name, protocol.HostStatusFailed, fmt.Sprintf("create log file: %v", err))
 		return
 	}
-	defer logFile.Close()
+	defer func() { _ = logFile.Close() }()
 
 	multiWriter := io.MultiWriter(logFile, writerFunc(func(p []byte) (int, error) {
 		s.logger.Infof("[host-deploy] %s", string(p))
 		return len(p), nil
 	}))
 
-	fmt.Fprintf(multiWriter, "[INFO] Host %s: starting deployment, tools=%v\n", spec.Name, spec.Tools)
+	_, _ = fmt.Fprintf(multiWriter, "[INFO] Host %s: starting deployment, tools=%v\n", spec.Name, spec.Tools)
 
 	_, deployErr := BuildAndDeploy(context.Background(), s.runtime, spec, s.cfg)
 
 	if deployErr != nil {
 		errMsg := fmt.Sprintf("deploy failed: %v", deployErr)
 		s.specMgr.UpdateStatus(spec.Name, protocol.HostStatusFailed, errMsg)
-		fmt.Fprintf(multiWriter, "[ERROR] %s\n", errMsg)
+		_, _ = fmt.Fprintf(multiWriter, "[ERROR] %s\n", errMsg)
 
 		s.auditLog.Log(protocol.AuditLogEntry{
 			Operator:       "system",
@@ -236,7 +241,7 @@ func (s *HostService) deployHostAsync(spec *protocol.HostSpec) {
 		return
 	}
 
-	fmt.Fprintf(multiWriter, "[INFO] Host %s: deployment complete, waiting for agent registration\n", spec.Name)
+	_, _ = fmt.Fprintf(multiWriter, "[INFO] Host %s: deployment complete, waiting for agent registration\n", spec.Name)
 
 	s.auditLog.Log(protocol.AuditLogEntry{
 		Operator:       "system",

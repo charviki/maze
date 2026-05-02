@@ -73,7 +73,8 @@ func main() {
 	// AgentService 不注册（保持 HTTP）
 
 	gatewaySrv := &http.Server{
-		Addr:    ":8081",
+		Addr:              ":8081",
+		ReadHeaderTimeout: 10 * time.Second,
 		Handler: gwmux,
 	}
 	go func() {

@@ -57,7 +57,7 @@ func (m *mockReconcilerRuntime) IsHealthy(ctx context.Context, name string) (boo
 	return m.healthy[name], nil
 }
 
-func newTestReconciler(t *testing.T, rt *mockReconcilerRuntime) (*Reconciler, *model.HostSpecManager, *model.NodeRegistry) {
+func newTestReconciler(t *testing.T, rt *mockReconcilerRuntime) (*Reconciler, *model.HostSpecManager) {
 	t.Helper()
 	tmpDir := t.TempDir()
 	specMgr := model.NewHostSpecManager(filepath.Join(tmpDir, "host_specs.json"), logutil.NewNop())
@@ -68,7 +68,7 @@ func newTestReconciler(t *testing.T, rt *mockReconcilerRuntime) (*Reconciler, *m
 	}
 	logDir := filepath.Join(tmpDir, "host_logs")
 	rec := NewReconciler(specMgr, registry, rt, cfg, logutil.NewNop(), logDir)
-	return rec, specMgr, registry
+	return rec, specMgr
 }
 
 // ========== RecoverOnStartup 测试 ==========
@@ -78,7 +78,7 @@ func TestReconciler_RecoverAllHealthy(t *testing.T) {
 	rt.healthy["host-1"] = true
 	rt.healthy["host-2"] = true
 
-	rec, specMgr, _ := newTestReconciler(t, rt)
+	rec, specMgr := newTestReconciler(t, rt)
 	specMgr.Create(&protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusOnline, AuthToken: "t1"})
 	specMgr.Create(&protocol.HostSpec{Name: "host-2", Tools: []string{"go"}, Status: protocol.HostStatusDeploying, AuthToken: "t2"})
 
@@ -94,7 +94,7 @@ func TestReconciler_RecoverMissingRuntime(t *testing.T) {
 	rt := newMockReconcilerRuntime()
 	// host-1 不健康
 
-	rec, specMgr, _ := newTestReconciler(t, rt)
+	rec, specMgr := newTestReconciler(t, rt)
 	specMgr.Create(&protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusOnline, AuthToken: "t1"})
 
 	rec.RecoverOnStartup(context.Background())
@@ -115,7 +115,7 @@ func TestReconciler_RecoverK8sDeploymentExists(t *testing.T) {
 	rt := newMockReconcilerRuntime()
 	rt.healthy["host-1"] = true // K8s Deployment 存在
 
-	rec, specMgr, _ := newTestReconciler(t, rt)
+	rec, specMgr := newTestReconciler(t, rt)
 	specMgr.Create(&protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusOnline, AuthToken: "t1"})
 
 	rec.RecoverOnStartup(context.Background())
@@ -129,7 +129,7 @@ func TestReconciler_RecoverK8sDeploymentExists(t *testing.T) {
 func TestReconciler_RecoverFailedWithRetry(t *testing.T) {
 	rt := newMockReconcilerRuntime()
 
-	rec, specMgr, _ := newTestReconciler(t, rt)
+	rec, specMgr := newTestReconciler(t, rt)
 	specMgr.Create(&protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusFailed, RetryCount: 1, AuthToken: "t1"})
 
 	rec.RecoverOnStartup(context.Background())
@@ -143,7 +143,7 @@ func TestReconciler_RecoverFailedWithRetry(t *testing.T) {
 func TestReconciler_RecoverFailedMaxRetry(t *testing.T) {
 	rt := newMockReconcilerRuntime()
 
-	rec, specMgr, _ := newTestReconciler(t, rt)
+	rec, specMgr := newTestReconciler(t, rt)
 	specMgr.Create(&protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusFailed, RetryCount: 3, AuthToken: "t1"})
 
 	rec.RecoverOnStartup(context.Background())
@@ -160,7 +160,7 @@ func TestReconciler_HealthCheck_DeployingGracePeriod(t *testing.T) {
 	rt := newMockReconcilerRuntime()
 	rt.healthy["host-1"] = false
 
-	rec, specMgr, _ := newTestReconciler(t, rt)
+	rec, specMgr := newTestReconciler(t, rt)
 	// deploying 且 UpdatedAt 在 1 分钟前（保护窗口内）
 	specMgr.Create(&protocol.HostSpec{
 		Name:      "host-1",
@@ -182,7 +182,7 @@ func TestReconciler_HealthCheck_DeployingGracePeriodExpired(t *testing.T) {
 	rt := newMockReconcilerRuntime()
 	rt.healthy["host-1"] = false
 
-	rec, specMgr, _ := newTestReconciler(t, rt)
+	rec, specMgr := newTestReconciler(t, rt)
 	// deploying 且 UpdatedAt 在 6 分钟前（超过保护窗口）
 	specMgr.Create(&protocol.HostSpec{
 		Name:      "host-1",
@@ -204,7 +204,7 @@ func TestReconciler_HealthCheck_CrashRebuild(t *testing.T) {
 	rt := newMockReconcilerRuntime()
 	rt.healthy["host-1"] = false // 容器崩溃
 
-	rec, specMgr, _ := newTestReconciler(t, rt)
+	rec, specMgr := newTestReconciler(t, rt)
 	specMgr.Create(&protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusOnline, AuthToken: "t1"})
 
 	rec.runHealthCheck(context.Background())
@@ -217,7 +217,7 @@ func TestReconciler_HealthCheck_CrashRebuild(t *testing.T) {
 func TestReconciler_HealthCheck_PendingTimeout(t *testing.T) {
 	rt := newMockReconcilerRuntime()
 
-	rec, specMgr, _ := newTestReconciler(t, rt)
+	rec, specMgr := newTestReconciler(t, rt)
 	// 创建一个 6 分钟前创建的 pending Host
 	spec := &protocol.HostSpec{
 		Name:      "host-1",
@@ -241,7 +241,7 @@ func TestReconciler_HealthCheck_PendingTimeout(t *testing.T) {
 func TestReconciler_HealthCheck_PendingNotTimeout(t *testing.T) {
 	rt := newMockReconcilerRuntime()
 
-	rec, specMgr, _ := newTestReconciler(t, rt)
+	rec, specMgr := newTestReconciler(t, rt)
 	spec := &protocol.HostSpec{
 		Name:      "host-1",
 		Tools:     []string{"claude"},
@@ -264,7 +264,7 @@ func TestReconciler_HealthCheck_PendingNotTimeout(t *testing.T) {
 func TestReconciler_HealthCheck_FailedRetry(t *testing.T) {
 	rt := newMockReconcilerRuntime()
 
-	rec, specMgr, _ := newTestReconciler(t, rt)
+	rec, specMgr := newTestReconciler(t, rt)
 	specMgr.Create(&protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusFailed, RetryCount: 0, AuthToken: "t1"})
 
 	rec.runHealthCheck(context.Background())
@@ -278,7 +278,7 @@ func TestReconciler_HealthCheck_DeployFailed(t *testing.T) {
 	rt := newMockReconcilerRuntime()
 	rt.deployErr = errors.New("build error")
 
-	rec, specMgr, _ := newTestReconciler(t, rt)
+	rec, specMgr := newTestReconciler(t, rt)
 	specMgr.Create(&protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusOnline, AuthToken: "t1"})
 	rt.healthy["host-1"] = false
 

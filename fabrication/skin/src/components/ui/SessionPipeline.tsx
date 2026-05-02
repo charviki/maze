@@ -19,7 +19,10 @@ const stepTypeLabel: Record<PipelineStepType, string> = {
 };
 
 // 层级对应的样式
-const phaseStyles: Record<PipelinePhase, { bg: string; border: string; badge: string; label: string }> = {
+const phaseStyles: Record<
+  PipelinePhase,
+  { bg: string; border: string; badge: string; label: string }
+> = {
   system: {
     bg: 'bg-gray-50 dark:bg-gray-900/30',
     border: 'border-gray-200 dark:border-gray-700',
@@ -46,9 +49,9 @@ export function SessionPipeline({ steps, onChange, readOnly = false }: SessionPi
   const [editingValue, setEditingValue] = useState('');
 
   const sorted = [...steps].sort((a, b) => a.order - b.order);
-  const systemSteps = sorted.filter(s => s.phase === 'system');
-  const templateSteps = sorted.filter(s => s.phase === 'template');
-  const userSteps = sorted.filter(s => s.phase === 'user');
+  const systemSteps = sorted.filter((s) => s.phase === 'system');
+  const templateSteps = sorted.filter((s) => s.phase === 'template');
+  const userSteps = sorted.filter((s) => s.phase === 'user');
 
   // 添加用户自定义命令
   const addUserCommand = () => {
@@ -68,7 +71,7 @@ export function SessionPipeline({ steps, onChange, readOnly = false }: SessionPi
 
   // 删除用户步骤
   const removeUserStep = (stepId: string) => {
-    onChange(steps.filter(s => s.id !== stepId));
+    onChange(steps.filter((s) => s.id !== stepId));
   };
 
   // 开始编辑模板步骤
@@ -81,7 +84,7 @@ export function SessionPipeline({ steps, onChange, readOnly = false }: SessionPi
   // 保存编辑
   const saveEdit = () => {
     if (!editingStepId) return;
-    onChange(steps.map(s => s.id === editingStepId ? { ...s, value: editingValue } : s));
+    onChange(steps.map((s) => (s.id === editingStepId ? { ...s, value: editingValue } : s)));
     setEditingStepId(null);
     setEditingValue('');
   };
@@ -115,20 +118,30 @@ export function SessionPipeline({ steps, onChange, readOnly = false }: SessionPi
           </span>
         )}
         {step.type === 'file' && (
-          <span className="font-mono flex-1 min-w-0 whitespace-nowrap">
-            {step.key}
-          </span>
+          <span className="font-mono flex-1 min-w-0 whitespace-nowrap">{step.key}</span>
         )}
         {step.type === 'command' && isEditing ? (
           <div className="flex-1 flex items-center gap-1 min-w-0">
             <Input
               value={editingValue}
-              onChange={e => setEditingValue(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditingStepId(null); }}
+              onChange={(e) => {
+                setEditingValue(e.target.value);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') saveEdit();
+                if (e.key === 'Escape') setEditingStepId(null);
+              }}
               className="h-6 text-xs font-mono min-w-0"
               autoFocus
             />
-            <Button size="sm" variant="ghost" onClick={saveEdit} className="h-6 px-2 text-xs shrink-0">确认</Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={saveEdit}
+              className="h-6 px-2 text-xs shrink-0"
+            >
+              确认
+            </Button>
           </div>
         ) : step.type === 'command' ? (
           <span
@@ -141,16 +154,24 @@ export function SessionPipeline({ steps, onChange, readOnly = false }: SessionPi
         ) : null}
 
         {/* 操作按钮 */}
-        {isSystem && !readOnly && (
-          <Lock className="w-3 h-3 text-gray-400 shrink-0" />
-        )}
+        {isSystem && !readOnly && <Lock className="w-3 h-3 text-gray-400 shrink-0" />}
         {canEdit && step.type === 'command' && !isEditing && (
-          <button onClick={() => startEdit(step)} className="p-0.5 hover:bg-muted rounded shrink-0">
+          <button
+            onClick={() => {
+              startEdit(step);
+            }}
+            className="p-0.5 hover:bg-muted rounded shrink-0"
+          >
             <Edit3 className="w-3 h-3 text-muted-foreground" />
           </button>
         )}
         {step.phase === 'user' && !readOnly && (
-          <button onClick={() => removeUserStep(step.id)} className="p-0.5 hover:bg-red-100 rounded shrink-0">
+          <button
+            onClick={() => {
+              removeUserStep(step.id);
+            }}
+            className="p-0.5 hover:bg-red-100 rounded shrink-0"
+          >
             <Trash2 className="w-3 h-3 text-red-400" />
           </button>
         )}
@@ -165,18 +186,16 @@ export function SessionPipeline({ steps, onChange, readOnly = false }: SessionPi
     return (
       <div className="space-y-1.5">
         <div className="flex items-center gap-2">
-          <span className={`text-[10px] font-semibold uppercase tracking-wider ${style.badge} px-2 py-0.5 rounded`}>
+          <span
+            className={`text-[10px] font-semibold uppercase tracking-wider ${style.badge} px-2 py-0.5 rounded`}
+          >
             {label}
           </span>
-          {phase === 'system' && (
-            <span className="text-[10px] text-muted-foreground">只读</span>
-          )}
+          {phase === 'system' && <span className="text-[10px] text-muted-foreground">只读</span>}
         </div>
         {phaseSteps.map(renderStep)}
         {phaseSteps.length === 0 && (
-          <div className="text-xs text-muted-foreground italic px-3 py-1">
-            暂无{label}
-          </div>
+          <div className="text-xs text-muted-foreground italic px-3 py-1">暂无{label}</div>
         )}
       </div>
     );
@@ -195,13 +214,23 @@ export function SessionPipeline({ steps, onChange, readOnly = false }: SessionPi
           <div className="flex-1">
             <Input
               value={newCommand}
-              onChange={e => setNewCommand(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') addUserCommand(); }}
+              onChange={(e) => {
+                setNewCommand(e.target.value);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') addUserCommand();
+              }}
               placeholder="输入自定义 shell 命令..."
               className="h-8 text-xs font-mono"
             />
           </div>
-          <Button size="sm" variant="outline" onClick={addUserCommand} disabled={!newCommand.trim()} className="h-8">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={addUserCommand}
+            disabled={!newCommand.trim()}
+            className="h-8"
+          >
             <Plus className="w-3.5 h-3.5 mr-1" />
             添加命令
           </Button>

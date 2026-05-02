@@ -8,6 +8,7 @@ import (
 	"github.com/charviki/mesa-hub-behavior-panel/biz/service"
 )
 
+// SessionProxyHandler Session/Template/Config HTTP 代理 handler，转发请求到 Agent
 type SessionProxyHandler struct {
 	registry             *model.NodeRegistry
 	auditLog             *AuditLogger
@@ -19,6 +20,7 @@ type SessionProxyHandler struct {
 	allowPrivateNetworks bool
 }
 
+// NewSessionProxyHandler 创建 SessionProxyHandler 实例
 func NewSessionProxyHandler(registry *model.NodeRegistry, auditLog *AuditLogger, auditSvc *service.AuditService, logger logutil.Logger, authToken string, allowedOrigins []string, allowPrivateNetworks bool) *SessionProxyHandler {
 	return &SessionProxyHandler{
 		registry: registry,

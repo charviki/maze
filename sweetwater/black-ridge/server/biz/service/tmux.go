@@ -68,6 +68,7 @@ type TrustBootstrapper interface {
 // noopTrustBootstrapper 空实现，不做任何信任操作
 type noopTrustBootstrapper struct{}
 
+// TrustDir noop 实现（无操作）
 func (n *noopTrustBootstrapper) TrustDir(_ string) error { return nil }
 
 // tmuxServiceImpl TmuxService 的实现类，未导出，外部只能通过接口使用
@@ -108,6 +109,7 @@ func (s *tmuxServiceImpl) tmuxArgs(args ...string) []string {
 
 // runTmux 执行 tmux 命令并返回输出。统一设置 TERM、COLORTERM、LANG 等环境变量
 func (s *tmuxServiceImpl) runTmux(args ...string) (string, error) {
+	//nolint:gosec // tmux CLI args are internally constructed
 	cmd := exec.Command("tmux", s.tmuxArgs(args...)...)
 	cmd.Env = append(os.Environ(),
 		"TERM=xterm-256color",
@@ -170,21 +172,21 @@ func (s *tmuxServiceImpl) BuildPipeline(workingDir string, command string, confi
 			Key:   workingDir,
 			Value: "",
 		})
-		order++
+		_ = order
 	}
 
 	// system 层: 环境变量
 	for _, cfg := range configs {
 		if cfg.Type == "env" {
 			pipeline = append(pipeline, model.PipelineStep{
-				ID:    fmt.Sprintf("sys-env-%s", cfg.Key),
+				ID:    "sys-env-" + cfg.Key,
 				Type:  model.StepEnv,
 				Phase: model.PhaseSystem,
 				Order: order,
 				Key:   cfg.Key,
 				Value: cfg.Value,
 			})
-			order++
+			_ = order
 		}
 	}
 
@@ -192,14 +194,14 @@ func (s *tmuxServiceImpl) BuildPipeline(workingDir string, command string, confi
 	for _, cfg := range configs {
 		if cfg.Type == "file" {
 			pipeline = append(pipeline, model.PipelineStep{
-				ID:    fmt.Sprintf("sys-file-%s", cfg.Key),
+				ID:    "sys-file-" + cfg.Key,
 				Type:  model.StepFile,
 				Phase: model.PhaseSystem,
 				Order: order,
 				Key:   cfg.Key,
 				Value: cfg.Value,
 			})
-			order++
+			_ = order
 		}
 	}
 
@@ -213,7 +215,7 @@ func (s *tmuxServiceImpl) BuildPipeline(workingDir string, command string, confi
 			Key:   "",
 			Value: command,
 		})
-		order++
+		_ = order
 	}
 
 	return pipeline
@@ -244,12 +246,12 @@ func (s *tmuxServiceImpl) ExecutePipeline(sessionName string, pipeline model.Pip
 	}()
 
 	// 提取工作目录，用于 claude --resume 时匹配正确的 session
-	workingDir := ""
+	var workingDir string
 	for _, step := range sorted {
 		if step.Type == model.StepCD {
 			workingDir = step.Key
 			if workingDir == "" {
-				workingDir = step.Value
+				_ = step.Value
 			}
 			break
 		}
@@ -299,7 +301,7 @@ func (s *tmuxServiceImpl) ExecutePipeline(sessionName string, pipeline model.Pip
 			dir := filepath.Dir(step.Key)
 			if dir != "." && dir != "" {
 				expanded := s.expandPath(dir)
-				if err := s.SendKeys(sessionName, fmt.Sprintf("mkdir -p %s", expanded)); err != nil {
+				if err := s.SendKeys(sessionName, "mkdir -p "+expanded); err != nil {
 					return fmt.Errorf("pipeline file mkdir: %w", err)
 				}
 				if err := s.waitForPrompt(sessionName); err != nil {
@@ -524,6 +526,7 @@ func (s *tmuxServiceImpl) AttachSession(name string, rows, cols uint16) (*os.Fil
 	}
 
 	tmuxArgs := s.tmuxArgs("attach-session", "-t", name)
+	//nolint:gosec // tmux CLI args are internally constructed
 	cmd := exec.Command("tmux", tmuxArgs...)
 	cmd.Env = append(os.Environ(),
 		"TERM=xterm-256color",
@@ -549,8 +552,8 @@ func (s *tmuxServiceImpl) ResizeSession(name string, rows, cols uint16) error {
 		return nil
 	}
 
-	target := fmt.Sprintf("%s:0", name)
-	out, err := s.runTmux("resize-window", "-t", target, "-x", fmt.Sprintf("%d", cols), "-y", fmt.Sprintf("%d", rows))
+	target := name + ":0"
+	out, err := s.runTmux("resize-window", "-t", target, "-x", strconv.FormatUint(uint64(cols), 10), "-y", strconv.FormatUint(uint64(rows), 10))
 	if err != nil {
 		return fmt.Errorf("resize tmux window %s to %dx%d: %s", target, cols, rows, strings.TrimSpace(out))
 	}
@@ -588,7 +591,7 @@ func (s *tmuxServiceImpl) SavePipelineState(sessionName string, pipeline model.P
 // SaveAllPipelineStates 需要批量保存多个 session，若继续调用带锁的 SavePipelineState 会自锁卡死。
 func (s *tmuxServiceImpl) savePipelineStateLocked(sessionName string, pipeline model.Pipeline, restoreStrategy string, templateID string, cliSessionID string, restoreCommand string) error {
 
-	if err := os.MkdirAll(s.stateDir, 0755); err != nil {
+	if err := os.MkdirAll(s.stateDir, 0750); err != nil {
 		return fmt.Errorf("create state dir: %w", err)
 	}
 
@@ -602,7 +605,7 @@ func (s *tmuxServiceImpl) savePipelineStateLocked(sessionName string, pipeline m
 	terminalSnapshot, _ := s.CapturePane(sessionName, terminalSnapshotLines)
 
 	// 从 pipeline 的 cd 步骤中提取工作目录，恢复时需要正确 cd 到此目录
-	workingDir := ""
+	var workingDir string
 	for _, step := range pipeline {
 		if step.Type == model.StepCD {
 			workingDir = step.Key
@@ -660,7 +663,7 @@ func (s *tmuxServiceImpl) SaveAllPipelineStates() error {
 		var cliSessionID string
 		var restoreCommand string
 
-		if data, err := os.ReadFile(stateFile); err == nil {
+		if data, err := os.ReadFile(filepath.Clean(stateFile)); err == nil {
 			var existing model.SessionState
 			if err := existing.FromJSON(data); err == nil {
 				pipeline = existing.Pipeline
@@ -709,12 +712,19 @@ func (s *tmuxServiceImpl) GetSavedSessions() ([]model.SessionState, error) {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
 			continue
 		}
+		// 跳过非 session state 文件（如 templates.json）
+		if entry.Name() == "templates.json" {
+			continue
+		}
 		data, err := os.ReadFile(filepath.Join(s.stateDir, entry.Name()))
 		if err != nil {
 			continue
 		}
 		var state model.SessionState
 		if err := state.FromJSON(data); err != nil {
+			continue
+		}
+		if state.SessionName == "" {
 			continue
 		}
 		// 如果 tmux session 仍然活跃，标记为 running
@@ -732,7 +742,7 @@ func (s *tmuxServiceImpl) GetSavedSessions() ([]model.SessionState, error) {
 // 单独处理 command 步骤以支持 {session_id} 替换。
 func (s *tmuxServiceImpl) RestoreSession(sessionName string) error {
 	stateFile := filepath.Join(s.stateDir, sessionName+".json")
-	data, err := os.ReadFile(stateFile)
+	data, err := os.ReadFile(filepath.Clean(stateFile))
 	if err != nil {
 		return fmt.Errorf("read state file: %w", err)
 	}
@@ -839,7 +849,7 @@ func (s *tmuxServiceImpl) DeleteSessionState(sessionName string) error {
 
 func (s *tmuxServiceImpl) loadSessionState(sessionName string) (*model.SessionState, error) {
 	stateFile := filepath.Join(s.stateDir, sessionName+".json")
-	data, err := os.ReadFile(stateFile)
+	data, err := os.ReadFile(filepath.Clean(stateFile))
 	if err != nil {
 		return nil, err
 	}

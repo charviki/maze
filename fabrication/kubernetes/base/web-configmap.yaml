@@ -56,5 +56,5 @@ data:
         }
     }
   # 环境变量默认值
-  MANAGER_UPSTREAM: "agent-manager.maze-prod.svc.cluster.local:8080"
-  WS_TIMEOUT: "3600s"
+  MANAGER_UPSTREAM: 'agent-manager.maze-prod.svc.cluster.local:8080'
+  WS_TIMEOUT: '3600s'

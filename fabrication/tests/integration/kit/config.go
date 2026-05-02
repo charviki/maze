@@ -8,6 +8,7 @@ import (
 	client "github.com/charviki/maze-cradle/api/gen/http"
 )
 
+// TestConfig 集成测试运行参数，从环境变量加载。
 type TestConfig struct {
 	ManagerURL          string
 	Env                 string
@@ -17,6 +18,7 @@ type TestConfig struct {
 	AgentStorageBackend string
 }
 
+// LoadTestConfig 从环境变量加载集成测试配置。
 func LoadTestConfig() *TestConfig {
 	cfg := &TestConfig{
 		ManagerURL:          getEnv("MAZE_TEST_MANAGER_URL", "http://localhost:9091"),
