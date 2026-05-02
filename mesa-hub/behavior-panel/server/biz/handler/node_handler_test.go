@@ -12,6 +12,7 @@ import (
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/maze-cradle/protocol"
 	"github.com/charviki/mesa-hub-behavior-panel/biz/model"
+	"github.com/charviki/mesa-hub-behavior-panel/biz/service"
 )
 
 // newTestNodeHandler 创建一个使用临时目录的 NodeHandler，测试结束后自动清理
@@ -21,7 +22,8 @@ func newTestNodeHandler(t *testing.T) *NodeHandler {
 		filepath.Join(t.TempDir(), "nodes.json"),
 		logutil.NewNop(),
 	)
-	return NewNodeHandler(registry, "", logutil.NewNop())
+	nodeSvc := service.NewNodeService(registry, logutil.NewNop())
+	return NewNodeHandler(nodeSvc, registry, "", logutil.NewNop())
 }
 
 // newTestNodeHandlerWithNodes 创建一个预注册了指定节点的 NodeHandler
@@ -34,7 +36,8 @@ func newTestNodeHandlerWithNodes(t *testing.T, nodes map[string]string) *NodeHan
 	for name, addr := range nodes {
 		registry.Register(protocol.RegisterRequest{Name: name, Address: addr})
 	}
-	return NewNodeHandler(registry, "", logutil.NewNop())
+	nodeSvc := service.NewNodeService(registry, logutil.NewNop())
+	return NewNodeHandler(nodeSvc, registry, "", logutil.NewNop())
 }
 
 // newPostContext 创建一个携带 JSON body 的 POST 请求上下文

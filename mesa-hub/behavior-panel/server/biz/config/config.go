@@ -53,9 +53,9 @@ type KubernetesConfig struct {
 
 // 工作区配置
 type WorkspaceConfig struct {
-	// BaseDir 宿主机上的持久化根目录（用于 docker -v 挂载路径）
+	// BaseDir Manager 元数据根目录（host_specs.json/nodes.json/audit.log/host_logs）
 	BaseDir string `yaml:"base_dir"`
-	// MountDir Manager 容器内的挂载路径（用于 os.MkdirAll / os.RemoveAll）
+	// MountDir Manager 容器内对应的元数据挂载路径（用于文件操作）
 	MountDir string `yaml:"mount_dir"`
 }
 
@@ -69,6 +69,8 @@ type DockerConfig struct {
 	BuildContextDir string `yaml:"build_context_dir"`
 	// AgentBaseImage Agent 基础镜像名（含 agent 二进制和 entrypoint）
 	AgentBaseImage string `yaml:"agent_base_image"`
+	// AgentDataDir Docker 模式下 Agent 宿主机根目录；每个 Host 使用其下的 agents/<name> 子目录。
+	AgentDataDir string `yaml:"agent_data_dir"`
 	// ManagerAddr Manager 在容器网络中的地址（Agent 通过此地址注册心跳）
 	ManagerAddr string `yaml:"manager_addr"`
 }
@@ -147,6 +149,9 @@ func applyEnvOverrides(cfg *Config) {
 	if v := os.Getenv("AGENT_MANAGER_DOCKER_AGENT_BASE_IMAGE"); v != "" {
 		cfg.Docker.AgentBaseImage = v
 	}
+	if v := os.Getenv("AGENT_MANAGER_DOCKER_AGENT_DATA_DIR"); v != "" {
+		cfg.Docker.AgentDataDir = v
+	}
 	if v := os.Getenv("AGENT_MANAGER_DOCKER_MANAGER_ADDR"); v != "" {
 		cfg.Docker.ManagerAddr = v
 	}
@@ -204,7 +209,7 @@ func validate(cfg *Config) error {
 		if err != nil {
 			home = defaultBaseDir
 		}
-		cfg.Workspace.BaseDir = filepath.Join(home, ".maze", "docker", "agents")
+		cfg.Workspace.BaseDir = filepath.Join(home, ".maze", "docker")
 	}
 	// 展开 ~/ 路径前缀，Docker volume 挂载要求绝对路径
 	if strings.HasPrefix(cfg.Workspace.BaseDir, "~/") {
@@ -218,6 +223,16 @@ func validate(cfg *Config) error {
 	}
 	if cfg.Docker.SocketPath == "" {
 		cfg.Docker.SocketPath = "/var/run/docker.sock"
+	}
+	if cfg.Docker.AgentDataDir == "" {
+		// Docker 默认沿用统一目录模型：workspace.base_dir 负责 Manager 元数据，agents/ 子目录负责 Agent 工作目录。
+		cfg.Docker.AgentDataDir = filepath.Join(cfg.Workspace.BaseDir, "agents")
+	}
+	if strings.HasPrefix(cfg.Docker.AgentDataDir, "~/") {
+		home, err := os.UserHomeDir()
+		if err == nil {
+			cfg.Docker.AgentDataDir = filepath.Join(home, cfg.Docker.AgentDataDir[2:])
+		}
 	}
 	if cfg.Docker.ManagerAddr == "" {
 		cfg.Docker.ManagerAddr = "http://agent-manager:8080"

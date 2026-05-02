@@ -215,35 +215,30 @@ func (h *SessionProxyHandler) proxyToAgent(c *app.RequestContext, action, method
 	_, _ = c.Write(respBody)
 }
 
-// GetAuditLogs 返回审计日志列表。
-// 无分页参数时返回全部日志（向后兼容）；
-// 传 page/page_size 参数时返回分页结果。
+// GetAuditLogs 返回审计日志列表（委托 AuditService）。
 func (h *SessionProxyHandler) GetAuditLogs(ctx context.Context, c *app.RequestContext) {
 	pageStr := c.Query("page")
 	pageSizeStr := c.Query("page_size")
 
-	if pageStr == "" && pageSizeStr == "" {
-		// 无分页参数，返回所有日志保持向后兼容
-		logs := h.auditLog.List()
-		httputil.Success(c, logs)
+	page := parsePageParam(pageStr, pageSizeStr)
+	pageSize := parsePageSizeParam(pageStr, pageSizeStr)
+
+	result, err := h.auditSvc.GetAuditLogs(ctx, page, pageSize)
+	if err != nil {
+		httputil.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	page := defaultAuditPage
-	pageSize := defaultAuditPageSize
-	if n, err := strconv.Atoi(pageStr); err == nil && n > 0 {
-		page = n
-	}
-	if n, err := strconv.Atoi(pageSizeStr); err == nil && n > 0 {
-		pageSize = n
+	if page <= 0 {
+		httputil.Success(c, result.Logs)
+		return
 	}
 
-	logs, total := h.auditLog.ListPage(page, pageSize)
 	httputil.Success(c, map[string]interface{}{
-		"logs":      logs,
-		"total":     total,
-		"page":      page,
-		"page_size": pageSize,
+		"logs":      result.Logs,
+		"total":     result.Total,
+		"page":      result.Page,
+		"page_size": result.PageSize,
 	})
 }
 
@@ -304,4 +299,29 @@ func mustParseCIDR(s string) *net.IPNet {
 		panic(err)
 	}
 	return network
+}
+
+// parsePageParam 解析 page 参数，页号从 1 开始。
+// 无分页参数时返回 0，表示获取全部日志。
+func parsePageParam(pageStr, pageSizeStr string) int {
+	if pageStr == "" && pageSizeStr == "" {
+		return 0
+	}
+	page := defaultAuditPage
+	if n, err := strconv.Atoi(pageStr); err == nil && n > 0 {
+		page = n
+	}
+	return page
+}
+
+// parsePageSizeParam 解析 page_size 参数。
+func parsePageSizeParam(pageStr, pageSizeStr string) int {
+	if pageStr == "" && pageSizeStr == "" {
+		return 0
+	}
+	pageSize := defaultAuditPageSize
+	if n, err := strconv.Atoi(pageSizeStr); err == nil && n > 0 {
+		pageSize = n
+	}
+	return pageSize
 }

@@ -130,15 +130,17 @@ func (d *DockerRuntime) DeployHost(ctx context.Context, spec *protocol.HostDeplo
 		tagCmd.Run()
 	}
 
-	// 创建持久化目录（容器内挂载路径）
-	hostMountDir := filepath.Join(d.workspace.MountDir, spec.Name)
+	// 统一目录模型下，workspace 只存放 Manager 元数据；Agent 数据始终位于 agents/<host>。
+	// Manager 容器通过 MountDir 访问宿主机 bind mount，因此本地目录操作要走容器内可见路径。
+	hostMountDir := filepath.Join(d.workspace.MountDir, "agents", spec.Name)
 	if err := os.MkdirAll(hostMountDir, 0755); err != nil {
 		return nil, fmt.Errorf("create host dir: %w", err)
 	}
 
 	runStart := time.Now()
 	// 构造容器启动参数
-	runArgs := []string{"run", "-d", "--name", spec.Name}
+	runArgs := []string{"run", "-d", "--name", spec.Name,
+		"--label", "maze-host=true"}
 	if d.docker.Network != "" {
 		runArgs = append(runArgs, "--network", d.docker.Network)
 	}
@@ -150,13 +152,14 @@ func (d *DockerRuntime) DeployHost(ctx context.Context, spec *protocol.HostDeplo
 		"-e", fmt.Sprintf("AGENT_NAME=%s", spec.Name),
 		"-e", fmt.Sprintf("AGENT_EXTERNAL_ADDR=http://%s:8080", spec.Name),
 		"-e", fmt.Sprintf("AGENT_ADVERTISED_ADDR=http://%s:8080", spec.Name),
+		"-e", fmt.Sprintf("AGENT_GRPC_ADDR=%s:9090", spec.Name),
 		"-e", fmt.Sprintf("AGENT_CONTROLLER_ADDR=%s", d.docker.ManagerAddr),
 		"-e", fmt.Sprintf("AGENT_SERVER_AUTH_TOKEN=%s", spec.ServerAuthToken),
 		"-e", fmt.Sprintf("AGENT_CONTROLLER_AUTH_TOKEN=%s", spec.AuthToken),
 	)
 
-	// 卷挂载（宿主机路径）
-	hostBaseDir := filepath.Join(d.workspace.BaseDir, spec.Name)
+	// 卷挂载使用 Docker daemon 可见的宿主机路径；这与 Manager 自己的元数据目录是两个层级。
+	hostBaseDir := filepath.Join(d.docker.AgentDataDir, spec.Name)
 	runArgs = append(runArgs, "-v", fmt.Sprintf("%s:/home/agent", hostBaseDir))
 
 	// 资源限制
@@ -211,8 +214,11 @@ func (d *DockerRuntime) RemoveHost(ctx context.Context, name string) error {
 	rmiCmd := d.dockerCmd("rmi", "-f", imageTag)
 	_ = rmiCmd.Run()
 
-	hostMountDir := filepath.Join(d.workspace.MountDir, name)
-	os.RemoveAll(hostMountDir)
+	// bind mount 的宿主机目录不会随着容器删除自动回收；Manager 必须显式删除 agents/<host>。
+	hostMountDir := filepath.Join(d.workspace.MountDir, "agents", name)
+	if err := os.RemoveAll(hostMountDir); err != nil {
+		return fmt.Errorf("remove host dir %s: %w", hostMountDir, err)
+	}
 
 	return nil
 }

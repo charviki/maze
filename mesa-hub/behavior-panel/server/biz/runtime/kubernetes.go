@@ -262,6 +262,7 @@ func (k *KubernetesRuntime) createDeployment(ctx context.Context, ns, appName st
 		{Name: "AGENT_NAME", Value: spec.Name},
 		{Name: "AGENT_EXTERNAL_ADDR", Value: externalAddr},
 		{Name: "AGENT_ADVERTISED_ADDR", Value: externalAddr},
+		{Name: "AGENT_GRPC_ADDR", Value: fmt.Sprintf("%s.%s.svc.cluster.local:9090", appName, ns)},
 		{Name: "AGENT_CONTROLLER_ADDR", Value: managerAddr},
 		// Agent 自身 API 鉴权使用全局 auth token
 		{Name: "AGENT_SERVER_AUTH_TOKEN", Value: spec.ServerAuthToken},
@@ -275,6 +276,7 @@ func (k *KubernetesRuntime) createDeployment(ctx context.Context, ns, appName st
 		ImagePullPolicy: corev1.PullPolicy(k.kube.ImagePullPolicy),
 		Ports: []corev1.ContainerPort{
 			{ContainerPort: 8080, Protocol: corev1.ProtocolTCP},
+			{ContainerPort: 9090, Protocol: corev1.ProtocolTCP},
 		},
 		Env: envs,
 		VolumeMounts: []corev1.VolumeMount{
@@ -375,8 +377,15 @@ func (k *KubernetesRuntime) createService(ctx context.Context, ns, appName, host
 			},
 			Ports: []corev1.ServicePort{
 				{
+					Name:       "http",
 					Port:       8080,
 					TargetPort: intstr.FromInt(8080),
+					Protocol:   corev1.ProtocolTCP,
+				},
+				{
+					Name:       "grpc",
+					Port:       9090,
+					TargetPort: intstr.FromInt(9090),
 					Protocol:   corev1.ProtocolTCP,
 				},
 			},
@@ -439,12 +448,12 @@ func (k *KubernetesRuntime) RemoveHost(ctx context.Context, name string) error {
 	}
 
 	if k.kube.VolumeType == "hostpath" && k.workspace.MountDir != "" {
+		// hostPath 模式下 Manager 容器能直接看到宿主机目录；只有显式删除这里的目录，测试和下轮部署才不会吃到旧数据。
 		agentDir := filepath.Join(k.workspace.MountDir, "agents", name)
 		if err := os.RemoveAll(agentDir); err != nil {
-			k.logger.Warnf("failed to remove agent dir %s: %v", agentDir, err)
-		} else {
-			k.logger.Infof("removed agent dir %s", agentDir)
+			return fmt.Errorf("remove agent dir %s: %w", agentDir, err)
 		}
+		k.logger.Infof("removed agent dir %s", agentDir)
 	}
 
 	k.removeDockerImage(name)

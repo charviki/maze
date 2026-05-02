@@ -17,16 +17,19 @@ import (
 	"github.com/charviki/maze-cradle/protocol"
 
 	"github.com/charviki/mesa-hub-behavior-panel/biz/model"
+	"github.com/charviki/mesa-hub-behavior-panel/biz/service"
 )
 
 type NodeHandler struct {
+	svc             *service.NodeService
 	registry        *model.NodeRegistry
 	globalAuthToken string
 	logger          logutil.Logger
 }
 
-func NewNodeHandler(registry *model.NodeRegistry, globalAuthToken string, logger logutil.Logger) *NodeHandler {
+func NewNodeHandler(svc *service.NodeService, registry *model.NodeRegistry, globalAuthToken string, logger logutil.Logger) *NodeHandler {
 	return &NodeHandler{
+		svc:             svc,
 		registry:        registry,
 		globalAuthToken: globalAuthToken,
 		logger:          logger,
@@ -106,7 +109,11 @@ func (h *NodeHandler) Heartbeat(ctx context.Context, c *app.RequestContext) {
 }
 
 func (h *NodeHandler) ListNodes(ctx context.Context, c *app.RequestContext) {
-	nodes := h.registry.List()
+	nodes, err := h.svc.ListNodes(ctx)
+	if err != nil {
+		httputil.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
 	httputil.Success(c, nodes)
 }
 
@@ -117,9 +124,9 @@ func (h *NodeHandler) GetNode(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	node := h.registry.Get(name)
-	if node == nil {
-		httputil.Error(c, http.StatusNotFound, "node not found")
+	node, err := h.svc.GetNode(ctx, name)
+	if err != nil {
+		httputil.Error(c, http.StatusNotFound, err.Error())
 		return
 	}
 	httputil.Success(c, node)
@@ -132,8 +139,8 @@ func (h *NodeHandler) DeleteNode(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	if !h.registry.Delete(name) {
-		httputil.Error(c, http.StatusNotFound, "node not found")
+	if err := h.svc.DeleteNode(ctx, name); err != nil {
+		httputil.Error(c, http.StatusNotFound, err.Error())
 		return
 	}
 	httputil.Success(c, nil)

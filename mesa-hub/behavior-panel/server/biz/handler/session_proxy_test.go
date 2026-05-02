@@ -15,6 +15,7 @@ import (
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/maze-cradle/protocol"
 	"github.com/charviki/mesa-hub-behavior-panel/biz/model"
+	"github.com/charviki/mesa-hub-behavior-panel/biz/service"
 )
 
 func newTestRegistryWithNodes(t *testing.T, nodes map[string]string) *model.NodeRegistry {
@@ -146,7 +147,7 @@ func setupProxyHandler(t *testing.T, agentHandler http.HandlerFunc) *SessionProx
 	})
 
 	auditLog := NewAuditLogger("", logutil.NewNop())
-	return NewSessionProxyHandler(registry, auditLog, logutil.NewNop(), "", nil, true)
+	return NewSessionProxyHandler(registry, auditLog, service.NewAuditService(auditLog), logutil.NewNop(), "", nil, true)
 }
 
 func TestSessionProxyHandler_ProxySuccess(t *testing.T) {
@@ -214,7 +215,7 @@ func TestSessionProxyHandler_ProxyAgentUnreachable(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	auditLog := NewAuditLogger("", logutil.NewNop())
-	handler := NewSessionProxyHandler(registry, auditLog, logutil.NewNop(), "", nil, true)
+	handler := NewSessionProxyHandler(registry, auditLog, service.NewAuditService(auditLog), logutil.NewNop(), "", nil, true)
 
 	c := newRequestContextWithParams(param.Param{Key: "name", Value: "agent-dead"})
 	handler.ListSessions(nil, c)

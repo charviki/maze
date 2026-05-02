@@ -15,7 +15,7 @@ func TestLoad_ValidConfig(t *testing.T) {
   listen_addr: ":9090"
   auth_token: "my-secret-token"
 workspace:
-  base_dir: "/data/agents"
+  base_dir: "/data"
 `
 	if err := os.WriteFile(cfgPath, []byte(content), 0644); err != nil {
 		t.Fatalf("写入配置文件失败: %v", err)
@@ -32,8 +32,8 @@ workspace:
 	if cfg.Server.AuthToken != "my-secret-token" {
 		t.Errorf("期望 AuthToken=my-secret-token, 实际=%s", cfg.Server.AuthToken)
 	}
-	if cfg.Workspace.BaseDir != "/data/agents" {
-		t.Errorf("期望 BaseDir=/data/agents, 实际=%s", cfg.Workspace.BaseDir)
+	if cfg.Workspace.BaseDir != "/data" {
+		t.Errorf("期望 BaseDir=/data, 实际=%s", cfg.Workspace.BaseDir)
 	}
 }
 
@@ -57,11 +57,14 @@ func TestValidate_Defaults(t *testing.T) {
 		t.Errorf("期望默认 ListenAddr=:8080, 实际=%s", cfg.Server.ListenAddr)
 	}
 
-	// 未配置 base_dir 时默认为 ~/.maze/docker/agents
+	// 未配置 base_dir 时默认为 ~/.maze/docker，agents/ 子目录留给 Docker Agent 工作目录。
 	home, _ := os.UserHomeDir()
-	expected := filepath.Join(home, ".maze", "docker", "agents")
+	expected := filepath.Join(home, ".maze", "docker")
 	if cfg.Workspace.BaseDir != expected {
 		t.Errorf("期望默认 BaseDir=%s, 实际=%s", expected, cfg.Workspace.BaseDir)
+	}
+	if cfg.Docker.AgentDataDir != filepath.Join(expected, "agents") {
+		t.Errorf("期望默认 AgentDataDir=%s, 实际=%s", filepath.Join(expected, "agents"), cfg.Docker.AgentDataDir)
 	}
 }
 
@@ -137,6 +140,7 @@ func TestDockerConfig_EnvOverrides(t *testing.T) {
 	t.Setenv("AGENT_MANAGER_DOCKER_NETWORK", "my-network")
 	t.Setenv("AGENT_MANAGER_DOCKER_MANAGER_ADDR", "http://my-manager:9090")
 	t.Setenv("AGENT_MANAGER_DOCKER_AGENT_BASE_IMAGE", "custom-agent:latest")
+	t.Setenv("AGENT_MANAGER_DOCKER_AGENT_DATA_DIR", "/custom/agents")
 
 	cfg, err := Load(cfgPath)
 	if err != nil {
@@ -154,5 +158,8 @@ func TestDockerConfig_EnvOverrides(t *testing.T) {
 	}
 	if cfg.Docker.AgentBaseImage != "custom-agent:latest" {
 		t.Errorf("期望 AgentBaseImage=custom-agent:latest, 实际=%s", cfg.Docker.AgentBaseImage)
+	}
+	if cfg.Docker.AgentDataDir != "/custom/agents" {
+		t.Errorf("期望 AgentDataDir=/custom/agents, 实际=%s", cfg.Docker.AgentDataDir)
 	}
 }

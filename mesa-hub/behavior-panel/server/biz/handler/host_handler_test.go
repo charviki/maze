@@ -16,6 +16,7 @@ import (
 	"github.com/charviki/mesa-hub-behavior-panel/biz/config"
 	"github.com/charviki/mesa-hub-behavior-panel/biz/model"
 	"github.com/charviki/mesa-hub-behavior-panel/biz/runtime"
+	"github.com/charviki/mesa-hub-behavior-panel/biz/service"
 )
 
 type mockHostRuntime struct {
@@ -43,13 +44,8 @@ func (m *mockHostRuntime) DeployHost(ctx context.Context, spec *protocol.HostDep
 	}, nil
 }
 
-func (m *mockHostRuntime) StopHost(ctx context.Context, name string) error {
-	return m.removeErr
-}
-
-func (m *mockHostRuntime) RemoveHost(ctx context.Context, name string) error {
-	return m.removeErr
-}
+func (m *mockHostRuntime) StopHost(ctx context.Context, name string) error   { return m.removeErr }
+func (m *mockHostRuntime) RemoveHost(ctx context.Context, name string) error { return m.removeErr }
 
 func (m *mockHostRuntime) InspectHost(ctx context.Context, name string) (*protocol.ContainerInfo, error) {
 	if m.inspectFn != nil {
@@ -72,29 +68,42 @@ func (m *mockHostRuntime) IsHealthy(ctx context.Context, name string) (bool, err
 	return true, nil
 }
 
-func newTestHostHandler(t *testing.T, rt runtime.HostRuntime) *HostHandler {
+type testHostHelper struct {
+	svc      *service.HostService
+	handler  *HostHandler
+	registry *model.NodeRegistry
+	specMgr  *model.HostSpecManager
+	auditLog *AuditLogger
+	logDir   string
+	rt       runtime.HostRuntime
+}
+
+func newTestHostHelper(t *testing.T, rt runtime.HostRuntime) *testHostHelper {
 	t.Helper()
 	tmpDir := t.TempDir()
-	registry := model.NewNodeRegistry(
-		filepath.Join(tmpDir, "nodes.json"),
-		logutil.NewNop(),
-	)
-	specMgr := model.NewHostSpecManager(
-		filepath.Join(tmpDir, "host_specs.json"),
-		logutil.NewNop(),
-	)
+	registry := model.NewNodeRegistry(filepath.Join(tmpDir, "nodes.json"), logutil.NewNop())
+	specMgr := model.NewHostSpecManager(filepath.Join(tmpDir, "host_specs.json"), logutil.NewNop())
 	cfg := &config.Config{
 		Server: config.ServerConfig{AuthToken: "test-token"},
 		Docker: config.DockerConfig{AgentBaseImage: "test-base:latest"},
 	}
 	auditLog := NewAuditLogger("", logutil.NewNop())
 	logDir := filepath.Join(tmpDir, "host_logs")
-	return NewHostHandler(registry, specMgr, rt, auditLog, cfg, logutil.NewNop(), logDir)
+	svc := service.NewHostService(registry, specMgr, rt, auditLog, cfg, logutil.NewNop(), logDir)
+	return &testHostHelper{
+		svc:      svc,
+		handler:  NewHostHandler(svc),
+		registry: registry,
+		specMgr:  specMgr,
+		auditLog: auditLog,
+		logDir:   logDir,
+		rt:       rt,
+	}
 }
 
-func newTestHostHandlerWithNode(t *testing.T, rt runtime.HostRuntime, name, addr string) *HostHandler {
+func newTestHostHelperWithNode(t *testing.T, rt runtime.HostRuntime, name, addr string) *testHostHelper {
 	t.Helper()
-	h := newTestHostHandler(t, rt)
+	h := newTestHostHelper(t, rt)
 	h.registry.Register(protocol.RegisterRequest{Name: name, Address: addr})
 	return h
 }
@@ -102,10 +111,10 @@ func newTestHostHandlerWithNode(t *testing.T, rt runtime.HostRuntime, name, addr
 // ========== CreateHost 测试 ==========
 
 func TestHostHandler_CreateHost_Async202(t *testing.T) {
-	h := newTestHostHandler(t, &mockHostRuntime{})
+	th := newTestHostHelper(t, &mockHostRuntime{})
 
 	c := newPostContext(`{"name":"test-host","tools":["claude","go"],"resources":{"cpu_limit":"2","memory_limit":"4g"}}`)
-	h.CreateHost(nil, c)
+	th.handler.CreateHost(nil, c)
 
 	if c.Response.StatusCode() != http.StatusAccepted {
 		t.Fatalf("期望 202, 实际=%d, body=%s", c.Response.StatusCode(), string(c.Response.Body()))
@@ -116,27 +125,24 @@ func TestHostHandler_CreateHost_Async202(t *testing.T) {
 		t.Errorf("期望 status=ok, 实际=%v", resp["status"])
 	}
 
-	// 验证 HostSpec 被持久化
-	spec := h.specMgr.Get("test-host")
+	spec := th.specMgr.Get("test-host")
 	if spec == nil {
 		t.Fatal("期望 HostSpec 已创建")
 	}
 
-	// 等待后台 goroutine 完成
 	time.Sleep(200 * time.Millisecond)
 
-	// 验证状态已从 pending 变为 deploying
-	spec = h.specMgr.Get("test-host")
+	spec = th.specMgr.Get("test-host")
 	if spec.Status != protocol.HostStatusDeploying {
 		t.Errorf("期望 Status=deploying, 实际=%s", spec.Status)
 	}
 }
 
 func TestHostHandler_CreateHost_MissingName(t *testing.T) {
-	h := newTestHostHandler(t, &mockHostRuntime{})
+	th := newTestHostHelper(t, &mockHostRuntime{})
 
 	c := newPostContext(`{"tools":["claude"]}`)
-	h.CreateHost(nil, c)
+	th.handler.CreateHost(nil, c)
 
 	if c.Response.StatusCode() != http.StatusBadRequest {
 		t.Fatalf("期望 400, 实际=%d", c.Response.StatusCode())
@@ -144,10 +150,10 @@ func TestHostHandler_CreateHost_MissingName(t *testing.T) {
 }
 
 func TestHostHandler_CreateHost_NoTools(t *testing.T) {
-	h := newTestHostHandler(t, &mockHostRuntime{})
+	th := newTestHostHelper(t, &mockHostRuntime{})
 
 	c := newPostContext(`{"name":"test-host","tools":[]}`)
-	h.CreateHost(nil, c)
+	th.handler.CreateHost(nil, c)
 
 	if c.Response.StatusCode() != http.StatusBadRequest {
 		t.Fatalf("期望 400, 实际=%d", c.Response.StatusCode())
@@ -155,12 +161,11 @@ func TestHostHandler_CreateHost_NoTools(t *testing.T) {
 }
 
 func TestHostHandler_CreateHost_ConflictInSpecMgr(t *testing.T) {
-	h := newTestHostHandler(t, &mockHostRuntime{})
-	// 预先创建同名 HostSpec
-	h.specMgr.Create(&protocol.HostSpec{Name: "existing-host", Tools: []string{"claude"}, Status: protocol.HostStatusPending})
+	th := newTestHostHelper(t, &mockHostRuntime{})
+	th.specMgr.Create(&protocol.HostSpec{Name: "existing-host", Tools: []string{"claude"}, Status: protocol.HostStatusPending})
 
 	c := newPostContext(`{"name":"existing-host","tools":["claude"]}`)
-	h.CreateHost(nil, c)
+	th.handler.CreateHost(nil, c)
 
 	if c.Response.StatusCode() != http.StatusConflict {
 		t.Fatalf("期望 409, 实际=%d", c.Response.StatusCode())
@@ -168,10 +173,10 @@ func TestHostHandler_CreateHost_ConflictInSpecMgr(t *testing.T) {
 }
 
 func TestHostHandler_CreateHost_UnknownTools(t *testing.T) {
-	h := newTestHostHandler(t, &mockHostRuntime{})
+	th := newTestHostHelper(t, &mockHostRuntime{})
 
 	c := newPostContext(`{"name":"test-host","tools":["claude","nonexistent"]}`)
-	h.CreateHost(nil, c)
+	th.handler.CreateHost(nil, c)
 
 	if c.Response.StatusCode() != http.StatusBadRequest {
 		t.Fatalf("期望 400, 实际=%d", c.Response.StatusCode())
@@ -185,23 +190,20 @@ func TestHostHandler_CreateHost_UnknownTools(t *testing.T) {
 }
 
 func TestHostHandler_CreateHost_DeployFailed(t *testing.T) {
-	h := newTestHostHandler(t, &mockHostRuntime{
+	th := newTestHostHelper(t, &mockHostRuntime{
 		deployErr: errors.New("docker build failed: some error"),
 	})
 
 	c := newPostContext(`{"name":"test-host","tools":["claude"]}`)
-	h.CreateHost(nil, c)
+	th.handler.CreateHost(nil, c)
 
-	// 创建请求本身应返回 202（异步），失败在后台处理
 	if c.Response.StatusCode() != http.StatusAccepted {
 		t.Fatalf("期望 202（异步创建）, 实际=%d", c.Response.StatusCode())
 	}
 
-	// 等待后台 goroutine 完成
 	time.Sleep(200 * time.Millisecond)
 
-	// 验证状态变为 failed
-	spec := h.specMgr.Get("test-host")
+	spec := th.specMgr.Get("test-host")
 	if spec == nil {
 		t.Fatal("期望 HostSpec 已创建")
 	}
@@ -211,10 +213,10 @@ func TestHostHandler_CreateHost_DeployFailed(t *testing.T) {
 }
 
 func TestHostHandler_CreateHost_InvalidBody(t *testing.T) {
-	h := newTestHostHandler(t, &mockHostRuntime{})
+	th := newTestHostHelper(t, &mockHostRuntime{})
 
 	c := newPostContext(`{invalid json}`)
-	h.CreateHost(nil, c)
+	th.handler.CreateHost(nil, c)
 
 	if c.Response.StatusCode() != http.StatusBadRequest {
 		t.Fatalf("期望 400, 实际=%d", c.Response.StatusCode())
@@ -222,27 +224,26 @@ func TestHostHandler_CreateHost_InvalidBody(t *testing.T) {
 }
 
 func TestHostHandler_CreateHost_EmptyResources(t *testing.T) {
-	h := newTestHostHandler(t, &mockHostRuntime{})
+	th := newTestHostHelper(t, &mockHostRuntime{})
 
 	c := newPostContext(`{"name":"test-host","tools":["claude"]}`)
-	h.CreateHost(nil, c)
+	th.handler.CreateHost(nil, c)
 
 	if c.Response.StatusCode() != http.StatusAccepted {
 		t.Fatalf("期望 202（resources 可选）, 实际=%d, body=%s", c.Response.StatusCode(), string(c.Response.Body()))
 	}
 
-	// 等待后台 goroutine 完成
 	time.Sleep(200 * time.Millisecond)
 }
 
 // ========== ListTools 测试 ==========
 
 func TestHostHandler_ListTools(t *testing.T) {
-	h := newTestHostHandler(t, &mockHostRuntime{})
+	th := newTestHostHelper(t, &mockHostRuntime{})
 
 	c := app.NewContext(0)
 	c.Request.SetMethod("GET")
-	h.ListTools(nil, c)
+	th.handler.ListTools(nil, c)
 
 	if c.Response.StatusCode() != http.StatusOK {
 		t.Fatalf("期望 200, 实际=%d", c.Response.StatusCode())
@@ -265,41 +266,43 @@ func TestHostHandler_ListTools(t *testing.T) {
 // ========== DeleteHost 测试 ==========
 
 func TestHostHandler_DeleteHost_Success(t *testing.T) {
-	h := newTestHostHandlerWithNode(t, &mockHostRuntime{}, "test-host", "http://localhost:8080")
-	// 同时创建 HostSpec
-	h.specMgr.Create(&protocol.HostSpec{Name: "test-host", Tools: []string{"claude"}, Status: protocol.HostStatusDeploying})
+	th := newTestHostHelperWithNode(t, &mockHostRuntime{}, "test-host", "http://localhost:8080")
+	th.specMgr.Create(&protocol.HostSpec{Name: "test-host", Tools: []string{"claude"}, Status: protocol.HostStatusDeploying})
 
 	c := newRequestContextWithParams(param.Param{Key: "name", Value: "test-host"})
-	h.DeleteHost(nil, c)
+	th.handler.DeleteHost(nil, c)
 
 	if c.Response.StatusCode() != http.StatusOK {
 		t.Fatalf("期望 200, 实际=%d", c.Response.StatusCode())
 	}
 
-	// 验证 HostSpec 也被删除
-	if h.specMgr.Get("test-host") != nil {
+	if th.specMgr.Get("test-host") != nil {
 		t.Error("期望 HostSpec 已被删除")
 	}
 }
 
-func TestHostHandler_DeleteHost_RemoveErrorIgnored(t *testing.T) {
-	h := newTestHostHandlerWithNode(t, &mockHostRuntime{
-		removeErr: errors.New("container not found"),
+func TestHostHandler_DeleteHost_RemoveErrorReturned(t *testing.T) {
+	th := newTestHostHelperWithNode(t, &mockHostRuntime{
+		removeErr: errors.New("cleanup failed"),
 	}, "test-host", "http://localhost:8080")
+	th.specMgr.Create(&protocol.HostSpec{Name: "test-host", Tools: []string{"claude"}, Status: protocol.HostStatusOnline})
 
 	c := newRequestContextWithParams(param.Param{Key: "name", Value: "test-host"})
-	h.DeleteHost(nil, c)
+	th.handler.DeleteHost(nil, c)
 
-	if c.Response.StatusCode() != http.StatusOK {
-		t.Fatalf("期望 200（RemoveHost 错误应被忽略）, 实际=%d", c.Response.StatusCode())
+	if c.Response.StatusCode() != http.StatusInternalServerError {
+		t.Fatalf("期望 500（RemoveHost 错误应向上返回）, 实际=%d", c.Response.StatusCode())
+	}
+	if th.specMgr.Get("test-host") == nil {
+		t.Fatal("期望 HostSpec 保留，避免把底层清理失败伪装成删除成功")
 	}
 }
 
 func TestHostHandler_DeleteHost_EmptyName(t *testing.T) {
-	h := newTestHostHandler(t, &mockHostRuntime{})
+	th := newTestHostHelper(t, &mockHostRuntime{})
 
 	c := newRequestContextWithParams(param.Param{Key: "name", Value: ""})
-	h.DeleteHost(nil, c)
+	th.handler.DeleteHost(nil, c)
 
 	if c.Response.StatusCode() != http.StatusBadRequest {
 		t.Fatalf("期望 400, 实际=%d", c.Response.StatusCode())
@@ -309,13 +312,13 @@ func TestHostHandler_DeleteHost_EmptyName(t *testing.T) {
 // ========== ListHosts 测试 ==========
 
 func TestHostHandler_ListHosts(t *testing.T) {
-	h := newTestHostHandler(t, &mockHostRuntime{})
-	h.specMgr.Create(&protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusPending})
-	h.specMgr.Create(&protocol.HostSpec{Name: "host-2", Tools: []string{"go"}, Status: protocol.HostStatusDeploying})
+	th := newTestHostHelper(t, &mockHostRuntime{})
+	th.specMgr.Create(&protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusPending})
+	th.specMgr.Create(&protocol.HostSpec{Name: "host-2", Tools: []string{"go"}, Status: protocol.HostStatusDeploying})
 
 	c := app.NewContext(0)
 	c.Request.SetMethod("GET")
-	h.ListHosts(nil, c)
+	th.handler.ListHosts(nil, c)
 
 	if c.Response.StatusCode() != http.StatusOK {
 		t.Fatalf("期望 200, 实际=%d", c.Response.StatusCode())
@@ -334,11 +337,11 @@ func TestHostHandler_ListHosts(t *testing.T) {
 // ========== GetHost 测试 ==========
 
 func TestHostHandler_GetHost(t *testing.T) {
-	h := newTestHostHandler(t, &mockHostRuntime{})
-	h.specMgr.Create(&protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusPending})
+	th := newTestHostHelper(t, &mockHostRuntime{})
+	th.specMgr.Create(&protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusPending})
 
 	c := newRequestContextWithParams(param.Param{Key: "name", Value: "host-1"})
-	h.GetHost(nil, c)
+	th.handler.GetHost(nil, c)
 
 	if c.Response.StatusCode() != http.StatusOK {
 		t.Fatalf("期望 200, 实际=%d", c.Response.StatusCode())
@@ -346,10 +349,10 @@ func TestHostHandler_GetHost(t *testing.T) {
 }
 
 func TestHostHandler_GetHost_NotFound(t *testing.T) {
-	h := newTestHostHandler(t, &mockHostRuntime{})
+	th := newTestHostHelper(t, &mockHostRuntime{})
 
 	c := newRequestContextWithParams(param.Param{Key: "name", Value: "nonexistent"})
-	h.GetHost(nil, c)
+	th.handler.GetHost(nil, c)
 
 	if c.Response.StatusCode() != http.StatusNotFound {
 		t.Fatalf("期望 404, 实际=%d", c.Response.StatusCode())
@@ -359,15 +362,19 @@ func TestHostHandler_GetHost_NotFound(t *testing.T) {
 // ========== GetBuildLog 测试 ==========
 
 func TestHostHandler_GetBuildLog(t *testing.T) {
-	h := newTestHostHandler(t, &mockHostRuntime{})
-	h.specMgr.Create(&protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusDeploying})
+	th := newTestHostHelper(t, &mockHostRuntime{})
+	th.specMgr.Create(&protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusDeploying})
 
-	// 写入构建日志
-	h.deployHostAsync(h.specMgr.Get("host-1"))
+	buildSvc := service.NewHostService(th.registry, th.specMgr, th.rt, th.auditLog,
+		&config.Config{
+			Server: config.ServerConfig{AuthToken: "test-token"},
+			Docker: config.DockerConfig{AgentBaseImage: "test-base:latest"},
+		}, logutil.NewNop(), th.logDir)
+	buildSvc.CreateHost(nil, &protocol.CreateHostRequest{Name: "host-1", Tools: []string{"claude"}})
 	time.Sleep(200 * time.Millisecond)
 
 	c := newRequestContextWithParams(param.Param{Key: "name", Value: "host-1"})
-	h.GetBuildLog(nil, c)
+	th.handler.GetBuildLog(nil, c)
 
 	if c.Response.StatusCode() != http.StatusOK {
 		t.Fatalf("期望 200, 实际=%d", c.Response.StatusCode())
@@ -375,10 +382,10 @@ func TestHostHandler_GetBuildLog(t *testing.T) {
 }
 
 func TestHostHandler_GetBuildLog_NotFound(t *testing.T) {
-	h := newTestHostHandler(t, &mockHostRuntime{})
+	th := newTestHostHelper(t, &mockHostRuntime{})
 
 	c := newRequestContextWithParams(param.Param{Key: "name", Value: "nonexistent"})
-	h.GetBuildLog(nil, c)
+	th.handler.GetBuildLog(nil, c)
 
 	if c.Response.StatusCode() != http.StatusNotFound {
 		t.Fatalf("期望 404, 实际=%d", c.Response.StatusCode())
@@ -388,11 +395,11 @@ func TestHostHandler_GetBuildLog_NotFound(t *testing.T) {
 // ========== GetRuntimeLog 测试 ==========
 
 func TestHostHandler_GetRuntimeLog(t *testing.T) {
-	h := newTestHostHandler(t, &mockHostRuntime{})
-	h.specMgr.Create(&protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusDeploying})
+	th := newTestHostHelper(t, &mockHostRuntime{})
+	th.specMgr.Create(&protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusDeploying})
 
 	c := newRequestContextWithParams(param.Param{Key: "name", Value: "host-1"})
-	h.GetRuntimeLog(nil, c)
+	th.handler.GetRuntimeLog(nil, c)
 
 	if c.Response.StatusCode() != http.StatusOK {
 		t.Fatalf("期望 200, 实际=%d, body=%s", c.Response.StatusCode(), string(c.Response.Body()))
@@ -400,10 +407,10 @@ func TestHostHandler_GetRuntimeLog(t *testing.T) {
 }
 
 func TestHostHandler_GetRuntimeLog_NotFound(t *testing.T) {
-	h := newTestHostHandler(t, &mockHostRuntime{})
+	th := newTestHostHelper(t, &mockHostRuntime{})
 
 	c := newRequestContextWithParams(param.Param{Key: "name", Value: "nonexistent"})
-	h.GetRuntimeLog(nil, c)
+	th.handler.GetRuntimeLog(nil, c)
 
 	if c.Response.StatusCode() != http.StatusNotFound {
 		t.Fatalf("期望 404, 实际=%d", c.Response.StatusCode())

@@ -15,6 +15,7 @@ import (
 	"github.com/charviki/mesa-hub-behavior-panel/biz/model"
 	"github.com/charviki/mesa-hub-behavior-panel/biz/reconciler"
 	"github.com/charviki/mesa-hub-behavior-panel/biz/runtime"
+	"github.com/charviki/mesa-hub-behavior-panel/biz/service"
 )
 
 // dataDir 返回数据文件存储目录。
@@ -36,6 +37,9 @@ type CleanupResources struct {
 	SpecMgr    *model.HostSpecManager
 	AuditLog   *handler.AuditLogger
 	Reconciler *reconciler.Reconciler
+	HostSvc    *service.HostService
+	NodeSvc    *service.NodeService
+	AuditSvc   *service.AuditService
 }
 
 // 注册所有 API 路由并初始化各 Store 和 Handler。
@@ -46,12 +50,9 @@ func Register(h *server.Hertz, cfg *config.Config, logger logutil.Logger) *Clean
 
 	registry := model.NewNodeRegistry(filepath.Join(dir, "nodes.json"), logger)
 	specMgr := model.NewHostSpecManager(filepath.Join(dir, "host_specs.json"), logger)
-	nodeHandler := handler.NewNodeHandler(registry, cfg.Server.AuthToken, logger)
 
 	auditLog := handler.NewAuditLogger(filepath.Join(dir, "audit.log"), logger)
-	sessionProxyHandler := handler.NewSessionProxyHandler(registry, auditLog, logger, cfg.Server.AuthToken, cfg.AllowedOrigins(), cfg.Server.AllowPrivateNetworks)
 
-	// 根据运行时类型选择对应的 HostRuntime 实现
 	var hostRuntime runtime.HostRuntime
 	if cfg.Runtime.Type == "kubernetes" {
 		hostRuntime = runtime.NewKubernetesRuntime(cfg.Kubernetes, cfg.Workspace, logger)
@@ -59,9 +60,15 @@ func Register(h *server.Hertz, cfg *config.Config, logger logutil.Logger) *Clean
 		hostRuntime = runtime.NewDockerRuntime(cfg.Docker, cfg.Workspace, logger)
 	}
 
-	// host_logs 目录用于存储构建日志
 	logDir := filepath.Join(dir, "host_logs")
-	hostHandler := handler.NewHostHandler(registry, specMgr, hostRuntime, auditLog, cfg, logger, logDir)
+
+	hostSvc := service.NewHostService(registry, specMgr, hostRuntime, auditLog, cfg, logger, logDir)
+	nodeSvc := service.NewNodeService(registry, logger)
+	auditSvc := service.NewAuditService(auditLog)
+
+	nodeHandler := handler.NewNodeHandler(nodeSvc, registry, cfg.Server.AuthToken, logger)
+	sessionProxyHandler := handler.NewSessionProxyHandler(registry, auditLog, auditSvc, logger, cfg.Server.AuthToken, cfg.AllowedOrigins(), cfg.Server.AllowPrivateNetworks)
+	hostHandler := handler.NewHostHandler(hostSvc)
 
 	// 启动恢复：路由注册后、HTTP 服务启动前执行
 	rec := reconciler.NewReconciler(specMgr, registry, hostRuntime, cfg, logger, logDir)
@@ -138,5 +145,8 @@ func Register(h *server.Hertz, cfg *config.Config, logger logutil.Logger) *Clean
 		SpecMgr:    specMgr,
 		AuditLog:   auditLog,
 		Reconciler: rec,
+		HostSvc:    hostSvc,
+		NodeSvc:    nodeSvc,
+		AuditSvc:   auditSvc,
 	}
 }

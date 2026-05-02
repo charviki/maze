@@ -24,6 +24,7 @@ type Node struct {
 	Name          string                     `json:"name"`
 	Address       string                     `json:"address"`
 	ExternalAddr  string                     `json:"external_addr"`
+	GrpcAddress   string                     `json:"grpc_address"`
 	AuthToken     string                     `json:"auth_token"`
 	Status        string                     `json:"status"`
 	RegisteredAt  time.Time                  `json:"registered_at"`
@@ -172,6 +173,7 @@ func (r *NodeRegistry) Register(req protocol.RegisterRequest) *Node {
 		Name:          req.Name,
 		Address:       req.Address,
 		ExternalAddr:  req.ExternalAddr,
+		GrpcAddress:   req.GrpcAddress,
 		Status:        NodeStatusOnline,
 		RegisteredAt:  now,
 		LastHeartbeat: now,
