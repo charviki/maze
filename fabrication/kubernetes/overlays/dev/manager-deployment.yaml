@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: agent-manager
-  namespace: maze
+  namespace: maze-dev
 spec:
   selector:
     matchLabels:
@@ -19,6 +19,7 @@ spec:
           imagePullPolicy: Never
           ports:
             - containerPort: 8080
+            - containerPort: 8081
           envFrom:
             - configMapRef:
                 name: manager-config
@@ -57,7 +58,7 @@ spec:
       volumes:
         - name: data
           hostPath:
-            path: __HOST_HOME__/.maze/kubernetes
+            path: __HOST_HOME__/.maze-dev/kubernetes
             type: DirectoryOrCreate
         - name: docker-socket
           hostPath:

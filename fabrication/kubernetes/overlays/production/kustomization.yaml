@@ -3,8 +3,5 @@ kind: Kustomization
 
 resources:
   - ../../base
-  - ../../base/manager-pvc.yaml
   - manager-configmap.yaml
-
-patches:
-  - path: manager-deployment-patch.yaml
+  - manager-deployment.yaml

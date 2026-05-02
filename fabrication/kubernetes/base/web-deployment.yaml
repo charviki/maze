@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: web
-  namespace: maze
+  namespace: maze-prod
 spec:
   replicas: 1
   selector:

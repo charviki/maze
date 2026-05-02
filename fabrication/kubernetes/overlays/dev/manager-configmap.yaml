@@ -2,21 +2,21 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: manager-config
-  namespace: maze
+  namespace: maze-dev
 data:
   AGENT_MANAGER_RUNTIME_TYPE: "kubernetes"
-  AGENT_MANAGER_KUBERNETES_NAMESPACE: "maze"
+  AGENT_MANAGER_KUBERNETES_NAMESPACE: "maze-dev"
   AGENT_MANAGER_KUBERNETES_AGENT_IMAGE_PREFIX: "maze-agent"
   AGENT_MANAGER_KUBERNETES_AGENT_IMAGE_TAG: "latest"
   AGENT_MANAGER_KUBERNETES_IMAGE_PULL_POLICY: "Never"
-  AGENT_MANAGER_KUBERNETES_MANAGER_ADDR: "agent-manager.maze.svc.cluster.local:8080"
+  AGENT_MANAGER_KUBERNETES_MANAGER_ADDR: "agent-manager.maze-dev.svc.cluster.local:8080"
   AGENT_MANAGER_KUBERNETES_PVC_SIZE: "10Gi"
   AGENT_MANAGER_KUBERNETES_VOLUME_TYPE: "hostpath"
-  AGENT_MANAGER_KUBERNETES_HOST_PATH_BASE: "__HOST_HOME__/.maze/kubernetes/agents"
+  AGENT_MANAGER_KUBERNETES_HOST_PATH_BASE: "__HOST_HOME__/.maze-dev/kubernetes/agents"
   # Agent 基础镜像（动态构建 Agent Dockerfile 时的 FROM 基础层）
   AGENT_MANAGER_DOCKER_AGENT_BASE_IMAGE: "maze-agent:latest"
   AGENT_MANAGER_ALLOW_PRIVATE_NETWORKS: "true"
-  # K8s 模式下 Manager 通过 hostPath 挂载整个 ~/.maze/kubernetes 到 /data
+  # K8s 模式下 Manager 通过 hostPath 挂载整个 ~/.maze-dev/kubernetes 到 /data
   # BaseDir 用容器内路径（用于 nodes.json、audit.log 持久化）
   # Agent 的宿主机路径通过 HOST_PATH_BASE 单独配置
   AGENT_MANAGER_WORKSPACE_BASE_DIR: "/data"

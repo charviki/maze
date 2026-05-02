@@ -2,7 +2,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: manager-data
-  namespace: maze
+  namespace: maze-prod
 spec:
   accessModes:
     - ReadWriteOnce

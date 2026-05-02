@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: agent-manager
-  namespace: maze
 spec:
   selector:
     matchLabels:
@@ -15,10 +14,11 @@ spec:
       serviceAccountName: maze-manager
       containers:
         - name: agent-manager
-          image: REGISTRY/maze-manager:VERSION
-          imagePullPolicy: IfNotPresent
+          image: maze-manager:latest
+          imagePullPolicy: Never
           ports:
             - containerPort: 8080
+            - containerPort: 8081
           envFrom:
             - configMapRef:
                 name: manager-config
@@ -33,6 +33,8 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data
+            - name: docker-socket
+              mountPath: /var/run/docker.sock
           livenessProbe:
             httpGet:
               path: /health
@@ -54,5 +56,10 @@ spec:
               memory: 256Mi
       volumes:
         - name: data
-          persistentVolumeClaim:
-            claimName: manager-data
+          hostPath:
+            path: __HOST_HOME__/.maze-test/kubernetes
+            type: DirectoryOrCreate
+        - name: docker-socket
+          hostPath:
+            path: /var/run/docker.sock
+            type: Socket

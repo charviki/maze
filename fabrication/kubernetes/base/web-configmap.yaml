@@ -2,12 +2,14 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: web-nginx-config
-  namespace: maze
+  namespace: maze-prod
 data:
   default.conf.template: |
     server {
         listen 80;
         server_name _;
+
+        absolute_redirect off;
 
         root /usr/share/nginx/html;
         index index.html;
@@ -36,10 +38,23 @@ data:
             proxy_set_header Host $host;
         }
 
-        location / {
-            try_files $uri $uri/ /index.html;
+        # Behavior Panel SPA
+        location /behavior-panel/ {
+            alias /usr/share/nginx/html/behavior-panel/;
+            try_files $uri $uri/ /behavior-panel/index.html;
+        }
+
+        # Portal 作为首页
+        location /portal/ {
+            alias /usr/share/nginx/html/portal/;
+            try_files $uri $uri/ /portal/index.html;
+        }
+
+        # 根路径重定向到 Portal
+        location = / {
+            rewrite ^ /portal/ redirect;
         }
     }
   # 环境变量默认值
-  MANAGER_UPSTREAM: "agent-manager.maze.svc.cluster.local:8080"
+  MANAGER_UPSTREAM: "agent-manager.maze-prod.svc.cluster.local:8080"
   WS_TIMEOUT: "3600s"

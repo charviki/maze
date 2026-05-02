@@ -1,13 +1,14 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: maze
+namespace: maze-prod
 
 resources:
   - namespace.yaml
   - manager-rbac.yaml
   - manager-secret.yaml
   - manager-service.yaml
+  - manager-pvc.yaml
   - web-configmap.yaml
   - web-deployment.yaml
   - web-service.yaml
