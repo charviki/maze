@@ -24,11 +24,12 @@ jobs:
       - name: Build
         run: make build-go
 
+      - name: Install golangci-lint
+        run: |
+          curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.12.1
+
       - name: Lint
-        uses: golangci/golangci-lint-action@v8
-        with:
-          version: v2.12
-          args: --timeout=5m
+        run: make lint
 
       - name: Test
         run: make test
