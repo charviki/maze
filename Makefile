@@ -96,13 +96,15 @@ help: ## 显示帮助信息
 build-go: ## 编译所有 Go 模块
 	@for m in $(MODULES); do \
 		echo "\033[0;32m[build]\033[0m $$m"; \
-		go build ./$$m/... || exit 1; \
+		cd $$m && go build ./... || exit 1; \
+		cd $(PROJECT_ROOT); \
 	done
 
 vet: ## Go 静态检查（快速模式，仅 go vet）
 	@for m in $(MODULES); do \
 		echo "\033[0;32m[vet]\033[0m $$m"; \
-		go vet ./$$m/... || exit 1; \
+		cd $$m && go vet ./... || exit 1; \
+		cd $(PROJECT_ROOT); \
 	done
 
 lint: ## Go 全量代码检查（golangci-lint v2，含 gosec + staticcheck + 30+ linter）
@@ -133,7 +135,8 @@ vulncheck: ## Go 漏洞扫描（govulncheck）
 test: ## 运行所有 Go 单元测试
 	@for m in $(MODULES); do \
 		echo "\033[0;32m[test]\033[0m $$m"; \
-		go test ./$$m/... -count=1 || exit 1; \
+		cd $$m && go test ./... -count=1 || exit 1; \
+		cd $(PROJECT_ROOT); \
 	done
 
 check: build-go lint test ## 编译 + golangci-lint + 单元测试（交付铁律）
