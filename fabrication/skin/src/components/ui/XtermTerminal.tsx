@@ -29,7 +29,7 @@ function getFallbackTerminalTheme() {
 
 function getThemeSourceElement(element?: HTMLElement | null): HTMLElement {
   if (!element) return document.documentElement;
-  const themedAncestor = element.closest('.dark, .light') as HTMLElement | null;
+  const themedAncestor = element.closest<HTMLElement>('.dark, .light');
   return themedAncestor ?? element.parentElement ?? element;
 }
 

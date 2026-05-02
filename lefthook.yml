@@ -46,12 +46,12 @@ pre-commit:
           FILES=""
           for f in $STAGED; do
             case "$f" in
-              ${proj}/*) [ -f "$f" ] && FILES="$FILES $f" ;;
+              ${proj}/*) [ -f "$f" ] && FILES="$FILES ${f#${proj}/}" ;;
             esac
           done
           if [ -n "$FILES" ]; then
             echo "\033[0;32m[eslint]\033[0m $proj"
-            npx eslint --no-warn-ignored $FILES || exit 1
+            (cd "$proj" && npx eslint --no-warn-ignored $FILES) || exit 1
           fi
         done
 
