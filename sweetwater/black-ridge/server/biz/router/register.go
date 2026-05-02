@@ -3,6 +3,7 @@ package router
 import (
 	"context"
 	"net/http"
+	"path/filepath"
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/server"
@@ -16,16 +17,13 @@ import (
 	"github.com/charviki/sweetwater-black-ridge/biz/service"
 )
 
-// Register 注册所有 API 路由（创建新的 TmuxService 实例）
-func Register(h *server.Hertz, cfg *config.Config, logger logutil.Logger) {
+func Register(h *server.Hertz, cfg *config.Config, logger logutil.Logger) *model.TemplateStore {
 	tmuxService := service.NewTmuxService(&cfg.Tmux, cfg.Workspace.StateDir, logger)
-	RegisterWithService(h, cfg, tmuxService, logger)
+	return RegisterWithService(h, cfg, tmuxService, logger)
 }
 
-// RegisterWithService 注册所有 API 路由（使用外部注入的 TmuxService）。
-// 所有 API 端点（包括 WebSocket）都经过 Auth 中间件保护。
-func RegisterWithService(h *server.Hertz, cfg *config.Config, tmuxService service.TmuxService, logger logutil.Logger) {
-	templateStore := model.NewTemplateStore("templates.json", logger)
+func RegisterWithService(h *server.Hertz, cfg *config.Config, tmuxService service.TmuxService, logger logutil.Logger) *model.TemplateStore {
+	templateStore := model.NewTemplateStore(filepath.Join(cfg.Workspace.StateDir, "templates.json"), logger)
 	sessionHandler := handler.NewSessionHandler(tmuxService, templateStore, cfg, logger)
 	terminalHandler := handler.NewTerminalHandler(tmuxService, cfg.Terminal.DefaultLines, logger, cfg.Server.AllowedOrigins)
 
@@ -76,4 +74,6 @@ func RegisterWithService(h *server.Hertz, cfg *config.Config, tmuxService servic
 	h.GET("/health", func(ctx context.Context, c *app.RequestContext) {
 		c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 	})
+
+	return templateStore
 }

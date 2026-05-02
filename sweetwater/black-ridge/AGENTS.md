@@ -17,7 +17,10 @@
 ## 关键文件
 | 路径 | 职责 | 文档同步 |
 |------|------|----------|
-| server/main.go | 入口：配置加载、服务初始化、信号处理 | [architecture.md](docs/architecture.md) |
+| server/main.go | 入口：配置加载、HTTP+gRPC 双协议服务初始化、信号处理 | [architecture.md](docs/architecture.md) |
+| server/biz/grpc/server.go | gRPC Server 框架（Session/Config/Template Service） | — |
+| server/biz/grpc/template.go | TemplateService gRPC 实现（ListTemplates/CreateTemplate/GetTemplate/UpdateTemplate/DeleteTemplate + Config 管理） | — |
+| server/biz/grpc/session.go | SessionService + ConfigService gRPC 实现 | — |
 | server/biz/config/config.go | 全局配置结构与校验 | [architecture.md](docs/architecture.md) |
 | server/biz/service/tmux.go | Tmux 会话管理与管线执行 | [architecture.md](docs/architecture.md) |
 | server/biz/service/heartbeat.go | Manager 心跳注册与状态上报 | [architecture.md](docs/architecture.md) |

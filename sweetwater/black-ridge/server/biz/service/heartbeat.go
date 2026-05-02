@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/charviki/maze-cradle/logutil"
@@ -187,10 +189,17 @@ func (s *HeartbeatService) register(name, addr, externalAddr string) error {
 		registerAddr = fmt.Sprintf("http://%s%s", getOwnHostname(), addr)
 	}
 
+	// GrpcAddress: 优先使用完整配置值，若仅有端口则拼接与 HTTP 相同的 hostname
+	grpcAddr := s.cfg.Server.GRPCAddr
+	if grpcAddr != "" && strings.HasPrefix(grpcAddr, ":") {
+		grpcAddr = extractHostFromAddr(s.cfg.Server.AdvertisedAddr) + grpcAddr
+	}
+
 	reqBody := protocol.RegisterRequest{
 		Name:         name,
 		Address:      registerAddr,
 		ExternalAddr: externalAddr,
+		GrpcAddress:  grpcAddr,
 		Capabilities: protocol.AgentCapabilities{
 			SupportedTemplates: supportedTemplates,
 			MaxSessions:        MaxSessions,
@@ -262,4 +271,16 @@ func getOwnHostname() string {
 		return "localhost"
 	}
 	return hostname
+}
+
+// extractHostFromAddr 从 AdvertisedAddr（如 http://host:8080）中提取 hostname。
+// AdvertisedAddr 在 Docker 环境中被设为容器名，Docker DNS 可解析。
+func extractHostFromAddr(advertisedAddr string) string {
+	addr := strings.TrimPrefix(advertisedAddr, "http://")
+	addr = strings.TrimPrefix(addr, "https://")
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return getOwnHostname()
+	}
+	return host
 }

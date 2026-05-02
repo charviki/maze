@@ -14,6 +14,7 @@ import (
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/sweetwater-black-ridge/biz/config"
 	bizrouter "github.com/charviki/sweetwater-black-ridge/biz/router"
+	"github.com/charviki/sweetwater-black-ridge/biz/model"
 	"github.com/charviki/sweetwater-black-ridge/biz/service"
 )
 
@@ -24,8 +25,8 @@ var staticFiles embed.FS
 // register 注册业务路由和 SPA 静态文件服务。
 // 静态文件通过 go:embed 嵌入，NoRoute 处理 SPA fallback：
 // 先尝试匹配静态文件路径，不匹配则返回 index.html（支持前端路由）
-func register(h *server.Hertz, cfg *config.Config, tmuxService service.TmuxService, logger logutil.Logger) {
-	bizrouter.RegisterWithService(h, cfg, tmuxService, logger)
+func register(h *server.Hertz, cfg *config.Config, tmuxService service.TmuxService, logger logutil.Logger) *model.TemplateStore {
+	templateStore := bizrouter.RegisterWithService(h, cfg, tmuxService, logger)
 
 	subFS, err := fs.Sub(staticFiles, "web-dist")
 	if err != nil {
@@ -67,4 +68,6 @@ func register(h *server.Hertz, cfg *config.Config, tmuxService service.TmuxServi
 		}
 		c.Data(http.StatusOK, contentType, data)
 	})
+
+	return templateStore
 }

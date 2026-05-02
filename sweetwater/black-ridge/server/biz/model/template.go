@@ -4,6 +4,7 @@ import (
 	"embed"
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/charviki/maze-cradle/logutil"
@@ -37,6 +38,10 @@ type TemplateStore struct {
 
 // 创建 TemplateStore，加载已有数据后注入内置模板
 func NewTemplateStore(filePath string, logger logutil.Logger) *TemplateStore {
+	dir := filepath.Dir(filePath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		logger.Warnf("[template] create dir %s: %v", dir, err)
+	}
 	s := &TemplateStore{
 		templates: make(map[string]*SessionTemplate),
 		path:      filePath,

@@ -22,6 +22,7 @@ type Config struct {
 // ServerConfig HTTP 服务配置
 type ServerConfig struct {
 	ListenAddr     string   `yaml:"listen_addr"`
+	GRPCAddr       string   `yaml:"grpc_addr"`
 	AuthToken      string   `yaml:"auth_token"`
 	Name           string   `yaml:"name"`
 	ExternalAddr   string   `yaml:"external_addr"`
@@ -88,6 +89,9 @@ func Load(path string) (*Config, error) {
 func applyEnvOverrides(cfg *Config) {
 	if v := os.Getenv("AGENT_SERVER_LISTEN_ADDR"); v != "" {
 		cfg.Server.ListenAddr = v
+	}
+	if v := os.Getenv("AGENT_GRPC_ADDR"); v != "" {
+		cfg.Server.GRPCAddr = v
 	}
 	if v := os.Getenv("AGENT_SERVER_AUTH_TOKEN"); v != "" {
 		cfg.Server.AuthToken = v
