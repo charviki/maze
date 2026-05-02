@@ -35,19 +35,23 @@ RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
 
 **前端 Dockerfile 模板**：
 ```dockerfile
-# 1. 只复制依赖声明文件
+# 1. 复制所有 workspace package.json（pnpm 需要完整 workspace 声明，缺失会报错）
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY fabrication/skin/package.json fabrication/skin/package.json
-COPY <子项目>/web/package.json <子项目>/web/package.json
+COPY mesa-hub/behavior-panel/web/package.json mesa-hub/behavior-panel/web/package.json
+COPY mesa-hub/portal/web/package.json mesa-hub/portal/web/package.json
+COPY sweetwater/black-ridge/web/package.json sweetwater/black-ridge/web/package.json
 
 # 2. 安装依赖（package.json 不变时命中 Docker 层缓存）
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     pnpm install
 
-# 3. 复制源码（改源码只触发从这里开始的层重建）
+# 3. 只复制当前构建所需的源码（其他 workspace 包不需要源码）
 COPY fabrication/skin/ fabrication/skin/
 COPY <子项目>/web/ <子项目>/web/
 ```
+
+> **注意**：必须复制 `pnpm-workspace.yaml` 中声明的**所有**子项目的 `package.json`，否则 `pnpm install` 会因找不到 workspace 成员而失败。只需复制当前构建所需的源码，其他包保持仅有 `package.json` 的状态即可。
 
 **Go Dockerfile 模板**：
 ```dockerfile

@@ -3,6 +3,7 @@
 package integration
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 
 // TestSessionCreateQuery 验证 Session 的创建和查询
 func TestSessionCreateQuery(t *testing.T) {
+	t.Parallel()
 	h := newTestHelper(t)
 	defer h.cleanup(t)
 
@@ -18,30 +20,25 @@ func TestSessionCreateQuery(t *testing.T) {
 	h.trackHost(name)
 
 	t.Log("[step] creating host for session test...")
-	if _, err := h.client.CreateHost(name, []string{"claude"}); err != nil {
-		t.Fatalf("create host failed: %v", err)
-	}
-	t.Log("[step] waiting for host to become online...")
-	if _, err := h.client.WaitForHostStatus(name, "online", 3*time.Minute); err != nil {
-		t.Fatalf("wait for host online failed: %v", err)
-	}
+	h.createHostAndWait(t, name, []string{"claude"})
 
 	t.Log("[step] creating session...")
-	sessionName := "test-session-1"
-	if err := h.client.CreateSession(name, sessionName, ""); err != nil {
-		t.Fatalf("create session failed: %v", err)
-	}
+	sid := h.createSession(t, name, "test-session-1")
 
-	t.Log("[step] querying saved sessions...")
-	sessions, err := h.client.GetSavedSessions(name)
+	t.Log("[step] querying session by id...")
+	session, _, err := h.apiClient.SessionServiceAPI.SessionServiceGetSession(context.Background(), name, sid).Execute()
 	if err != nil {
-		t.Fatalf("get saved sessions failed: %v", err)
+		t.Fatalf("get session failed: %v", err)
 	}
-	t.Logf("[step] PASS: found %d saved sessions", len(sessions))
+	if session.GetId() != sid {
+		t.Errorf("expected session id=%s, got=%s", sid, session.GetId())
+	}
+	t.Logf("[step] PASS: session found id=%s name=%s", session.GetId(), session.GetName())
 }
 
 // TestSessionPersistenceRecovery 验证 Session 在 Deployment 重建后保留
 func TestSessionPersistenceRecovery(t *testing.T) {
+	t.Parallel()
 	cfg := kit.LoadTestConfig()
 	if cfg.Env != "kubernetes" {
 		t.Skip("session persistence recovery test only runs in Kubernetes environment")
@@ -54,26 +51,18 @@ func TestSessionPersistenceRecovery(t *testing.T) {
 	h.trackHost(name)
 
 	t.Log("[step] creating host for session persistence test...")
-	if _, err := h.client.CreateHost(name, []string{"claude"}); err != nil {
-		t.Fatalf("create host failed: %v", err)
-	}
-	t.Log("[step] waiting for host to become online...")
-	if _, err := h.client.WaitForHostStatus(name, "online", 3*time.Minute); err != nil {
-		t.Fatalf("wait for host online failed: %v", err)
-	}
+	h.createHostAndWait(t, name, []string{"claude"})
 
 	t.Log("[step] creating session...")
-	sessionName := "recovery-test-session"
-	if err := h.client.CreateSession(name, sessionName, ""); err != nil {
-		t.Fatalf("create session failed: %v", err)
-	}
+	h.createSession(t, name, "recovery-test-session")
 
 	t.Log("[step] waiting for session to be saved...")
 	time.Sleep(5 * time.Second)
 
-	sessionsBefore, err := h.client.GetSavedSessions(name)
+	t.Log("[step] querying saved sessions...")
+	saved, _, err := h.apiClient.SessionServiceAPI.SessionServiceGetSavedSessions(context.Background(), name).Execute()
 	if err != nil {
-		t.Fatalf("get sessions before recovery failed: %v", err)
+		t.Fatalf("get saved sessions failed: %v", err)
 	}
-	t.Logf("[step] PASS: sessions before recovery: %d", len(sessionsBefore))
+	t.Logf("[step] PASS: found %d saved sessions", len(saved.GetSessions()))
 }

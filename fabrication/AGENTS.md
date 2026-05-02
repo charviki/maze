@@ -47,8 +47,9 @@
 | deps/*.txt | 声明式依赖配置（go/python/js） | [docker-build-guide.md](docs/docker-build-guide.md) |
 | Dockerfile.host | Host 装配镜像（多 target stage） | [docker-build-guide.md](docs/docker-build-guide.md) |
 | kubernetes/Makefile | K8s 部署 Makefile（up/down/update） | 本文件 |
-| kubernetes/overlays/local/ | 本地开发 overlay（hostPath + 动态构建） | [kubernetes-deploy-guide.md](docs/kubernetes-deploy-guide.md) |
-| kubernetes/overlays/production/ | 生产环境 overlay（PVC + 远程镜像） | [kubernetes-deploy-guide.md](docs/kubernetes-deploy-guide.md) |
+| kubernetes/overlays/dev/ | 开发环境 overlay（hostPath + 动态构建，namespace maze-dev） | [kubernetes-deploy-guide.md](docs/kubernetes-deploy-guide.md) |
+| kubernetes/overlays/test/ | 集成测试 overlay（hostPath + 动态构建，namespace maze-test） | [kubernetes-deploy-guide.md](docs/kubernetes-deploy-guide.md) |
+| kubernetes/overlays/production/ | 生产环境 overlay（PVC + 远程镜像，namespace maze-prod） | [kubernetes-deploy-guide.md](docs/kubernetes-deploy-guide.md) |
 
 ## 详细文档
 | 文档 | 内容 |

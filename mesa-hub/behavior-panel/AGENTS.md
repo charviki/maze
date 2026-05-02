@@ -19,7 +19,9 @@
 ## 关键文件
 | 路径 | 职责 | 文档同步 |
 |------|------|----------|
-| server/main.go | 入口：加载配置、启动 Hertz HTTP 服务、优雅关闭 | [architecture.md#启动流程](docs/architecture.md) |
+| server/main.go | 入口：加载配置、启动 HTTP+gRPC 双协议服务、优雅关闭 | [architecture.md#启动流程](docs/architecture.md) |
+| server/biz/grpc/server.go | gRPC Server 框架（Node/Host/Audit/Agent Service + TemplateService） | — |
+| server/biz/grpc/template.go | TemplateService gRPC 实现（Template CRUD + Config 代理到 Agent） | — |
 | server/router.go | 顶层路由注册、健康检查、NoRoute 重定向 | [api.md](docs/api.md) |
 | server/biz/router/register.go | 所有 API 路由定义、Store/Handler/Reconciler 初始化、中间件注册 | [api.md](docs/api.md) |
 | server/biz/handler/node.go | 节点注册/心跳/查询/删除 Handler | [api.md#节点管理](docs/api.md) |
@@ -32,19 +34,19 @@
 | server/biz/model/host_spec.go | HostSpecManager：Host 规格持久化（CRUD + dirty flush + GetMerged/ListMerged 合并视图） | [architecture.md#HostSpec持久化](docs/architecture.md) |
 | server/biz/service/deploy.go | 公共构建部署方法 BuildAndDeploy（消除 handler/reconciler 的重复逻辑） | [architecture.md#动态Host](docs/architecture.md) |
 | server/biz/reconciler/reconciler.go | Reconciler：启动恢复 + 60s 健康巡检 + deploying 保护窗口 + failed 自动重试 | [architecture.md#Reconciler](docs/architecture.md) |
-| server/biz/config/config.go | 配置加载：YAML + 环境变量覆盖 + 校验 | [architecture.md#配置](docs/architecture.md) |
+| server/biz/config/config.go | 配置加载：YAML + 环境变量覆盖 + 校验；统一 Manager 元数据根目录与 Docker Agent 数据根目录语义 | [architecture.md#配置](docs/architecture.md) |
 | server/biz/builder/registry.go | 工具配置注册表（claude/codex/go/python/node） | [architecture.md#动态Host](docs/architecture.md) |
 | server/biz/builder/host.go | Dockerfile 动态生成器（工具排序稳定化 + ToolsetImageTag 组合镜像标签） | [architecture.md#动态Host](docs/architecture.md) |
 | server/biz/runtime/runtime.go | HostRuntime 抽象接口（DeployHost/RemoveHost/InspectHost/GetRuntimeLogs/IsHealthy） | [architecture.md#动态Host](docs/architecture.md) |
-| server/biz/runtime/docker.go | Docker 运行时（docker CLI + socket + BuildKit + 组合镜像缓存 + Dockerfile hash 校验） | [architecture.md#动态Host](docs/architecture.md) |
+| server/biz/runtime/docker.go | Docker 运行时（docker CLI + socket + BuildKit + 组合镜像缓存 + Dockerfile hash 校验；Agent 数据目录固定到 `agents/<host>`） | [architecture.md#动态Host](docs/architecture.md) |
 | server/biz/runtime/kubernetes.go | K8s 运行时（client-go Deployment/Service + BuildKit + 组合镜像缓存 + Dockerfile hash 校验） | [architecture.md#动态Host](docs/architecture.md) |
 | server/biz/runtime/semaphore.go | 构建信号量（并发限流，防止镜像重建风暴） | [architecture.md#动态Host](docs/architecture.md) |
 | web/src/App.tsx | 前端入口：HostList + AgentPanel + RadarView + CreateHostDialog + HostLogPanel | [architecture.md#前端](docs/architecture.md) |
 | web/src/api/controller.ts | Manager API 客户端（listHosts/getHost/createHost/getHostBuildLog/getHostRuntimeLog/deleteHost） | [api.md#Host管理](docs/api.md) |
 | web/src/api/agent.ts | 通过 Manager 代理的 Agent API 客户端 | [api.md](docs/api.md) |
 | web/src/components/NodeList.tsx | Host 列表组件（数据源切到 listHosts + 全生命周期状态视觉） | [architecture.md#前端](docs/architecture.md) |
-| nginx.conf | Nginx 反向代理配置（API 代理 + WebSocket 支持） | [architecture.md#部署拓扑](docs/architecture.md) |
-| docker-compose.yml | 完整部署编排：web + agent-manager（Agent 通过 Manager UI 动态创建） | [architecture.md#部署拓扑](docs/architecture.md) |
+| nginx.conf | Nginx 路由配置（Portal 首页 + Behavior Panel SPA + API 代理 + WebSocket） | [architecture.md#部署拓扑](docs/architecture.md) |
+| docker-compose.yml | 完整部署编排：web + agent-manager（Manager 元数据挂载到 `docker/`，Agent 数据挂载到 `docker/agents/`） | [architecture.md#部署拓扑](docs/architecture.md) |
 
 ## 详细文档
 | 文档 | 内容 |

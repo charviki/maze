@@ -6,12 +6,40 @@ MODULES = \
 	sweetwater/black-ridge/server
 
 # ===== 环境配置 =====
-# ENV: docker 或 kubernetes（全局环境选择，所有命令共用）
-ENV ?= kubernetes
-# K8S_ENV: local 或 production（仅 kubernetes 环境使用，控制 K8s overlay）
-K8S_ENV ?= local
-# K8S_NAMESPACE: K8s namespace（仅 kubernetes 环境使用）
-K8S_NAMESPACE ?= maze
+# PLATFORM: docker 或 kubernetes（部署平台选择，所有命令共用）
+PLATFORM ?= kubernetes
+# ENV: dev / test / prod（运行环境，决定端口、命名空间、overlay 路径）
+ENV ?= dev
+
+# ===== ENV 派生变量 =====
+ifeq ($(ENV),dev)
+  K8S_NAMESPACE := maze-dev
+  K8S_OVERLAY := overlays/dev
+  COMPOSE_PROJECT := maze-dev
+  HOST_DATA_DIR := $(HOME)/.maze-dev
+  PORT_MANAGER := 7090
+  PORT_GATEWAY := 7091
+  PORT_WEB := 7080
+else ifeq ($(ENV),test)
+  K8S_NAMESPACE := maze-test
+  K8S_OVERLAY := overlays/test
+  COMPOSE_PROJECT := maze-test
+  HOST_DATA_DIR := $(HOME)/.maze-test
+  PORT_MANAGER := 9090
+  PORT_GATEWAY := 9091
+  PORT_WEB := 9080
+else ifeq ($(ENV),prod)
+  K8S_NAMESPACE := maze-prod
+  K8S_OVERLAY := overlays/production
+  COMPOSE_PROJECT := maze-prod
+  HOST_DATA_DIR := $(HOME)/.maze-prod
+  PORT_MANAGER := 8090
+  PORT_GATEWAY := 8091
+  PORT_WEB := 10800
+endif
+
+# Export variables so docker compose can resolve ${VAR:-default} in YAML
+export PORT_WEB PORT_MANAGER PORT_GATEWAY HOST_DATA_DIR
 
 # ===== 镜像配置 =====
 MANAGER_IMAGE := maze-manager:latest
@@ -26,14 +54,9 @@ MOLDS_DIR := $(PROJECT_ROOT)/fabrication/molds
 # Docker Compose 文件
 COMPOSE_FILE := $(PROJECT_ROOT)/mesa-hub/behavior-panel/docker-compose.yml
 COMPOSE_TEST_FILE := $(PROJECT_ROOT)/fabrication/tests/integration/docker-compose.test.yml
-COMPOSE_TEST_PROJECT := maze-test
 
-# K8s overlay 目录
-K8S_OVERLAY_DIR := $(PROJECT_ROOT)/fabrication/kubernetes/overlays/$(K8S_ENV)
-
-# ===== 端口配置 =====
-PORT_WEB ?= 10800
-PORT_MANAGER ?= 8090
+# K8s overlay 目录（由 K8S_OVERLAY 派生）
+K8S_OVERLAY_DIR := $(PROJECT_ROOT)/fabrication/kubernetes/$(K8S_OVERLAY)
 
 # ===== 集成测试 =====
 TEST_DIR := $(PROJECT_ROOT)/fabrication/tests/integration
@@ -56,14 +79,14 @@ help: ## 显示帮助信息
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}'
 	@echo ""
-	@echo "  环境选择: ENV=kubernetes (默认) 或 ENV=docker"
-	@echo "  K8s overlay: K8S_ENV=local (默认) 或 K8S_ENV=production"
+	@echo "  PLATFORM=docker|kubernetes (default: kubernetes)"
+	@echo "  ENV=dev|test|prod (default: dev)"
 	@echo ""
 	@echo "  示例:"
 	@echo "    make up                                # K8s 部署（默认）"
-	@echo "    make up ENV=docker                     # Docker Compose 启动"
-	@echo "    make up ENV=kubernetes K8S_ENV=production"
-	@echo "    make test-integration ENV=docker"
+	@echo "    make up PLATFORM=docker                # Docker Compose 启动"
+	@echo "    make up PLATFORM=kubernetes ENV=prod"
+	@echo "    make test-integration PLATFORM=docker"
 	@echo "    make test-integration                  # K8s 集成测试"
 
 # ============================================================
@@ -122,39 +145,33 @@ build-deps: ## 构建所有供应商镜像（claude/codex/go/python/node）
 
 up: build deploy ## 一键部署：构建镜像 + 启动服务
 
-deploy: ## 部署服务（根据 ENV 自动选择 Docker Compose 或 K8s）
-ifeq ($(ENV),docker)
+deploy: ## 部署服务（根据 PLATFORM 自动选择 Docker Compose 或 K8s）
+ifeq ($(PLATFORM),docker)
 	@echo "\033[0;32m[INFO]\033[0m Starting with Docker Compose..."
-	@mkdir -p $(HOME)/.maze/docker/agents
-	docker compose -f $(COMPOSE_FILE) up -d
+	@mkdir -p $(HOST_DATA_DIR)/docker/agents
+	docker compose -f $(COMPOSE_FILE) -p $(COMPOSE_PROJECT) up -d
 	@echo ""
 	@echo "\033[0;32m[INFO]\033[0m Maze is running on Docker Compose!"
 	@echo "  Web:      http://localhost:$(PORT_WEB)"
 	@echo "  Manager:  http://localhost:$(PORT_MANAGER)/health"
-else ifeq ($(ENV),kubernetes)
-	@echo "\033[0;32m[INFO]\033[0m Deploying to Kubernetes ($(K8S_ENV))..."
-	@mkdir -p $(HOME)/.maze/docker/agents $(HOME)/.maze/kubernetes/agents
-ifeq ($(K8S_ENV),local)
-	@kubectl apply -k $(PROJECT_ROOT)/fabrication/kubernetes/base
-	@sed 's|__HOST_HOME__|$(HOME)|g' $(K8S_OVERLAY_DIR)/manager-configmap.yaml | kubectl apply -f -
-	@sed 's|__HOST_HOME__|$(HOME)|g' $(K8S_OVERLAY_DIR)/manager-deployment-patch.yaml | kubectl apply -f -
-else
-	@echo "\033[1;33m[WARN]\033[0m Production overlay contains REGISTRY/VERSION placeholders."
-	@kubectl apply -k $(K8S_OVERLAY_DIR)
-endif
+else ifeq ($(PLATFORM),kubernetes)
+	@echo "\033[0;32m[INFO]\033[0m Deploying to Kubernetes ($(ENV))..."
+	@mkdir -p $(HOST_DATA_DIR)/docker/agents $(HOST_DATA_DIR)/kubernetes/agents
+	@kubectl create namespace $(K8S_NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
+	@kubectl kustomize $(K8S_OVERLAY_DIR) | sed 's|__HOST_HOME__|$(HOME)|g' | kubectl apply -f -
 	@echo "\033[0;32m[INFO]\033[0m Waiting for pods to be ready..."
 	@kubectl wait --for=condition=ready pods -l app --timeout=120s -n $(K8S_NAMESPACE) 2>/dev/null || \
 		(echo "\033[1;33m[WARN]\033[0m Timeout or partial readiness." && kubectl get pods -n $(K8S_NAMESPACE))
 	@echo ""
-	@echo "\033[0;32m[INFO]\033[0m Maze is running on Kubernetes! ($(K8S_ENV))"
+	@echo "\033[0;32m[INFO]\033[0m Maze is running on Kubernetes! ($(ENV))"
 	@echo "  Next: make proxy"
 endif
 
 down: ## 停止并删除所有服务
-ifeq ($(ENV),docker)
+ifeq ($(PLATFORM),docker)
 	@echo "\033[0;32m[INFO]\033[0m Stopping Docker Compose services..."
-	docker compose -f $(COMPOSE_FILE) down
-else ifeq ($(ENV),kubernetes)
+	docker compose -f $(COMPOSE_FILE) -p $(COMPOSE_PROJECT) down
+else ifeq ($(PLATFORM),kubernetes)
 	@echo "\033[0;32m[INFO]\033[0m Removing Kubernetes deployment..."
 	kubectl delete namespace $(K8S_NAMESPACE) --ignore-not-found=true
 endif
@@ -162,9 +179,9 @@ endif
 undeploy: down ## down 的别名
 
 status: ## 查看运行状态
-ifeq ($(ENV),docker)
-	@docker compose -f $(COMPOSE_FILE) ps
-else ifeq ($(ENV),kubernetes)
+ifeq ($(PLATFORM),docker)
+	@docker compose -f $(COMPOSE_FILE) -p $(COMPOSE_PROJECT) ps
+else ifeq ($(PLATFORM),kubernetes)
 	@echo "=== Pods ==="
 	@kubectl get pods -n $(K8S_NAMESPACE) 2>/dev/null || echo "  No pods found"
 	@echo ""
@@ -180,31 +197,38 @@ endif
 # ============================================================
 
 proxy: ## 启动 port-forward（K8s）或直接访问（Docker 已暴露端口）
-ifeq ($(ENV),docker)
+ifeq ($(PLATFORM),docker)
 	@echo "\033[0;32m[INFO]\033[0m Docker mode: ports already exposed."
 	@echo "  Web:      http://localhost:$(PORT_WEB)"
 	@echo "  Manager:  http://localhost:$(PORT_MANAGER)/health"
-else ifeq ($(ENV),kubernetes)
+	@echo "  Gateway:  http://localhost:$(PORT_GATEWAY)"
+else ifeq ($(PLATFORM),kubernetes)
 	@echo "\033[0;32m[INFO]\033[0m Starting port-forward..."
 	@echo "  Web:      http://localhost:$(PORT_WEB)"
 	@echo "  Manager:  http://localhost:$(PORT_MANAGER)/health"
+	@echo "  Gateway:  http://localhost:$(PORT_GATEWAY)"
 	@bash -c '\
 		trap "kill 0" SIGINT SIGTERM; \
 		kubectl port-forward svc/web $(PORT_WEB):80 -n $(K8S_NAMESPACE) & \
 		kubectl port-forward svc/agent-manager $(PORT_MANAGER):8080 -n $(K8S_NAMESPACE) & \
+		kubectl port-forward svc/agent-manager $(PORT_GATEWAY):8081 -n $(K8S_NAMESPACE) & \
 		wait'
 endif
 
 proxy-web: ## 只代理 Web 前端
-ifeq ($(ENV),kubernetes)
+ifeq ($(PLATFORM),kubernetes)
 	kubectl port-forward svc/web $(PORT_WEB):80 -n $(K8S_NAMESPACE)
 else
 	@echo "Docker mode: http://localhost:$(PORT_WEB)"
 endif
 
-proxy-manager: ## 只代理 Manager API
-ifeq ($(ENV),kubernetes)
-	kubectl port-forward svc/agent-manager $(PORT_MANAGER):8080 -n $(K8S_NAMESPACE)
+proxy-manager: ## 只代理 Manager API（含 gRPC-gateway）
+ifeq ($(PLATFORM),kubernetes)
+	@bash -c '\
+		trap "kill 0" SIGINT SIGTERM; \
+		kubectl port-forward svc/agent-manager $(PORT_MANAGER):8080 -n $(K8S_NAMESPACE) & \
+		kubectl port-forward svc/agent-manager $(PORT_GATEWAY):8081 -n $(K8S_NAMESPACE) & \
+		wait'
 else
 	@echo "Docker mode: http://localhost:$(PORT_MANAGER)/health"
 endif
@@ -214,17 +238,17 @@ endif
 # ============================================================
 
 update-manager: build-manager ## 重建 Manager 镜像 + 重启
-ifeq ($(ENV),docker)
-	docker compose -f $(COMPOSE_FILE) up -d agent-manager
-else ifeq ($(ENV),kubernetes)
+ifeq ($(PLATFORM),docker)
+	docker compose -f $(COMPOSE_FILE) -p $(COMPOSE_PROJECT) up -d agent-manager
+else ifeq ($(PLATFORM),kubernetes)
 	kubectl rollout restart deployment/agent-manager -n $(K8S_NAMESPACE)
 	kubectl rollout status deployment/agent-manager -n $(K8S_NAMESPACE) --timeout=120s
 endif
 
 update-web: build-web ## 重建 Web 镜像 + 重启
-ifeq ($(ENV),docker)
-	docker compose -f $(COMPOSE_FILE) up -d web
-else ifeq ($(ENV),kubernetes)
+ifeq ($(PLATFORM),docker)
+	docker compose -f $(COMPOSE_FILE) -p $(COMPOSE_PROJECT) up -d web
+else ifeq ($(PLATFORM),kubernetes)
 	kubectl rollout restart deployment/web -n $(K8S_NAMESPACE)
 	kubectl rollout status deployment/web -n $(K8S_NAMESPACE) --timeout=120s
 endif
@@ -233,9 +257,9 @@ update-agent: build-agent ## 重建 Agent 基础镜像
 	@echo "\033[0;32m[INFO]\033[0m Agent base image updated. New Hosts will use the updated image."
 
 update-all: build-manager build-web build-agent ## 全部更新：重建所有镜像 + 重启
-ifeq ($(ENV),docker)
-	docker compose -f $(COMPOSE_FILE) up -d
-else ifeq ($(ENV),kubernetes)
+ifeq ($(PLATFORM),docker)
+	docker compose -f $(COMPOSE_FILE) -p $(COMPOSE_PROJECT) up -d
+else ifeq ($(PLATFORM),kubernetes)
 	kubectl rollout restart deployment/agent-manager -n $(K8S_NAMESPACE)
 	kubectl rollout restart deployment/web -n $(K8S_NAMESPACE)
 	kubectl rollout status deployment/agent-manager -n $(K8S_NAMESPACE) --timeout=120s
@@ -244,26 +268,37 @@ endif
 	@echo "\033[0;32m[INFO]\033[0m All services updated."
 
 # ============================================================
-#  集成测试
+#  集成测试（强制 ENV=test）
 # ============================================================
 
-test-integration: ## 运行集成测试（ENV=docker 或 ENV=kubernetes，TEST_NAME=TestX 运行单个测试）
-ifeq ($(ENV),docker)
+# 集成测试无论用户传入什么 ENV，一律使用 test 环境的派生变量
+test-integration: override K8S_NAMESPACE := maze-test
+test-integration: override K8S_OVERLAY := overlays/test
+test-integration: override COMPOSE_PROJECT := maze-test
+test-integration: override HOST_DATA_DIR := $(HOME)/.maze-test
+test-integration: override PORT_MANAGER := 9090
+test-integration: override PORT_GATEWAY := 9091
+test-integration: override PORT_WEB := 9080
+test-integration: override K8S_OVERLAY_DIR := $(PROJECT_ROOT)/fabrication/kubernetes/overlays/test
+
+test-integration: ## 运行集成测试（PLATFORM=docker 或 PLATFORM=kubernetes，TEST_NAME=TestX 运行单个测试）
+ifeq ($(PLATFORM),docker)
 	@START=$$(date +%s); \
 	echo "\033[0;32m[INFO]\033[0m [1/4] Building Agent base image..."; \
 	docker build -f $(AGENT_DOCKERFILE) -t $(AGENT_IMAGE) $(PROJECT_ROOT); \
 	ELAPSED=$$(($$(date +%s) - $$START)); \
 	echo "\033[0;36m[TIME]\033[0m Agent base image built in $${ELAPSED}s"; \
 	echo "\033[0;32m[INFO]\033[0m [2/4] Starting test environment (docker-compose)..."; \
-	mkdir -p $(HOME)/.maze-test/docker/agents; \
+	docker images --filter label=maze.dockerfile-hash -q | xargs -r docker rmi -f 2>/dev/null; \
+	mkdir -p $(HOST_DATA_DIR)/docker/agents; \
 	START2=$$(date +%s); \
-	docker compose -f $(COMPOSE_TEST_FILE) -p $(COMPOSE_TEST_PROJECT) up -d --build; \
+	docker compose -f $(COMPOSE_TEST_FILE) -p $(COMPOSE_PROJECT) up -d --build; \
 	ELAPSED2=$$(($$(date +%s) - $$START2)); \
 	echo "\033[0;36m[TIME]\033[0m Test environment started in $${ELAPSED2}s"; \
 	echo "\033[0;32m[INFO]\033[0m [3/4] Waiting for Manager to be ready..."; \
 	START3=$$(date +%s); \
 	bash -c 'for i in $$(seq 1 60); do \
-		curl -sf http://localhost:9090/health > /dev/null 2>&1 && break; \
+		curl -sf http://localhost:$(PORT_MANAGER)/health > /dev/null 2>&1 && break; \
 		echo "  waiting... ($$i/60)"; sleep 2; \
 	done'; \
 	ELAPSED3=$$(($$(date +%s) - $$START3)); \
@@ -272,21 +307,85 @@ ifeq ($(ENV),docker)
 	echo "\033[0;32m[INFO]\033[0m [4/4] Running integration tests (env=docker)..."; \
 	echo "\033[0;36m[TIME]\033[0m Total setup time: $${TOTAL_SETUP}s"; \
 	cd $(TEST_DIR) && \
-		MAZE_TEST_ENV=$(ENV) \
-		MAZE_TEST_MANAGER_URL=http://localhost:9090 \
+		MAZE_TEST_ENV=$(PLATFORM) \
+		MAZE_TEST_DATA_DIR=$(HOST_DATA_DIR) \
+		MAZE_TEST_AGENT_STORAGE_BACKEND=bind \
+		MAZE_TEST_MANAGER_URL=http://localhost:$(PORT_GATEWAY) \
 		MAZE_TEST_AUTH_TOKEN=test-integration-token \
-		go test -v -tags=integration -timeout=10m $(if $(TEST_NAME),-run $(TEST_NAME),) ./...; \
+		go test -v -count=1 -tags=integration -timeout=10m $(if $(TEST_NAME),-run $(TEST_NAME),) ./...; \
 		TEST_EXIT=$$?; \
 		echo "\033[0;32m[INFO]\033[0m Stopping test environment..."; \
-		docker compose -f $(COMPOSE_TEST_FILE) -p $(COMPOSE_TEST_PROJECT) down -v --remove-orphans; \
+		docker ps -q --filter label=maze-host | xargs -r docker stop 2>/dev/null; \
+		docker ps -aq --filter label=maze-host | xargs -r docker rm 2>/dev/null; \
+		docker compose -f $(COMPOSE_TEST_FILE) -p $(COMPOSE_PROJECT) down -v --remove-orphans; \
 		exit $$TEST_EXIT
-else ifeq ($(ENV),kubernetes)
-	@echo "\033[0;32m[INFO]\033[0m Running integration tests (env=kubernetes)..."
-	@echo "\033[0;32m[INFO]\033[0m Ensure Manager is running in namespace maze-test and port-forward is active (9090)."
-	@cd $(TEST_DIR) && \
-		MAZE_TEST_ENV=$(ENV) \
-		MAZE_TEST_MANAGER_URL=http://localhost:9090 \
-		MAZE_TEST_AUTH_TOKEN=test-integration-token \
-		MAZE_TEST_NAMESPACE=maze-test \
-		go test -v -tags=integration -timeout=10m $(if $(TEST_NAME),-run $(TEST_NAME),) ./...
+		exit $$TEST_EXIT
+else ifeq ($(PLATFORM),kubernetes)
+	@bash -c '\
+		INFO="\033[0;32m[INFO]\033[0m"; \
+		ERROR="\033[0;31m[ERROR]\033[0m"; \
+		WARN="\033[1;33m[WARN]\033[0m"; \
+		NS="$(K8S_NAMESPACE)"; \
+		PF_PIDS=""; \
+		DEPLOYED=false; \
+		lsof -ti:$(PORT_GATEWAY) | xargs kill -9 2>/dev/null; \
+		lsof -ti:$(PORT_MANAGER) | xargs kill -9 2>/dev/null; \
+		cleanup() { \
+			echo -e "$$INFO Cleaning up test environment..."; \
+			if [ -n "$$PF_PIDS" ]; then \
+				echo -e "$$INFO Stopping port-forward..."; \
+				kill $$PF_PIDS 2>/dev/null; \
+			fi; \
+			if [ "$$DEPLOYED" = "true" ]; then \
+				echo -e "$$INFO Deleting namespace $$NS..."; \
+				kubectl delete namespace $$NS --ignore-not-found=true --wait=false 2>/dev/null; \
+			fi; \
+		}; \
+		trap cleanup EXIT INT TERM; \
+		echo -e "$$INFO [1/5] Building local images for Kubernetes test env..."; \
+		docker build -f $(AGENT_DOCKERFILE) -t $(AGENT_IMAGE) $(PROJECT_ROOT); \
+		docker build -f $(MANAGER_DOCKERFILE) -t $(MANAGER_IMAGE) $(PROJECT_ROOT); \
+		echo -e "$$INFO [2/5] Recreating test namespace $$NS..."; \
+		kubectl delete namespace $$NS --ignore-not-found=true --wait=true 2>/dev/null || true; \
+		kubectl create namespace $$NS --dry-run=client -o yaml | kubectl apply -f -; \
+		DEPLOYED=true; \
+		echo -e "$$INFO [3/5] Deploying test environment to namespace $$NS..."; \
+		kubectl kustomize $(K8S_OVERLAY_DIR) | sed "s|__HOST_HOME__|$(HOME)|g" | kubectl apply -f -; \
+		if [ $$? -ne 0 ]; then \
+			echo -e "$$ERROR Failed to deploy test environment."; \
+			exit 1; \
+		fi; \
+		echo -e "$$INFO Waiting for pods to be ready..."; \
+		kubectl wait --for=condition=ready pods -l app --timeout=120s -n $$NS 2>/dev/null || \
+			(echo -e "$$WARN Timeout or partial readiness." && kubectl get pods -n $$NS); \
+		echo -e "$$INFO [4/5] Starting port-forward..."; \
+		kubectl port-forward svc/agent-manager $(PORT_MANAGER):8080 -n $$NS 2>&1 | grep -v "^Handling" & \
+		PF_PID1=$$!; \
+		kubectl port-forward svc/agent-manager $(PORT_GATEWAY):8081 -n $$NS 2>&1 | grep -v "^Handling" & \
+		PF_PID2=$$!; \
+		PF_PIDS="$$PF_PID1 $$PF_PID2"; \
+		for i in $$(seq 1 30); do \
+			if curl -sf http://localhost:$(PORT_MANAGER)/health > /dev/null 2>&1; then \
+				break; \
+			fi; \
+			if ! kill -0 $$PF_PID1 2>/dev/null || ! kill -0 $$PF_PID2 2>/dev/null; then \
+				echo -e "$$ERROR port-forward process died. Check kubectl and cluster status."; \
+				exit 1; \
+			fi; \
+			sleep 2; \
+		done; \
+		if ! curl -sf http://localhost:$(PORT_MANAGER)/health > /dev/null 2>&1; then \
+			echo -e "$$ERROR port-forward not ready after 60s."; \
+			exit 1; \
+		fi; \
+		echo -e "$$INFO Port-forward active: manager=$(PORT_MANAGER) gateway=$(PORT_GATEWAY)"; \
+		echo -e "$$INFO [5/5] Running tests..."; \
+		cd $(TEST_DIR) && \
+			MAZE_TEST_ENV=$(PLATFORM) \
+			MAZE_TEST_DATA_DIR=$(HOST_DATA_DIR) \
+			MAZE_TEST_AGENT_STORAGE_BACKEND=hostpath \
+			MAZE_TEST_MANAGER_URL=http://localhost:$(PORT_GATEWAY) \
+			MAZE_TEST_AUTH_TOKEN=test-integration-token \
+			MAZE_TEST_NAMESPACE=$(K8S_NAMESPACE) \
+			go test -v -count=1 -tags=integration -timeout=10m $(if $(TEST_NAME),-run $(TEST_NAME),) ./...'
 endif

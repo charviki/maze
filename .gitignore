@@ -58,3 +58,5 @@ node_modules
 tmp/
 *.tgz
 *.tar.gz
+# use ln -s AGENTS.md CLAUDE.md
+CLAUDE.md

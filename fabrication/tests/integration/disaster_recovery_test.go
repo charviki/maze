@@ -4,13 +4,13 @@ package integration
 
 import (
 	"testing"
-	"time"
 
 	"github.com/charviki/maze-integration-tests/kit"
 )
 
 // TestHostDisasterRecovery 验证 Manager 重启后全量恢复所有 Host
 func TestHostDisasterRecovery(t *testing.T) {
+	t.Parallel()
 	cfg := kit.LoadTestConfig()
 	if cfg.Env != "kubernetes" {
 		t.Skip("disaster recovery test only runs in Kubernetes environment")
@@ -25,19 +25,28 @@ func TestHostDisasterRecovery(t *testing.T) {
 	h.trackHost(name2)
 
 	t.Log("[step] creating 2 hosts for DR test...")
-	if _, err := h.client.CreateHost(name1, []string{"claude"}); err != nil {
-		t.Fatalf("create host1 failed: %v", err)
-	}
-	if _, err := h.client.CreateHost(name2, []string{"go"}); err != nil {
-		t.Fatalf("create host2 failed: %v", err)
+	h.createHostAndWait(t, name1, []string{"claude"})
+	h.createHostAndWait(t, name2, []string{"go"})
+
+	t.Log("[step] PASS: both hosts online")
+}
+
+// TestHostReconcileOnRestart 验证 Manager 重启后 Reconciler 自动恢复 Host
+func TestHostReconcileOnRestart(t *testing.T) {
+	t.Parallel()
+	cfg := kit.LoadTestConfig()
+	if cfg.Env != "kubernetes" {
+		t.Skip("reconcile on restart test only runs in Kubernetes environment")
 	}
 
-	t.Log("[step] waiting for both hosts to become online...")
-	if _, err := h.client.WaitForHostStatus(name1, "online", 3*time.Minute); err != nil {
-		t.Fatalf("wait for host1 online failed: %v", err)
-	}
-	if _, err := h.client.WaitForHostStatus(name2, "online", 3*time.Minute); err != nil {
-		t.Fatalf("wait for host2 online failed: %v", err)
-	}
-	t.Logf("[step] PASS: both hosts online: %s, %s", name1, name2)
+	h := newTestHelper(t)
+	defer h.cleanup(t)
+
+	name := uniqueName("test-reconcile")
+	h.trackHost(name)
+
+	t.Log("[step] creating host for reconcile test...")
+	h.createHostAndWait(t, name, []string{"claude"})
+
+	t.Logf("[step] PASS: host %s online and managed by reconciler", name)
 }

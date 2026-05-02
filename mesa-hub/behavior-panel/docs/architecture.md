@@ -204,9 +204,10 @@ Manager 启动时执行一次：
 
 ```
 浏览器 → Nginx (:10800)
-            ├── /          → 前端静态资源 (React SPA)
-            ├── /api/*     → proxy_pass → agent-manager:8080
-            └── /health    → proxy_pass → agent-manager:8080
+            ├── /                → Portal 首页 (Landing 含登录 → 主界面)
+            ├── /behavior-panel/ → Behavior Panel SPA (Host 管理)
+            ├── /api/*           → proxy_pass → agent-manager:8080
+            └── /health          → proxy_pass → agent-manager:8080
 
 agent-manager (:8080)
   ├── /api/v1/nodes/register    ← Agent 注册
@@ -222,14 +223,15 @@ Agent 实例（动态创建）
 - **web** — Nginx 容器，构建前端资产并托管静态文件 + 反向代理 API
 - **agent-manager** — Go 后端容器，监听 8080 端口
   - 挂载 `/var/run/docker.sock` 以动态创建/销毁 Host 容器
-  - 挂载 `~/.maze/docker/agents:/data` 以管理 Host 持久化目录
+  - 挂载 `~/.maze-prod/docker:/data` 以持久化 Manager 元数据，并通过 `/data/agents` 管理 Host 工作目录
   - 安装 `docker-ce-cli` 用于执行 docker build/run/stop/rm
 - **Agent 实例** — 全部通过 Manager UI 动态创建，不再在 docker-compose.yml 中静态定义
 
 ### Nginx 配置要点（来自 nginx.conf）
+- Portal 首页：`/` → 302 重定向到 `/portal/`，`/portal/` → alias + `try_files`
+- Behavior Panel：`/behavior-panel/` → `alias` + `try_files $uri $uri/ /behavior-panel/index.html`
 - WebSocket 支持：`proxy_http_version 1.1` + `Upgrade/Connection` 头处理
 - 长连接超时：`proxy_read_timeout 3600s`（避免终端连接被断开）
-- SPA 路由：`try_files $uri $uri/ /index.html`
 
 ## 配置
 
@@ -245,11 +247,12 @@ Agent 实例（动态创建）
 | server.auth_token | AGENT_MANAGER_SERVER_AUTH_TOKEN | "" | API 鉴权 Token，空为开发模式 |
 | server.allowed_origins | AGENT_MANAGER_SERVER_ALLOWED_ORIGINS | [] | CORS/WebSocket 允许的来源列表 |
 | server.allow_private_networks | AGENT_MANAGER_ALLOW_PRIVATE_NETWORKS | false | 是否允许代理到内网 IP |
-| workspace.base_dir | AGENT_MANAGER_WORKSPACE_BASE_DIR | ~/.maze/docker/agents | 宿主机持久化根目录（用于 docker -v 挂载路径） |
-| workspace.mount_dir | AGENT_MANAGER_WORKSPACE_MOUNT_DIR | 同 base_dir | Manager 容器内挂载路径（用于文件操作） |
+| workspace.base_dir | AGENT_MANAGER_WORKSPACE_BASE_DIR | ~/.maze/docker | Manager 元数据根目录（nodes.json / host_specs.json / audit.log / host_logs；容器化部署通常挂载到 `/data`） |
+| workspace.mount_dir | AGENT_MANAGER_WORKSPACE_MOUNT_DIR | 同 base_dir | Manager 容器内的元数据挂载路径（用于文件操作） |
 | docker.socket_path | AGENT_MANAGER_DOCKER_SOCKET_PATH | /var/run/docker.sock | Docker socket 路径 |
 | docker.network | AGENT_MANAGER_DOCKER_NETWORK | "" | Docker 网络名（Host 容器加入此网络） |
 | docker.agent_base_image | AGENT_MANAGER_DOCKER_AGENT_BASE_IMAGE | "" | Agent 基础镜像名（含 agent 二进制和 entrypoint） |
+| docker.agent_data_dir | AGENT_MANAGER_DOCKER_AGENT_DATA_DIR | `<workspace.base_dir>/agents` | Docker Agent 宿主机根目录；容器化部署中常显式指向宿主机的 `.../docker/agents` |
 | docker.manager_addr | AGENT_MANAGER_DOCKER_MANAGER_ADDR | http://agent-manager:8080 | Manager 在容器网络中的地址 |
 
 ### 开发模式

@@ -1,33 +1,43 @@
 package kit
 
 import (
+	"net/http"
 	"os"
+	"time"
+
+	client "github.com/charviki/maze-cradle/api/gen/http"
 )
 
-// TestConfig 从环境变量读取集成测试配置，确保与生产环境隔离
 type TestConfig struct {
-	// ManagerURL 是 Manager API 的地址
-	ManagerURL string
-	// Env 是测试环境类型：docker 或 kubernetes
-	Env string
-	// Namespace 是 K8s 测试 namespace（仅 K8s 环境使用）
-	Namespace string
-	// DataDir 是测试数据根目录
-	DataDir string
-	// AuthToken 是 API 鉴权 token
-	AuthToken string
+	ManagerURL          string
+	Env                 string
+	Namespace           string
+	DataDir             string
+	AuthToken           string
+	AgentStorageBackend string
 }
 
-// LoadTestConfig 从环境变量加载测试配置
 func LoadTestConfig() *TestConfig {
 	cfg := &TestConfig{
-		ManagerURL: getEnv("MAZE_TEST_MANAGER_URL", "http://localhost:9090"),
-		Env:        getEnv("MAZE_TEST_ENV", "docker"),
-		Namespace:  getEnv("MAZE_TEST_NAMESPACE", "maze-test"),
-		DataDir:    getEnv("MAZE_TEST_DATA_DIR", os.Getenv("HOME")+"/.maze-test"),
-		AuthToken:  getEnv("MAZE_TEST_AUTH_TOKEN", "test-integration-token"),
+		ManagerURL:          getEnv("MAZE_TEST_MANAGER_URL", "http://localhost:9091"),
+		Env:                 getEnv("MAZE_TEST_ENV", "docker"),
+		Namespace:           getEnv("MAZE_TEST_NAMESPACE", "maze-test"),
+		DataDir:             getEnv("MAZE_TEST_DATA_DIR", os.Getenv("HOME")+"/.maze-test"),
+		AuthToken:           getEnv("MAZE_TEST_AUTH_TOKEN", "test-integration-token"),
+		AgentStorageBackend: getEnv("MAZE_TEST_AGENT_STORAGE_BACKEND", defaultAgentStorageBackend(getEnv("MAZE_TEST_ENV", "docker"))),
 	}
 	return cfg
+}
+
+func defaultAgentStorageBackend(env string) string {
+	switch env {
+	case "docker":
+		return "bind"
+	case "kubernetes":
+		return "hostpath"
+	default:
+		return "unknown"
+	}
 }
 
 func getEnv(key, fallback string) string {
@@ -35,4 +45,17 @@ func getEnv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+// NewTestAPIClient 创建指向 gRPC-gateway (:9091) 的 OpenAPI 生成 client
+func NewTestAPIClient(cfg *TestConfig) *client.APIClient {
+	config := client.NewConfiguration()
+	config.Servers = client.ServerConfigurations{
+		{URL: cfg.ManagerURL},
+	}
+	config.HTTPClient = &http.Client{Timeout: 30 * time.Second}
+	if cfg.AuthToken != "" {
+		config.AddDefaultHeader("Authorization", "Bearer "+cfg.AuthToken)
+	}
+	return client.NewAPIClient(config)
 }

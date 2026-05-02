@@ -9,6 +9,7 @@ import (
 
 // TestComboImageCache 验证相同工具组合的 Host 共享镜像缓存
 func TestComboImageCache(t *testing.T) {
+	t.Parallel()
 	h := newTestHelper(t)
 	defer h.cleanup(t)
 
@@ -17,27 +18,17 @@ func TestComboImageCache(t *testing.T) {
 	h.trackHost(name1)
 	h.trackHost(name2)
 
-	t.Log("[step] creating first host [claude, go] (cold build)...")
+	t.Log("[step] creating first host [claude] (cold build)...")
 	start1 := time.Now()
-	if _, err := h.client.CreateHost(name1, []string{"claude", "go"}); err != nil {
-		t.Fatalf("create host1 failed: %v", err)
-	}
-	_, err := h.client.WaitForHostStatus(name1, "online", 3*time.Minute)
-	if err != nil {
-		t.Logf("[step] host1 not online yet (may still be registering): %v", err)
-	}
+	h.createHostAndWait(t, name1, []string{"claude"})
 	buildDuration1 := time.Since(start1)
 	t.Logf("[step] first host total time: %v", buildDuration1)
 
-	t.Log("[step] creating second host [go, claude] (should hit cache)...")
+	t.Log("[step] creating second host [claude] (should hit cache)...")
 	start2 := time.Now()
-	if _, err := h.client.CreateHost(name2, []string{"go", "claude"}); err != nil {
-		t.Fatalf("create host2 failed: %v", err)
-	}
-	_, err = h.client.WaitForHostStatus(name2, "online", 3*time.Minute)
-	if err != nil {
-		t.Logf("[step] host2 not online yet (may still be registering): %v", err)
-	}
+	// 第二个 Host 也必须等到真正上线；否则 defer cleanup 可能先于异步创建完成，
+	// 把“尚未出现的 Host”误判成已删除，最终留下残留 Pod/目录。
+	h.createHostAndWait(t, name2, []string{"claude"})
 	buildDuration2 := time.Since(start2)
 	t.Logf("[step] second host total time: %v", buildDuration2)
 

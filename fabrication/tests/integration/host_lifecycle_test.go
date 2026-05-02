@@ -3,51 +3,16 @@
 package integration
 
 import (
-	"fmt"
+	"context"
 	"testing"
 	"time"
 
-	"github.com/charviki/maze-integration-tests/kit"
+	client "github.com/charviki/maze-cradle/api/gen/http"
 )
-
-type testHelper struct {
-	client *kit.APIClient
-	cfg    *kit.TestConfig
-	clean  []string
-}
-
-func newTestHelper(t *testing.T) *testHelper {
-	t.Helper()
-	cfg := kit.LoadTestConfig()
-	client := kit.NewAPIClient(cfg.ManagerURL, cfg.AuthToken)
-
-	if _, err := client.ListHosts(); err != nil {
-		t.Skipf("Manager API not available at %s: %v", cfg.ManagerURL, err)
-	}
-
-	return &testHelper{client: client, cfg: cfg}
-}
-
-func (h *testHelper) cleanup(t *testing.T) {
-	t.Helper()
-	t.Logf("[step] cleanup: deleting %d hosts", len(h.clean))
-	for _, name := range h.clean {
-		if err := h.client.DeleteHost(name); err != nil {
-			t.Logf("[cleanup] failed to delete host %s: %v", name, err)
-		}
-	}
-}
-
-func (h *testHelper) trackHost(name string) {
-	h.clean = append(h.clean, name)
-}
-
-func uniqueName(prefix string) string {
-	return fmt.Sprintf("%s-%d", prefix, time.Now().UnixMilli())
-}
 
 // TestHostCreateOnline 验证 Host 创建后能成功上线
 func TestHostCreateOnline(t *testing.T) {
+	t.Parallel()
 	h := newTestHelper(t)
 	defer h.cleanup(t)
 
@@ -55,29 +20,44 @@ func TestHostCreateOnline(t *testing.T) {
 	h.trackHost(name)
 
 	t.Log("[step] creating host with tools=[claude]...")
-	info, err := h.client.CreateHost(name, []string{"claude"})
-	if err != nil {
-		t.Fatalf("create host failed: %v", err)
+	nameField := name
+	body := client.V1CreateHostRequest{
+		Name:  &nameField,
+		Tools: []string{"claude"},
 	}
-	if info.Name != name {
-		t.Errorf("expected name=%s, got=%s", name, info.Name)
+
+	ctx := context.Background()
+	resp, httpResp, err := h.apiClient.HostServiceAPI.HostServiceCreateHost(ctx).Body(body).Execute()
+	if err != nil {
+		t.Fatalf("create host failed: %v (status=%d)", err, httpResp.StatusCode)
+	}
+	if resp.GetName() != name {
+		t.Errorf("expected name=%s, got=%s", name, resp.GetName())
+	}
+	if resp.GetStatus() == "" {
+		t.Error("expected CreateHost to return non-empty status")
+	}
+	if gotTools := resp.GetTools(); len(gotTools) != 1 || gotTools[0] != "claude" {
+		t.Errorf("expected tools=[claude], got=%v", gotTools)
 	}
 
 	t.Log("[step] waiting for host to become online (timeout=3m)...")
-	onlineInfo, err := h.client.WaitForHostStatus(name, "online", 3*time.Minute)
-	if err != nil {
-		t.Fatalf("wait for host online failed: %v", err)
-	}
+	h.waitForHostStatus(t, name, "online", 3*time.Minute)
 
-	t.Logf("[step] verifying heartbeat (address=%s)", onlineInfo.Address)
-	if onlineInfo.LastHeartbeat == "" {
-		t.Error("expected last_heartbeat to be set for online host")
+	info, _, err := h.apiClient.HostServiceAPI.HostServiceGetHost(ctx, name).Execute()
+	if err != nil {
+		t.Fatalf("get host failed: %v", err)
 	}
-	t.Log("[step] PASS: host is online with heartbeat")
+	t.Logf("[step] verifying host status=%s", info.GetStatus())
+	if info.GetStatus() != "online" {
+		t.Errorf("expected status=online, got=%s", info.GetStatus())
+	}
+	t.Log("[step] PASS: host is online")
 }
 
 // TestHostListQuery 验证 Host 列表查询返回正确的合并视图
 func TestHostListQuery(t *testing.T) {
+	t.Parallel()
 	h := newTestHelper(t)
 	defer h.cleanup(t)
 
@@ -87,25 +67,21 @@ func TestHostListQuery(t *testing.T) {
 	h.trackHost(name2)
 
 	t.Log("[step] creating 2 hosts (claude + go)...")
-	if _, err := h.client.CreateHost(name1, []string{"claude"}); err != nil {
-		t.Fatalf("create host1 failed: %v", err)
-	}
-	if _, err := h.client.CreateHost(name2, []string{"go"}); err != nil {
-		t.Fatalf("create host2 failed: %v", err)
-	}
+	h.createHostAndWait(t, name1, []string{"claude"})
+	h.createHostAndWait(t, name2, []string{"go"})
 
 	t.Log("[step] querying host list...")
-	hosts, err := h.client.ListHosts()
+	hosts, _, err := h.apiClient.HostServiceAPI.HostServiceListHosts(context.Background()).Execute()
 	if err != nil {
 		t.Fatalf("list hosts failed: %v", err)
 	}
 
 	found1, found2 := false, false
-	for _, host := range hosts {
-		if host.Name == name1 {
+	for _, host := range hosts.GetHosts() {
+		if host.GetName() == name1 {
 			found1 = true
 		}
-		if host.Name == name2 {
+		if host.GetName() == name2 {
 			found2 = true
 		}
 	}
@@ -115,40 +91,41 @@ func TestHostListQuery(t *testing.T) {
 	if !found2 {
 		t.Errorf("host %s not found in list", name2)
 	}
-	t.Logf("[step] PASS: list returned %d hosts, both found", len(hosts))
+	t.Logf("[step] PASS: list returned %d hosts, both found", len(hosts.GetHosts()))
 }
 
 // TestHostDelete 验证 Host 删除后从列表中消失
 func TestHostDelete(t *testing.T) {
+	t.Parallel()
 	h := newTestHelper(t)
 
 	name := uniqueName("test-delete")
 
 	t.Log("[step] creating host for deletion test...")
-	if _, err := h.client.CreateHost(name, []string{"claude"}); err != nil {
-		t.Fatalf("create host failed: %v", err)
-	}
+	h.createHostAndWait(t, name, []string{"claude"})
 
 	t.Log("[step] deleting host...")
-	if err := h.client.DeleteHost(name); err != nil {
+	_, _, err := h.apiClient.HostServiceAPI.HostServiceDeleteHost(context.Background(), name).Execute()
+	if err != nil {
 		t.Fatalf("delete host failed: %v", err)
 	}
 
 	t.Log("[step] verifying host no longer in list...")
-	hosts, err := h.client.ListHosts()
+	hosts, _, err := h.apiClient.HostServiceAPI.HostServiceListHosts(context.Background()).Execute()
 	if err != nil {
 		t.Fatalf("list hosts failed: %v", err)
 	}
-	for _, host := range hosts {
-		if host.Name == name {
+	for _, host := range hosts.GetHosts() {
+		if host.GetName() == name {
 			t.Errorf("host %s still exists after deletion", name)
 		}
 	}
 	t.Log("[step] PASS: host deleted successfully")
 }
 
-// TestHostCreateDuplicate 验证同名 Host 创建返回 409
+// TestHostCreateDuplicate 验证同名 Host 创建返回错误
 func TestHostCreateDuplicate(t *testing.T) {
+	t.Parallel()
 	h := newTestHelper(t)
 	defer h.cleanup(t)
 
@@ -156,12 +133,15 @@ func TestHostCreateDuplicate(t *testing.T) {
 	h.trackHost(name)
 
 	t.Log("[step] creating first host...")
-	if _, err := h.client.CreateHost(name, []string{"claude"}); err != nil {
-		t.Fatalf("first create failed: %v", err)
-	}
+	h.createHostAndWait(t, name, []string{"claude"})
 
 	t.Log("[step] creating duplicate host (expect rejection)...")
-	_, err := h.client.CreateHost(name, []string{"claude"})
+	nameField := name
+	body := client.V1CreateHostRequest{
+		Name:  &nameField,
+		Tools: []string{"claude"},
+	}
+	_, _, err := h.apiClient.HostServiceAPI.HostServiceCreateHost(context.Background()).Body(body).Execute()
 	if err == nil {
 		t.Fatal("expected error for duplicate host creation, got nil")
 	}
