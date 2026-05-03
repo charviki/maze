@@ -7,8 +7,6 @@ import (
 	"log/slog"
 	"os"
 	"sync"
-
-	"github.com/cloudwego/hertz/pkg/common/hlog"
 )
 
 // Logger 统一日志接口，覆盖当前项目实际使用的日志方法 + 结构化字段方法。
@@ -26,8 +24,6 @@ type Logger interface {
 }
 
 // SlogLogger 基于 Go 标准库 log/slog 的 Logger 实现。
-// 同时满足 logutil.Logger 和 hlog.FullLogger 接口，
-// 可通过 hlog.SetLogger() 替换 Hertz 框架的默认 logger。
 // attrs 累积 With 链附加的结构化属性，SetLevel/SetOutput 时通过 rebuildInner 重建 inner，
 // 避免丢失上下文字段。
 type SlogLogger struct {
@@ -141,7 +137,7 @@ func (l *SlogLogger) Fatalf(format string, v ...interface{}) {
 	os.Exit(1)
 }
 
-// --- hlog.FormatLogger 接口实现 (7 个 Xxxf 方法) ---
+// --- 扩展格式化日志方法 ---
 
 func (l *SlogLogger) Tracef(format string, v ...interface{}) {
 	l.inner.Debug(fmt.Sprintf(format, v...))
@@ -155,7 +151,7 @@ func (l *SlogLogger) Noticef(format string, v ...interface{}) {
 	l.inner.Info(fmt.Sprintf(format, v...))
 }
 
-// --- hlog.Logger 接口实现 (7 个 Xxx 方法) ---
+// --- 扩展非格式化日志方法 ---
 
 func (l *SlogLogger) Trace(v ...interface{})  { l.Tracef("%v", v...) }
 func (l *SlogLogger) Debug(v ...interface{})  { l.Debugf("%v", v...) }
@@ -165,7 +161,7 @@ func (l *SlogLogger) Warn(v ...interface{})   { l.Warnf("%v", v...) }
 func (l *SlogLogger) Error(v ...interface{})  { l.Errorf("%v", v...) }
 func (l *SlogLogger) Fatal(v ...interface{})  { l.Fatalf("%v", v...) }
 
-// --- hlog.CtxLogger 接口实现 (7 个 CtxXxxf 方法) ---
+// --- 扩展带 context 的日志方法 ---
 // context 参数暂不使用，直接委托给对应 Xxxf 方法
 
 func (l *SlogLogger) CtxTracef(_ context.Context, format string, v ...interface{}) {
@@ -190,32 +186,11 @@ func (l *SlogLogger) CtxFatalf(_ context.Context, format string, v ...interface{
 	l.Fatalf(format, v...)
 }
 
-// --- hlog.Control 接口实现 ---
-
-// SetLevel 将 hlog 日志级别映射到 slog 级别
-func (l *SlogLogger) SetLevel(level hlog.Level) {
+// SetLevel 调整底层 slog 等级，便于测试或局部降噪。
+func (l *SlogLogger) SetLevel(level slog.Level) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	var sl slog.Level
-	switch level {
-	case hlog.LevelTrace:
-		sl = slog.LevelDebug
-	case hlog.LevelDebug:
-		sl = slog.LevelDebug
-	case hlog.LevelInfo:
-		sl = slog.LevelInfo
-	case hlog.LevelNotice:
-		sl = slog.LevelInfo
-	case hlog.LevelWarn:
-		sl = slog.LevelWarn
-	case hlog.LevelError:
-		sl = slog.LevelError
-	case hlog.LevelFatal:
-		sl = slog.LevelError
-	default:
-		sl = slog.LevelInfo
-	}
-	l.level = sl
+	l.level = level
 	l.rebuildInner()
 }
 

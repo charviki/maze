@@ -2,25 +2,24 @@ package httputil
 
 import (
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
-
-	"github.com/cloudwego/hertz/pkg/app"
 )
 
 // TestSuccess 验证 Success 返回 200 状态码和正确的 JSON 响应体
 func TestSuccess(t *testing.T) {
-	rc := app.NewContext(0)
-	rc.Request.SetMethod("GET")
-	rc.Request.SetRequestURI("/test")
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	rec := httptest.NewRecorder()
 
-	Success(rc, map[string]string{"key": "value"})
+	Success(rec, req, map[string]string{"key": "value"})
 
-	if rc.Response.StatusCode() != 200 {
-		t.Errorf("状态码 = %d, 期望 200", rc.Response.StatusCode())
+	if rec.Code != http.StatusOK {
+		t.Errorf("状态码 = %d, 期望 200", rec.Code)
 	}
 
 	var body map[string]interface{}
-	if err := json.Unmarshal(rc.Response.Body(), &body); err != nil {
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 		t.Fatalf("解析响应体失败: %v", err)
 	}
 
@@ -39,18 +38,17 @@ func TestSuccess(t *testing.T) {
 
 // TestError 验证 Error 返回指定状态码和正确的错误 JSON 响应体
 func TestError(t *testing.T) {
-	rc := app.NewContext(0)
-	rc.Request.SetMethod("GET")
-	rc.Request.SetRequestURI("/test")
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	rec := httptest.NewRecorder()
 
-	Error(rc, 404, "not found")
+	Error(rec, req, 404, "not found")
 
-	if rc.Response.StatusCode() != 404 {
-		t.Errorf("状态码 = %d, 期望 404", rc.Response.StatusCode())
+	if rec.Code != 404 {
+		t.Errorf("状态码 = %d, 期望 404", rec.Code)
 	}
 
 	var body map[string]interface{}
-	if err := json.Unmarshal(rc.Response.Body(), &body); err != nil {
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 		t.Fatalf("解析响应体失败: %v", err)
 	}
 

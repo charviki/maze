@@ -13,7 +13,7 @@
 
 ## 依赖关系
 
-- 依赖: Go 1.26 标准库 + hertz (HTTP 框架) + yaml.v3 (配置解析) + gRPC + protobuf + grpc-gateway + buf (IDL 代码生成)
+- 依赖: Go 1.26 标准库 + yaml.v3 (配置解析) + gRPC + protobuf + grpc-gateway + gorilla/websocket + buf (IDL 代码生成)
 - 被依赖: [behavior-panel](../../mesa-hub/behavior-panel/AGENTS.md), [black-ridge](../../sweetwater/black-ridge/AGENTS.md)
 
 ## 关键文件
@@ -25,11 +25,12 @@
 | api/gen/                         | buf 生成的 Go 类型 + gRPC stub + grpc-gateway handler（自动生成，勿手动编辑） | —                                          |
 | api/gen/openapiv2/               | buf 生成的 OpenAPI/Swagger 文档（maze.swagger.json 为合并后的完整 spec） | 自动生成，勿手动编辑                       |
 | api/gen/http/                    | openapi-generator 生成的 Go HTTP client（自动生成，勿手动编辑）     | —                                          |
-| configutil/                      | 配置搜索/加载/合并/层定义/原子写入                    | [packages.md](docs/packages.md)            |
-| httputil/                        | 统一 JSON 响应封装 + CORS 中间件                     | [packages.md](docs/packages.md)            |
+| configutil/                      | 配置搜索/加载/合并/层定义/原子写入 + 反射式 env override + 路径展开 + 共享 ServerConfig | [packages.md](docs/packages.md)            |
+| httputil/                        | 统一 JSON 响应封装 + CORS + WebSocket + SSRF 工具     | [packages.md](docs/packages.md)            |
 | logutil/logger.go                | 结构化日志接口与 slog 实现                           | [packages.md](docs/packages.md)            |
-| middleware/                      | Bearer Token 鉴权 + CORS 中间件（委托 httputil）     | [packages.md](docs/packages.md)            |
+| middleware/                      | Bearer Token 鉴权 + CORS 中间件（标准 `net/http` 形态，委托 httputil） | [packages.md](docs/packages.md)            |
 | gatewayutil/                     | grpc-gateway 响应包装器 + ServeMux 工厂 + 认证/审计 interceptor | [packages.md](docs/packages.md)            |
+| grpcutil/ + lifecycle/           | gRPC 生命周期适配 + HTTP/gRPC 统一启停管理            | [packages.md](docs/packages.md)            |
 | pipeline/pipeline.go             | 管线步骤定义与层级过滤                               | [packages.md](docs/packages.md)            |
 | protocol/                        | 领域模型：Agent 注册/心跳 + Host 部署 + 审计日志（JSON 持久化） | [packages.md](docs/packages.md)            |
 | maskutil/mask.go                 | 敏感值脱敏                                           | [packages.md](docs/packages.md)            |
