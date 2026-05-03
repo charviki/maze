@@ -15,8 +15,8 @@ describe('api.listSessions - 成功请求', () => {
         id: 'session-1',
         name: 'session-1',
         status: 'running',
-        created_at: '2024-01-01',
-        window_count: 1,
+        createdAt: '2024-01-01',
+        windowCount: 1,
       },
     ];
     mockFetch.mockResolvedValueOnce({
@@ -45,8 +45,8 @@ describe('api.createSession - 成功创建', () => {
       id: 'new-1',
       name: 'new-1',
       status: 'running',
-      created_at: '2024-01-01',
-      window_count: 1,
+      createdAt: '2024-01-01',
+      windowCount: 1,
     };
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -95,9 +95,9 @@ describe('配置接口', () => {
           JSON.stringify({
             status: 'ok',
             data: {
-              session_id: 'session-1',
-              template_id: 'claude',
-              working_dir: '/home/agent/session-1',
+              sessionId: 'session-1',
+              templateId: 'claude',
+              workingDir: '/home/agent/session-1',
               scope: 'project',
               files: [
                 { path: '.claude/settings.json', content: '{}', exists: true, hash: 'md5:abc' },
@@ -123,7 +123,7 @@ describe('配置接口', () => {
           JSON.stringify({
             status: 'ok',
             data: {
-              template_id: 'claude',
+              templateId: 'claude',
               scope: 'global',
               files: [
                 { path: '~/.claude/settings.json', content: '{}', exists: true, hash: 'md5:abc' },
@@ -135,7 +135,7 @@ describe('配置接口', () => {
 
     const api = createAgentApi();
     const result = await api.updateTemplateConfig('claude', {
-      files: [{ path: '~/.claude/settings.json', content: '{}', base_hash: 'md5:empty' }],
+      files: [{ path: '~/.claude/settings.json', content: '{}', baseHash: 'md5:empty' }],
     });
 
     expect(result.status).toBe('ok');
@@ -155,14 +155,14 @@ describe('配置接口', () => {
             status: 'error',
             code: 'config_conflict',
             message: '配置已变更，请重新加载后再修改',
-            conflicts: [{ path: '~/.claude/settings.json', current_hash: 'md5:def' }],
+            conflicts: [{ path: '~/.claude/settings.json', currentHash: 'md5:def' }],
           }),
         ),
     });
 
     const api = createAgentApi();
     const result = await api.updateTemplateConfig('claude', {
-      files: [{ path: '~/.claude/settings.json', content: '{}', base_hash: 'md5:abc' }],
+      files: [{ path: '~/.claude/settings.json', content: '{}', baseHash: 'md5:abc' }],
     });
 
     expect(result.status).toBe('error');

@@ -24,7 +24,7 @@ interface TemplateManagerProps {
 interface EditableConfigFile extends ConfigFileSnapshot {
   content: string;
   original_content: string;
-  base_hash: string;
+  baseHash: string;
 }
 
 const emptyConfigLayer = (): ConfigLayer => ({ env: {}, files: [] });
@@ -37,7 +37,7 @@ const emptyTemplate = (): SessionTemplate => ({
   icon: '📦',
   builtin: false,
   defaults: emptyConfigLayer(),
-  session_schema: { env_defs: [], file_defs: [] },
+  sessionSchema: { envDefs: [], fileDefs: [] },
 });
 
 export function TemplateManager({ open, onClose, apiClient }: TemplateManagerProps) {
@@ -117,7 +117,7 @@ export function TemplateManager({ open, onClose, apiClient }: TemplateManagerPro
         ...file,
         content: file.content,
         original_content: file.content,
-        base_hash: file.hash,
+        baseHash: file.hash,
       })),
     );
     setLoadingEditor(false);
@@ -176,7 +176,7 @@ export function TemplateManager({ open, onClose, apiClient }: TemplateManagerPro
         const configReq: ConfigFileUpdate[] = globalFiles.map((file) => ({
           path: file.path,
           content: file.content,
-          base_hash: file.base_hash,
+          baseHash: file.baseHash,
         }));
         const configRes = await apiClient.updateTemplateConfig(editing.id, { files: configReq });
         if (configRes.status !== 'ok' || !configRes.data) {
@@ -195,7 +195,7 @@ export function TemplateManager({ open, onClose, apiClient }: TemplateManagerPro
             ...file,
             content: file.content,
             original_content: file.content,
-            base_hash: file.hash,
+            baseHash: file.hash,
           })),
         );
       }
@@ -263,10 +263,10 @@ export function TemplateManager({ open, onClose, apiClient }: TemplateManagerPro
       prev
         ? {
             ...prev,
-            session_schema: {
-              ...prev.session_schema,
-              env_defs: [
-                ...prev.session_schema.env_defs,
+            sessionSchema: {
+              ...prev.sessionSchema,
+              envDefs: [
+                ...prev.sessionSchema.envDefs,
                 { key: '', label: '', required: false, placeholder: '', sensitive: false },
               ],
             },
@@ -277,10 +277,10 @@ export function TemplateManager({ open, onClose, apiClient }: TemplateManagerPro
 
   const updateEnvDef = (idx: number, field: keyof EnvDef, val: string | boolean) => {
     if (!editing) return;
-    const defs = [...editing.session_schema.env_defs];
+    const defs = [...editing.sessionSchema.envDefs];
     defs[idx] = { ...defs[idx], [field]: val };
     setEditing((prev) =>
-      prev ? { ...prev, session_schema: { ...prev.session_schema, env_defs: defs } } : null,
+      prev ? { ...prev, sessionSchema: { ...prev.sessionSchema, envDefs: defs } } : null,
     );
   };
 
@@ -290,9 +290,9 @@ export function TemplateManager({ open, onClose, apiClient }: TemplateManagerPro
       prev
         ? {
             ...prev,
-            session_schema: {
-              ...prev.session_schema,
-              env_defs: prev.session_schema.env_defs.filter((_, i) => i !== idx),
+            sessionSchema: {
+              ...prev.sessionSchema,
+              envDefs: prev.sessionSchema.envDefs.filter((_, i) => i !== idx),
             },
           }
         : null,
@@ -306,11 +306,11 @@ export function TemplateManager({ open, onClose, apiClient }: TemplateManagerPro
       prev
         ? {
             ...prev,
-            session_schema: {
-              ...prev.session_schema,
-              file_defs: [
-                ...prev.session_schema.file_defs,
-                { path: '', label: '', required: false, default_content: '' },
+            sessionSchema: {
+              ...prev.sessionSchema,
+              fileDefs: [
+                ...prev.sessionSchema.fileDefs,
+                { path: '', label: '', required: false, defaultContent: '' },
               ],
             },
           }
@@ -320,10 +320,10 @@ export function TemplateManager({ open, onClose, apiClient }: TemplateManagerPro
 
   const updateFileDef = (idx: number, field: keyof FileDef, val: string | boolean) => {
     if (!editing) return;
-    const defs = [...editing.session_schema.file_defs];
+    const defs = [...editing.sessionSchema.fileDefs];
     defs[idx] = { ...defs[idx], [field]: val };
     setEditing((prev) =>
-      prev ? { ...prev, session_schema: { ...prev.session_schema, file_defs: defs } } : null,
+      prev ? { ...prev, sessionSchema: { ...prev.sessionSchema, fileDefs: defs } } : null,
     );
   };
 
@@ -333,9 +333,9 @@ export function TemplateManager({ open, onClose, apiClient }: TemplateManagerPro
       prev
         ? {
             ...prev,
-            session_schema: {
-              ...prev.session_schema,
-              file_defs: prev.session_schema.file_defs.filter((_, i) => i !== idx),
+            sessionSchema: {
+              ...prev.sessionSchema,
+              fileDefs: prev.sessionSchema.fileDefs.filter((_, i) => i !== idx),
             },
           }
         : null,
@@ -631,7 +631,7 @@ export function TemplateManager({ open, onClose, apiClient }: TemplateManagerPro
                       <Plus className="w-3 h-3" />
                     </Button>
                   </div>
-                  {editing.session_schema.env_defs.map((d, i) => (
+                  {editing.sessionSchema.envDefs.map((d, i) => (
                     <div key={i} className="border border-border rounded p-3 mb-3 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-medium">Env #{i + 1}</span>
@@ -719,7 +719,7 @@ export function TemplateManager({ open, onClose, apiClient }: TemplateManagerPro
                       </Button>
                     )}
                   </div>
-                  {editing.session_schema.file_defs.map((d, i) => (
+                  {editing.sessionSchema.fileDefs.map((d, i) => (
                     <div key={i} className="border border-border rounded p-3 mb-3 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-medium">File #{i + 1}</span>
@@ -777,9 +777,9 @@ export function TemplateManager({ open, onClose, apiClient }: TemplateManagerPro
                           </label>
                         </div>
                         <textarea
-                          value={d.default_content}
+                          value={d.defaultContent}
                           onChange={(e) => {
-                            updateFileDef(i, 'default_content', e.target.value);
+                            updateFileDef(i, 'defaultContent', e.target.value);
                           }}
                           className="w-full h-20 bg-background text-foreground text-xs font-mono p-1 rounded border border-border"
                           placeholder="默认文件内容..."
@@ -835,9 +835,9 @@ function cloneTemplate(tpl: SessionTemplate): SessionTemplate {
       env: { ...tpl.defaults.env },
       files: tpl.defaults.files.map((file) => ({ ...file })),
     },
-    session_schema: {
-      env_defs: tpl.session_schema.env_defs.map((def) => ({ ...def })),
-      file_defs: tpl.session_schema.file_defs.map((def) => ({ ...def })),
+    sessionSchema: {
+      envDefs: tpl.sessionSchema.envDefs.map((def) => ({ ...def })),
+      fileDefs: tpl.sessionSchema.fileDefs.map((def) => ({ ...def })),
     },
   };
 }

@@ -161,7 +161,7 @@ export function AgentPanel({
   const fetchSavedSessions = useCallback(async () => {
     const res = await apiClient.getSavedSessions();
     if (res.status === 'ok' && res.data) {
-      const valid = res.data.filter((ss) => ss.session_name);
+      const valid = res.data.filter((ss) => ss.sessionName);
       dispatch({ type: 'SET_SAVED_SESSIONS', payload: valid });
     }
   }, [apiClient]);
@@ -183,10 +183,10 @@ export function AgentPanel({
         .getSavedSessions()
         .then((res) => {
           if (res.status === 'ok' && res.data) {
-            const valid = res.data.filter((ss) => ss.session_name);
-            const found = valid.find((s) => s.session_name === state.selectedSessionId);
+            const valid = res.data.filter((ss) => ss.sessionName);
+            const found = valid.find((s) => s.sessionName === state.selectedSessionId);
             if (found) {
-              dispatch({ type: 'SET_LAST_SAVE_TIME', payload: found.saved_at });
+              dispatch({ type: 'SET_LAST_SAVE_TIME', payload: found.savedAt });
             }
           }
         })
@@ -204,22 +204,22 @@ export function AgentPanel({
         id: s.id,
         name: s.name,
         status: 'running',
-        created_at: s.created_at,
-        window_count: s.window_count,
+        createdAt: s.createdAt,
+        windowCount: s.windowCount,
       });
     }
 
     for (const ss of state.savedSessions) {
-      if (!ss.session_name) continue;
-      if (!runningSet.has(ss.session_name) && ss.restore_strategy !== 'running') {
+      if (!ss.sessionName) continue;
+      if (!runningSet.has(ss.sessionName) && ss.restoreStrategy !== 'running') {
         result.push({
-          id: ss.session_name,
-          name: ss.session_name,
+          id: ss.sessionName,
+          name: ss.sessionName,
           status: 'saved',
-          created_at: ss.saved_at,
-          window_count: 0,
-          saved_at: ss.saved_at,
-          terminal_snapshot: ss.terminal_snapshot,
+          createdAt: ss.savedAt,
+          windowCount: 0,
+          savedAt: ss.savedAt,
+          terminalSnapshot: ss.terminalSnapshot,
         });
       }
     }
@@ -268,7 +268,7 @@ export function AgentPanel({
 
   const handleViewPipeline = (e: React.MouseEvent, session: SessionDisplay) => {
     e.stopPropagation();
-    const saved = state.savedSessions.find((s) => s.session_name === session.id);
+    const saved = state.savedSessions.find((s) => s.sessionName === session.id);
     dispatch({
       type: 'SET_VIEW_PIPELINE',
       payload: { session, steps: saved?.pipeline || [] },
@@ -281,7 +281,7 @@ export function AgentPanel({
     const res = await apiClient.saveSessions();
     dispatch({ type: 'SET_SAVING', payload: false });
     if (res.status === 'ok' && res.data) {
-      dispatch({ type: 'SET_LAST_SAVE_TIME', payload: res.data.saved_at });
+      dispatch({ type: 'SET_LAST_SAVE_TIME', payload: res.data.savedAt });
       dispatch({ type: 'SET_SAVE_COOLDOWN', payload: true });
       setTimeout(() => {
         dispatch({ type: 'SET_SAVE_COOLDOWN', payload: false });

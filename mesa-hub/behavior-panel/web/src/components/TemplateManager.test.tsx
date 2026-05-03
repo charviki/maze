@@ -18,15 +18,15 @@ const builtinClaudeTemplate: SessionTemplate = {
       { path: '~/.claude/settings.json', content: '{}' },
     ],
   },
-  session_schema: {
-    env_defs: [],
-    file_defs: [
-      { path: 'CLAUDE.md', label: 'Project Memory', required: false, default_content: '' },
+  sessionSchema: {
+    envDefs: [],
+    fileDefs: [
+      { path: 'CLAUDE.md', label: 'Project Memory', required: false, defaultContent: '' },
       {
         path: '.claude/settings.json',
         label: 'Project Settings',
         required: false,
-        default_content: '',
+        defaultContent: '',
       },
     ],
   },
@@ -54,14 +54,14 @@ function createMockApi(overrides: Partial<IAgentApiClient> = {}): IAgentApiClien
     sendSignal: vi.fn(noop),
     getSavedSessions: vi.fn(() => ok([])),
     restoreSession: vi.fn(noop),
-    saveSessions: vi.fn(() => ok({ saved_at: new Date().toISOString() })),
+    saveSessions: vi.fn(() => ok({ savedAt: new Date().toISOString() })),
     buildWsUrl: vi.fn(() => 'ws://localhost/test'),
     listTemplates: vi.fn(() => ok([builtinClaudeTemplate])),
     createTemplate: vi.fn((tpl: SessionTemplate) => ok(tpl)),
     getTemplate: vi.fn((id: string) => ok({ ...builtinClaudeTemplate, id })),
     getTemplateConfig: vi.fn(() =>
       ok({
-        template_id: 'claude',
+        templateId: 'claude',
         scope: 'global' as const,
         files: [
           {
@@ -77,7 +77,7 @@ function createMockApi(overrides: Partial<IAgentApiClient> = {}): IAgentApiClien
     updateTemplate: vi.fn((id: string, tpl: SessionTemplate) => ok({ ...tpl, id })),
     updateTemplateConfig: vi.fn(() =>
       ok({
-        template_id: 'claude',
+        templateId: 'claude',
         scope: 'global' as const,
         files: [
           {
@@ -98,8 +98,8 @@ function createMockApi(overrides: Partial<IAgentApiClient> = {}): IAgentApiClien
     deleteTemplate: vi.fn(noop),
     getSessionConfig: vi.fn(noop),
     updateSessionConfig: vi.fn(noop),
-    getLocalConfig: vi.fn(() => ok({ working_dir: '/home/agent', env: {} })),
-    updateLocalConfig: vi.fn((cfg) => ok({ working_dir: '/home/agent', env: cfg.env || {} })),
+    getLocalConfig: vi.fn(() => ok({ workingDir: '/home/agent', env: {} })),
+    updateLocalConfig: vi.fn((cfg) => ok({ workingDir: '/home/agent', env: cfg.env || {} })),
     ...overrides,
   };
 }
@@ -133,7 +133,7 @@ describe('TemplateManager', () => {
         status: 'error' as const,
         code: 'config_conflict',
         message: '配置已变更，请重新加载后再修改',
-        conflicts: [{ path: '~/.claude/settings.json', current_hash: 'md5:conflict' }],
+        conflicts: [{ path: '~/.claude/settings.json', currentHash: 'md5:conflict' }],
       }),
     );
     const apiClient = createMockApi({ updateTemplateConfig });

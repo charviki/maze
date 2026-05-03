@@ -12,10 +12,10 @@ export interface SessionDisplay {
   id: string;
   name: string;
   status: 'running' | 'saved' | 'offline';
-  created_at: string;
-  window_count: number;
-  saved_at?: string;
-  terminal_snapshot?: string;
+  createdAt: string;
+  windowCount: number;
+  savedAt?: string;
+  terminalSnapshot?: string;
 }
 
 export interface SessionListProps {
@@ -190,8 +190,8 @@ export const SessionList = memo(function SessionList({
                         )}
                       </div>
                       <span className="text-[10px] text-primary/50 font-mono uppercase tracking-widest truncate mt-0.5">
-                        {isSaved && session.saved_at
-                          ? `ARCHIVED: ${new Date(session.saved_at).toLocaleString()}`
+                        {isSaved && session.savedAt
+                          ? `ARCHIVED: ${new Date(session.savedAt).toLocaleString()}`
                           : `[ LOOP_ID: ${session.id.slice(0, 8)} ]`}
                       </span>
                     </div>

@@ -12,18 +12,27 @@ import type {
 } from '@maze/fabrication';
 import { createRequest } from '@maze/fabrication';
 
-/**
- * 创建通过 Manager 代理的 Agent API 客户端。
- * 所有请求发送到 Manager 的 /api/v1/nodes/:name/sessions/* 路径，
- * Manager 代理到目标 Agent，保持可观测性（前端不再直连 Agent）。
- */
+const emptySchema = { envDefs: [], fileDefs: [] };
+const emptyDefaults = { env: {}, files: [] };
+
+function normalizeTemplate(tpl: SessionTemplate): SessionTemplate {
+  return {
+    ...tpl,
+    defaults: tpl.defaults || emptyDefaults,
+    sessionSchema: tpl.sessionSchema || emptySchema,
+  };
+}
+
 export function createAgentApi(managerBase: string, nodeName: string): IAgentApiClient {
   const nodeBase = `${managerBase}/api/v1/nodes/${encodeURIComponent(nodeName)}`;
   const base = `${nodeBase}/sessions`;
   const request = createRequest();
 
   return {
-    listSessions: () => request<Session[]>(base),
+    listSessions: async () => {
+      const res = await request<{ sessions: Session[] }>(base);
+      return { ...res, data: res.data?.sessions };
+    },
 
     createSession: (data: CreateSessionRequest) =>
       request<Session>(base, { method: 'POST', body: JSON.stringify(data) }),
@@ -49,11 +58,14 @@ export function createAgentApi(managerBase: string, nodeName: string): IAgentApi
     sendSignal: (id: string, signal: string) =>
       request<void>(`${base}/${id}/signal`, { method: 'POST', body: JSON.stringify({ signal }) }),
 
-    getSavedSessions: () => request<SavedSession[]>(`${base}/saved`),
+    getSavedSessions: async () => {
+      const res = await request<{ sessions: SavedSession[] }>(`${base}/saved`);
+      return { ...res, data: res.data?.sessions };
+    },
 
     restoreSession: (id: string) => request<void>(`${base}/${id}/restore`, { method: 'POST' }),
 
-    saveSessions: () => request<{ saved_at: string }>(`${base}/save`, { method: 'POST' }),
+    saveSessions: () => request<{ savedAt: string }>(`${base}/save`, { method: 'POST' }),
 
     buildWsUrl: (sessionId: string) => {
       const loc = window.location;
@@ -61,20 +73,27 @@ export function createAgentApi(managerBase: string, nodeName: string): IAgentApi
       return `${protocol}//${loc.host}/api/v1/nodes/${encodeURIComponent(nodeName)}/sessions/${sessionId}/ws`;
     },
 
-    listTemplates: () => request<SessionTemplate[]>(`${nodeBase}/templates`),
+    listTemplates: async () => {
+      const res = await request<{ templates: SessionTemplate[] }>(`${nodeBase}/templates`);
+      return { ...res, data: res.data?.templates?.map(normalizeTemplate) };
+    },
     createTemplate: (tpl: SessionTemplate) =>
       request<SessionTemplate>(`${nodeBase}/templates`, {
         method: 'POST',
         body: JSON.stringify(tpl),
-      }),
-    getTemplate: (id: string) => request<SessionTemplate>(`${nodeBase}/templates/${id}`),
+      }).then((res) => ({ ...res, data: res.data ? normalizeTemplate(res.data) : undefined })),
+    getTemplate: (id: string) =>
+      request<SessionTemplate>(`${nodeBase}/templates/${id}`).then((res) => ({
+        ...res,
+        data: res.data ? normalizeTemplate(res.data) : undefined,
+      })),
     getTemplateConfig: (id: string) =>
       request<TemplateConfigView>(`${nodeBase}/templates/${id}/config`),
     updateTemplate: (id: string, tpl: SessionTemplate) =>
       request<SessionTemplate>(`${nodeBase}/templates/${id}`, {
         method: 'PUT',
         body: JSON.stringify(tpl),
-      }),
+      }).then((res) => ({ ...res, data: res.data ? normalizeTemplate(res.data) : undefined })),
     updateTemplateConfig: (id: string, req: SaveConfigRequest) =>
       request<TemplateConfigView>(`${nodeBase}/templates/${id}/config`, {
         method: 'PUT',

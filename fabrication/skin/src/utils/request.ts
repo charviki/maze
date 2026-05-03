@@ -1,9 +1,5 @@
 import type { ApiResponse } from '../types';
 
-/**
- * 默认请求超时时间（毫秒）。
- * 超过此时间未收到响应，AbortController 会中断 fetch 并返回超时错误。
- */
 const DEFAULT_TIMEOUT_MS = 30000;
 
 /**
@@ -43,24 +39,22 @@ export function createRequest(baseUrl = '') {
       if (timeoutId) clearTimeout(timeoutId);
 
       const text = await response.text();
-
       if (!response.ok) {
-        // 服务端返回 rpcStatus 格式 {"code": int32, "message": "..."}
-        if (text) {
-          try {
-            const parsed = JSON.parse(text) as { code?: number; message?: string };
-            return { status: 'error', message: parsed.message || `HTTP ${response.status}` };
-          } catch {
-            // 非 JSON 响应，用 HTTP 状态码兜底
-          }
+        if (!text) {
+          return { status: 'error', message: `HTTP ${response.status}` };
         }
-        return { status: 'error', message: `HTTP ${response.status}` };
+        // rpcStatus 格式 {"code": int32, "message": "..."} → 提取 message
+        try {
+          const parsed = JSON.parse(text) as { code?: number; message?: string };
+          return { status: 'error', message: parsed.message || `HTTP ${response.status}` };
+        } catch {
+          return { status: 'error', message: `HTTP ${response.status}` };
+        }
       }
-
-      // 成功：标准 proto JSON 直接就是业务数据，包装为 ApiResponse
       if (!text) {
         return { status: 'ok', data: undefined };
       }
+      // 成功：proto JSON 直接就是业务数据，包装为 ApiResponse
       try {
         const parsed = JSON.parse(text) as T;
         return { status: 'ok', data: parsed };

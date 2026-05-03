@@ -110,8 +110,8 @@ export function CreateHostDialog({
         name,
         tools: selectedTools,
         resources: {
-          cpu_limit: cpuLimit || undefined,
-          memory_limit: memoryLimit || undefined,
+          cpuLimit: cpuLimit || undefined,
+          memoryLimit: memoryLimit || undefined,
         },
       });
       setCreatedHostName(response.name);

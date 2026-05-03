@@ -212,7 +212,7 @@ export function NodeList({
                   <div className="flex justify-between items-center opacity-80">
                     <span>[ HOST_ID: {host.name.substring(0, 8)} ]</span>
                     <span className={`border px-1.5 text-[9px] ${cfg.labelClass}`}>
-                      {isOperational ? `${host.session_count} LOOPS` : cfg.label}
+                      {isOperational ? `${host.sessionCount} LOOPS` : cfg.label}
                     </span>
                   </div>
                   <div className="flex justify-between items-center opacity-60">
@@ -220,19 +220,18 @@ export function NodeList({
                       <>
                         <span>ADDR: {host.address}</span>
                         <span>
-                          SYS_BEAT:{' '}
-                          {host.last_heartbeat ? formatTimeAgo(host.last_heartbeat) : 'N/A'}
+                          SYS_BEAT: {host.lastHeartbeat ? formatTimeAgo(host.lastHeartbeat) : 'N/A'}
                         </span>
                       </>
                     ) : (
                       <>
                         <span>TOOLS: {host.tools.join(', ')}</span>
-                        <span>CREATED: {formatTimeAgo(host.created_at)}</span>
+                        <span>CREATED: {formatTimeAgo(host.createdAt)}</span>
                       </>
                     )}
                   </div>
-                  {host.error_msg && (
-                    <div className="text-red-400/80 text-[9px] truncate">ERR: {host.error_msg}</div>
+                  {host.errorMsg && (
+                    <div className="text-red-400/80 text-[9px] truncate">ERR: {host.errorMsg}</div>
                   )}
                 </div>
               </div>

@@ -64,7 +64,7 @@ export interface IAgentApiClient {
   /**
    * 触发会话状态的手动全量保存
    */
-  saveSessions: () => Promise<ApiResponse<{ saved_at: string }>>;
+  saveSessions: () => Promise<ApiResponse<{ savedAt: string }>>;
 
   /**
    * 动态生成 WebSocket 终端连接的 URL。

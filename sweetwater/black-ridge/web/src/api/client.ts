@@ -12,13 +12,27 @@ import type {
 } from '@maze/fabrication';
 import { createRequest } from '@maze/fabrication';
 
+const emptySchema = { envDefs: [], fileDefs: [] };
+const emptyDefaults = { env: {}, files: [] };
+
+function normalizeTemplate(tpl: SessionTemplate): SessionTemplate {
+  return {
+    ...tpl,
+    defaults: tpl.defaults || emptyDefaults,
+    sessionSchema: tpl.sessionSchema || emptySchema,
+  };
+}
+
 const request = createRequest();
 
 export function createAgentApi(): IAgentApiClient {
   const base = `/api/v1/sessions`;
 
   return {
-    listSessions: () => request<Session[]>(base),
+    listSessions: async () => {
+      const res = await request<{ sessions: Session[] }>(base);
+      return { ...res, data: res.data?.sessions };
+    },
 
     createSession: (data: CreateSessionRequest) =>
       request<Session>(base, {
@@ -53,11 +67,14 @@ export function createAgentApi(): IAgentApiClient {
         body: JSON.stringify({ signal }),
       }),
 
-    getSavedSessions: () => request<SavedSession[]>(`${base}/saved`),
+    getSavedSessions: async () => {
+      const res = await request<{ sessions: SavedSession[] }>(`${base}/saved`);
+      return { ...res, data: res.data?.sessions };
+    },
 
     restoreSession: (id: string) => request<void>(`${base}/${id}/restore`, { method: 'POST' }),
 
-    saveSessions: () => request<{ saved_at: string }>(`${base}/save`, { method: 'POST' }),
+    saveSessions: () => request<{ savedAt: string }>(`${base}/save`, { method: 'POST' }),
 
     buildWsUrl: (sessionId: string) => {
       const loc = window.location;
@@ -65,17 +82,27 @@ export function createAgentApi(): IAgentApiClient {
       return `${protocol}//${loc.host}/api/v1/sessions/${sessionId}/ws`;
     },
 
-    listTemplates: () => request<SessionTemplate[]>('/api/v1/templates'),
+    listTemplates: async () => {
+      const res = await request<{ templates: SessionTemplate[] }>('/api/v1/templates');
+      return { ...res, data: res.data?.templates?.map(normalizeTemplate) };
+    },
     createTemplate: (tpl: SessionTemplate) =>
-      request<SessionTemplate>('/api/v1/templates', { method: 'POST', body: JSON.stringify(tpl) }),
-    getTemplate: (id: string) => request<SessionTemplate>(`/api/v1/templates/${id}`),
+      request<SessionTemplate>('/api/v1/templates', {
+        method: 'POST',
+        body: JSON.stringify(tpl),
+      }).then((res) => ({ ...res, data: res.data ? normalizeTemplate(res.data) : undefined })),
+    getTemplate: (id: string) =>
+      request<SessionTemplate>(`/api/v1/templates/${id}`).then((res) => ({
+        ...res,
+        data: res.data ? normalizeTemplate(res.data) : undefined,
+      })),
     getTemplateConfig: (id: string) =>
       request<TemplateConfigView>(`/api/v1/templates/${id}/config`),
     updateTemplate: (id: string, tpl: SessionTemplate) =>
       request<SessionTemplate>(`/api/v1/templates/${id}`, {
         method: 'PUT',
         body: JSON.stringify(tpl),
-      }),
+      }).then((res) => ({ ...res, data: res.data ? normalizeTemplate(res.data) : undefined })),
     updateTemplateConfig: (id: string, req: SaveConfigRequest) =>
       request<TemplateConfigView>(`/api/v1/templates/${id}/config`, {
         method: 'PUT',

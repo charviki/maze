@@ -17,7 +17,7 @@ const proxyBase = '/api/v1/nodes/agent-1/sessions';
 describe('agent API - 通过 Manager 代理成功请求', () => {
   it('listSessions 应请求代理路径 /api/v1/nodes/:name/sessions', async () => {
     const sessions = [
-      { id: 's1', name: 's1', status: 'running', created_at: '2024-01-01', window_count: 1 },
+      { id: 's1', name: 's1', status: 'running', createdAt: '2024-01-01', windowCount: 1 },
     ];
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -42,15 +42,15 @@ describe('agent API - 通过 Manager 代理成功请求', () => {
       id: 'new',
       name: 'new',
       status: 'running',
-      created_at: '2024-01-01',
-      window_count: 1,
+      createdAt: '2024-01-01',
+      windowCount: 1,
     };
     mockFetch.mockResolvedValueOnce({
       ok: true,
       text: () => Promise.resolve(JSON.stringify({ status: 'ok', data: newSession })),
     });
 
-    const result = await agentApi.createSession({ name: 'new', restore_strategy: 'auto' });
+    const result = await agentApi.createSession({ name: 'new', restoreStrategy: 'auto' });
 
     expect(result.status).toBe('ok');
     expect(result.data!.name).toBe('new');
@@ -67,8 +67,8 @@ describe('agent API - 通过 Manager 代理成功请求', () => {
       id: 'abc',
       name: 'abc',
       status: 'running',
-      created_at: '2024-01-01',
-      window_count: 1,
+      createdAt: '2024-01-01',
+      windowCount: 1,
     };
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -92,14 +92,14 @@ describe('agent API - 通过 Manager 代理成功请求', () => {
       ok: true,
       text: () =>
         Promise.resolve(
-          JSON.stringify({ status: 'ok', data: { saved_at: '2025-04-21T12:00:00Z' } }),
+          JSON.stringify({ status: 'ok', data: { savedAt: '2025-04-21T12:00:00Z' } }),
         ),
     });
 
     const result = await agentApi.saveSessions();
 
     expect(result.status).toBe('ok');
-    expect(result.data!.saved_at).toBe('2025-04-21T12:00:00Z');
+    expect(result.data!.savedAt).toBe('2025-04-21T12:00:00Z');
     expect(mockFetch).toHaveBeenCalledWith(
       `${proxyBase}/save`,
       expect.objectContaining({ method: 'POST' }),
@@ -109,14 +109,14 @@ describe('agent API - 通过 Manager 代理成功请求', () => {
   it('getSavedSessions 应请求代理路径 /api/v1/nodes/:name/sessions/saved', async () => {
     const savedSessions = [
       {
-        session_name: 'saved-1',
+        sessionName: 'saved-1',
         pipeline: [
           { id: 'sys-cd', type: 'cd', phase: 'system', order: 0, key: '/home/agent', value: '' },
         ],
-        restore_strategy: 'manual',
-        working_dir: '/home/agent',
-        terminal_snapshot: '$ claude\n> Hello',
-        saved_at: '2025-01-01T00:00:00Z',
+        restoreStrategy: 'manual',
+        workingDir: '/home/agent',
+        terminalSnapshot: '$ claude\n> Hello',
+        savedAt: '2025-01-01T00:00:00Z',
       },
     ];
     mockFetch.mockResolvedValueOnce({
@@ -169,9 +169,9 @@ describe('agent API - 通过 Manager 代理成功请求', () => {
           JSON.stringify({
             status: 'ok',
             data: {
-              session_id: 'sess-1',
-              template_id: 'claude',
-              working_dir: '/home/agent/sess-1',
+              sessionId: 'sess-1',
+              templateId: 'claude',
+              workingDir: '/home/agent/sess-1',
               scope: 'project',
               files: [
                 { path: '.claude/settings.json', content: '{}', exists: true, hash: 'md5:abc' },
@@ -196,9 +196,9 @@ describe('agent API - 通过 Manager 代理成功请求', () => {
           JSON.stringify({
             status: 'ok',
             data: {
-              session_id: 'sess-1',
-              template_id: 'claude',
-              working_dir: '/home/agent/sess-1',
+              sessionId: 'sess-1',
+              templateId: 'claude',
+              workingDir: '/home/agent/sess-1',
               scope: 'project',
               files: [
                 {
@@ -214,7 +214,7 @@ describe('agent API - 通过 Manager 代理成功请求', () => {
     });
 
     const result = await agentApi.updateSessionConfig('sess-1', {
-      files: [{ path: '.claude/settings.json', content: '{"theme":"dark"}', base_hash: 'md5:abc' }],
+      files: [{ path: '.claude/settings.json', content: '{"theme":"dark"}', baseHash: 'md5:abc' }],
     });
 
     expect(result.status).toBe('ok');
@@ -232,7 +232,7 @@ describe('agent API - 通过 Manager 代理成功请求', () => {
           JSON.stringify({
             status: 'ok',
             data: {
-              template_id: 'claude',
+              templateId: 'claude',
               scope: 'global',
               files: [
                 { path: '~/.claude/settings.json', content: '{}', exists: true, hash: 'md5:abc' },
@@ -290,13 +290,13 @@ describe('agent API - HTTP 错误', () => {
             status: 'error',
             code: 'config_conflict',
             message: '配置已变更，请重新加载后再修改',
-            conflicts: [{ path: '.claude/settings.json', current_hash: 'md5:def' }],
+            conflicts: [{ path: '.claude/settings.json', currentHash: 'md5:def' }],
           }),
         ),
     });
 
     const result = await agentApi.updateSessionConfig('sess-1', {
-      files: [{ path: '.claude/settings.json', content: '{}', base_hash: 'md5:abc' }],
+      files: [{ path: '.claude/settings.json', content: '{}', baseHash: 'md5:abc' }],
     });
 
     expect(result.status).toBe('error');

@@ -13,7 +13,7 @@ interface NodeConfigPanelProps {
 }
 
 export function NodeConfigPanel({ nodeName, apiClient, onClose }: NodeConfigPanelProps) {
-  const [config, setConfig] = useState<LocalAgentConfig>({ working_dir: '', env: {} });
+  const [config, setConfig] = useState<LocalAgentConfig>({ workingDir: '', env: {} });
   const [loading, setLoading] = useState(true);
 
   // fetch-in-effect: 组件挂载时从 API 获取配置并写入 state，属于 React 官方认可的数据同步模式，
@@ -86,7 +86,7 @@ export function NodeConfigPanel({ nodeName, apiClient, onClose }: NodeConfigPane
         <div className="space-y-4">
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">基础工作目录</label>
-            <Input value={config.working_dir} readOnly className="font-mono text-sm" />
+            <Input value={config.workingDir} readOnly className="font-mono text-sm" />
           </div>
 
           <div>

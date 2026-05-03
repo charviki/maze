@@ -72,7 +72,7 @@ export function CreateSessionWithTemplateDialog({
       .catch(() => {});
   }, [open, apiClient]);
 
-  const baseWorkingDir = nodeConfig?.working_dir || '/home/agent';
+  const baseWorkingDir = nodeConfig?.workingDir || '/home/agent';
 
   const buildAbsoluteWorkingDir = (baseDir: string, relativePath: string): string => {
     const trimmedBaseDir = baseDir.replace(/\/+$/, '') || '/home/agent';
@@ -169,14 +169,14 @@ export function CreateSessionWithTemplateDialog({
     const fileDefaults: Record<string, string> = {};
     // 新建 session 不主动生成项目级默认副本，不存在的项目文件按空内容处理。
     // 这里仅保留固定路径的空编辑态，避免把模板默认内容误写进工作目录。
-    tpl.session_schema.file_defs.forEach((d) => {
+    tpl.sessionSchema.fileDefs.forEach((d) => {
       fileDefaults[d.path] = '';
     });
     setSessionFileContents(fileDefaults);
 
     const envDefaults: Record<string, string> = {};
-    const schemaKeys = new Set(tpl.session_schema.env_defs.map((d) => d.key));
-    tpl.session_schema.env_defs.forEach((d) => {
+    const schemaKeys = new Set(tpl.sessionSchema.envDefs.map((d) => d.key));
+    tpl.sessionSchema.envDefs.forEach((d) => {
       envDefaults[d.key] = nodeConfig?.env?.[d.key] || '';
     });
     setSessionEnvValues(envDefaults);
@@ -199,7 +199,7 @@ export function CreateSessionWithTemplateDialog({
     if (!relativeDir.trim()) return '相对目录不能为空';
     if (relativeDir.trim().startsWith('/')) return '请输入相对目录，不要以 / 开头';
     if (relativeDir.trim() === '.') return '相对目录不能是根目录';
-    for (const def of selectedTemplate.session_schema.env_defs) {
+    for (const def of selectedTemplate.sessionSchema.envDefs) {
       if (def.required && !sessionEnvValues[def.key]?.trim()) {
         return `${def.label || def.key} 为必填项`;
       }
@@ -263,10 +263,10 @@ export function CreateSessionWithTemplateDialog({
       await apiClient.createSession({
         name: createName.trim(),
         command: selectedTemplate!.command || undefined,
-        working_dir: relativeDir.trim() || undefined,
-        session_confs: configItems,
-        restore_strategy: restoreStrategy,
-        template_id: selectedTemplate!.id,
+        workingDir: relativeDir.trim() || undefined,
+        sessionConfs: configItems,
+        restoreStrategy: restoreStrategy,
+        templateId: selectedTemplate!.id,
       });
 
       onSuccess(createName.trim());
@@ -296,7 +296,7 @@ export function CreateSessionWithTemplateDialog({
 
   const getEnvLabel = (key: string): string | null => {
     if (!selectedTemplate) return null;
-    const def = selectedTemplate.session_schema.env_defs.find((d) => d.key === key);
+    const def = selectedTemplate.sessionSchema.envDefs.find((d) => d.key === key);
     return def ? def.label : null;
   };
 
@@ -385,7 +385,7 @@ export function CreateSessionWithTemplateDialog({
               </div>
 
               {(nodeConfig?.env && Object.keys(nodeConfig.env).length > 0) ||
-              nodeConfig?.working_dir ? (
+              nodeConfig?.workingDir ? (
                 <div className="bg-muted/50 rounded-lg p-3 space-y-1">
                   <span className="text-xs text-muted-foreground font-medium">
                     上次使用的配置（已自动填入）
@@ -444,7 +444,7 @@ export function CreateSessionWithTemplateDialog({
                   </div>
                 </div>
 
-                {selectedTemplate.session_schema.env_defs.map((def) => (
+                {selectedTemplate.sessionSchema.envDefs.map((def) => (
                   <div key={def.key}>
                     <label className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
                       {def.label || def.key}
@@ -534,7 +534,7 @@ export function CreateSessionWithTemplateDialog({
                   </div>
                 </div>
 
-                {selectedTemplate.session_schema.file_defs.map((def) => (
+                {selectedTemplate.sessionSchema.fileDefs.map((def) => (
                   <div key={def.path}>
                     <label className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
                       {def.label || def.path}
@@ -546,7 +546,7 @@ export function CreateSessionWithTemplateDialog({
                         setSessionFileContents((prev) => ({ ...prev, [def.path]: e.target.value }));
                       }}
                       className="w-full h-40 bg-background text-foreground text-xs font-mono p-2 rounded border border-border"
-                      placeholder={def.default_content || '留空表示创建后该文件暂不存在'}
+                      placeholder={def.defaultContent || '留空表示创建后该文件暂不存在'}
                     />
                     <div className="mt-1 text-[11px] text-muted-foreground">
                       路径固定为 <span className="font-mono">{def.path}</span>；留空时按不存在处理。

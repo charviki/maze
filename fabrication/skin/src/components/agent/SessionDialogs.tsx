@@ -148,11 +148,11 @@ export const SessionDialogs = memo(function SessionDialogs({
                 确认恢复 Loop「{restoreTarget.name}」？将重新执行创建时的命令管线。
               </DialogDescription>
             </DialogHeader>
-            {restoreTarget.terminal_snapshot && (
+            {restoreTarget.terminalSnapshot && (
               <div className="mt-2 w-full overflow-hidden">
                 <span className="text-xs text-muted-foreground">终端快照摘要：</span>
                 <pre className="mt-1 p-2 bg-muted/50 rounded text-xs font-mono overflow-y-auto overflow-x-auto whitespace-pre-wrap break-all max-h-64 w-full">
-                  {getSnapshotSummary(restoreTarget.terminal_snapshot)}
+                  {getSnapshotSummary(restoreTarget.terminalSnapshot)}
                 </pre>
               </div>
             )}
@@ -266,11 +266,11 @@ function SessionConfigEditorDialog({
               <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                 <div className="min-w-0">
                   <span className="text-muted-foreground">工作目录: </span>
-                  <span className="font-mono text-xs break-all">{config.working_dir}</span>
+                  <span className="font-mono text-xs break-all">{config.workingDir}</span>
                 </div>
                 <div className="min-w-0">
                   <span className="text-muted-foreground">模板: </span>
-                  <span className="font-mono text-xs break-all">{config.template_id}</span>
+                  <span className="font-mono text-xs break-all">{config.templateId}</span>
                 </div>
               </div>
             )}

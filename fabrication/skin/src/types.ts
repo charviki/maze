@@ -1,19 +1,19 @@
 export interface Node {
   name: string;
   address: string;
-  external_addr: string;
-  session_count: number;
+  externalAddr: string;
+  sessionCount: number;
   status: string;
-  registered_at: string;
-  last_heartbeat: string;
+  registeredAt: string;
+  lastHeartbeat: string;
 }
 
 export interface Session {
   id: string;
   name: string;
   status: string;
-  created_at: string;
-  window_count: number;
+  createdAt: string;
+  windowCount: number;
 }
 
 export interface ConfigItem {
@@ -25,14 +25,14 @@ export interface ConfigItem {
 export interface CreateSessionRequest {
   name: string;
   command?: string;
-  working_dir?: string;
-  session_confs?: ConfigItem[];
-  restore_strategy?: string;
-  template_id?: string;
+  workingDir?: string;
+  sessionConfs?: ConfigItem[];
+  restoreStrategy?: string;
+  templateId?: string;
 }
 
 export interface TerminalOutput {
-  session_id: string;
+  sessionId: string;
   lines: number;
   output: string;
 }
@@ -45,8 +45,6 @@ export interface ApiResponse<T> {
   conflicts?: ConfigConflict[];
 }
 
-// --- 统一配置层 ---
-
 export interface ConfigFile {
   path: string;
   content: string;
@@ -56,8 +54,6 @@ export interface ConfigLayer {
   env: Record<string, string>;
   files: ConfigFile[];
 }
-
-// --- Pipeline ---
 
 export type PipelinePhase = 'system' | 'template' | 'user';
 export type PipelineStepType = 'cd' | 'env' | 'file' | 'command';
@@ -71,30 +67,24 @@ export interface PipelineStep {
   value: string;
 }
 
-// --- SessionState ---
-
 export interface SessionState {
-  session_name: string;
+  sessionName: string;
   pipeline: PipelineStep[];
-  restore_strategy: string;
-  working_dir: string;
-  env_snapshot: Record<string, string>;
-  terminal_snapshot: string;
-  saved_at: string;
+  restoreStrategy: string;
+  workingDir: string;
+  envSnapshot: Record<string, string>;
+  terminalSnapshot: string;
+  savedAt: string;
 }
-
-// --- SavedSession (前端展示用) ---
 
 export interface SavedSession {
-  session_name: string;
+  sessionName: string;
   pipeline: PipelineStep[];
-  restore_strategy: string;
-  working_dir: string;
-  terminal_snapshot: string;
-  saved_at: string;
+  restoreStrategy: string;
+  workingDir: string;
+  terminalSnapshot: string;
+  savedAt: string;
 }
-
-// --- Template ---
 
 export interface EnvDef {
   key: string;
@@ -108,12 +98,12 @@ export interface FileDef {
   path: string;
   label: string;
   required: boolean;
-  default_content: string;
+  defaultContent: string;
 }
 
 export interface SessionSchema {
-  env_defs: EnvDef[];
-  file_defs: FileDef[];
+  envDefs: EnvDef[];
+  fileDefs: FileDef[];
 }
 
 export interface SessionTemplate {
@@ -124,7 +114,7 @@ export interface SessionTemplate {
   icon: string;
   builtin: boolean;
   defaults: ConfigLayer;
-  session_schema: SessionSchema;
+  sessionSchema: SessionSchema;
 }
 
 export type ConfigScope = 'global' | 'project';
@@ -137,15 +127,15 @@ export interface ConfigFileSnapshot {
 }
 
 export interface TemplateConfigView {
-  template_id: string;
+  templateId: string;
   scope: ConfigScope;
   files: ConfigFileSnapshot[];
 }
 
 export interface SessionConfigView {
-  session_id: string;
-  template_id: string;
-  working_dir: string;
+  sessionId: string;
+  templateId: string;
+  workingDir: string;
   scope: ConfigScope;
   files: ConfigFileSnapshot[];
 }
@@ -153,7 +143,7 @@ export interface SessionConfigView {
 export interface ConfigFileUpdate {
   path: string;
   content: string;
-  base_hash: string;
+  baseHash: string;
 }
 
 export interface SaveConfigRequest {
@@ -162,101 +152,90 @@ export interface SaveConfigRequest {
 
 export interface ConfigConflict {
   path: string;
-  current_hash: string;
+  currentHash: string;
 }
-
-// --- LocalAgentConfig ---
 
 export interface LocalAgentConfig {
-  working_dir: string;
+  workingDir: string;
   env: Record<string, string>;
 }
-
-// --- NodeConfig ---
 
 export interface NodeConfig {
-  node_name: string;
-  working_dir: string;
+  nodeName: string;
+  workingDir: string;
   env: Record<string, string>;
 }
 
-// --- SessionMeta ---
-
 export interface SessionMeta {
-  session_id: string;
-  node_name: string;
-  template_id: string;
-  template_name: string;
+  sessionId: string;
+  nodeName: string;
+  templateId: string;
+  templateName: string;
   command: string;
-  working_dir: string;
+  workingDir: string;
   configs: ConfigLayer;
   pipeline: PipelineStep[];
-  restore_strategy: string;
-  created_at: string;
+  restoreStrategy: string;
+  createdAt: string;
 }
 
 export interface SaveSessionMetaRequest {
-  session_id: string;
-  template_id: string;
-  template_name: string;
+  sessionId: string;
+  templateId: string;
+  templateName: string;
   command: string;
-  working_dir: string;
+  workingDir: string;
   configs: ConfigLayer;
   pipeline: PipelineStep[];
-  restore_strategy: string;
+  restoreStrategy: string;
 }
-
-// --- Host ---
 
 export interface Tool {
   id: string;
   image: string;
-  source_path: string;
-  dest_path: string;
-  bin_paths: string[];
-  env_vars?: Record<string, string>;
+  sourcePath: string;
+  destPath: string;
+  binPaths: string[];
+  envVars?: Record<string, string>;
   description: string;
   category: string;
 }
 
 export interface ResourceLimits {
-  cpu_limit?: string;
-  memory_limit?: string;
+  cpuLimit?: string;
+  memoryLimit?: string;
 }
 
 export interface CreateHostRequest {
   name: string;
   tools: string[];
-  display_name?: string;
+  displayName?: string;
   resources?: ResourceLimits;
 }
 
 export interface CreateHostResponse {
   name: string;
   tools: string[];
-  image_tag: string;
-  container_id: string;
+  imageTag: string;
+  containerId: string;
   status: string;
-  build_log?: string;
+  buildLog?: string;
 }
-
-// --- Host Lifecycle ---
 
 export type HostStatus = 'pending' | 'deploying' | 'online' | 'offline' | 'failed';
 
 export interface Host {
   name: string;
-  display_name?: string;
+  displayName?: string;
   tools: string[];
   resources?: ResourceLimits;
-  auth_token: string;
-  created_at: string;
-  updated_at: string;
+  authToken: string;
+  createdAt: string;
+  updatedAt: string;
   status: HostStatus;
-  error_msg?: string;
-  retry_count: number;
-  // merged from NodeRegistry
+  errorMsg?: string;
+  retryCount: number;
   address?: string;
-  session_count: number;
-  last_heartbeat?: string;
+  sessionCount: number;
+  lastHeartbeat?: string;
 }
