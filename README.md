@@ -86,10 +86,10 @@ make build-web
 make gen
 
 # 启动 behavior-panel 后端
-cd mesa-hub/behavior-panel/server && go run .
+cd mesa-hub/behavior-panel/server && go run ./cmd/behavior-panel
 
 # 启动 black-ridge 后端
-cd sweetwater/black-ridge/server && go run .
+cd sweetwater/black-ridge/server && go run ./cmd/black-ridge
 
 # 启动前端开发服务器
 cd mesa-hub/behavior-panel/web && pnpm run dev

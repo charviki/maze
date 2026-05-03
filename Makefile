@@ -364,45 +364,82 @@ test-integration: override K8S_OVERLAY_DIR := $(PROJECT_ROOT)/fabrication/kubern
 
 test-integration: ## 运行集成测试（PLATFORM=docker 或 PLATFORM=kubernetes，TEST_NAME=TestX 运行单个测试）
 ifeq ($(PLATFORM),docker)
-	@START=$$(date +%s); \
-	echo "\033[0;32m[INFO]\033[0m [1/4] Building Agent base image..."; \
-	docker build -f $(AGENT_DOCKERFILE) -t $(AGENT_IMAGE) $(PROJECT_ROOT); \
-	ELAPSED=$$(($$(date +%s) - $$START)); \
-	echo "\033[0;36m[TIME]\033[0m Agent base image built in $${ELAPSED}s"; \
-	echo "\033[0;32m[INFO]\033[0m [2/4] Starting test environment (docker-compose)..."; \
-	docker images --filter label=maze.dockerfile-hash -q | xargs -r docker rmi -f 2>/dev/null; \
-	mkdir -p $(HOST_DATA_DIR)/docker/agents; \
-	START2=$$(date +%s); \
-	docker compose -f $(COMPOSE_TEST_FILE) -p $(COMPOSE_PROJECT) up -d --build; \
-	ELAPSED2=$$(($$(date +%s) - $$START2)); \
-	echo "\033[0;36m[TIME]\033[0m Test environment started in $${ELAPSED2}s"; \
-	echo "\033[0;32m[INFO]\033[0m [3/4] Waiting for Manager to be ready..."; \
-	START3=$$(date +%s); \
-	bash -c 'for i in $$(seq 1 60); do \
-		curl -sf http://localhost:$(PORT_MANAGER)/health > /dev/null 2>&1 && break; \
-		echo "  waiting... ($$i/60)"; sleep 2; \
-	done'; \
-	ELAPSED3=$$(($$(date +%s) - $$START3)); \
-	echo "\033[0;36m[TIME]\033[0m Manager ready in $${ELAPSED3}s"; \
-	TOTAL_SETUP=$$(($$(date +%s) - $$START)); \
-	echo "\033[0;32m[INFO]\033[0m [4/4] Running integration tests (env=docker)..."; \
-	echo "\033[0;36m[TIME]\033[0m Total setup time: $${TOTAL_SETUP}s"; \
-	cd $(TEST_DIR) && \
-		MAZE_TEST_ENV=$(PLATFORM) \
-		MAZE_TEST_DATA_DIR=$(HOST_DATA_DIR) \
-		MAZE_TEST_AGENT_STORAGE_BACKEND=bind \
-		MAZE_TEST_MANAGER_URL=http://localhost:$(PORT_MANAGER) \
-		MAZE_TEST_AUTH_TOKEN=test-integration-token \
-		go test -v -count=1 -tags=integration -timeout=10m $(if $(TEST_NAME),-run $(TEST_NAME),) ./...; \
-		TEST_EXIT=$$?; \
-		echo "\033[0;32m[INFO]\033[0m Stopping test environment..."; \
-		docker ps -q --filter label=maze-host | xargs -r docker stop 2>/dev/null; \
-		docker ps -aq --filter label=maze-host | xargs -r docker rm 2>/dev/null; \
-		docker compose -f $(COMPOSE_TEST_FILE) -p $(COMPOSE_PROJECT) down -v --remove-orphans; \
-		exit $$TEST_EXIT
-		exit $$TEST_EXIT
+	# Ensure compose env and spawned host containers are reclaimed even if the test is interrupted.
+	@bash -c '\
+		set -o pipefail; \
+		INFO="\033[0;32m[INFO]\033[0m"; \
+		TIME="\033[0;36m[TIME]\033[0m"; \
+		cleanup() { \
+			echo -e "$$INFO Stopping test environment..."; \
+			docker ps -q --filter label=maze-host | xargs -r docker stop 2>/dev/null || true; \
+			docker ps -aq --filter label=maze-host | xargs -r docker rm 2>/dev/null || true; \
+			docker compose -f $(COMPOSE_TEST_FILE) -p $(COMPOSE_PROJECT) down -v --remove-orphans >/dev/null 2>&1 || true; \
+		}; \
+		trap cleanup EXIT INT TERM; \
+		START=$$(date +%s); \
+		echo -e "$$INFO [1/4] Building Agent base image..."; \
+		docker build -f $(AGENT_DOCKERFILE) -t $(AGENT_IMAGE) $(PROJECT_ROOT); \
+		ELAPSED=$$(($$(date +%s) - $$START)); \
+		echo -e "$$TIME Agent base image built in $${ELAPSED}s"; \
+		echo -e "$$INFO [2/4] Starting test environment (docker-compose)..."; \
+		docker images --filter label=maze.dockerfile-hash -q | xargs -r docker rmi -f 2>/dev/null; \
+		mkdir -p $(HOST_DATA_DIR)/docker/agents; \
+		START2=$$(date +%s); \
+		docker compose -f $(COMPOSE_TEST_FILE) -p $(COMPOSE_PROJECT) up -d --build; \
+		ELAPSED2=$$(($$(date +%s) - $$START2)); \
+		echo -e "$$TIME Test environment started in $${ELAPSED2}s"; \
+		echo -e "$$INFO [3/4] Waiting for Manager to be ready..."; \
+		START3=$$(date +%s); \
+		for i in $$(seq 1 60); do \
+			curl -sf http://localhost:$(PORT_MANAGER)/health > /dev/null 2>&1 && break; \
+			echo "  waiting... ($$i/60)"; sleep 2; \
+		done; \
+		ELAPSED3=$$(($$(date +%s) - $$START3)); \
+		echo -e "$$TIME Manager ready in $${ELAPSED3}s"; \
+		TOTAL_SETUP=$$(($$(date +%s) - $$START)); \
+		echo -e "$$INFO [4/4] Running integration tests (env=docker)..."; \
+		echo -e "$$TIME Total setup time: $${TOTAL_SETUP}s"; \
+		TEST_HOST_POOL="$${MAZE_TEST_ENABLE_HOST_POOL:-$(if $(TEST_NAME),0,1)}"; \
+		TEST_STREAM="$${MAZE_TEST_STREAM_EVENTS:-1}"; \
+		TEST_POOL_CLAUDE_SIZE="$${MAZE_TEST_POOL_CLAUDE_SIZE:-4}"; \
+		TEST_POOL_GO_SIZE="$${MAZE_TEST_POOL_GO_SIZE:-1}"; \
+		TEST_TARGET="$${TEST_NAME:-<all>}"; \
+		echo -e "$$INFO Test mode:"; \
+		echo "  platform=$(PLATFORM)"; \
+		echo "  test_name=$$TEST_TARGET"; \
+		echo "  host_pool=$$TEST_HOST_POOL"; \
+		echo "  stream_events=$$TEST_STREAM"; \
+		echo "  pool_claude=$$TEST_POOL_CLAUDE_SIZE"; \
+		echo "  pool_go=$$TEST_POOL_GO_SIZE"; \
+		cd $(TEST_DIR); \
+		if [ "$$TEST_STREAM" = "1" ]; then \
+			MAZE_TEST_ENV=$(PLATFORM) \
+			MAZE_TEST_DATA_DIR=$(HOST_DATA_DIR) \
+			MAZE_TEST_AGENT_STORAGE_BACKEND=bind \
+			MAZE_TEST_MANAGER_URL=http://localhost:$(PORT_MANAGER) \
+			MAZE_TEST_AUTH_TOKEN=test-integration-token \
+			MAZE_TEST_ENABLE_HOST_POOL="$$TEST_HOST_POOL" \
+			MAZE_TEST_POOL_CLAUDE_SIZE="$$TEST_POOL_CLAUDE_SIZE" \
+			MAZE_TEST_POOL_GO_SIZE="$$TEST_POOL_GO_SIZE" \
+			MAZE_TEST_STREAM_EVENTS="$$TEST_STREAM" \
+			go test -json -count=1 -tags=integration -timeout=10m $(if $(TEST_NAME),-run $(TEST_NAME),) . 2>&1 | \
+				go run ./cmd/maze-integration-stream; \
+		else \
+			MAZE_TEST_ENV=$(PLATFORM) \
+			MAZE_TEST_DATA_DIR=$(HOST_DATA_DIR) \
+			MAZE_TEST_AGENT_STORAGE_BACKEND=bind \
+			MAZE_TEST_MANAGER_URL=http://localhost:$(PORT_MANAGER) \
+			MAZE_TEST_AUTH_TOKEN=test-integration-token \
+			MAZE_TEST_ENABLE_HOST_POOL="$$TEST_HOST_POOL" \
+			MAZE_TEST_POOL_CLAUDE_SIZE="$$TEST_POOL_CLAUDE_SIZE" \
+			MAZE_TEST_POOL_GO_SIZE="$$TEST_POOL_GO_SIZE" \
+			MAZE_TEST_STREAM_EVENTS="$$TEST_STREAM" \
+			go test -v -count=1 -tags=integration -timeout=10m $(if $(TEST_NAME),-run $(TEST_NAME),) .; \
+		fi \
+	'
 else ifeq ($(PLATFORM),kubernetes)
 	@bash -c '\
+		set -o pipefail; \
 		INFO="\033[0;32m[INFO]\033[0m"; \
 		ERROR="\033[0;31m[ERROR]\033[0m"; \
 		WARN="\033[1;33m[WARN]\033[0m"; \
@@ -458,12 +495,43 @@ else ifeq ($(PLATFORM),kubernetes)
 		fi; \
 		echo -e "$$INFO Port-forward active: manager=$(PORT_MANAGER)"; \
 		echo -e "$$INFO [5/5] Running tests..."; \
+		TEST_HOST_POOL="$${MAZE_TEST_ENABLE_HOST_POOL:-$(if $(TEST_NAME),0,1)}"; \
+		TEST_STREAM="$${MAZE_TEST_STREAM_EVENTS:-1}"; \
+		TEST_POOL_CLAUDE_SIZE="$${MAZE_TEST_POOL_CLAUDE_SIZE:-4}"; \
+		TEST_POOL_GO_SIZE="$${MAZE_TEST_POOL_GO_SIZE:-1}"; \
+		TEST_TARGET="$${TEST_NAME:-<all>}"; \
+		echo -e "$$INFO Test mode:"; \
+		echo "  platform=$(PLATFORM)"; \
+		echo "  test_name=$$TEST_TARGET"; \
+		echo "  host_pool=$$TEST_HOST_POOL"; \
+		echo "  stream_events=$$TEST_STREAM"; \
+		echo "  pool_claude=$$TEST_POOL_CLAUDE_SIZE"; \
+		echo "  pool_go=$$TEST_POOL_GO_SIZE"; \
 		cd $(TEST_DIR) && \
+		if [ "$$TEST_STREAM" = "1" ]; then \
 			MAZE_TEST_ENV=$(PLATFORM) \
 			MAZE_TEST_DATA_DIR=$(HOST_DATA_DIR) \
 			MAZE_TEST_AGENT_STORAGE_BACKEND=hostpath \
 			MAZE_TEST_MANAGER_URL=http://localhost:$(PORT_MANAGER) \
 			MAZE_TEST_AUTH_TOKEN=test-integration-token \
 			MAZE_TEST_NAMESPACE=$(K8S_NAMESPACE) \
-			go test -v -count=1 -tags=integration -timeout=10m $(if $(TEST_NAME),-run $(TEST_NAME),) ./...'
+			MAZE_TEST_ENABLE_HOST_POOL="$$TEST_HOST_POOL" \
+			MAZE_TEST_POOL_CLAUDE_SIZE="$$TEST_POOL_CLAUDE_SIZE" \
+			MAZE_TEST_POOL_GO_SIZE="$$TEST_POOL_GO_SIZE" \
+			MAZE_TEST_STREAM_EVENTS="$$TEST_STREAM" \
+			go test -json -count=1 -tags=integration -timeout=10m $(if $(TEST_NAME),-run $(TEST_NAME),) . 2>&1 | \
+				go run ./cmd/maze-integration-stream; \
+		else \
+			MAZE_TEST_ENV=$(PLATFORM) \
+			MAZE_TEST_DATA_DIR=$(HOST_DATA_DIR) \
+			MAZE_TEST_AGENT_STORAGE_BACKEND=hostpath \
+			MAZE_TEST_MANAGER_URL=http://localhost:$(PORT_MANAGER) \
+			MAZE_TEST_AUTH_TOKEN=test-integration-token \
+			MAZE_TEST_NAMESPACE=$(K8S_NAMESPACE) \
+			MAZE_TEST_ENABLE_HOST_POOL="$$TEST_HOST_POOL" \
+			MAZE_TEST_POOL_CLAUDE_SIZE="$$TEST_POOL_CLAUDE_SIZE" \
+			MAZE_TEST_POOL_GO_SIZE="$$TEST_POOL_GO_SIZE" \
+			MAZE_TEST_STREAM_EVENTS="$$TEST_STREAM" \
+			go test -v -count=1 -tags=integration -timeout=10m $(if $(TEST_NAME),-run $(TEST_NAME),) .; \
+		fi'
 endif

@@ -1,0 +1,51 @@
+package main
+
+import (
+	"context"
+	"time"
+
+	"github.com/charviki/maze-cradle/grpcutil"
+	"github.com/charviki/maze-cradle/lifecycle"
+	"github.com/charviki/maze-cradle/logutil"
+	"google.golang.org/grpc"
+
+	"{{.ModulePath}}/internal/config"
+	"{{.ModulePath}}/internal/service"
+	"{{.ModulePath}}/internal/transport"
+)
+
+const defaultGRPCAddr = ":9090"
+
+func main() {
+	logger := logutil.New("{{.ServiceName}}")
+
+	cfg, err := config.LoadFromExe()
+	if err != nil {
+		logger.Fatalf("load config: %v", err)
+	}
+
+	healthService := service.NewHealthService()
+	httpServer := newHTTPServer(cfg, healthService, logger)
+
+	grpcCore := grpc.NewServer()
+	transport.RegisterHealthGRPC(grpcCore, healthService)
+	managedGRPC := grpcutil.NewManagedGRPCServer(grpcAddr(cfg), grpcCore, logger)
+
+	manager := &lifecycle.Manager{
+		ShutdownTimeout: 5 * time.Second,
+		Logger:          logger,
+	}
+	manager.Add(httpServer)
+	manager.Add(managedGRPC)
+
+	if err := manager.Run(context.Background()); err != nil {
+		logger.Fatalf("run lifecycle: %v", err)
+	}
+}
+
+func grpcAddr(cfg *config.Config) string {
+	if cfg.Server.GRPCAddr == "" {
+		return defaultGRPCAddr
+	}
+	return cfg.Server.GRPCAddr
+}

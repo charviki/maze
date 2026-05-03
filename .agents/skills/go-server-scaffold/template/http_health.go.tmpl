@@ -1,0 +1,15 @@
+package transport
+
+import (
+	"net/http"
+
+	"github.com/charviki/maze-cradle/httputil"
+
+	"{{.ModulePath}}/internal/service"
+)
+
+func NewHealthHandler(healthService *service.HealthService) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		httputil.Success(w, r, map[string]string{"status": healthService.Status()})
+	})
+}

@@ -1,0 +1,33 @@
+package config
+
+import "github.com/charviki/maze-cradle/configutil"
+
+type Config struct {
+	Server ServerConfig `yaml:"server"`
+}
+
+type ServerConfig struct {
+	configutil.ServerConfig `yaml:",inline"`
+	GRPCAddr                string `yaml:"grpc_addr"`
+}
+
+func LoadFromExe(filename ...string) (*Config, error) {
+	var cfg Config
+	if _, err := configutil.LoadFromExe(&cfg, filename...); err != nil {
+		return nil, err
+	}
+	if err := configutil.ApplyEnvOverrides("{{.EnvPrefix}}", &cfg); err != nil {
+		return nil, err
+	}
+	validate(&cfg)
+	return &cfg, nil
+}
+
+func validate(cfg *Config) {
+	if cfg.Server.ListenAddr == "" {
+		cfg.Server.ListenAddr = ":8080"
+	}
+	if cfg.Server.GRPCAddr == "" {
+		cfg.Server.GRPCAddr = ":9090"
+	}
+}
