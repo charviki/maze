@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { controllerApi } from '../api/controller';
-import type { Host } from '@maze/fabrication';
+import type { Host, HostStatus } from '@maze/fabrication';
 import {
   Button,
   DecryptText,
@@ -8,6 +8,8 @@ import {
   ConfirmDialog,
   Skeleton,
   usePollingWithBackoff,
+  clipPathHalf,
+  useToast,
 } from '@maze/fabrication';
 import { Trash2, FileText } from 'lucide-react';
 
@@ -26,6 +28,7 @@ export function NodeList({
   refreshTrigger,
   onViewLog,
 }: NodeListProps) {
+  const { showToast } = useToast();
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const {
@@ -52,9 +55,13 @@ export function NodeList({
   }, [refreshTrigger]);
 
   const handleRemove = async (name: string) => {
-    await controllerApi.deleteHost(name);
-    setDeleteTarget(null);
-    void refreshNodes();
+    const res = await controllerApi.deleteHost(name);
+    if (res.status === 'ok') {
+      setDeleteTarget(null);
+      void refreshNodes();
+    } else {
+      showToast('error', res.message || '删除 Host 失败');
+    }
   };
 
   const formatTimeAgo = (dateStr: string) => {
@@ -63,7 +70,18 @@ export function NodeList({
     return `${Math.floor(diffSec / 60)}m ago`;
   };
 
-  const statusConfig = (status: string) => {
+  // HostStatus 合法值集合，用于运行时校验后端返回的 status 字段
+  const HOST_STATUSES = ['pending', 'deploying', 'online', 'offline', 'failed'] as const;
+
+  // 后端可能返回未知状态，回退到 'offline' 作为安全默认值
+  const toHostStatus = (raw: string | undefined): HostStatus => {
+    if (raw && (HOST_STATUSES as readonly string[]).includes(raw)) {
+      return raw as HostStatus;
+    }
+    return 'offline';
+  };
+
+  const statusConfig = (status: HostStatus) => {
     switch (status) {
       case 'pending':
       case 'deploying':
@@ -102,15 +120,6 @@ export function NodeList({
           label: 'FABRICATION FAILED',
           labelClass: 'text-red-500 border-red-500/30 bg-red-500/10',
         };
-      default:
-        return {
-          dotClass: 'bg-muted-foreground',
-          glowClass: '',
-          textClass: 'text-muted-foreground',
-          borderClass: 'border-border/50',
-          label: status.toUpperCase(),
-          labelClass: 'text-muted-foreground border-border/50 bg-card/50',
-        };
     }
   };
 
@@ -122,8 +131,7 @@ export function NodeList({
             key={i}
             className="p-3 space-y-2 bg-card/50 border-l-2 border-primary/20"
             style={{
-              clipPath:
-                'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
+              clipPath: clipPathHalf(8),
             }}
           >
             <Skeleton className="h-3 w-24" />
@@ -133,7 +141,7 @@ export function NodeList({
       {!isLoading &&
         hosts.map((host) => {
           const hostName = host.name ?? '';
-          const hostStatus = host.status ?? '';
+          const hostStatus = toHostStatus(host.status);
           const isSelected = selectedNodeName === hostName;
           const cfg = statusConfig(hostStatus);
           const isOperational = hostStatus === 'online' || hostStatus === 'offline';
@@ -145,6 +153,14 @@ export function NodeList({
             >
               <div
                 onClick={() => (isOperational ? onSelectNode(host) : undefined)}
+                tabIndex={isOperational ? 0 : -1}
+                role={isOperational ? 'button' : undefined}
+                onKeyDown={(e) => {
+                  if (isOperational && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault();
+                    onSelectNode(host);
+                  }
+                }}
                 className={`
                 group flex flex-col p-3 cursor-pointer border-l-2 transition-all gap-2 relative
                 ${
@@ -155,8 +171,7 @@ export function NodeList({
                 ${!isOperational ? 'cursor-default' : ''}
               `}
                 style={{
-                  clipPath:
-                    'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
+                  clipPath: clipPathHalf(8),
                 }}
               >
                 {isSelected && (
@@ -246,8 +261,7 @@ export function NodeList({
         <div
           className="text-center p-6 text-xs font-mono uppercase tracking-widest text-destructive animate-pulse border border-destructive/30 bg-destructive/5"
           style={{
-            clipPath:
-              'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
+            clipPath: clipPathHalf(8),
           }}
         >
           [ NO HOSTS DETECTED ]
