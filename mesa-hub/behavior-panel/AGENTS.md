@@ -33,7 +33,7 @@
 | server/biz/builder/                 | 工具注册表 + Dockerfile 动态生成器（工具排序稳定化 + ToolsetImageTag 组合镜像标签）                                         | [architecture.md#动态Host](docs/architecture.md)       |
 | server/biz/runtime/                 | HostRuntime 抽象 + Docker/K8s 实现 + 构建信号量                                                                             | [architecture.md#动态Host](docs/architecture.md)       |
 | web/src/App.tsx                     | 前端入口：HostList + AgentPanel + RadarView + CreateHostDialog + HostLogPanel                                               | [architecture.md#前端](docs/architecture.md)           |
-| web/src/api/                        | Manager/Agent API 客户端                                                                                                    | —                                                      |
+| web/src/api/                        | API 客户端：controller.ts（SDK NodeServiceApi/HostServiceApi）、agent.ts（SDK SessionServiceApi/TemplateServiceApi/ConfigServiceApi，Manager 代理路径） | —                                                      |
 | nginx.conf + docker-compose.yml     | Nginx 路由 + 完整部署编排                                                                                                   | [architecture.md#部署拓扑](docs/architecture.md)       |
 
 ## 路由架构

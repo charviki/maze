@@ -17,8 +17,15 @@
 ## 工具函数
 - cn — Tailwind 类名合并
 - maskEnvValue / maskFileContent — 敏感数据脱敏
-- createRequest — HTTP 请求工厂
+- createRequest — HTTP 请求工厂（已修复 error 分支丢失 code/conflicts 的 BUG）
+- createSdkConfiguration — SDK Configuration 工厂函数，注入自定义 fetch
+- normalizeTemplate — 模板规范化共享函数（确保 defaults/sessionSchema 不为 null）
+- unwrapSdkResponse / unwrapVoidResponse — SDK 响应解包辅助函数
 - usePollingWithBackoff — 指数退避轮询 Hook
 
 ## 接口
-- IAgentApiClient — Agent API 客户端接口（会话 CRUD、终端 I/O、模板管理、配置管理、WebSocket URL 生成）
+- ISessionApi — 会话 API 子接口（会话 CRUD、终端 I/O、WebSocket URL 生成）
+- ITemplateApi — 模板 API 子接口（模板 CRUD、配置管理）
+- IConfigApi — 远程配置 API 子接口（通过 Manager 代理的节点配置管理）
+- ILocalConfigApi — 本地配置 API 子接口（直连 Agent 的本地配置管理）
+- IAgentApiClient — 以上四个子接口的联合类型别名

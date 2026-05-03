@@ -14,7 +14,11 @@
     "overrides": {
       "react": "^19.2.4",
       "react-dom": "^19.2.4"
-    }
+    },
+    "ignoredBuiltDependencies": [
+      "@nestjs/core",
+      "@openapitools/openapi-generator-cli"
+    ]
   },
   "devDependencies": {
     "eslint-config-prettier": "^10.1.8",

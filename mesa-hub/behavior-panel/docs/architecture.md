@@ -190,18 +190,19 @@ Manager 启动时执行一次：
 
 - React + TypeScript
 - UI 组件库：`@maze/fabrication`（AgentPanel, NodeList, RadarView, BootSequence 等）
-- HTTP 请求：`@maze/fabrication` 的 `createRequest` 封装
+- HTTP 请求：`@maze/fabrication` 的 `createSdkConfiguration` + SDK 生成 API 类
 
 ### API 客户端分层
 
-- **controller.ts** — Manager 节点管理 API（listNodes, getNode, deleteNode），直连 Manager
-- **agent.ts** — 通过 Manager 代理的 Agent API（sessions, templates, local-config, ws），路径前缀 `/api/v1/nodes/:name/`
-- **manager.ts** — Manager 模板管理 API（注释说明节点配置和 Session 元数据已移除，由 Agent 本地管理）
+- **SDK 生成层** — 由 `openapi-generator`（typescript-fetch）从 OpenAPI 3.0 文档自动生成 TypeScript SDK（位于 `@maze/fabrication` 的 `src/api/gen/`），提供类型安全的 API 类和模型类型
+- **共享辅助层** — `@maze/fabrication` 提供 `createSdkConfiguration`（注入自定义 fetch）、`normalizeTemplate`（模板规范化）、`unwrapSdkResponse`（响应解包）
+- **controller.ts** — Manager 节点/Host 管理 API，使用生成 SDK 的 NodeServiceApi/HostServiceApi，直连 Manager
+- **agent.ts** — 通过 Manager 代理的 Agent API，使用生成 SDK 的 SessionServiceApi/TemplateServiceApi/ConfigServiceApi，路径前缀 `/api/v1/nodes/:name/`
 
 ### 关键交互
 
 - `NodeList` 组件使用 `usePollingWithBackoff` 轮询节点列表
-- 选中节点后构建 `createAgentApi('', nodeName)` 实例，传给 `AgentPanel`
+- 选中 Host 后构建 `createAgentApi('', hostName)` 实例，传给 `AgentPanel`
 - WebSocket URL 由 `buildWsUrl()` 根据当前页面协议（ws/wss）动态构建
 
 ## 部署拓扑
