@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { cn } from '../../utils';
+import { cn, getPrimaryColor, colorTpl } from '../../utils';
 import { useAnimationSettings } from './AnimationSettings';
 
 interface TerrainBackgroundProps {
@@ -51,20 +51,6 @@ const PULSE_INTERVAL = 4000;
 const PULSE_DURATION = 6000;
 const PARTICLE_COUNT = 25;
 const PARTICLE_LIFETIME = 3000;
-
-function getPrimaryColor(): string {
-  const raw = getComputedStyle(document.body).getPropertyValue('--terminal-foreground').trim();
-  if (!raw) return 'hsla(180, 100%, 50%)';
-  const parts = raw.split(/\s+/);
-  if (parts.length >= 3) {
-    const h = parts[0];
-    const s = parts[1];
-    const l = parts[2].replace('%', '');
-    const boostedL = Math.max(parseFloat(l), 50);
-    return `hsla(${h}, ${s}, ${boostedL}%)`;
-  }
-  return 'hsla(180, 100%, 50%)';
-}
 
 function generateVertices(w: number, h: number, rng: () => number): Vertex[] {
   const vertices: Vertex[] = [];
@@ -124,8 +110,8 @@ export function TerrainBackground({ className }: TerrainBackgroundProps) {
       cachedPrimary = getPrimaryColor();
     };
 
-    // 根据预计算的基础色快速生成带透明度的 hsla 字符串
-    const colorTpl = (alpha: number) => cachedPrimary.replace(')', `, ${alpha})`);
+    // 闭包包装共享 colorTpl，无需每帧传 base 参数
+    const ct = (alpha: number) => colorTpl(cachedPrimary, alpha);
 
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
@@ -200,7 +186,7 @@ export function TerrainBackground({ className }: TerrainBackgroundProps) {
           const d = posCache[i + GRID_COLS + 1];
 
           const hueShift1 = ((a.x + b.x + c.x) % 30) * 0.5;
-          ctx.fillStyle = colorTpl(0.03 + hueShift1 * 0.001);
+          ctx.fillStyle = ct(0.03 + hueShift1 * 0.001);
           ctx.beginPath();
           ctx.moveTo(a.x, a.y);
           ctx.lineTo(b.x, b.y);
@@ -208,7 +194,7 @@ export function TerrainBackground({ className }: TerrainBackgroundProps) {
           ctx.fill();
 
           const hueShift2 = ((b.x + c.x + d.x) % 30) * 0.5;
-          ctx.fillStyle = colorTpl(0.03 + hueShift2 * 0.001);
+          ctx.fillStyle = ct(0.03 + hueShift2 * 0.001);
           ctx.beginPath();
           ctx.moveTo(b.x, b.y);
           ctx.lineTo(d.x, d.y);
@@ -217,7 +203,7 @@ export function TerrainBackground({ className }: TerrainBackgroundProps) {
         }
       }
 
-      ctx.strokeStyle = colorTpl(0.18);
+      ctx.strokeStyle = ct(0.18);
       ctx.lineWidth = 0.8;
       ctx.beginPath();
       for (let row = 0; row < GRID_ROWS - 1; row++) {
@@ -269,7 +255,7 @@ export function TerrainBackground({ className }: TerrainBackgroundProps) {
         const opacity = 0.18 * (1 - progress);
         ctx.beginPath();
         ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-        ctx.strokeStyle = colorTpl(opacity);
+        ctx.strokeStyle = ct(opacity);
         ctx.lineWidth = 1.0;
         ctx.stroke();
       }
@@ -292,15 +278,15 @@ export function TerrainBackground({ className }: TerrainBackgroundProps) {
           beacon.y,
           glowRadius,
         );
-        gradient.addColorStop(0, colorTpl(0.4 * intensity));
-        gradient.addColorStop(1, colorTpl(0));
+        gradient.addColorStop(0, ct(0.4 * intensity));
+        gradient.addColorStop(1, ct(0));
         ctx.fillStyle = gradient;
         ctx.fillRect(beacon.x - glowRadius, beacon.y - glowRadius, glowRadius * 2, glowRadius * 2);
 
         // 核心点
         ctx.beginPath();
         ctx.arc(beacon.x, beacon.y, 2.5, 0, Math.PI * 2);
-        ctx.fillStyle = colorTpl(0.8 * intensity);
+        ctx.fillStyle = ct(0.8 * intensity);
         ctx.fill();
       }
 
@@ -334,7 +320,7 @@ export function TerrainBackground({ className }: TerrainBackgroundProps) {
 
         ctx.beginPath();
         ctx.arc(pt.x, pt.y, 1.5, 0, Math.PI * 2);
-        ctx.fillStyle = colorTpl(alpha);
+        ctx.fillStyle = ct(alpha);
         ctx.fill();
       }
     };

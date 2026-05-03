@@ -76,7 +76,7 @@ export type { NormalizedTemplate } from './api/normalize';
 // ===== 前端特有类型 =====
 
 export interface ApiResponse<T> {
-  status: string;
+  status: 'ok' | 'error';
   data?: T;
   message?: string;
   code?: string;
@@ -98,7 +98,7 @@ export interface PipelineStep {
 export interface SessionState {
   sessionName: string;
   pipeline: PipelineStep[];
-  restoreStrategy: string;
+  restoreStrategy: RestoreStrategy;
   workingDir: string;
   envSnapshot: Record<string, string>;
   terminalSnapshot: string;
@@ -108,7 +108,7 @@ export interface SessionState {
 export interface SavedSession {
   sessionName: string;
   pipeline: PipelineStep[];
-  restoreStrategy: string;
+  restoreStrategy: RestoreStrategy;
   workingDir: string;
   terminalSnapshot: string;
   savedAt: string;
@@ -126,3 +126,4 @@ export interface ConfigConflict {
 }
 
 export type HostStatus = 'pending' | 'deploying' | 'online' | 'offline' | 'failed';
+export type RestoreStrategy = 'auto' | 'manual' | 'running';

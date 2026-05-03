@@ -1,5 +1,6 @@
 import { memo, type ReactNode } from 'react';
 import { Plus, Trash2, Search, TerminalSquare, RotateCcw, Eye, Settings } from 'lucide-react';
+import { clipPathHalf } from '../../utils';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Panel } from '../ui/Panel';
@@ -104,8 +105,7 @@ export const SessionList = memo(function SessionList({
               }}
               className="pl-8 h-9 text-xs font-mono uppercase tracking-widest bg-black/60 backdrop-blur-md border-primary/30 text-primary placeholder:text-primary/30 focus-visible:ring-primary/50 rounded-none"
               style={{
-                clipPath:
-                  'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))',
+                clipPath: clipPathHalf(6),
               }}
             />
           </div>
@@ -119,8 +119,7 @@ export const SessionList = memo(function SessionList({
                 key={i}
                 className="flex items-center gap-3 p-3 pl-4 bg-black/40 border-l-2 border-primary/30 backdrop-blur-sm"
                 style={{
-                  clipPath:
-                    'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
+                  clipPath: clipPathHalf(8),
                 }}
               >
                 <Skeleton className="w-1.5 h-3 bg-primary/10" />
@@ -138,6 +137,14 @@ export const SessionList = memo(function SessionList({
               <ReverieEffect key={session.id} isActive={isRunning}>
                 <div
                   onClick={() => !isSaved && onSelectSession(session.id)}
+                  tabIndex={isSaved ? -1 : 0}
+                  role={isSaved ? undefined : 'button'}
+                  onKeyDown={(e) => {
+                    if (!isSaved && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      onSelectSession(session.id);
+                    }
+                  }}
                   className={`group flex items-center justify-between p-3 border-l-2 transition-all relative overflow-hidden backdrop-blur-sm ${
                     isSaved ? 'cursor-default' : 'cursor-pointer'
                   } ${
@@ -146,8 +153,7 @@ export const SessionList = memo(function SessionList({
                       : 'bg-black/40 border-primary/30 hover:border-primary/60 hover:bg-primary/10'
                   }`}
                   style={{
-                    clipPath:
-                      'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
+                    clipPath: clipPathHalf(8),
                   }}
                 >
                   {isSelected && (
@@ -181,8 +187,7 @@ export const SessionList = memo(function SessionList({
                           <span
                             className="text-[9px] font-mono px-1.5 py-0.5 border border-yellow-500/50 bg-yellow-500/10 text-yellow-500 uppercase tracking-widest whitespace-nowrap shrink-0"
                             style={{
-                              clipPath:
-                                'polygon(0 0, calc(100% - 4px) 0, 100% 4px, 100% 100%, 4px 100%, 0 calc(100% - 4px))',
+                              clipPath: clipPathHalf(4),
                             }}
                           >
                             [ SAVED ]
@@ -243,8 +248,7 @@ export const SessionList = memo(function SessionList({
             <div
               className="text-center p-8 text-xs font-mono text-primary/40 uppercase tracking-widest animate-pulse border border-primary/10 bg-black/40 backdrop-blur-sm"
               style={{
-                clipPath:
-                  'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))',
+                clipPath: clipPathHalf(8),
               }}
             >
               [ NO LOOPS ACTIVE ]

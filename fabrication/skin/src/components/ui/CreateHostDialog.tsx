@@ -9,6 +9,7 @@ import {
 } from './dialog';
 import { Button } from './button';
 import { Input } from './input';
+import { clipPathHalf } from '../../utils';
 import type { Tool, CreateHostRequest, HostSpec, HostStatus } from '../../types';
 import { Loader2, Cpu, MemoryStick, Wrench, CheckSquare, Square, X } from 'lucide-react';
 
@@ -20,9 +21,6 @@ export interface CreateHostDialogProps {
   onWaitOnline: (hostName: string) => Promise<boolean>;
   getHostBuildLog: (name: string) => Promise<string>;
 }
-
-const CLIP_PATH =
-  'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px))';
 
 function formatElapsed(seconds: number): string {
   const m = Math.floor(seconds / 60)
@@ -115,7 +113,13 @@ export function CreateHostDialog({
         },
       });
       setCreatedHostName(response.name ?? '');
-      setHostStatus((response.status ?? 'pending') as HostStatus);
+      // 运行时校验后端返回的 status，防止非法值穿透到前端状态
+      const VALID_HOST_STATUSES = ['pending', 'deploying', 'online', 'offline', 'failed'] as const;
+      const rawStatus = response.status ?? 'pending';
+      const safeStatus = (VALID_HOST_STATUSES as readonly string[]).includes(rawStatus)
+        ? (rawStatus as HostStatus)
+        : 'pending';
+      setHostStatus(safeStatus);
       setPhase('waiting');
       setIsCreating(false);
 
@@ -217,7 +221,7 @@ export function CreateHostDialog({
               </div>
               <div
                 className="border border-primary/20 bg-card/50 p-3 space-y-1 max-h-48 overflow-y-auto"
-                style={{ clipPath: CLIP_PATH }}
+                style={{ clipPath: clipPathHalf(8) }}
               >
                 {tools.length === 0 && (
                   <div className="text-center text-[10px] text-muted-foreground font-mono uppercase tracking-widest py-4 animate-pulse">
@@ -307,7 +311,7 @@ export function CreateHostDialog({
           <div className="space-y-3">
             <div
               className="relative overflow-hidden py-6 flex flex-col items-center justify-center"
-              style={{ clipPath: CLIP_PATH }}
+              style={{ clipPath: clipPathHalf(8) }}
             >
               <div className="absolute inset-0 bg-black/40" />
               <div
@@ -333,7 +337,7 @@ export function CreateHostDialog({
             {buildLog && (
               <div
                 className="bg-black/80 border border-primary/20 p-3 max-h-40 overflow-y-auto font-mono text-[11px] text-green-400/90 leading-relaxed"
-                style={{ clipPath: CLIP_PATH }}
+                style={{ clipPath: clipPathHalf(8) }}
               >
                 <pre className="whitespace-pre-wrap break-all">{buildLog}</pre>
                 <div ref={logEndRef} />
@@ -347,7 +351,7 @@ export function CreateHostDialog({
           <div
             className="relative overflow-hidden py-10 flex flex-col items-center justify-center min-h-[280px]"
             style={{
-              clipPath: CLIP_PATH,
+              clipPath: clipPathHalf(8),
               animation: 'host-online-glow 0.6s ease-out',
             }}
           >
@@ -371,7 +375,7 @@ export function CreateHostDialog({
         {phase === 'timeout' && (
           <div
             className="relative overflow-hidden py-8 flex flex-col items-center justify-center min-h-[280px]"
-            style={{ clipPath: CLIP_PATH }}
+            style={{ clipPath: clipPathHalf(8) }}
           >
             <div className="absolute inset-0 bg-amber-500/5" />
             <div className="relative z-10 text-center space-y-4">
@@ -396,10 +400,12 @@ export function CreateHostDialog({
 
         {error && phase === 'form' && (
           <div
-            className="mt-3 p-3 border border-red-500/30 bg-red-500/10 text-red-400 text-xs font-mono"
-            style={{ clipPath: CLIP_PATH }}
+            className="mt-3 p-3 border border-destructive/20 bg-destructive/10 text-destructive text-xs font-mono"
+            style={{ clipPath: clipPathHalf(8) }}
           >
-            <div className="text-[10px] uppercase tracking-widest mb-1 text-red-500/70">Error</div>
+            <div className="text-[10px] uppercase tracking-widest mb-1 text-destructive/70">
+              Error
+            </div>
             <div className="break-all">{error}</div>
           </div>
         )}
@@ -446,28 +452,6 @@ export function CreateHostDialog({
           ) : null}
         </DialogFooter>
       </DialogContent>
-
-      <style>{`
-        @keyframes host-scanline {
-          0% { top: 0; opacity: 0; }
-          10% { opacity: 1; }
-          90% { opacity: 1; }
-          100% { top: 100%; opacity: 0; }
-        }
-        @keyframes host-breathe {
-          0%, 100% { opacity: 0.4; }
-          50% { opacity: 1; }
-        }
-        @keyframes host-online-glow {
-          0% { box-shadow: 0 0 0 rgba(74, 222, 128, 0); }
-          50% { box-shadow: 0 0 40px rgba(74, 222, 128, 0.3); }
-          100% { box-shadow: 0 0 20px rgba(74, 222, 128, 0.1); }
-        }
-        @keyframes host-flash {
-          0% { opacity: 1; }
-          100% { opacity: 0; }
-        }
-      `}</style>
     </Dialog>
   );
 }

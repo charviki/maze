@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from './button';
+import { clipPathHalf } from '../../utils';
 import { X } from 'lucide-react';
 
 export interface HostLogPanelProps {
@@ -60,8 +61,7 @@ export function HostLogPanel({
       <div
         className="w-full max-w-3xl max-h-[60vh] flex flex-col bg-black/95 border border-primary/30 pointer-events-auto"
         style={{
-          clipPath:
-            'polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px))',
+          clipPath: clipPathHalf(12),
         }}
       >
         {/* Header */}

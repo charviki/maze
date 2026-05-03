@@ -537,6 +537,93 @@
   }
 }
 
+/* CreateHostDialog Host 创建流程动画 */
+
+/* 扫描线：从顶部向底部扫过，模拟 CRT 扫描效果 */
+@keyframes host-scanline {
+  0% {
+    top: 0;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+/* 呼吸脉冲：状态文字的明暗交替，表现 Host 等待上线时的"生命迹象" */
+@keyframes host-breathe {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* 上线成功光晕：绿色 box-shadow 从无到有再衰减 */
+@keyframes host-online-glow {
+  0% {
+    box-shadow: 0 0 0 rgba(74, 222, 128, 0);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(74, 222, 128, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 20px rgba(74, 222, 128, 0.1);
+  }
+}
+
+/* 闪光淡出：上线瞬间的绿色闪光快速消退 */
+@keyframes host-flash {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* MazeSvg 迷宫动画 */
+
+/* 迷宫整体旋转：60s 一圈的缓慢旋转 */
+@keyframes maze-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 迷宫脉冲：圆环的明暗呼吸效果 */
+@keyframes maze-pulse {
+  0%,
+  100% {
+    opacity: var(--maze-opacity-low, 0.2);
+  }
+  50% {
+    opacity: var(--maze-opacity-high, 0.6);
+  }
+}
+
+/* 淡入：hover 时 ring label 的快速渐显 */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .terminal-pane-animate {
     animation: none;

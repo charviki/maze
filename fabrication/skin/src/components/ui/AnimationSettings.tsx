@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './dialog';
+import { clipPathHalf } from '../../utils';
 import { Panel } from './Panel';
 import { DecryptText } from './DecryptText';
 
@@ -114,8 +115,7 @@ export function AnimationSettingsPanel({ open, onOpenChange }: AnimationSettings
                 key={key}
                 className="flex items-center justify-between p-3 border border-primary/20 hover:border-primary/40 transition-colors cursor-pointer"
                 style={{
-                  clipPath:
-                    'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px))',
+                  clipPath: clipPathHalf(6),
                 }}
               >
                 <div>

@@ -57,7 +57,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ showToast }}>
       {children}
       {/* Toast 容器：固定在右下角，不影响布局流 */}
-      <div className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none">
+      {/* aria-live="polite" 使屏幕阅读器在空闲时自动播报新 Toast，避免打断用户当前操作 */}
+      <div
+        role="status"
+        aria-live="polite"
+        className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none"
+      >
         {toasts.map((toast) => (
           <div
             key={toast.id}

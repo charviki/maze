@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useCallback, type ReactNode } from 'react';
+import { useEffect, useCallback, useRef, useState, type ReactNode } from 'react';
 import type { Session, V1SessionState, PipelineStep } from '../../types';
 import type { IAgentApiClient } from '../../api';
 import { SessionList, type SessionDisplay } from './SessionList';
@@ -22,120 +22,6 @@ export interface AgentPanelProps {
   terminalBackground?: ReactNode;
 }
 
-interface AgentState {
-  sessions: Session[];
-  savedSessions: V1SessionState[];
-  search: string;
-  selectedSessionId: string | null;
-  killTarget: SessionDisplay | null;
-  restoreTarget: SessionDisplay | null;
-  killing: boolean;
-  restoring: boolean;
-  viewPipelineSession: SessionDisplay | null;
-  viewPipelineSteps: PipelineStep[];
-  configOpen: boolean;
-  loadingConfig: boolean;
-  saving: boolean;
-  saveCooldown: boolean;
-  lastSaveTime: string | null;
-  actionError: string | null;
-  showCreate: boolean;
-  showTemplateManager: boolean;
-  showNodeConfig: boolean;
-}
-
-type AgentAction =
-  | { type: 'SET_SESSIONS'; payload: Session[] }
-  | { type: 'SET_SAVED_SESSIONS'; payload: V1SessionState[] }
-  | { type: 'SET_SEARCH'; payload: string }
-  | { type: 'SELECT_SESSION'; payload: string | null }
-  | { type: 'SET_KILL_TARGET'; payload: SessionDisplay | null }
-  | { type: 'SET_KILLING'; payload: boolean }
-  | { type: 'SET_RESTORE_TARGET'; payload: SessionDisplay | null }
-  | { type: 'SET_RESTORING'; payload: boolean }
-  | {
-      type: 'SET_VIEW_PIPELINE';
-      payload: { session: SessionDisplay | null; steps: PipelineStep[] };
-    }
-  | { type: 'SET_CONFIG_OPEN'; payload: boolean }
-  | { type: 'SET_LOADING_CONFIG'; payload: boolean }
-  | { type: 'SET_SAVING'; payload: boolean }
-  | { type: 'SET_SAVE_COOLDOWN'; payload: boolean }
-  | { type: 'SET_LAST_SAVE_TIME'; payload: string | null }
-  | { type: 'SET_ACTION_ERROR'; payload: string | null }
-  | { type: 'SET_SHOW_CREATE'; payload: boolean }
-  | { type: 'SET_SHOW_TEMPLATE_MANAGER'; payload: boolean }
-  | { type: 'SET_SHOW_NODE_CONFIG'; payload: boolean };
-
-const initialState: AgentState = {
-  sessions: [],
-  savedSessions: [],
-  search: '',
-  selectedSessionId: null,
-  killTarget: null,
-  killing: false,
-  restoreTarget: null,
-  restoring: false,
-  viewPipelineSession: null,
-  viewPipelineSteps: [],
-  configOpen: false,
-  loadingConfig: false,
-  saving: false,
-  saveCooldown: false,
-  lastSaveTime: null,
-  actionError: null,
-  showCreate: false,
-  showTemplateManager: false,
-  showNodeConfig: false,
-};
-
-function agentReducer(state: AgentState, action: AgentAction): AgentState {
-  switch (action.type) {
-    case 'SET_SESSIONS':
-      return { ...state, sessions: action.payload };
-    case 'SET_SAVED_SESSIONS':
-      return { ...state, savedSessions: action.payload };
-    case 'SET_SEARCH':
-      return { ...state, search: action.payload };
-    case 'SELECT_SESSION':
-      return { ...state, selectedSessionId: action.payload };
-    case 'SET_KILL_TARGET':
-      return { ...state, killTarget: action.payload };
-    case 'SET_KILLING':
-      return { ...state, killing: action.payload };
-    case 'SET_RESTORE_TARGET':
-      return { ...state, restoreTarget: action.payload };
-    case 'SET_RESTORING':
-      return { ...state, restoring: action.payload };
-    case 'SET_VIEW_PIPELINE':
-      return {
-        ...state,
-        viewPipelineSession: action.payload.session,
-        viewPipelineSteps: action.payload.steps,
-      };
-    case 'SET_CONFIG_OPEN':
-      return { ...state, configOpen: action.payload };
-    case 'SET_LOADING_CONFIG':
-      return { ...state, loadingConfig: action.payload };
-    case 'SET_SAVING':
-      return { ...state, saving: action.payload };
-    case 'SET_SAVE_COOLDOWN':
-      return { ...state, saveCooldown: action.payload };
-    case 'SET_LAST_SAVE_TIME':
-      return { ...state, lastSaveTime: action.payload };
-    case 'SET_ACTION_ERROR':
-      return { ...state, actionError: action.payload };
-    case 'SET_SHOW_CREATE':
-      return { ...state, showCreate: action.payload };
-    case 'SET_SHOW_TEMPLATE_MANAGER':
-      return { ...state, showTemplateManager: action.payload };
-    case 'SET_SHOW_NODE_CONFIG':
-      return { ...state, showNodeConfig: action.payload };
-    default:
-      return state;
-  }
-}
-
 function getSnapshotSummary(snapshot?: string, lines = 5): string {
   if (!snapshot) return '(无快照)';
   const allLines = snapshot.split('\n').filter((l) => l.trim() !== '');
@@ -150,19 +36,59 @@ export function AgentPanel({
   listHeaderActions,
   terminalBackground,
 }: AgentPanelProps) {
-  const [state, dispatch] = useReducer(agentReducer, initialState);
   const { showToast } = useToast();
+
+  // 独立状态：每个字段用 useState 管理，无需 reducer 样板代码
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [savedSessions, setSavedSessions] = useState<V1SessionState[]>([]);
+  const [search, setSearch] = useState('');
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [killTarget, setKillTarget] = useState<SessionDisplay | null>(null);
+  const [restoreTarget, setRestoreTarget] = useState<SessionDisplay | null>(null);
+  const [killing, setKilling] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [viewPipelineSession, setViewPipelineSession] = useState<SessionDisplay | null>(null);
+  const [viewPipelineSteps, setViewPipelineSteps] = useState<PipelineStep[]>([]);
+  const [configOpen, setConfigOpen] = useState(false);
+  const loadingConfig = false;
+  const [saving, setSaving] = useState(false);
+  const [saveCooldown, setSaveCooldown] = useState(false);
+  const [lastSaveTime, setLastSaveTime] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [showTemplateManager, setShowTemplateManager] = useState(false);
+  const [showNodeConfig, setShowNodeConfig] = useState(false);
+
+  // 用于清理错误/冷却状态的定时器，防止组件卸载后仍触发 setState
+  const errorTimerRef = useRef<number | undefined>(undefined);
+
+  // 组件卸载时清理所有未完成的定时器
+  useEffect(() => {
+    return () => {
+      if (errorTimerRef.current !== undefined) {
+        clearTimeout(errorTimerRef.current);
+      }
+    };
+  }, []);
+
+  // 安全清除错误：先取消旧定时器再设置新定时器
+  const scheduleErrorClear = useCallback(() => {
+    if (errorTimerRef.current !== undefined) clearTimeout(errorTimerRef.current);
+    errorTimerRef.current = window.setTimeout(() => {
+      setActionError(null);
+    }, 3000);
+  }, []);
 
   const fetchSessions = useCallback(async () => {
     const res = await apiClient.listSessions();
-    if (res.status === 'ok' && res.data) dispatch({ type: 'SET_SESSIONS', payload: res.data });
+    if (res.status === 'ok' && res.data) setSessions(res.data);
   }, [apiClient]);
 
   const fetchSavedSessions = useCallback(async () => {
     const res = await apiClient.getSavedSessions();
     if (res.status === 'ok' && res.data) {
       const valid = res.data.filter((ss) => ss.sessionName);
-      dispatch({ type: 'SET_SAVED_SESSIONS', payload: valid });
+      setSavedSessions(valid);
     }
   }, [apiClient]);
 
@@ -178,28 +104,30 @@ export function AgentPanel({
 
   // 选中会话后刷新最后保存时间
   useEffect(() => {
-    if (state.selectedSessionId) {
+    if (selectedSessionId) {
       apiClient
         .getSavedSessions()
         .then((res) => {
           if (res.status === 'ok' && res.data) {
             const valid = res.data.filter((ss) => ss.sessionName);
-            const found = valid.find((s) => s.sessionName === state.selectedSessionId);
+            const found = valid.find((s) => s.sessionName === selectedSessionId);
             if (found) {
-              dispatch({ type: 'SET_LAST_SAVE_TIME', payload: found.savedAt ?? null });
+              setLastSaveTime(found.savedAt ?? null);
             }
           }
         })
-        .catch(() => {});
+        .catch(() => {
+          showToast('error', '已保存会话获取失败');
+        });
     }
-  }, [state.selectedSessionId, apiClient]);
+  }, [selectedSessionId, apiClient, showToast]);
 
   // 合并运行中和已保存的会话列表
   const mergedSessions: SessionDisplay[] = (() => {
-    const runningSet = new Set(state.sessions.map((s) => s.name));
+    const runningSet = new Set(sessions.map((s) => s.name));
     const result: SessionDisplay[] = [];
 
-    for (const s of state.sessions) {
+    for (const s of sessions) {
       result.push({
         id: s.id ?? '',
         name: s.name ?? '',
@@ -209,7 +137,7 @@ export function AgentPanel({
       });
     }
 
-    for (const ss of state.savedSessions) {
+    for (const ss of savedSessions) {
       if (!ss.sessionName) continue;
       if (!runningSet.has(ss.sessionName ?? '') && ss.restoreStrategy !== 'running') {
         result.push({
@@ -228,19 +156,19 @@ export function AgentPanel({
   })();
 
   const confirmKill = async () => {
-    if (!state.killTarget || !state.killTarget.name) return;
-    const s = state.killTarget;
-    dispatch({ type: 'SET_KILLING', payload: true });
-    dispatch({ type: 'SET_ACTION_ERROR', payload: null });
+    if (!killTarget || !killTarget.name) return;
+    const s = killTarget;
+    setKilling(true);
+    setActionError(null);
 
     // saved session 也需要调用 delete 以清理后端状态文件
     const res = await apiClient.deleteSession(s.name);
 
-    dispatch({ type: 'SET_KILLING', payload: false });
+    setKilling(false);
     if (res.status === 'ok') {
-      dispatch({ type: 'SET_KILL_TARGET', payload: null });
-      if (state.selectedSessionId === s.id) {
-        dispatch({ type: 'SELECT_SESSION', payload: null });
+      setKillTarget(null);
+      if (selectedSessionId === s.id) {
+        setSelectedSessionId(null);
       }
       showToast('success', `已删除 Loop: ${s.name}`);
       await refreshAll();
@@ -248,151 +176,135 @@ export function AgentPanel({
     }
 
     const message = res.message || '删除失败';
-    dispatch({ type: 'SET_ACTION_ERROR', payload: message });
+    setActionError(message);
     showToast('error', `删除 Loop 失败: ${s.name}`);
-    setTimeout(() => {
-      dispatch({ type: 'SET_ACTION_ERROR', payload: null });
-    }, 3000);
+    scheduleErrorClear();
   };
 
   const confirmRestore = async () => {
-    if (!state.restoreTarget) return;
-    const targetName = state.restoreTarget.name;
-    dispatch({ type: 'SET_RESTORING', payload: true });
-    await apiClient.restoreSession(targetName);
-    dispatch({ type: 'SET_RESTORING', payload: false });
-    dispatch({ type: 'SET_RESTORE_TARGET', payload: null });
+    if (!restoreTarget) return;
+    const targetName = restoreTarget.name;
+    setRestoring(true);
+    const res = await apiClient.restoreSession(targetName);
+    setRestoring(false);
+    if (res.status !== 'ok') {
+      showToast('error', `恢复 Loop 失败: ${res.message || '未知错误'}`);
+      setRestoreTarget(null);
+      return;
+    }
+    setRestoreTarget(null);
     void refreshAll();
-    dispatch({ type: 'SELECT_SESSION', payload: targetName });
+    setSelectedSessionId(targetName);
   };
 
   const handleViewPipeline = (e: React.MouseEvent, session: SessionDisplay) => {
     e.stopPropagation();
-    const saved = state.savedSessions.find((s) => s.sessionName === session.id);
-    dispatch({
-      type: 'SET_VIEW_PIPELINE',
-      payload: {
-        session,
-        steps: saved?.pipeline ? (JSON.parse(saved.pipeline) as PipelineStep[]) : [],
-      },
-    });
+    const saved = savedSessions.find((s) => s.sessionName === session.id);
+    let steps: PipelineStep[] = [];
+    // JSON.parse 需要 try-catch 保护，防止后端返回格式异常导致运行时崩溃
+    if (saved?.pipeline) {
+      try {
+        steps = JSON.parse(saved.pipeline) as PipelineStep[];
+      } catch {
+        steps = [];
+      }
+    }
+    setViewPipelineSession(session);
+    setViewPipelineSteps(steps);
   };
 
   const handleSaveSessions = async () => {
-    dispatch({ type: 'SET_SAVING', payload: true });
-    dispatch({ type: 'SET_ACTION_ERROR', payload: null });
+    setSaving(true);
+    setActionError(null);
     const res = await apiClient.saveSessions();
-    dispatch({ type: 'SET_SAVING', payload: false });
+    setSaving(false);
     if (res.status === 'ok' && res.data) {
-      dispatch({ type: 'SET_LAST_SAVE_TIME', payload: res.data.savedAt ?? null });
-      dispatch({ type: 'SET_SAVE_COOLDOWN', payload: true });
-      setTimeout(() => {
-        dispatch({ type: 'SET_SAVE_COOLDOWN', payload: false });
+      setLastSaveTime(res.data.savedAt ?? null);
+      setSaveCooldown(true);
+      // 冷却倒计时使用 ref 跟踪，确保卸载时可清理
+      if (errorTimerRef.current !== undefined) clearTimeout(errorTimerRef.current);
+      errorTimerRef.current = window.setTimeout(() => {
+        setSaveCooldown(false);
       }, 3000);
     } else {
-      dispatch({ type: 'SET_ACTION_ERROR', payload: res.message || '保存失败' });
-      setTimeout(() => {
-        dispatch({ type: 'SET_ACTION_ERROR', payload: null });
-      }, 3000);
+      setActionError(res.message || '保存失败');
+      scheduleErrorClear();
     }
   };
 
   const handleOpenConfig = (open: boolean) => {
     if (!open) {
-      dispatch({ type: 'SET_CONFIG_OPEN', payload: false });
+      setConfigOpen(false);
       return;
     }
-    dispatch({ type: 'SET_CONFIG_OPEN', payload: true });
+    setConfigOpen(true);
   };
 
   const handleSessionCreated = (sessionName: string) => {
     void refreshAll();
-    dispatch({ type: 'SELECT_SESSION', payload: sessionName });
+    setSelectedSessionId(sessionName);
   };
 
   return (
     <>
       <SessionList
         sessions={mergedSessions}
-        search={state.search}
-        onSearchChange={(v) => {
-          dispatch({ type: 'SET_SEARCH', payload: v });
-        }}
-        selectedSessionId={state.selectedSessionId}
-        onSelectSession={(id) => {
-          dispatch({ type: 'SELECT_SESSION', payload: id });
-        }}
+        search={search}
+        onSearchChange={setSearch}
+        selectedSessionId={selectedSessionId}
+        onSelectSession={setSelectedSessionId}
         nodeName={nodeName}
-        onCreateClick={() => {
-          dispatch({ type: 'SET_SHOW_CREATE', payload: true });
-        }}
-        onNodeConfigClick={() => {
-          dispatch({ type: 'SET_SHOW_NODE_CONFIG', payload: true });
-        }}
-        onKill={(session) => {
-          dispatch({ type: 'SET_KILL_TARGET', payload: session });
-        }}
-        onRestore={(session) => {
-          dispatch({ type: 'SET_RESTORE_TARGET', payload: session });
-        }}
+        onCreateClick={() => setShowCreate(true)}
+        onNodeConfigClick={() => setShowNodeConfig(true)}
+        onKill={setKillTarget}
+        onRestore={setRestoreTarget}
         onViewPipeline={handleViewPipeline}
         listHeaderActions={listHeaderActions}
       />
 
       <TerminalPane
-        selectedSessionId={state.selectedSessionId}
+        selectedSessionId={selectedSessionId}
         nodeName={nodeName}
         apiClient={apiClient}
         terminalBackground={terminalBackground}
-        lastSaveTime={state.lastSaveTime}
-        saving={state.saving}
-        saveCooldown={state.saveCooldown}
-        actionError={state.actionError}
+        lastSaveTime={lastSaveTime}
+        saving={saving}
+        saveCooldown={saveCooldown}
+        actionError={actionError}
         onSave={handleSaveSessions}
         onOpenConfig={handleOpenConfig}
-        loadingConfig={state.loadingConfig}
+        loadingConfig={loadingConfig}
         headerActions={headerActions}
       />
 
       <SessionDialogs
-        killTarget={state.killTarget}
-        killing={state.killing}
-        restoreTarget={state.restoreTarget}
-        viewPipelineSession={state.viewPipelineSession}
-        viewPipelineSteps={state.viewPipelineSteps}
-        configOpen={state.configOpen}
-        selectedSessionId={state.selectedSessionId}
+        killTarget={killTarget}
+        killing={killing}
+        restoreTarget={restoreTarget}
+        viewPipelineSession={viewPipelineSession}
+        viewPipelineSteps={viewPipelineSteps}
+        configOpen={configOpen}
+        selectedSessionId={selectedSessionId}
         nodeName={nodeName}
-        restoring={state.restoring}
-        showCreate={state.showCreate}
-        onShowCreateChange={(v) => {
-          dispatch({ type: 'SET_SHOW_CREATE', payload: v });
-        }}
-        showTemplateManager={state.showTemplateManager}
-        onShowTemplateManagerChange={(v) => {
-          dispatch({ type: 'SET_SHOW_TEMPLATE_MANAGER', payload: v });
-        }}
-        showNodeConfig={state.showNodeConfig}
-        onShowNodeConfigClose={() => {
-          dispatch({ type: 'SET_SHOW_NODE_CONFIG', payload: false });
-        }}
+        restoring={restoring}
+        showCreate={showCreate}
+        onShowCreateChange={setShowCreate}
+        showTemplateManager={showTemplateManager}
+        onShowTemplateManagerChange={setShowTemplateManager}
+        showNodeConfig={showNodeConfig}
+        onShowNodeConfigClose={() => setShowNodeConfig(false)}
         apiClient={apiClient}
         renderCreateDialog={renderCreateDialog}
         onSessionCreated={handleSessionCreated}
         onKillConfirm={confirmKill}
-        onKillCancel={() => {
-          dispatch({ type: 'SET_KILL_TARGET', payload: null });
-        }}
+        onKillCancel={() => setKillTarget(null)}
         onRestoreConfirm={confirmRestore}
-        onRestoreCancel={() => {
-          dispatch({ type: 'SET_RESTORE_TARGET', payload: null });
-        }}
+        onRestoreCancel={() => setRestoreTarget(null)}
         onPipelineClose={() => {
-          dispatch({ type: 'SET_VIEW_PIPELINE', payload: { session: null, steps: [] } });
+          setViewPipelineSession(null);
+          setViewPipelineSteps([]);
         }}
-        onConfigClose={(open) => {
-          dispatch({ type: 'SET_CONFIG_OPEN', payload: open });
-        }}
+        onConfigClose={setConfigOpen}
         getSnapshotSummary={getSnapshotSummary}
       />
     </>

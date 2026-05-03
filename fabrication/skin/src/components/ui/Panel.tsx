@@ -1,9 +1,11 @@
 import * as React from 'react';
 import { cn } from '../../utils';
 
+type PanelVariant = 'default' | 'destructive' | 'warning' | 'success';
+
 // variant 对应的边框颜色和装饰文本样式映射
 const variantStyles: Record<
-  string,
+  PanelVariant,
   { border: string; corner: string; label: string; hash: string }
 > = {
   default: {
@@ -32,7 +34,7 @@ const variantStyles: Record<
   },
 };
 
-const variantLabels: Record<string, { auth: string; hash: string }> = {
+const variantLabels: Record<PanelVariant, { auth: string; hash: string }> = {
   default: { auth: '[SYS_AUTH: SEC_LEVEL_9]', hash: '// HASH: 0x8F9B2C4A //' },
   destructive: { auth: '[ALERT: CRITICAL_FAULT]', hash: '// ERR: 0xDEAD4A21 //' },
   warning: { auth: '[WARN: ELEVATED_RISK]', hash: '// WARN: 0xCAFE0000 //' },

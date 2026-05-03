@@ -5,6 +5,7 @@ import type { LocalAgentConfig } from '../../types';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
+import { useToast } from '../ui/Toast';
 
 interface NodeConfigPanelProps {
   nodeName: string;
@@ -13,6 +14,7 @@ interface NodeConfigPanelProps {
 }
 
 export function NodeConfigPanel({ nodeName, apiClient, onClose }: NodeConfigPanelProps) {
+  const { showToast } = useToast();
   const [config, setConfig] = useState<LocalAgentConfig>({ workingDir: '', env: {} });
   const [loading, setLoading] = useState(true);
 
@@ -29,7 +31,9 @@ export function NodeConfigPanel({ nodeName, apiClient, onClose }: NodeConfigPane
           setConfig(res.data);
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        showToast('error', '节点配置加载失败');
+      })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
@@ -40,8 +44,12 @@ export function NodeConfigPanel({ nodeName, apiClient, onClose }: NodeConfigPane
   }, [apiClient]);
 
   const handleSave = async () => {
-    await apiClient.updateLocalConfig({ env: config.env });
-    onClose();
+    const res = await apiClient.updateLocalConfig({ env: config.env });
+    if (res.status === 'ok') {
+      onClose();
+    } else {
+      showToast('error', res.message || '配置保存失败');
+    }
   };
 
   const updateEnv = (oldKey: string, newKey: string, value: string) => {

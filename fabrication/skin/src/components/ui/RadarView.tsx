@@ -31,6 +31,8 @@ interface RadarViewProps {
 export function RadarView({ className, nodes }: RadarViewProps) {
   const [links, setLinks] = useState<PulseLink[]>([]);
   const linkIdRef = useRef(0);
+  // 用 ref 持有当前递归定时器 ID，确保每次递归都能被 cleanup 清除
+  const timerRef = useRef<number | undefined>(undefined);
 
   // 多个 online 节点时，随机生成连接脉冲线
   useEffect(() => {
@@ -45,7 +47,7 @@ export function RadarView({ className, nodes }: RadarViewProps) {
 
     const scheduleNext = () => {
       const delay = 3000 + Math.random() * 5000;
-      return setTimeout(() => {
+      timerRef.current = window.setTimeout(() => {
         const a = onlineIndices[Math.floor(Math.random() * onlineIndices.length)];
         let b = a;
         while (b === a && onlineIndices.length > 1) {
@@ -65,9 +67,11 @@ export function RadarView({ className, nodes }: RadarViewProps) {
       }, delay);
     };
 
-    const timer = scheduleNext();
+    scheduleNext();
     return () => {
-      clearTimeout(timer);
+      if (timerRef.current !== undefined) {
+        clearTimeout(timerRef.current);
+      }
     };
   }, [nodes]);
 

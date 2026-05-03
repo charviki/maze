@@ -91,7 +91,6 @@ export const SessionDialogs = memo(function SessionDialogs({
           open={showCreate}
           onOpenChange={onShowCreateChange}
           apiClient={apiClient}
-          nodeName={nodeName}
           onSuccess={onSessionCreated}
           onOpenTemplateManager={() => {
             onShowTemplateManagerChange(true);

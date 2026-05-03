@@ -8,6 +8,7 @@ import type {
 } from '../../types';
 import type { IAgentApiClient } from '../../api';
 import { Plus, Trash2, CheckCircle, Variable } from 'lucide-react';
+import { useToast } from '../ui/Toast';
 import { maskEnvValue } from '../../utils/mask';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -22,7 +23,6 @@ function generateSessionName(templateId: string): string {
 
 interface CreateSessionWithTemplateDialogProps {
   apiClient: IAgentApiClient;
-  nodeName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: (sessionName: string) => void;
@@ -31,12 +31,12 @@ interface CreateSessionWithTemplateDialogProps {
 
 export function CreateSessionWithTemplateDialog({
   apiClient,
-  nodeName: _nodeName,
   open,
   onOpenChange,
   onSuccess,
   onOpenTemplateManager,
 }: CreateSessionWithTemplateDialogProps) {
+  const { showToast } = useToast();
   const [templates, setTemplates] = useState<NormalizedTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<NormalizedTemplate | null>(null);
   const [createName, setCreateName] = useState('');
@@ -62,14 +62,18 @@ export function CreateSessionWithTemplateDialog({
       .then((res) => {
         if (res.status === 'ok' && res.data) setTemplates(res.data);
       })
-      .catch(() => {});
+      .catch(() => {
+        showToast('error', '模板列表加载失败');
+      });
 
     apiClient
       .getLocalConfig()
       .then((res) => {
         if (res.status === 'ok' && res.data) setNodeConfig(res.data);
       })
-      .catch(() => {});
+      .catch(() => {
+        showToast('error', '节点配置加载失败');
+      });
   }, [open, apiClient]);
 
   const baseWorkingDir = nodeConfig?.workingDir || '/home/agent';
@@ -582,7 +586,7 @@ export function CreateSessionWithTemplateDialog({
               </div>
 
               {createError && (
-                <div className="text-sm text-red-500 bg-red-50 dark:bg-red-950/30 px-3 py-2 rounded">
+                <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 px-3 py-2 rounded">
                   {createError}
                 </div>
               )}
