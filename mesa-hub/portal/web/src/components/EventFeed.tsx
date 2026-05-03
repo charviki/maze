@@ -22,21 +22,25 @@ function randomEvent(): Event {
 export function EventFeed() {
   const [events, setEvents] = useState<Event[]>(() => [randomEvent()]);
   const containerRef = useRef<HTMLDivElement>(null);
+  // 用 ref 持有当前递归定时器 ID，确保每次递归都能被 cleanup 清除
+  const timerRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     const schedule = () => {
       const delay = 15000 + Math.random() * 15000; // 15-30s
-      return setTimeout(() => {
+      timerRef.current = window.setTimeout(() => {
         setEvents((prev) => {
           const next = [...prev, randomEvent()];
           return next.length > 20 ? next.slice(-20) : next;
         });
-        timer = schedule();
+        schedule();
       }, delay);
     };
-    let timer = schedule();
+    schedule();
     return () => {
-      clearTimeout(timer);
+      if (timerRef.current !== undefined) {
+        clearTimeout(timerRef.current);
+      }
     };
   }, []);
 

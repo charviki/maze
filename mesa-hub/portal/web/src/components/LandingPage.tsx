@@ -1,5 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { TerrainBackground, HexWaterfall, DecryptText, Button, Input, cn } from '@maze/fabrication';
+import {
+  TerrainBackground,
+  HexWaterfall,
+  DecryptText,
+  Button,
+  Input,
+  cn,
+  clipPath,
+} from '@maze/fabrication';
 import { WESTWORLD_QUOTES } from '../data/mock-data';
 import { MazeCanvas } from './MazeCanvas';
 import { MazeSvg } from './MazeSvg';
@@ -104,8 +112,7 @@ export function LandingPage({ onEnter }: LandingPageProps) {
             'active:scale-95',
           )}
           style={{
-            clipPath:
-              'polygon(12px 0, calc(100% - 12px) 0, 100% 12px, 100% calc(100% - 12px), calc(100% - 12px) 100%, 12px 100%, 0 calc(100% - 12px), 0 12px)',
+            clipPath: clipPath(12),
           }}
         >
           ENTER THE PARK
@@ -174,8 +181,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
     <div
       className={cn('relative p-px', shaking && 'animate-pulse')}
       style={{
-        clipPath:
-          'polygon(16px 0, calc(100% - 16px) 0, 100% 16px, 100% calc(100% - 16px), calc(100% - 16px) 100%, 16px 100%, 0 calc(100% - 16px), 0 16px)',
+        clipPath: clipPath(16),
       }}
     >
       {/* Glowing border background */}
@@ -187,8 +193,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
       <div
         className="relative bg-background/40 backdrop-blur-xl"
         style={{
-          clipPath:
-            'polygon(16px 0, calc(100% - 16px) 0, 100% 16px, 100% calc(100% - 16px), calc(100% - 16px) 100%, 16px 100%, 0 calc(100% - 16px), 0 16px)',
+          clipPath: clipPath(16),
         }}
       >
         <form onSubmit={handleSubmit} className="flex flex-col gap-5 p-6 md:p-8">
@@ -310,6 +315,14 @@ function MazeContainer({ className, onClick }: { className?: string; onClick?: (
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onClick={onClick}
+      tabIndex={onClick ? 0 : -1}
+      role={onClick ? 'button' : undefined}
+      onKeyDown={(e) => {
+        if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onClick();
+        }
+      }}
     >
       <MazeCanvas mousePos={mousePos} centerActive={centerActive} />
       <MazeSvg centerActive={centerActive} hoveredRing={hoveredRing} />

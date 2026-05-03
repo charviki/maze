@@ -263,21 +263,6 @@ export function MazeSvg({ className, centerActive, hoveredRing }: MazeSvgProps) 
           </span>
         </div>
       )}
-
-      <style>{`
-        @keyframes maze-rotate {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        @keyframes maze-pulse {
-          0%, 100% { opacity: var(--maze-opacity-low, 0.2); }
-          50% { opacity: var(--maze-opacity-high, 0.6); }
-        }
-        @keyframes fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-      `}</style>
     </div>
   );
 }

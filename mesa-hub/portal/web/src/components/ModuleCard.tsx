@@ -46,6 +46,14 @@ export function ModuleCard({ name, description, icon: Icon, status, href }: Modu
         setHovered(false);
       }}
       onClick={handleClick}
+      tabIndex={isLocked ? -1 : 0}
+      role={isLocked ? undefined : 'button'}
+      onKeyDown={(e) => {
+        if (!isLocked && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
     >
       <div className="flex flex-col gap-3 h-full">
         {/* Header: icon + status */}

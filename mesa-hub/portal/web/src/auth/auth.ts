@@ -3,7 +3,7 @@
  *
  * Current: hardcoded users + localStorage.
  * Future: swap internals for OIDC token + redirect flow
- * (Auth0, Keycloak, etc.) without touching AuthGate or LoginPage.
+ * (Auth0, Keycloak, etc.) without touching UI components.
  */
 
 const STORAGE_KEY = 'maze:auth';

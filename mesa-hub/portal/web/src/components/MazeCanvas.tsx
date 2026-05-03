@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { cn } from '@maze/fabrication';
+import { cn, getPrimaryColor, colorTpl } from '@maze/fabrication';
 
 /** Maze orbit radii — must match MazeSvg */
 const RADII = [90, 75, 60, 45, 30, 18];
@@ -36,20 +36,6 @@ interface Ripple {
   radius: number;
   alpha: number;
   birth: number;
-}
-
-function getPrimaryColor(): string {
-  const raw = getComputedStyle(document.body).getPropertyValue('--terminal-foreground').trim();
-  if (!raw) return 'hsla(180, 100%, 50%)';
-  const parts = raw.split(/\s+/);
-  if (parts.length >= 3) {
-    const h = parts[0];
-    const s = parts[1];
-    const l = parts[2].replace('%', '');
-    const boostedL = Math.max(parseFloat(l), 50);
-    return `hsla(${h}, ${s}, ${boostedL}%)`;
-  }
-  return 'hsla(180, 100%, 50%)';
 }
 
 function createParticles(): OrbitalParticle[] {
@@ -128,7 +114,8 @@ export function MazeCanvas({ className, mousePos, centerActive }: MazeCanvasProp
     const updateColor = () => {
       cachedPrimary = getPrimaryColor();
     };
-    const colorTpl = (alpha: number) => cachedPrimary.replace(')', `, ${alpha})`);
+    // 闭包包装共享 colorTpl，无需每帧传 base 参数
+    const ct = (alpha: number) => colorTpl(cachedPrimary, alpha);
 
     // Fixed coordinate space: 200x200 (matches SVG viewBox)
     const SIZE = 200;
@@ -243,7 +230,7 @@ export function MazeCanvas({ className, mousePos, centerActive }: MazeCanvasProp
           for (let i = 1; i < p.trail.length; i++) {
             ctx.lineTo(p.trail[i].x, p.trail[i].y);
           }
-          ctx.strokeStyle = colorTpl(p.alpha * 0.2);
+          ctx.strokeStyle = ct(p.alpha * 0.2);
           ctx.lineWidth = p.size * 0.5;
           ctx.stroke();
         }
@@ -252,14 +239,14 @@ export function MazeCanvas({ className, mousePos, centerActive }: MazeCanvasProp
         const finalAlpha = Math.min(1, p.alpha + rippleBoost);
         ctx.beginPath();
         ctx.arc(px, py, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = colorTpl(finalAlpha);
+        ctx.fillStyle = ct(finalAlpha);
         ctx.fill();
 
         // Glow for bright particles
         if (finalAlpha > 0.6) {
           ctx.beginPath();
           ctx.arc(px, py, p.size * 3, 0, Math.PI * 2);
-          ctx.fillStyle = colorTpl(finalAlpha * 0.15);
+          ctx.fillStyle = ct(finalAlpha * 0.15);
           ctx.fill();
         }
       }
@@ -278,14 +265,14 @@ export function MazeCanvas({ className, mousePos, centerActive }: MazeCanvasProp
 
         ctx.beginPath();
         ctx.arc(cx, cy, ripple.radius, 0, Math.PI * 2);
-        ctx.strokeStyle = colorTpl(ripple.alpha);
+        ctx.strokeStyle = ct(ripple.alpha);
         ctx.lineWidth = 1.5 * (1 - progress);
         ctx.stroke();
 
         // Inner glow ring
         ctx.beginPath();
         ctx.arc(cx, cy, ripple.radius * 0.95, 0, Math.PI * 2);
-        ctx.strokeStyle = colorTpl(ripple.alpha * 0.3);
+        ctx.strokeStyle = ct(ripple.alpha * 0.3);
         ctx.lineWidth = 4 * (1 - progress);
         ctx.stroke();
       }

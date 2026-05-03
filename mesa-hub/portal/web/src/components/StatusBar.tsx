@@ -4,11 +4,7 @@ import { WESTWORLD_QUOTES, MOCK_NODES, MOCK_HOSTS, BUILD_VERSION } from '../data
 
 const onlineNodes = MOCK_NODES.filter((n) => n.status === 'online').length;
 
-interface StatusBarProps {
-  showProtocol?: boolean;
-}
-
-export function StatusBar({ showProtocol }: StatusBarProps) {
+export function StatusBar() {
   const [clock, setClock] = useState(new Date().toLocaleTimeString());
   const [quoteIndex, setQuoteIndex] = useState(0);
 
@@ -42,12 +38,6 @@ export function StatusBar({ showProtocol }: StatusBarProps) {
         <span>HOSTS: {MOCK_HOSTS.total}</span>
         <span className="text-primary/20">|</span>
         <span>{BUILD_VERSION}</span>
-        {showProtocol && (
-          <>
-            <span className="text-primary/20">|</span>
-            <span>PROTOCOL: OIDC-READY</span>
-          </>
-        )}
       </div>
 
       <div className="h-6 flex items-center px-4 text-[9px] font-mono tracking-wider text-primary/30 italic overflow-hidden">
