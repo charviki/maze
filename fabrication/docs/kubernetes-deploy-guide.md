@@ -205,7 +205,7 @@ fabrication/kubernetes/
 │   ├── manager-rbac.yaml                 # ServiceAccount + Role + RoleBinding（含 pods/log 权限）
 │   ├── manager-secret.yaml               # Auth Token Secret（需填入实际值）
 │   ├── manager-pvc.yaml                  # Manager PVC（仅 production 使用）
-│   ├── manager-service.yaml              # Manager ClusterIP Service :8080 + :8081
+│   ├── manager-service.yaml              # Manager ClusterIP Service :8080(HTTP) + :9090(gRPC)
 │   ├── web-configmap.yaml                # Nginx 配置模板（envsubst 变量注入）
 │   ├── web-deployment.yaml               # Web Deployment
 │   ├── web-service.yaml                  # Web ClusterIP Service :80
@@ -218,7 +218,7 @@ fabrication/kubernetes/
     ├── test/                             # 集成测试 overlay
     │   ├── kustomization.yaml            # namespace: maze-test，删除 web/namespace 资源
     │   ├── manager-configmap.yaml        # hostPath + 动态构建 + Docker socket
-    │   └── manager-deployment.yaml       # hostPath 挂载 + Docker socket + 8081 端口
+    │   └── manager-deployment.yaml       # hostPath 挂载 + Docker socket + 声明 8080/9090 端口
     └── production/                       # 生产环境 overlay
         ├── kustomization.yaml
         ├── manager-configmap.yaml        # PVC + IfNotPresent

@@ -51,7 +51,8 @@ FROM public.ecr.aws/docker/library/node:22-bookworm-slim
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 
-RUN apt-get update && apt-get install -y \
+RUN sed -i 's|deb.debian.org|mirrors.tuna.tsinghua.edu.cn|g' /etc/apt/sources.list.d/debian.sources \
+    && apt-get update && apt-get install -y \
     tmux \
     git \
     curl \

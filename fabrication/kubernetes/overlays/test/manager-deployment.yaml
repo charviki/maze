@@ -18,6 +18,7 @@ spec:
           imagePullPolicy: Never
           ports:
             - containerPort: 8080
+            - containerPort: 9090
           envFrom:
             - configMapRef:
                 name: manager-config
