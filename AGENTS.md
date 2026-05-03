@@ -13,18 +13,20 @@ The Maze — 基于 Westworld 概念构建的 AI Agent 管理平台。Manager (b
 - **声明式编排 (Declarative Orchestration)** — Host 规格持久化为 HostSpec，Reconciler 确保实际状态趋近期望状态（启动恢复 + 健康巡检 + 自动重试）
 - **分阶段实施 (Incremental Delivery)** — 大范围改动拆分为小步骤，每步实现后立即验证（编译/测试），确认无误后再推进下一步，避免一次性大改导致返工和方案漂移
 - **拒绝反模式 (Reject Anti-Patterns)** — 识别设计污染、不必要的兼容妥协或反模式时，主动向开发者指出问题并提供更合理的替代方案，不做盲目的实现者
+- **拒绝技术债 (Reject Technical Debt)** — 代码改动应选择合理方案，不应为沿用旧模式或因改动量大而默认采用兼容妥协；遇到设计取舍时主动向开发者反馈确认，避免代码腐烂
+- **查验全量覆盖 (Full Linter Coverage)** — 禁止无理由禁用 eslint/tsc 规则；确需 `eslint-disable` 时必须补充注释说明原因，避免裸抑制扩散
 
-## 交付铁律（强制执行）
+## 交付铁律
 
-每次代码变更交付前，必须按以下清单逐项完成，缺一不可：
+每次代码变更交付前，必须按以下清单逐项完成：
 
-1. **编译通过** — `make build-go` 零错误
-2. **静态检查** — `make lint` 零警告
-3. **全量测试** — `make test` 全部 PASS，新增逻辑必须补充单测
-4. **文档同步** — 就近检查并更新对应模块的 AGENTS.md、docs/、关键文件表格
-5. **双环境验证** — `make test-integration PLATFORM=docker` 和 `make test-integration PLATFORM=kubernetes` 两种环境全部通过
-
-快捷命令：`make check` = `make build-go` + `make lint` + `make test`（交付铁律 1-3 项）
+1. **Go 编译通过** — `make build-go` 零错误
+2. **Go 静态检查** — `make lint` 零警告
+3. **Go 全量测试** — `make test` 全部 PASS，新增逻辑必须补充单测
+4. **前端三道检查** — `make check-frontend` 全部通过（skin 用 `tsc --noEmit`，behavior-panel/black-ridge 用 `tsc -b --noEmit`，严格按 tsc → eslint → vitest 顺序）
+5. **前端 Docker 构建** — `make build-web` 通过（`tsc -b` 会触发 `tsc --noEmit` 无法覆盖的编译路径）
+6. **文档同步** — 就近检查并更新对应模块的 AGENTS.md、docs/、关键文件表格
+7. **双环境验证** — `make test-integration PLATFORM=docker` 和 `make test-integration PLATFORM=kubernetes` 全部通过
 
 ## 模块索引
 
@@ -40,9 +42,7 @@ The Maze — 基于 Westworld 概念构建的 AI Agent 管理平台。Manager (b
 
 ## 文档维护
 
-- 新增模块入口 / 架构锚点文件 → 在对应模块 AGENTS.md 的关键文件表格添加条目
-- 架构设计变更 → 更新对应模块的 architecture.md（如果该模块有）
+- 新增/变更模块入口文件 → 更新对应模块 AGENTS.md 的关键文件表格（每模块控制在 5-10 行）
+- 架构设计变更 → 更新对应模块的 architecture.md（如有）
 - 跨模块变更 → 更新本文件的模块索引
-- 函数签名、具体实现文件（handler/service/model/组件）→ 不需要更新 AGENTS.md 或 docs/
-- 关键文件表格每模块控制在 5-10 行，超出时应审视是否列了太多实现细节
-- 禁止在文档中复制代码的类型签名、函数签名、API 端点清单 — proto → Swagger 生成链已是完整的 API 契约源
+- 函数签名、实现文件、API 端点清单无需更新 AGENTS.md/docs/

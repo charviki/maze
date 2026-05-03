@@ -14,7 +14,7 @@
 
 | 子模块            | 目录        | 职责                                   | 详细文档                                              |
 | ----------------- | ----------- | -------------------------------------- | ----------------------------------------------------- |
-| Skin (UI)         | skin/       | Westworld 主题 UI 组件库               | [AGENTS.md](skin/AGENTS.md) + [docs/](skin/docs/)     |
+| Skin (UI)         | skin/       | Westworld 主题 UI 组件库 + OpenAPI 生成的 TS SDK | [AGENTS.md](skin/AGENTS.md) + [docs/](skin/docs/)     |
 | Cradle (Go)       | cradle/     | Go 共享库（HTTP/Pipeline/Config/Auth） | [AGENTS.md](cradle/AGENTS.md) + [docs/](cradle/docs/) |
 | Molds (模具)      | molds/      | 供应商 Dockerfile                      | [docker-build-guide.md](docs/docker-build-guide.md)   |
 | Deps (原料)       | deps/       | 声明式依赖配置                         | [docker-build-guide.md](docs/docker-build-guide.md)   |
