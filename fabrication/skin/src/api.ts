@@ -1,113 +1,55 @@
+import type { ApiResponse, SaveConfigRequest } from './types';
 import type {
-  Session,
-  CreateSessionRequest,
-  TerminalOutput,
-  SavedSession,
-  ApiResponse,
-  SessionTemplate,
-  LocalAgentConfig,
-  TemplateConfigView,
-  SessionConfigView,
-  SaveConfigRequest,
-} from './types';
+  V1Session,
+  V1CreateSessionRequest,
+  V1TerminalOutput,
+  V1SessionState,
+  V1SaveSessionsResponse,
+  V1SessionTemplate,
+  V1TemplateConfigView,
+  V1SessionConfigView,
+  V1LocalAgentConfig,
+} from './api/gen/models';
+import type { NormalizedTemplate } from './api/normalize';
 
-/**
- * 统一的 Agent API Client 接口。
- * 规范所有与 Agent 交互的方法，无论底层是直连还是经过 Manager 代理。
- */
-export interface IAgentApiClient {
-  /**
-   * 获取所有运行中的会话列表
-   */
-  listSessions: () => Promise<ApiResponse<Session[]>>;
-
-  /**
-   * 创建新的会话
-   */
-  createSession: (data: CreateSessionRequest) => Promise<ApiResponse<Session>>;
-
-  /**
-   * 获取指定会话的详情
-   */
-  getSession: (id: string) => Promise<ApiResponse<Session>>;
-
-  /**
-   * 终止/删除指定的会话
-   */
-  deleteSession: (id: string) => Promise<ApiResponse<void>>;
-
-  /**
-   * 获取指定会话的终端输出
-   */
-  getOutput: (id: string, lines?: number) => Promise<ApiResponse<TerminalOutput>>;
-
-  /**
-   * 向指定会话发送命令输入
-   */
-  sendInput: (id: string, command: string) => Promise<ApiResponse<void>>;
-
-  /**
-   * 向指定会话发送控制信号（如 sigint）
-   */
-  sendSignal: (id: string, signal: string) => Promise<ApiResponse<void>>;
-
-  /**
-   * 获取所有已保存（持久化）的会话元数据列表
-   */
-  getSavedSessions: () => Promise<ApiResponse<SavedSession[]>>;
-
-  /**
-   * 恢复指定的已保存会话
-   */
-  restoreSession: (id: string) => Promise<ApiResponse<void>>;
-
-  /**
-   * 触发会话状态的手动全量保存
-   */
-  saveSessions: () => Promise<ApiResponse<{ savedAt: string }>>;
-
-  /**
-   * 动态生成 WebSocket 终端连接的 URL。
-   * @param sessionId 会话的唯一标识
-   */
-  buildWsUrl: (sessionId: string) => string;
-
-  /** 获取节点模板列表 */
-  listTemplates: () => Promise<ApiResponse<SessionTemplate[]>>;
-
-  /** 创建模板 */
-  createTemplate: (tpl: SessionTemplate) => Promise<ApiResponse<SessionTemplate>>;
-
-  /** 获取单个模板 */
-  getTemplate: (id: string) => Promise<ApiResponse<SessionTemplate>>;
-
-  /** 获取模板的真实全局配置 */
-  getTemplateConfig: (id: string) => Promise<ApiResponse<TemplateConfigView>>;
-
-  /** 更新模板 */
-  updateTemplate: (id: string, tpl: SessionTemplate) => Promise<ApiResponse<SessionTemplate>>;
-
-  /** 保存模板的真实全局配置 */
-  updateTemplateConfig: (
-    id: string,
-    req: SaveConfigRequest,
-  ) => Promise<ApiResponse<TemplateConfigView>>;
-
-  /** 删除模板 */
-  deleteTemplate: (id: string) => Promise<ApiResponse<void>>;
-
-  /** 获取 session 的真实项目级配置 */
-  getSessionConfig: (id: string) => Promise<ApiResponse<SessionConfigView>>;
-
-  /** 保存 session 的真实项目级配置 */
-  updateSessionConfig: (
-    id: string,
-    req: SaveConfigRequest,
-  ) => Promise<ApiResponse<SessionConfigView>>;
-
-  /** 获取节点本地配置 */
-  getLocalConfig: () => Promise<ApiResponse<LocalAgentConfig>>;
-
-  /** 更新节点本地配置 */
-  updateLocalConfig: (cfg: Partial<LocalAgentConfig>) => Promise<ApiResponse<LocalAgentConfig>>;
+export interface ISessionApi {
+  listSessions(): Promise<ApiResponse<V1Session[]>>;
+  createSession(data: V1CreateSessionRequest): Promise<ApiResponse<V1Session>>;
+  getSession(id: string): Promise<ApiResponse<V1Session>>;
+  deleteSession(id: string): Promise<ApiResponse<void>>;
+  getOutput(id: string, lines?: number): Promise<ApiResponse<V1TerminalOutput>>;
+  sendInput(id: string, command: string): Promise<ApiResponse<void>>;
+  sendSignal(id: string, signal: string): Promise<ApiResponse<void>>;
+  getSavedSessions(): Promise<ApiResponse<V1SessionState[]>>;
+  restoreSession(id: string): Promise<ApiResponse<void>>;
+  saveSessions(): Promise<ApiResponse<V1SaveSessionsResponse>>;
+  buildWsUrl(sessionId: string): string;
 }
+
+export interface ITemplateApi {
+  listTemplates(): Promise<ApiResponse<NormalizedTemplate[]>>;
+  createTemplate(tpl: V1SessionTemplate): Promise<ApiResponse<NormalizedTemplate>>;
+  getTemplate(id: string): Promise<ApiResponse<NormalizedTemplate>>;
+  updateTemplate(id: string, tpl: V1SessionTemplate): Promise<ApiResponse<NormalizedTemplate>>;
+  deleteTemplate(id: string): Promise<ApiResponse<void>>;
+  getTemplateConfig(id: string): Promise<ApiResponse<V1TemplateConfigView>>;
+  updateTemplateConfig(
+    id: string,
+    req: SaveConfigRequest,
+  ): Promise<ApiResponse<V1TemplateConfigView>>;
+}
+
+export interface IConfigApi {
+  getSessionConfig(id: string): Promise<ApiResponse<V1SessionConfigView>>;
+  updateSessionConfig(
+    id: string,
+    req: SaveConfigRequest,
+  ): Promise<ApiResponse<V1SessionConfigView>>;
+}
+
+export interface ILocalConfigApi {
+  getLocalConfig(): Promise<ApiResponse<V1LocalAgentConfig>>;
+  updateLocalConfig(cfg: Partial<V1LocalAgentConfig>): Promise<ApiResponse<V1LocalAgentConfig>>;
+}
+
+export type IAgentApiClient = ISessionApi & ITemplateApi & IConfigApi & ILocalConfigApi;

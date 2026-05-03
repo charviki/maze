@@ -100,7 +100,7 @@ export function NodeConfigPanel({ nodeName, apiClient, onClose }: NodeConfigPane
             </div>
 
             <div className="space-y-2">
-              {Object.entries(config.env).map(([key, value]) => (
+              {Object.entries(config.env ?? {}).map(([key, value]) => (
                 <div key={key} className="flex items-center gap-2">
                   <Input
                     value={key}
@@ -131,7 +131,7 @@ export function NodeConfigPanel({ nodeName, apiClient, onClose }: NodeConfigPane
                   </Button>
                 </div>
               ))}
-              {Object.keys(config.env).length === 0 && (
+              {Object.keys(config.env ?? {}).length === 0 && (
                 <div className="text-sm text-muted-foreground p-4 text-center border border-dashed rounded">
                   暂无环境变量配置
                 </div>

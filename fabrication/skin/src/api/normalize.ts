@@ -12,7 +12,11 @@ export type NormalizedTemplate = Omit<V1SessionTemplate, 'defaults' | 'sessionSc
 export function normalizeTemplate(tpl: V1SessionTemplate): NormalizedTemplate {
   return {
     ...tpl,
-    defaults: tpl.defaults ? { env: tpl.defaults.env ?? {}, files: tpl.defaults.files ?? [] } : emptyDefaults,
-    sessionSchema: tpl.sessionSchema ? { envDefs: tpl.sessionSchema.envDefs ?? [], fileDefs: tpl.sessionSchema.fileDefs ?? [] } : emptySchema,
+    defaults: tpl.defaults
+      ? { env: tpl.defaults.env ?? {}, files: tpl.defaults.files ?? [] }
+      : emptyDefaults,
+    sessionSchema: tpl.sessionSchema
+      ? { envDefs: tpl.sessionSchema.envDefs ?? [], fileDefs: tpl.sessionSchema.fileDefs ?? [] }
+      : emptySchema,
   };
 }

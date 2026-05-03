@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useCallback, type ReactNode } from 'react';
-import type { Session, SavedSession, PipelineStep } from '../../types';
+import type { Session, V1SessionState, PipelineStep } from '../../types';
 import type { IAgentApiClient } from '../../api';
 import { SessionList, type SessionDisplay } from './SessionList';
 import { TerminalPane } from './TerminalPane';
@@ -24,7 +24,7 @@ export interface AgentPanelProps {
 
 interface AgentState {
   sessions: Session[];
-  savedSessions: SavedSession[];
+  savedSessions: V1SessionState[];
   search: string;
   selectedSessionId: string | null;
   killTarget: SessionDisplay | null;
@@ -46,7 +46,7 @@ interface AgentState {
 
 type AgentAction =
   | { type: 'SET_SESSIONS'; payload: Session[] }
-  | { type: 'SET_SAVED_SESSIONS'; payload: SavedSession[] }
+  | { type: 'SET_SAVED_SESSIONS'; payload: V1SessionState[] }
   | { type: 'SET_SEARCH'; payload: string }
   | { type: 'SELECT_SESSION'; payload: string | null }
   | { type: 'SET_KILL_TARGET'; payload: SessionDisplay | null }
@@ -186,7 +186,7 @@ export function AgentPanel({
             const valid = res.data.filter((ss) => ss.sessionName);
             const found = valid.find((s) => s.sessionName === state.selectedSessionId);
             if (found) {
-              dispatch({ type: 'SET_LAST_SAVE_TIME', payload: found.savedAt });
+              dispatch({ type: 'SET_LAST_SAVE_TIME', payload: found.savedAt ?? null });
             }
           }
         })
@@ -201,22 +201,22 @@ export function AgentPanel({
 
     for (const s of state.sessions) {
       result.push({
-        id: s.id,
-        name: s.name,
+        id: s.id ?? '',
+        name: s.name ?? '',
         status: 'running',
-        createdAt: s.createdAt,
-        windowCount: s.windowCount,
+        createdAt: s.createdAt ?? '',
+        windowCount: s.windowCount ?? 0,
       });
     }
 
     for (const ss of state.savedSessions) {
       if (!ss.sessionName) continue;
-      if (!runningSet.has(ss.sessionName) && ss.restoreStrategy !== 'running') {
+      if (!runningSet.has(ss.sessionName ?? '') && ss.restoreStrategy !== 'running') {
         result.push({
-          id: ss.sessionName,
-          name: ss.sessionName,
+          id: ss.sessionName ?? '',
+          name: ss.sessionName ?? '',
           status: 'saved',
-          createdAt: ss.savedAt,
+          createdAt: ss.savedAt ?? '',
           windowCount: 0,
           savedAt: ss.savedAt,
           terminalSnapshot: ss.terminalSnapshot,
@@ -271,7 +271,10 @@ export function AgentPanel({
     const saved = state.savedSessions.find((s) => s.sessionName === session.id);
     dispatch({
       type: 'SET_VIEW_PIPELINE',
-      payload: { session, steps: saved?.pipeline || [] },
+      payload: {
+        session,
+        steps: saved?.pipeline ? (JSON.parse(saved.pipeline) as PipelineStep[]) : [],
+      },
     });
   };
 
@@ -281,7 +284,7 @@ export function AgentPanel({
     const res = await apiClient.saveSessions();
     dispatch({ type: 'SET_SAVING', payload: false });
     if (res.status === 'ok' && res.data) {
-      dispatch({ type: 'SET_LAST_SAVE_TIME', payload: res.data.savedAt });
+      dispatch({ type: 'SET_LAST_SAVE_TIME', payload: res.data.savedAt ?? null });
       dispatch({ type: 'SET_SAVE_COOLDOWN', payload: true });
       setTimeout(() => {
         dispatch({ type: 'SET_SAVE_COOLDOWN', payload: false });

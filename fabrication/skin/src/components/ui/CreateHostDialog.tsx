@@ -9,14 +9,14 @@ import {
 } from './dialog';
 import { Button } from './button';
 import { Input } from './input';
-import type { Tool, CreateHostRequest, Host, HostStatus } from '../../types';
+import type { Tool, CreateHostRequest, HostSpec, HostStatus } from '../../types';
 import { Loader2, Cpu, MemoryStick, Wrench, CheckSquare, Square, X } from 'lucide-react';
 
 export interface CreateHostDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tools: Tool[];
-  onSubmit: (request: CreateHostRequest) => Promise<Host>;
+  onSubmit: (request: CreateHostRequest) => Promise<HostSpec>;
   onWaitOnline: (hostName: string) => Promise<boolean>;
   getHostBuildLog: (name: string) => Promise<string>;
 }
@@ -63,7 +63,7 @@ export function CreateHostDialog({
   };
 
   const toggleAll = () => {
-    setSelectedTools(allSelected ? [] : tools.map((t) => t.id));
+    setSelectedTools(allSelected ? [] : tools.map((t) => t.id ?? ''));
   };
 
   const resetForm = () => {
@@ -114,8 +114,8 @@ export function CreateHostDialog({
           memoryLimit: memoryLimit || undefined,
         },
       });
-      setCreatedHostName(response.name);
-      setHostStatus(response.status);
+      setCreatedHostName(response.name ?? '');
+      setHostStatus((response.status ?? 'pending') as HostStatus);
       setPhase('waiting');
       setIsCreating(false);
 
@@ -125,7 +125,7 @@ export function CreateHostDialog({
       }, 1000);
 
       try {
-        const online = await onWaitOnline(response.name);
+        const online = await onWaitOnline(response.name ?? '');
         clearInterval(timer);
         if (online) {
           setPhase('online');
@@ -225,13 +225,14 @@ export function CreateHostDialog({
                   </div>
                 )}
                 {tools.map((tool) => {
-                  const isSelected = selectedTools.includes(tool.id);
+                  const toolId = tool.id ?? '';
+                  const isSelected = selectedTools.includes(toolId);
                   return (
                     <button
-                      key={tool.id}
+                      key={toolId}
                       type="button"
                       onClick={() => {
-                        toggleTool(tool.id);
+                        toggleTool(toolId);
                       }}
                       className={`
                       w-full flex items-start gap-3 p-2 transition-all text-left

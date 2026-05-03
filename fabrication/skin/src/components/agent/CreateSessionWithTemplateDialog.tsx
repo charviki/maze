@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type {
-  SessionTemplate,
+  NormalizedTemplate,
   ConfigItem,
   ConfigLayer,
   PipelineStep,
@@ -37,8 +37,8 @@ export function CreateSessionWithTemplateDialog({
   onSuccess,
   onOpenTemplateManager,
 }: CreateSessionWithTemplateDialogProps) {
-  const [templates, setTemplates] = useState<SessionTemplate[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<SessionTemplate | null>(null);
+  const [templates, setTemplates] = useState<NormalizedTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<NormalizedTemplate | null>(null);
   const [createName, setCreateName] = useState('');
   const [relativeDirInput, setRelativeDirInput] = useState('');
   const [relativeDirTouched, setRelativeDirTouched] = useState(false);
@@ -95,11 +95,11 @@ export function CreateSessionWithTemplateDialog({
 
   const toConfigItems = (configs: ConfigLayer): ConfigItem[] => {
     const items: ConfigItem[] = [];
-    for (const [key, value] of Object.entries(configs.env)) {
+    for (const [key, value] of Object.entries(configs.env ?? {})) {
       items.push({ type: 'env', key, value: String(value) });
     }
-    for (const file of configs.files) {
-      items.push({ type: 'file', key: file.path, value: String(file.content) });
+    for (const file of configs.files ?? []) {
+      items.push({ type: 'file', key: file.path ?? '', value: String(file.content ?? '') });
     }
     return items;
   };
@@ -125,24 +125,24 @@ export function CreateSessionWithTemplateDialog({
     for (const cfg of configs) {
       if (cfg.type === 'env') {
         steps.push({
-          id: `sys-env-${cfg.key}`,
+          id: `sys-env-${cfg.key ?? ''}`,
           type: 'env',
           phase: 'system',
           order: order++,
-          key: cfg.key,
-          value: cfg.value,
+          key: cfg.key ?? '',
+          value: cfg.value ?? '',
         });
       }
     }
     for (const cfg of configs) {
       if (cfg.type === 'file') {
         steps.push({
-          id: `sys-file-${cfg.key}`,
+          id: `sys-file-${cfg.key ?? ''}`,
           type: 'file',
           phase: 'system',
           order: order++,
-          key: cfg.key,
-          value: cfg.value,
+          key: cfg.key ?? '',
+          value: cfg.value ?? '',
         });
       }
     }
@@ -160,24 +160,23 @@ export function CreateSessionWithTemplateDialog({
     return steps;
   };
 
-  const selectTemplate = (tpl: SessionTemplate) => {
+  const selectTemplate = (tpl: NormalizedTemplate) => {
     setSelectedTemplate(tpl);
-    const initialName = generateSessionName(tpl.id);
+    const initialName = generateSessionName(tpl.id ?? '');
     setCreateName(initialName);
     setRelativeDirInput(initialName);
     setRelativeDirTouched(false);
     const fileDefaults: Record<string, string> = {};
-    // 新建 session 不主动生成项目级默认副本，不存在的项目文件按空内容处理。
-    // 这里仅保留固定路径的空编辑态，避免把模板默认内容误写进工作目录。
+    // 新建 session 不主动生成项目级默认副本，不存在的项目文件按空内容处理
     tpl.sessionSchema.fileDefs.forEach((d) => {
-      fileDefaults[d.path] = '';
+      fileDefaults[d.path ?? ''] = '';
     });
     setSessionFileContents(fileDefaults);
 
     const envDefaults: Record<string, string> = {};
     const schemaKeys = new Set(tpl.sessionSchema.envDefs.map((d) => d.key));
     tpl.sessionSchema.envDefs.forEach((d) => {
-      envDefaults[d.key] = nodeConfig?.env?.[d.key] || '';
+      envDefaults[d.key ?? ''] = nodeConfig?.env?.[d.key ?? ''] || '';
     });
     setSessionEnvValues(envDefaults);
 
@@ -200,7 +199,7 @@ export function CreateSessionWithTemplateDialog({
     if (relativeDir.trim().startsWith('/')) return '请输入相对目录，不要以 / 开头';
     if (relativeDir.trim() === '.') return '相对目录不能是根目录';
     for (const def of selectedTemplate.sessionSchema.envDefs) {
-      if (def.required && !sessionEnvValues[def.key]?.trim()) {
+      if (def.required && !sessionEnvValues[def.key ?? '']?.trim()) {
         return `${def.label || def.key} 为必填项`;
       }
     }
@@ -212,16 +211,16 @@ export function CreateSessionWithTemplateDialog({
 
     for (const [path, content] of Object.entries(sessionFileContents)) {
       if (content) {
-        configs.files.push({ path, content: String(content) });
+        configs.files!.push({ path, content: String(content) });
       }
     }
 
     for (const [key, value] of Object.entries(sessionEnvValues)) {
-      if (value) configs.env[key] = String(value);
+      if (value) configs.env![key] = String(value);
     }
 
     for (const [key, value] of Object.entries(customEnv)) {
-      if (value) configs.env[key] = String(value);
+      if (value) configs.env![key] = String(value);
     }
 
     return configs;
@@ -229,12 +228,26 @@ export function CreateSessionWithTemplateDialog({
 
   const pipelineSteps = useMemo(() => {
     if (!selectedTemplate) return [];
-    const configItems = toConfigItems(buildFinalConfigs());
+
+    const configs: ConfigLayer = { env: {}, files: [] };
+    for (const [path, content] of Object.entries(sessionFileContents)) {
+      if (content) {
+        configs.files!.push({ path, content: String(content) });
+      }
+    }
+    for (const [key, value] of Object.entries(sessionEnvValues)) {
+      if (value) configs.env![key] = String(value);
+    }
+    for (const [key, value] of Object.entries(customEnv)) {
+      if (value) configs.env![key] = String(value);
+    }
+
+    const configItems = toConfigItems(configs);
     return buildPipelineSteps(currentWorkingDir, selectedTemplate.command || '', configItems);
   }, [selectedTemplate, currentWorkingDir, sessionEnvValues, sessionFileContents, customEnv]);
 
-  const getDefaultRestoreStrategy = (template: SessionTemplate): string => {
-    if (template.command.includes('claude')) return 'auto';
+  const getDefaultRestoreStrategy = (template: NormalizedTemplate): string => {
+    if ((template.command ?? '').includes('claude')) return 'auto';
     return 'manual';
   };
 
@@ -251,11 +264,11 @@ export function CreateSessionWithTemplateDialog({
       const configs = buildFinalConfigs();
 
       const configItems: ConfigItem[] = [];
-      for (const [key, value] of Object.entries(configs.env)) {
+      for (const [key, value] of Object.entries(configs.env ?? {})) {
         configItems.push({ type: 'env', key, value });
       }
-      for (const file of configs.files) {
-        configItems.push({ type: 'file', key: file.path, value: file.content });
+      for (const file of configs.files ?? []) {
+        configItems.push({ type: 'file', key: file.path ?? '', value: file.content ?? '' });
       }
 
       const restoreStrategy = getDefaultRestoreStrategy(selectedTemplate!);
@@ -297,7 +310,7 @@ export function CreateSessionWithTemplateDialog({
   const getEnvLabel = (key: string): string | null => {
     if (!selectedTemplate) return null;
     const def = selectedTemplate.sessionSchema.envDefs.find((d) => d.key === key);
-    return def ? def.label : null;
+    return def ? (def.label ?? null) : null;
   };
 
   const handleRelativeDirChange = (value: string) => {
@@ -455,9 +468,12 @@ export function CreateSessionWithTemplateDialog({
                     </label>
                     <Input
                       placeholder={def.placeholder || ''}
-                      value={sessionEnvValues[def.key] || ''}
+                      value={sessionEnvValues[def.key ?? ''] || ''}
                       onChange={(e) => {
-                        setSessionEnvValues((prev) => ({ ...prev, [def.key]: e.target.value }));
+                        setSessionEnvValues((prev) => ({
+                          ...prev,
+                          [def.key ?? '']: e.target.value,
+                        }));
                       }}
                       className="h-9 text-sm"
                     />
@@ -541,9 +557,12 @@ export function CreateSessionWithTemplateDialog({
                       {def.required && <span className="text-red-500">*</span>}
                     </label>
                     <textarea
-                      value={sessionFileContents[def.path] || ''}
+                      value={sessionFileContents[def.path ?? ''] || ''}
                       onChange={(e) => {
-                        setSessionFileContents((prev) => ({ ...prev, [def.path]: e.target.value }));
+                        setSessionFileContents((prev) => ({
+                          ...prev,
+                          [def.path ?? '']: e.target.value,
+                        }));
                       }}
                       className="w-full h-40 bg-background text-foreground text-xs font-mono p-2 rounded border border-border"
                       placeholder={def.defaultContent || '留空表示创建后该文件暂不存在'}

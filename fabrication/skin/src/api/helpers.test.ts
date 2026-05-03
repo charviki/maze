@@ -44,8 +44,12 @@ describe('unwrapSdkResponse', () => {
 
   it('should handle non-Error values', async () => {
     // 测试非 Error 类型的 reject 值（如第三方库直接 reject 字符串），故意违反 prefer-promise-reject-errors
-    // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
-    const result = await unwrapSdkResponse(new Promise((_resolve, reject) => { reject('string error'); }));
+    const result = await unwrapSdkResponse(
+      new Promise((_resolve, reject) => {
+        // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
+        reject('string error');
+      }),
+    );
     expect(result.status).toBe('error');
     expect(result.message).toBe('string error');
   });

@@ -1,9 +1,7 @@
 import type { ApiResponse } from '../types';
 import { ResponseError, FetchError } from './gen/runtime';
 
-export async function unwrapSdkResponse<T>(
-  promise: Promise<T>,
-): Promise<ApiResponse<T>> {
+export async function unwrapSdkResponse<T>(promise: Promise<T>): Promise<ApiResponse<T>> {
   try {
     const data = await promise;
     return { status: 'ok', data };
@@ -12,9 +10,7 @@ export async function unwrapSdkResponse<T>(
   }
 }
 
-export async function unwrapVoidResponse(
-  promise: Promise<unknown>,
-): Promise<ApiResponse<void>> {
+export async function unwrapVoidResponse(promise: Promise<unknown>): Promise<ApiResponse<void>> {
   try {
     await promise;
     return { status: 'ok', data: undefined };

@@ -233,7 +233,12 @@ function SessionConfigEditorDialog({
         return;
       }
       setConfig(res.data);
-      setFiles(res.data.files);
+      setFiles(
+        (res.data.files ?? []).map((f) => ({
+          ...f,
+          exists: f._exists ?? false,
+        })),
+      );
     };
 
     void load();

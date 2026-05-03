@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import type {
   SessionTemplate,
+  NormalizedTemplate,
   EnvDef,
   FileDef,
-  ConfigLayer,
   ConfigFileSnapshot,
   ConfigFileUpdate,
 } from '../../types';
@@ -27,23 +27,21 @@ interface EditableConfigFile extends ConfigFileSnapshot {
   baseHash: string;
 }
 
-const emptyConfigLayer = (): ConfigLayer => ({ env: {}, files: [] });
-
-const emptyTemplate = (): SessionTemplate => ({
+const emptyTemplate = (): NormalizedTemplate => ({
   id: '',
   name: '',
   command: '',
   description: '',
   icon: '📦',
   builtin: false,
-  defaults: emptyConfigLayer(),
+  defaults: { env: {}, files: [] },
   sessionSchema: { envDefs: [], fileDefs: [] },
 });
 
 export function TemplateManager({ open, onClose, apiClient }: TemplateManagerProps) {
   const { showToast } = useToast();
-  const [templates, setTemplates] = useState<SessionTemplate[]>([]);
-  const [editing, setEditing] = useState<SessionTemplate | null>(null);
+  const [templates, setTemplates] = useState<NormalizedTemplate[]>([]);
+  const [editing, setEditing] = useState<NormalizedTemplate | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [globalFiles, setGlobalFiles] = useState<EditableConfigFile[]>([]);
@@ -86,13 +84,13 @@ export function TemplateManager({ open, onClose, apiClient }: TemplateManagerPro
     setSaveError('');
   };
 
-  const startClone = (tpl: SessionTemplate) => {
+  const startClone = (tpl: NormalizedTemplate) => {
     setIsNew(true);
     setEditing(
       cloneTemplate({
         ...tpl,
-        id: tpl.id + '-copy',
-        name: tpl.name + ' (Copy)',
+        id: (tpl.id ?? '') + '-copy',
+        name: (tpl.name ?? '') + ' (Copy)',
         builtin: false,
       }),
     );
@@ -100,7 +98,11 @@ export function TemplateManager({ open, onClose, apiClient }: TemplateManagerPro
     setSaveError('');
   };
 
-  const startEdit = async (tpl: SessionTemplate) => {
+  const startEdit = async (tpl: NormalizedTemplate) => {
+    if (!tpl.id) {
+      showToast('error', '模板 ID 不能为空');
+      return;
+    }
     setLoadingEditor(true);
     setSaveError('');
     const configRes = await apiClient.getTemplateConfig(tpl.id);
@@ -113,11 +115,12 @@ export function TemplateManager({ open, onClose, apiClient }: TemplateManagerPro
     setIsNew(false);
     setEditing(cloneTemplate(tpl));
     setGlobalFiles(
-      configRes.data.files.map((file) => ({
+      (configRes.data.files ?? []).map((file) => ({
         ...file,
-        content: file.content,
-        original_content: file.content,
-        baseHash: file.hash,
+        exists: file._exists ?? false,
+        content: file.content ?? '',
+        original_content: file.content ?? '',
+        baseHash: file.hash ?? '',
       })),
     );
     setLoadingEditor(false);
@@ -167,7 +170,7 @@ export function TemplateManager({ open, onClose, apiClient }: TemplateManagerPro
         return;
       }
 
-      const updateRes = await apiClient.updateTemplate(editing.id, editing);
+      const updateRes = await apiClient.updateTemplate(editing.id ?? '', editing);
       if (updateRes.status !== 'ok') {
         throw new Error(updateRes.message || '保存模板失败');
       }
@@ -178,7 +181,9 @@ export function TemplateManager({ open, onClose, apiClient }: TemplateManagerPro
           content: file.content,
           baseHash: file.baseHash,
         }));
-        const configRes = await apiClient.updateTemplateConfig(editing.id, { files: configReq });
+        const configRes = await apiClient.updateTemplateConfig(editing.id ?? '', {
+          files: configReq,
+        });
         if (configRes.status !== 'ok' || !configRes.data) {
           if (configRes.code === 'config_conflict') {
             const conflictPaths = (configRes.conflicts || []).map((item) => item.path).join(', ');
@@ -191,11 +196,12 @@ export function TemplateManager({ open, onClose, apiClient }: TemplateManagerPro
           throw new Error(configRes.message || '保存真实全局配置失败');
         }
         setGlobalFiles(
-          configRes.data.files.map((file) => ({
+          (configRes.data.files ?? []).map((file) => ({
             ...file,
-            content: file.content,
-            original_content: file.content,
-            baseHash: file.hash,
+            exists: file._exists ?? false,
+            content: file.content ?? '',
+            original_content: file.content ?? '',
+            baseHash: file.hash ?? '',
           })),
         );
       }
@@ -455,7 +461,7 @@ export function TemplateManager({ open, onClose, apiClient }: TemplateManagerPro
                             variant="ghost"
                             className="text-red-500"
                             onClick={() => {
-                              handleDelete(tpl.id);
+                              handleDelete(tpl.id ?? '');
                             }}
                           >
                             <Trash2 className="w-3 h-3" />
@@ -614,7 +620,7 @@ export function TemplateManager({ open, onClose, apiClient }: TemplateManagerPro
                             <textarea
                               value={f.content}
                               onChange={(e) => {
-                                updateGlobalFileContent(f.path, e.target.value);
+                                updateGlobalFileContent(f.path ?? '', e.target.value);
                               }}
                               className="w-full h-32 bg-background text-foreground text-xs font-mono p-2 rounded border border-border"
                             />
@@ -828,16 +834,16 @@ export function TemplateManager({ open, onClose, apiClient }: TemplateManagerPro
   );
 }
 
-function cloneTemplate(tpl: SessionTemplate): SessionTemplate {
+function cloneTemplate(tpl: NormalizedTemplate): NormalizedTemplate {
   return {
     ...tpl,
     defaults: {
-      env: { ...tpl.defaults.env },
-      files: tpl.defaults.files.map((file) => ({ ...file })),
+      env: { ...(tpl.defaults?.env ?? {}) },
+      files: (tpl.defaults?.files ?? []).map((file) => ({ ...file })),
     },
     sessionSchema: {
-      envDefs: tpl.sessionSchema.envDefs.map((def) => ({ ...def })),
-      fileDefs: tpl.sessionSchema.fileDefs.map((def) => ({ ...def })),
+      envDefs: (tpl.sessionSchema?.envDefs ?? []).map((def) => ({ ...def })),
+      fileDefs: (tpl.sessionSchema?.fileDefs ?? []).map((def) => ({ ...def })),
     },
   };
 }

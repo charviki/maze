@@ -26,5 +26,17 @@ export * from './utils';
 export * from './utils/mask';
 export * from './types';
 export * from './api';
+// SDK API 类：显式 re-export 避免触发 gen 内部文件的 noUnusedLocals
+export {
+  SessionServiceApi,
+  TemplateServiceApi,
+  ConfigServiceApi,
+  NodeServiceApi,
+  HostServiceApi,
+} from './api/gen/apis/index';
+// SDK 模型类型：通过 types.ts re-export，不再直接 export * gen models
 export { createRequest } from './utils/request';
+export { createSdkConfiguration } from './api/sdk-config';
+export { normalizeTemplate, type NormalizedTemplate } from './api/normalize';
+export { unwrapSdkResponse, unwrapVoidResponse } from './api/helpers';
 export { usePollingWithBackoff } from './hooks/usePollingWithBackoff';

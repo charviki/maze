@@ -1,41 +1,79 @@
-export interface Node {
-  name: string;
-  address: string;
-  externalAddr: string;
-  sessionCount: number;
-  status: string;
-  registeredAt: string;
-  lastHeartbeat: string;
-}
+import type {
+  V1Session,
+  V1NodeInfo,
+  V1HostInfo,
+  V1HostSpec,
+  V1SessionTemplate,
+  V1CreateSessionRequest,
+  V1TerminalOutput,
+  V1ConfigItem,
+  V1ConfigFile,
+  V1ConfigLayer,
+  V1EnvDef,
+  V1FileDef,
+  V1SessionSchema,
+  V1ConfigFileSnapshot,
+  V1TemplateConfigView,
+  V1SessionConfigView,
+  V1ConfigFileUpdate,
+  V1LocalAgentConfig,
+  V1ToolConfig,
+  V1ResourceLimits,
+  V1CreateHostRequest,
+} from './api/gen/models';
 
-export interface Session {
-  id: string;
-  name: string;
-  status: string;
-  createdAt: string;
-  windowCount: number;
-}
+// ===== SDK 类型 re-export（向后兼容别名） =====
 
-export interface ConfigItem {
-  type: string;
-  key: string;
-  value: string;
-}
+export type {
+  V1SessionTemplate,
+  V1ConfigLayer,
+  V1SessionSchema,
+  V1Session,
+  V1NodeInfo,
+  V1HostInfo,
+  V1HostSpec,
+  V1CreateHostRequest,
+  V1CreateSessionRequest,
+  V1TerminalOutput,
+  V1ConfigItem,
+  V1ConfigFile,
+  V1EnvDef,
+  V1FileDef,
+  V1ConfigFileSnapshot,
+  V1TemplateConfigView,
+  V1SessionConfigView,
+  V1ConfigFileUpdate,
+  V1LocalAgentConfig,
+  V1ToolConfig,
+  V1ResourceLimits,
+  V1SessionState,
+  V1SaveSessionsResponse,
+} from './api/gen/models';
 
-export interface CreateSessionRequest {
-  name: string;
-  command?: string;
-  workingDir?: string;
-  sessionConfs?: ConfigItem[];
-  restoreStrategy?: string;
-  templateId?: string;
-}
+export type Session = V1Session;
+export type Node = V1NodeInfo;
+export type Host = V1HostInfo;
+export type HostSpec = V1HostSpec;
+export type SessionTemplate = V1SessionTemplate;
+export type CreateSessionRequest = V1CreateSessionRequest;
+export type TerminalOutput = V1TerminalOutput;
+export type ConfigItem = V1ConfigItem;
+export type ConfigFile = V1ConfigFile;
+export type ConfigLayer = V1ConfigLayer;
+export type EnvDef = V1EnvDef;
+export type FileDef = V1FileDef;
+export type SessionSchema = V1SessionSchema;
+export type ConfigFileSnapshot = Omit<V1ConfigFileSnapshot, '_exists'> & { exists: boolean };
+export type TemplateConfigView = V1TemplateConfigView;
+export type SessionConfigView = V1SessionConfigView;
+export type ConfigFileUpdate = V1ConfigFileUpdate;
+export type LocalAgentConfig = V1LocalAgentConfig;
+export type Tool = V1ToolConfig;
+export type ResourceLimits = V1ResourceLimits;
+export type CreateHostRequest = V1CreateHostRequest;
+export type { NormalizedTemplate } from './api/normalize';
 
-export interface TerminalOutput {
-  sessionId: string;
-  lines: number;
-  output: string;
-}
+// ===== 前端特有类型 =====
 
 export interface ApiResponse<T> {
   status: string;
@@ -43,16 +81,6 @@ export interface ApiResponse<T> {
   message?: string;
   code?: string;
   conflicts?: ConfigConflict[];
-}
-
-export interface ConfigFile {
-  path: string;
-  content: string;
-}
-
-export interface ConfigLayer {
-  env: Record<string, string>;
-  files: ConfigFile[];
 }
 
 export type PipelinePhase = 'system' | 'template' | 'user';
@@ -86,65 +114,7 @@ export interface SavedSession {
   savedAt: string;
 }
 
-export interface EnvDef {
-  key: string;
-  label: string;
-  required: boolean;
-  placeholder: string;
-  sensitive: boolean;
-}
-
-export interface FileDef {
-  path: string;
-  label: string;
-  required: boolean;
-  defaultContent: string;
-}
-
-export interface SessionSchema {
-  envDefs: EnvDef[];
-  fileDefs: FileDef[];
-}
-
-export interface SessionTemplate {
-  id: string;
-  name: string;
-  command: string;
-  description: string;
-  icon: string;
-  builtin: boolean;
-  defaults: ConfigLayer;
-  sessionSchema: SessionSchema;
-}
-
 export type ConfigScope = 'global' | 'project';
-
-export interface ConfigFileSnapshot {
-  path: string;
-  content: string;
-  exists: boolean;
-  hash: string;
-}
-
-export interface TemplateConfigView {
-  templateId: string;
-  scope: ConfigScope;
-  files: ConfigFileSnapshot[];
-}
-
-export interface SessionConfigView {
-  sessionId: string;
-  templateId: string;
-  workingDir: string;
-  scope: ConfigScope;
-  files: ConfigFileSnapshot[];
-}
-
-export interface ConfigFileUpdate {
-  path: string;
-  content: string;
-  baseHash: string;
-}
 
 export interface SaveConfigRequest {
   files: ConfigFileUpdate[];
@@ -155,87 +125,4 @@ export interface ConfigConflict {
   currentHash: string;
 }
 
-export interface LocalAgentConfig {
-  workingDir: string;
-  env: Record<string, string>;
-}
-
-export interface NodeConfig {
-  nodeName: string;
-  workingDir: string;
-  env: Record<string, string>;
-}
-
-export interface SessionMeta {
-  sessionId: string;
-  nodeName: string;
-  templateId: string;
-  templateName: string;
-  command: string;
-  workingDir: string;
-  configs: ConfigLayer;
-  pipeline: PipelineStep[];
-  restoreStrategy: string;
-  createdAt: string;
-}
-
-export interface SaveSessionMetaRequest {
-  sessionId: string;
-  templateId: string;
-  templateName: string;
-  command: string;
-  workingDir: string;
-  configs: ConfigLayer;
-  pipeline: PipelineStep[];
-  restoreStrategy: string;
-}
-
-export interface Tool {
-  id: string;
-  image: string;
-  sourcePath: string;
-  destPath: string;
-  binPaths: string[];
-  envVars?: Record<string, string>;
-  description: string;
-  category: string;
-}
-
-export interface ResourceLimits {
-  cpuLimit?: string;
-  memoryLimit?: string;
-}
-
-export interface CreateHostRequest {
-  name: string;
-  tools: string[];
-  displayName?: string;
-  resources?: ResourceLimits;
-}
-
-export interface CreateHostResponse {
-  name: string;
-  tools: string[];
-  imageTag: string;
-  containerId: string;
-  status: string;
-  buildLog?: string;
-}
-
 export type HostStatus = 'pending' | 'deploying' | 'online' | 'offline' | 'failed';
-
-export interface Host {
-  name: string;
-  displayName?: string;
-  tools: string[];
-  resources?: ResourceLimits;
-  authToken: string;
-  createdAt: string;
-  updatedAt: string;
-  status: HostStatus;
-  errorMsg?: string;
-  retryCount: number;
-  address?: string;
-  sessionCount: number;
-  lastHeartbeat?: string;
-}
