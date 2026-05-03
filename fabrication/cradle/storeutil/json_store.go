@@ -2,6 +2,7 @@ package storeutil
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"sync"
 
@@ -62,18 +63,22 @@ func (s *JSONStore[T]) Get() T {
 	return s.data
 }
 
-// GetData 返回数据的只读引用（调用方不应修改返回值，用于性能敏感场景）
-func (s *JSONStore[T]) GetData() *T {
-	return &s.data
-}
-
-// Update 在写锁保护下执行更新函数，并可选地持久化
+// Update 在写锁保护下执行更新函数，并可选地持久化。
+// 序列化在写锁内完成，文件写入在锁释放后执行，避免 TOCTOU 竞态。
 func (s *JSONStore[T]) Update(fn func(data *T), persist bool) error {
 	s.mu.Lock()
 	fn(&s.data)
-	s.mu.Unlock()
+	var dataToSave []byte
+	var err error
 	if persist {
-		return s.Save()
+		dataToSave, err = json.MarshalIndent(s.data, "", "  ")
+	}
+	s.mu.Unlock()
+	if err != nil {
+		return fmt.Errorf("marshal data: %w", err)
+	}
+	if persist {
+		return configutil.AtomicWriteFile(s.path, dataToSave, 0644)
 	}
 	return nil
 }
