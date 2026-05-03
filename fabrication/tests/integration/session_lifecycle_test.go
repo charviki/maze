@@ -13,12 +13,11 @@ import (
 // TestSessionSaveAndRestore — Given: 已上线的 Host 和活跃 Session; When: 保存→查询→恢复; Then: Session 状态完整保留
 func TestSessionSaveAndRestore(t *testing.T) {
 	t.Parallel()
+
 	h := newTestHelper(t)
 	defer h.cleanup(t)
 
-	nodeName := uniqueName("test-save-restore")
-	h.trackHost(nodeName)
-	h.createHostAndWait(t, nodeName, []string{"claude"})
+	nodeName := h.acquireHost(t, "claude")
 
 	t.Log("[step] creating session...")
 	sid := h.createSession(t, nodeName, "save-restore-session")
@@ -58,12 +57,11 @@ func TestSessionSaveAndRestore(t *testing.T) {
 // TestSessionConfig — Given: 已上线的 Host 和活跃 Session; When: 查询/更新配置; Then: 配置正确返回
 func TestSessionConfig(t *testing.T) {
 	t.Parallel()
+
 	h := newTestHelper(t)
 	defer h.cleanup(t)
 
-	nodeName := uniqueName("test-session-cfg")
-	h.trackHost(nodeName)
-	h.createHostAndWait(t, nodeName, []string{"claude"})
+	nodeName := h.acquireHost(t, "claude")
 
 	t.Log("[step] creating session...")
 	// 只有带模板的会话才有固定文件定义，才能验证配置读写链路。
@@ -118,12 +116,11 @@ func TestSessionConfig(t *testing.T) {
 // TestSessionDelete — Given: 已上线的 Host 和活跃 Session; When: 删除 Session; Then: Session 不再出现在列表中
 func TestSessionDelete(t *testing.T) {
 	t.Parallel()
+
 	h := newTestHelper(t)
 	defer h.cleanup(t)
 
-	nodeName := uniqueName("test-session-del")
-	h.trackHost(nodeName)
-	h.createHostAndWait(t, nodeName, []string{"claude"})
+	nodeName := h.acquireHost(t, "claude")
 
 	t.Log("[step] creating session...")
 	sid := h.createSession(t, nodeName, "delete-test-session")

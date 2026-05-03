@@ -12,12 +12,11 @@ import (
 // TestTerminalGetOutput — Given: 已上线的 Host 和活跃 Session; When: 获取终端输出; Then: 返回输出内容
 func TestTerminalGetOutput(t *testing.T) {
 	t.Parallel()
+
 	h := newTestHelper(t)
 	defer h.cleanup(t)
 
-	nodeName := uniqueName("test-output")
-	h.trackHost(nodeName)
-	h.createHostAndWait(t, nodeName, []string{"claude"})
+	nodeName := h.acquireHost(t, "claude")
 
 	sid := h.createSession(t, nodeName, "output-test-session")
 
@@ -32,12 +31,11 @@ func TestTerminalGetOutput(t *testing.T) {
 // TestTerminalSendInput — Given: 已上线的 Host 和活跃 Session; When: 发送命令; Then: 请求成功
 func TestTerminalSendInput(t *testing.T) {
 	t.Parallel()
+
 	h := newTestHelper(t)
 	defer h.cleanup(t)
 
-	nodeName := uniqueName("test-input")
-	h.trackHost(nodeName)
-	h.createHostAndWait(t, nodeName, []string{"claude"})
+	nodeName := h.acquireHost(t, "claude")
 
 	sid := h.createSession(t, nodeName, "input-test-session")
 
@@ -54,12 +52,11 @@ func TestTerminalSendInput(t *testing.T) {
 // TestTerminalGetEnv — Given: 已上线的 Host 和活跃 Session; When: 查询环境变量; Then: 返回环境变量列表
 func TestTerminalGetEnv(t *testing.T) {
 	t.Parallel()
+
 	h := newTestHelper(t)
 	defer h.cleanup(t)
 
-	nodeName := uniqueName("test-env")
-	h.trackHost(nodeName)
-	h.createHostAndWait(t, nodeName, []string{"claude"})
+	nodeName := h.acquireHost(t, "claude")
 
 	sid := h.createSession(t, nodeName, "env-test-session")
 
@@ -75,12 +72,11 @@ func TestTerminalGetEnv(t *testing.T) {
 // TestTerminalSendSignal — Given: 已上线的 Host 和活跃 Session; When: 发送中断信号; Then: 请求成功
 func TestTerminalSendSignal(t *testing.T) {
 	t.Parallel()
+
 	h := newTestHelper(t)
 	defer h.cleanup(t)
 
-	nodeName := uniqueName("test-signal")
-	h.trackHost(nodeName)
-	h.createHostAndWait(t, nodeName, []string{"claude"})
+	nodeName := h.acquireHost(t, "claude")
 
 	sid := h.createSession(t, nodeName, "signal-test-session")
 

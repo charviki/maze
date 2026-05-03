@@ -9,7 +9,6 @@ import (
 
 // TestComboImageCache 验证相同工具组合的 Host 共享镜像缓存
 func TestComboImageCache(t *testing.T) {
-	t.Parallel()
 	h := newTestHelper(t)
 	defer h.cleanup(t)
 

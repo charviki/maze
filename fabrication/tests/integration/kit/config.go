@@ -3,6 +3,7 @@ package kit
 import (
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	client "github.com/charviki/maze-cradle/api/gen/http"
@@ -16,6 +17,10 @@ type TestConfig struct {
 	DataDir             string
 	AuthToken           string
 	AgentStorageBackend string
+	EnableHostPool      bool
+	PoolClaudeSize      int
+	PoolGoSize          int
+	StreamEvents        bool
 }
 
 // LoadTestConfig 从环境变量加载集成测试配置。
@@ -27,6 +32,10 @@ func LoadTestConfig() *TestConfig {
 		DataDir:             getEnv("MAZE_TEST_DATA_DIR", os.Getenv("HOME")+"/.maze-test"),
 		AuthToken:           getEnv("MAZE_TEST_AUTH_TOKEN", "test-integration-token"),
 		AgentStorageBackend: getEnv("MAZE_TEST_AGENT_STORAGE_BACKEND", defaultAgentStorageBackend(getEnv("MAZE_TEST_ENV", "docker"))),
+		EnableHostPool:      getEnvBool("MAZE_TEST_ENABLE_HOST_POOL", false),
+		PoolClaudeSize:      getEnvInt("MAZE_TEST_POOL_CLAUDE_SIZE", 4),
+		PoolGoSize:          getEnvInt("MAZE_TEST_POOL_GO_SIZE", 1),
+		StreamEvents:        getEnvBool("MAZE_TEST_STREAM_EVENTS", true),
 	}
 	return cfg
 }
@@ -47,6 +56,30 @@ func getEnv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+func getEnvBool(key string, fallback bool) bool {
+	value := os.Getenv(key)
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		return fallback
+	}
+	return parsed
+}
+
+func getEnvInt(key string, fallback int) int {
+	value := os.Getenv(key)
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil {
+		return fallback
+	}
+	return parsed
 }
 
 // NewTestAPIClient 创建指向 Manager HTTP 端口的 OpenAPI 生成 client。

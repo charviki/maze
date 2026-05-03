@@ -10,13 +10,11 @@ import (
 // TestNodeListQuery — Given: 已上线的 Host; When: 查询节点列表; Then: 返回包含该 Host 的节点
 func TestNodeListQuery(t *testing.T) {
 	t.Parallel()
+
 	h := newTestHelper(t)
 	defer h.cleanup(t)
 
-	name := uniqueName("test-node-list")
-	h.trackHost(name)
-
-	h.createHostAndWait(t, name, []string{"claude"})
+	name := h.acquireHost(t, "claude")
 
 	t.Log("[step] listing nodes...")
 	resp, _, err := h.apiClient.NodeServiceAPI.NodeServiceListNodes(context.Background()).Execute()
@@ -40,13 +38,11 @@ func TestNodeListQuery(t *testing.T) {
 // TestNodeGetDetail — Given: 已上线的 Host; When: 查询节点详情; Then: 返回完整的节点信息
 func TestNodeGetDetail(t *testing.T) {
 	t.Parallel()
+
 	h := newTestHelper(t)
 	defer h.cleanup(t)
 
-	name := uniqueName("test-node-detail")
-	h.trackHost(name)
-
-	h.createHostAndWait(t, name, []string{"claude"})
+	name := h.acquireHost(t, "claude")
 
 	t.Log("[step] getting node detail...")
 	node, _, err := h.apiClient.NodeServiceAPI.NodeServiceGetNode(context.Background(), name).Execute()

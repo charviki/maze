@@ -9,7 +9,6 @@ import (
 
 // TestHostBuildLog — Given: 已上线的 Host; When: 获取构建日志; Then: 返回非空日志内容
 func TestHostBuildLog(t *testing.T) {
-	t.Parallel()
 	h := newTestHelper(t)
 	defer h.cleanup(t)
 
@@ -33,7 +32,6 @@ func TestHostBuildLog(t *testing.T) {
 
 // TestHostRuntimeLog — Given: 已上线的 Host; When: 获取运行时日志; Then: 请求成功
 func TestHostRuntimeLog(t *testing.T) {
-	t.Parallel()
 	h := newTestHelper(t)
 	defer h.cleanup(t)
 
@@ -53,7 +51,6 @@ func TestHostRuntimeLog(t *testing.T) {
 
 // TestHostListTools — Given: Manager 已启动; When: 查询工具列表; Then: 返回至少 1 个工具
 func TestHostListTools(t *testing.T) {
-	t.Parallel()
 	h := newTestHelper(t)
 
 	t.Log("[step] listing available tools...")

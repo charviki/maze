@@ -12,12 +12,11 @@ import (
 // TestTemplateCRUD — Given: 已上线的 Host; When: 创建→查询→更新→删除模板; Then: 全生命周期正确
 func TestTemplateCRUD(t *testing.T) {
 	t.Parallel()
+
 	h := newTestHelper(t)
 	defer h.cleanup(t)
 
-	nodeName := uniqueName("test-tmpl")
-	h.trackHost(nodeName)
-	h.createHostAndWait(t, nodeName, []string{"claude"})
+	nodeName := h.acquireHost(t, "claude")
 
 	t.Log("[step] creating template...")
 	tmplID := "test-template-1"
@@ -90,12 +89,11 @@ func TestTemplateCRUD(t *testing.T) {
 // TestTemplateConfig — Given: 已上线的 Host 和已创建的模板; When: 查询/更新模板配置; Then: 配置正确返回
 func TestTemplateConfig(t *testing.T) {
 	t.Parallel()
+
 	h := newTestHelper(t)
 	defer h.cleanup(t)
 
-	nodeName := uniqueName("test-tmpl-cfg")
-	h.trackHost(nodeName)
-	h.createHostAndWait(t, nodeName, []string{"claude"})
+	nodeName := h.acquireHost(t, "claude")
 
 	t.Log("[step] creating template for config test...")
 	tmplIDCfg := "config-test-template-1"

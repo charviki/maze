@@ -13,14 +13,11 @@ import (
 // TestSessionCreateQuery 验证 Session 的创建和查询
 func TestSessionCreateQuery(t *testing.T) {
 	t.Parallel()
+
 	h := newTestHelper(t)
 	defer h.cleanup(t)
 
-	name := uniqueName("test-session")
-	h.trackHost(name)
-
-	t.Log("[step] creating host for session test...")
-	h.createHostAndWait(t, name, []string{"claude"})
+	name := h.acquireHost(t, "claude")
 
 	t.Log("[step] creating session...")
 	sid := h.createSession(t, name, "test-session-1")
@@ -38,7 +35,6 @@ func TestSessionCreateQuery(t *testing.T) {
 
 // TestSessionPersistenceRecovery 验证 Session 在 Deployment 重建后保留
 func TestSessionPersistenceRecovery(t *testing.T) {
-	t.Parallel()
 	cfg := kit.LoadTestConfig()
 	if cfg.Env != "kubernetes" {
 		t.Skip("session persistence recovery test only runs in Kubernetes environment")

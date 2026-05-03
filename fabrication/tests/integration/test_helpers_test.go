@@ -4,6 +4,7 @@ package integration
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -17,12 +18,28 @@ import (
 type testHelper struct {
 	apiClient *client.APIClient
 	cfg       *kit.TestConfig
-	clean     []string
+	isolated  []string
+	leased    []hostLease
+}
+
+type hostLease struct {
+	name     string
+	profile  string
+	snapshot hostSnapshot
+}
+
+type hostSnapshot struct {
+	sessionIDs  map[string]struct{}
+	templateIDs map[string]struct{}
+	env         map[string]string
 }
 
 func newTestHelper(t *testing.T) *testHelper {
 	t.Helper()
-	cfg := kit.LoadTestConfig()
+	cfg := suite.cfg
+	if cfg == nil {
+		cfg = kit.LoadTestConfig()
+	}
 	apiClient := kit.NewTestAPIClient(cfg)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -37,14 +54,62 @@ func newTestHelper(t *testing.T) *testHelper {
 
 func (h *testHelper) cleanup(t *testing.T) {
 	t.Helper()
-	t.Logf("[step] cleanup: deleting %d hosts", len(h.clean))
-	for _, name := range h.clean {
+	var cleanupErr error
+	for i := len(h.leased) - 1; i >= 0; i-- {
+		lease := h.leased[i]
+		t.Logf("[step] cleanup: restoring shared host %s", lease.name)
+		restoreErr := h.restoreSharedHostState(t, lease)
+		if suite.pool != nil {
+			// 即使恢复失败也必须归还租约，否则并行测试会永久阻塞在 Acquire 上。
+			if err := suite.pool.Release(lease.profile, lease.name); err != nil {
+				cleanupErr = errors.Join(cleanupErr, fmt.Errorf("release shared host %s failed: %w", lease.name, err))
+			}
+		}
+		if restoreErr != nil {
+			cleanupErr = errors.Join(cleanupErr, restoreErr)
+		}
+	}
+	t.Logf("[step] cleanup: deleting %d isolated hosts", len(h.isolated))
+	for _, name := range h.isolated {
 		h.ensureHostRemoved(t, name, 45*time.Second)
+	}
+	if cleanupErr != nil {
+		t.Fatalf("shared host cleanup failed: %v", cleanupErr)
 	}
 }
 
 func (h *testHelper) trackHost(name string) {
-	h.clean = append(h.clean, name)
+	h.isolated = append(h.isolated, name)
+}
+
+func (h *testHelper) acquireHost(t *testing.T, profile string) string {
+	t.Helper()
+	if suite.pool == nil {
+		if h.cfg.EnableHostPool {
+			t.Fatalf("shared host pool is enabled but not initialized for profile %s", profile)
+		}
+		tools, err := toolsForProfile(profile)
+		if err != nil {
+			t.Fatalf("resolve tools for profile %s: %v", profile, err)
+		}
+		name := uniqueName("shared-" + profile)
+		h.trackHost(name)
+		h.createHostAndWait(t, name, tools)
+		return name
+	}
+
+	name, err := suite.pool.Acquire(profile)
+	if err != nil {
+		t.Fatalf("acquire shared host for profile %s: %v", profile, err)
+	}
+	snapshot, err := h.captureHostSnapshot(name)
+	if err != nil {
+		_ = suite.pool.Release(profile, name)
+		t.Fatalf("capture snapshot for shared host %s: %v", name, err)
+	}
+	h.leased = append(h.leased, hostLease{name: name, profile: profile, snapshot: snapshot})
+	t.Logf("[step] leased shared host %s profile=%s", name, profile)
+	return name
 }
 
 func uniqueName(prefix string) string {
@@ -265,4 +330,133 @@ func (h *testHelper) createSessionWithTemplate(t *testing.T, nodeName, sessionNa
 
 func ptrStr(s string) *string {
 	return &s
+}
+
+func (h *testHelper) captureHostSnapshot(nodeName string) (hostSnapshot, error) {
+	snapshot := hostSnapshot{
+		sessionIDs:  make(map[string]struct{}),
+		templateIDs: make(map[string]struct{}),
+		env:         make(map[string]string),
+	}
+
+	sessions, _, err := h.apiClient.SessionServiceAPI.SessionServiceListSessions(context.Background(), nodeName).Execute()
+	if err != nil {
+		return hostSnapshot{}, fmt.Errorf("list sessions on %s: %w", nodeName, err)
+	}
+	for _, session := range sessions.GetSessions() {
+		snapshot.sessionIDs[session.GetId()] = struct{}{}
+	}
+
+	templates, _, err := h.apiClient.TemplateServiceAPI.TemplateServiceListTemplates(context.Background(), nodeName).Execute()
+	if err != nil {
+		return hostSnapshot{}, fmt.Errorf("list templates on %s: %w", nodeName, err)
+	}
+	for _, tmpl := range templates.GetTemplates() {
+		snapshot.templateIDs[tmpl.GetId()] = struct{}{}
+	}
+
+	configView, _, err := h.apiClient.ConfigServiceAPI.ConfigServiceGetConfig(context.Background(), nodeName).Execute()
+	if err != nil {
+		return hostSnapshot{}, fmt.Errorf("get local config on %s: %w", nodeName, err)
+	}
+	for key, value := range configView.GetEnv() {
+		snapshot.env[key] = value
+	}
+
+	return snapshot, nil
+}
+
+func (h *testHelper) restoreSharedHostState(t *testing.T, lease hostLease) error {
+	t.Helper()
+	var restoreErr error
+	if err := h.deleteExtraSessions(t, lease); err != nil {
+		restoreErr = errors.Join(restoreErr, err)
+	}
+	if err := h.deleteExtraTemplates(t, lease); err != nil {
+		restoreErr = errors.Join(restoreErr, err)
+	}
+	if err := h.restoreLocalConfigEnv(t, lease); err != nil {
+		restoreErr = errors.Join(restoreErr, err)
+	}
+	return restoreErr
+}
+
+func (h *testHelper) deleteExtraSessions(t *testing.T, lease hostLease) error {
+	t.Helper()
+	sessions, _, err := h.apiClient.SessionServiceAPI.SessionServiceListSessions(context.Background(), lease.name).Execute()
+	if err != nil {
+		return fmt.Errorf("list sessions for shared host %s cleanup failed: %w", lease.name, err)
+	}
+	for _, session := range sessions.GetSessions() {
+		if _, ok := lease.snapshot.sessionIDs[session.GetId()]; ok {
+			continue
+		}
+		t.Logf("[step] cleanup: deleting shared-host session %s on %s", session.GetId(), lease.name)
+		_, _, err := h.apiClient.SessionServiceAPI.SessionServiceDeleteSession(context.Background(), lease.name, session.GetId()).Execute()
+		if err != nil {
+			return fmt.Errorf("delete session %s on shared host %s failed: %w", session.GetId(), lease.name, err)
+		}
+	}
+	return nil
+}
+
+func (h *testHelper) deleteExtraTemplates(t *testing.T, lease hostLease) error {
+	t.Helper()
+	templates, _, err := h.apiClient.TemplateServiceAPI.TemplateServiceListTemplates(context.Background(), lease.name).Execute()
+	if err != nil {
+		return fmt.Errorf("list templates for shared host %s cleanup failed: %w", lease.name, err)
+	}
+	for _, tmpl := range templates.GetTemplates() {
+		if tmpl.GetBuiltin() {
+			continue
+		}
+		if _, ok := lease.snapshot.templateIDs[tmpl.GetId()]; ok {
+			continue
+		}
+		t.Logf("[step] cleanup: deleting shared-host template %s on %s", tmpl.GetId(), lease.name)
+		_, _, err := h.apiClient.TemplateServiceAPI.TemplateServiceDeleteTemplate(context.Background(), lease.name, tmpl.GetId()).Execute()
+		if err != nil {
+			return fmt.Errorf("delete template %s on shared host %s failed: %w", tmpl.GetId(), lease.name, err)
+		}
+	}
+	return nil
+}
+
+func (h *testHelper) restoreLocalConfigEnv(t *testing.T, lease hostLease) error {
+	t.Helper()
+	configView, _, err := h.apiClient.ConfigServiceAPI.ConfigServiceGetConfig(context.Background(), lease.name).Execute()
+	if err != nil {
+		return fmt.Errorf("get local config for shared host %s cleanup failed: %w", lease.name, err)
+	}
+	patch := diffEnv(configView.GetEnv(), lease.snapshot.env)
+	if len(patch) == 0 {
+		return nil
+	}
+	t.Logf("[step] cleanup: restoring %d env keys on shared host %s", len(patch), lease.name)
+	_, _, err = h.apiClient.ConfigServiceAPI.ConfigServiceUpdateConfig(context.Background(), lease.name).
+		Body(client.ConfigServiceUpdateConfigBody{Env: &patch}).Execute()
+	if err != nil {
+		return fmt.Errorf("restore local config for shared host %s failed: %w", lease.name, err)
+	}
+	return nil
+}
+
+func diffEnv(current, target map[string]string) map[string]string {
+	patch := make(map[string]string)
+	for key, currentValue := range current {
+		targetValue, ok := target[key]
+		if !ok {
+			patch[key] = ""
+			continue
+		}
+		if currentValue != targetValue {
+			patch[key] = targetValue
+		}
+	}
+	for key, targetValue := range target {
+		if currentValue, ok := current[key]; !ok || currentValue != targetValue {
+			patch[key] = targetValue
+		}
+	}
+	return patch
 }

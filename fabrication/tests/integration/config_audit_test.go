@@ -12,12 +12,11 @@ import (
 // TestLocalConfigGetAndUpdate — Given: 已上线的 Host; When: 查询/更新本地配置; Then: 配置正确返回
 func TestLocalConfigGetAndUpdate(t *testing.T) {
 	t.Parallel()
+
 	h := newTestHelper(t)
 	defer h.cleanup(t)
 
-	nodeName := uniqueName("test-localcfg")
-	h.trackHost(nodeName)
-	h.createHostAndWait(t, nodeName, []string{"claude"})
+	nodeName := h.acquireHost(t, "claude")
 
 	t.Log("[step] getting local config...")
 	config, _, err := h.apiClient.ConfigServiceAPI.ConfigServiceGetConfig(context.Background(), nodeName).Execute()
@@ -56,12 +55,11 @@ func TestLocalConfigGetAndUpdate(t *testing.T) {
 // TestAuditLogAfterOperations — Given: 执行过操作的 Manager; When: 查询审计日志; Then: 返回非空日志列表
 func TestAuditLogAfterOperations(t *testing.T) {
 	t.Parallel()
+
 	h := newTestHelper(t)
 	defer h.cleanup(t)
 
-	nodeName := uniqueName("test-audit")
-	h.trackHost(nodeName)
-	h.createHostAndWait(t, nodeName, []string{"claude"})
+	_ = h.acquireHost(t, "claude")
 
 	t.Log("[step] querying audit logs...")
 	resp, _, err := h.apiClient.AuditServiceAPI.AuditServiceGetAuditLogs(context.Background()).Execute()

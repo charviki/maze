@@ -10,7 +10,6 @@ import (
 
 // TestHostDisasterRecovery 验证 Manager 重启后全量恢复所有 Host
 func TestHostDisasterRecovery(t *testing.T) {
-	t.Parallel()
 	cfg := kit.LoadTestConfig()
 	if cfg.Env != "kubernetes" {
 		t.Skip("disaster recovery test only runs in Kubernetes environment")
@@ -33,7 +32,6 @@ func TestHostDisasterRecovery(t *testing.T) {
 
 // TestHostReconcileOnRestart 验证 Manager 重启后 Reconciler 自动恢复 Host
 func TestHostReconcileOnRestart(t *testing.T) {
-	t.Parallel()
 	cfg := kit.LoadTestConfig()
 	if cfg.Env != "kubernetes" {
 		t.Skip("reconcile on restart test only runs in Kubernetes environment")

@@ -12,7 +12,6 @@ import (
 
 // TestHostCreateOnline 验证 Host 创建后能成功上线
 func TestHostCreateOnline(t *testing.T) {
-	t.Parallel()
 	h := newTestHelper(t)
 	defer h.cleanup(t)
 
@@ -57,7 +56,6 @@ func TestHostCreateOnline(t *testing.T) {
 
 // TestHostListQuery 验证 Host 列表查询返回正确的合并视图
 func TestHostListQuery(t *testing.T) {
-	t.Parallel()
 	h := newTestHelper(t)
 	defer h.cleanup(t)
 
@@ -96,7 +94,6 @@ func TestHostListQuery(t *testing.T) {
 
 // TestHostDelete 验证 Host 删除后从列表中消失
 func TestHostDelete(t *testing.T) {
-	t.Parallel()
 	h := newTestHelper(t)
 
 	name := uniqueName("test-delete")
@@ -125,7 +122,6 @@ func TestHostDelete(t *testing.T) {
 
 // TestHostCreateDuplicate 验证同名 Host 创建返回错误
 func TestHostCreateDuplicate(t *testing.T) {
-	t.Parallel()
 	h := newTestHelper(t)
 	defer h.cleanup(t)
 
