@@ -1,0 +1,7 @@
+generatorName: typescript-fetch
+inputSpec: ../cradle/api/gen/http/api/openapi.yaml
+outputDir: src/api/gen
+additionalProperties:
+  supportsES6: true
+  stringEnums: true
+  typescriptThreePlus: true
