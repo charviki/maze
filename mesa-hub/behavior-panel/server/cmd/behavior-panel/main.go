@@ -17,10 +17,7 @@ import (
 	"github.com/charviki/mesa-hub-behavior-panel/internal/transport"
 )
 
-const grpcListenAddr = ":9090"
-
-// auditLoggerAdapter 将 transport.AuditLogger 适配为 gatewayutil.AuditLogger 接口。
-// gatewayutil interceptor 产生 gatewayutil.AuditEntry，需转换为 transport 层使用的 protocol.AuditLogEntry。
+// auditLoggerAdapter 将 transport.AuditLogger 适配为 gatewayutil.AuditLogger 接口
 type auditLoggerAdapter struct {
 	inner *transport.AuditLogger
 }
@@ -43,11 +40,16 @@ func main() {
 		logger.Fatalf("load config: %v", err)
 	}
 
+	grpcAddr := cfg.Server.GRPCListenAddr
+	if grpcAddr == "" {
+		grpcAddr = ":9090"
+	}
+
 	gwmux := gatewayutil.NewServeMux()
 	httpServer, resources := newHTTPServer(cfg, logger, gwmux)
 	defer cleanupResources(resources)
 
-	proxySvc := service.NewAgentProxyService(resources.Registry, cfg.Server.AuthToken, logger)
+	proxySvc := service.NewAgentProxyService(resources.Registry, resources.ConnMgr, logger)
 
 	// 构建 gRPC interceptor chain：认证 → 分层令牌 → 审计
 	interceptors := []grpc.UnaryServerInterceptor{
@@ -67,7 +69,7 @@ func main() {
 	)
 	grpcCore := grpc.NewServer(grpc.ChainUnaryInterceptor(interceptors...))
 	grpcServer.RegisterGRPC(grpcCore)
-	managedGRPC := grpcutil.NewManagedGRPCServer(grpcListenAddr, grpcCore, logger)
+	managedGRPC := grpcutil.NewManagedGRPCServer(grpcAddr, grpcCore, logger)
 
 	ctx := context.Background()
 	if err := pb.RegisterHostServiceHandlerServer(ctx, gwmux, grpcServer); err != nil {
@@ -119,7 +121,9 @@ func cleanupResources(resources *CleanupResources) {
 	}
 
 	resources.Reconciler.Stop()
+	resources.HostSvc.Stop()
 	resources.Registry.WaitSave()
 	resources.SpecMgr.WaitSave()
 	resources.AuditLog.Close()
+	resources.ConnMgr.CloseAll()
 }

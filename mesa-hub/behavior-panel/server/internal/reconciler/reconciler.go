@@ -214,7 +214,7 @@ func (r *Reconciler) redeploy(ctx context.Context, spec *protocol.HostSpec) {
 		}
 	}
 
-	_, deployErr := service.BuildAndDeploy(context.Background(), r.runtime, spec, r.cfg)
+	_, deployErr := service.BuildAndDeploy(ctx, r.runtime, spec, r.cfg)
 	if deployErr != nil {
 		errMsg := fmt.Sprintf("redeploy failed: %v", deployErr)
 		r.specMgr.UpdateStatus(spec.Name, protocol.HostStatusFailed, errMsg)

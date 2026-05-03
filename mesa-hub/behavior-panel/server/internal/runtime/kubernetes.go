@@ -2,7 +2,6 @@ package runtime
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -33,28 +32,22 @@ type KubernetesRuntime struct {
 	clientset kubernetes.Interface
 }
 
-// NewKubernetesRuntime 创建 KubernetesRuntime
-// K8s 客户端在构造时初始化，失败时 clientset 为 nil，后续方法将返回错误
-func NewKubernetesRuntime(kube config.KubernetesConfig, workspace config.WorkspaceConfig, logger logutil.Logger) *KubernetesRuntime {
-	var clientset kubernetes.Interface
-
+// NewKubernetesRuntime 创建 KubernetesRuntime，初始化失败时返回错误而非静默吞掉
+func NewKubernetesRuntime(kube config.KubernetesConfig, workspace config.WorkspaceConfig, logger logutil.Logger) (*KubernetesRuntime, error) {
 	var restConfig *rest.Config
 	var err error
 	if kube.Kubeconfig != "" {
-		// 从 kubeconfig 文件加载
 		restConfig, err = clientcmd.BuildConfigFromFlags("", kube.Kubeconfig)
 	} else {
-		// in-cluster 模式
 		restConfig, err = rest.InClusterConfig()
 	}
 	if err != nil {
-		logger.Errorf("kubernetes client init failed: %v", err)
-		return &KubernetesRuntime{kube: kube, workspace: workspace, logger: logger}
+		return nil, fmt.Errorf("kubernetes client init failed: %w", err)
 	}
 
-	clientset, err = kubernetes.NewForConfig(restConfig)
+	clientset, err := kubernetes.NewForConfig(restConfig)
 	if err != nil {
-		logger.Errorf("kubernetes clientset create failed: %v", err)
+		return nil, fmt.Errorf("kubernetes clientset create failed: %w", err)
 	}
 
 	return &KubernetesRuntime{
@@ -62,43 +55,24 @@ func NewKubernetesRuntime(kube config.KubernetesConfig, workspace config.Workspa
 		workspace: workspace,
 		logger:    logger,
 		clientset: clientset,
-	}
-}
-
-// checkClient 确认 K8s 客户端已初始化
-func (k *KubernetesRuntime) checkClient() error {
-	if k.clientset == nil {
-		return errors.New("kubernetes client not initialized")
-	}
-	return nil
+	}, nil
 }
 
 // imageExistsLocally 检查指定镜像是否已存在于本地 docker 中
 func (k *KubernetesRuntime) imageExistsLocally(imageName string) bool {
-	//nolint:gosec // docker CLI args are internally constructed
-	cmd := exec.Command("docker", "image", "inspect", imageName)
-	return cmd.Run() == nil
+	return builder.ImageExistsLocally(imageName)
 }
 
 // checkDockerfileHash 从镜像 label 中读取 dockerfile-hash 与期望值比较
-//
-//nolint:gosec // docker CLI args are internally constructed
 func (k *KubernetesRuntime) checkDockerfileHash(imageName, expectedHash string) bool {
-	//nolint:gosec
-	cmd := exec.Command("docker", "inspect", "--format",
-		"{{index .Config.Labels \"maze.dockerfile-hash\"}}", imageName)
-	output, err := cmd.Output()
-	if err != nil {
-		return false
-	}
-	return strings.TrimSpace(string(output)) == expectedHash
+	return builder.CheckDockerfileHash(imageName, expectedHash)
 }
 
 // buildDockerImage 使用 docker build 从 Dockerfile 内容构建镜像
 // 复用 Docker 模式相同的动态构建逻辑，K8s 模式下只是把 docker run 换成创建 Deployment
 func (k *KubernetesRuntime) buildDockerImage(spec *protocol.HostDeploySpec, dockerfileContent string) (string, error) {
 	imageName := "maze-agent:" + spec.Name
-	expectedHash := extractDockerfileHash(dockerfileContent)
+	expectedHash := builder.ExtractDockerfileHash(dockerfileContent)
 
 	// 优先检查 Host 专属镜像是否已存在且 hash 匹配
 	if k.imageExistsLocally(imageName) {
@@ -175,10 +149,6 @@ func (k *KubernetesRuntime) removeDockerImage(name string) {
 
 // DeployHost 部署 Host 到 Kubernetes 集群：docker build → 创建 PVC → Deployment → Service
 func (k *KubernetesRuntime) DeployHost(ctx context.Context, spec *protocol.HostDeploySpec, dockerfileContent string) (*protocol.CreateHostResponse, error) {
-	if err := k.checkClient(); err != nil {
-		return nil, err
-	}
-
 	ns := k.kube.Namespace
 	appName := "maze-agent-" + spec.Name
 
@@ -275,6 +245,7 @@ func (k *KubernetesRuntime) createDeployment(ctx context.Context, ns, appName st
 		{Name: "AGENT_ADVERTISED_ADDR", Value: externalAddr},
 		{Name: "AGENT_GRPC_ADDR", Value: fmt.Sprintf("%s.%s.svc.cluster.local:9090", appName, ns)},
 		{Name: "AGENT_CONTROLLER_ADDR", Value: managerAddr},
+		{Name: "AGENT_CONTROLLER_GRPC_ADDR", Value: deriveManagerGRPCAddr(managerAddr)},
 		// Agent 自身 API 鉴权使用全局 auth token
 		{Name: "AGENT_SERVER_AUTH_TOKEN", Value: spec.ServerAuthToken},
 		// Host 注册/心跳使用 Host 专属令牌
@@ -414,10 +385,6 @@ func (k *KubernetesRuntime) createService(ctx context.Context, ns, appName, host
 // StopHost 按顺序删除 Service → Deployment → PVC，忽略 "not found"
 // StopHost 停止运行时资源（Deployment + Service），保留持久化数据
 func (k *KubernetesRuntime) StopHost(ctx context.Context, name string) error {
-	if err := k.checkClient(); err != nil {
-		return err
-	}
-
 	ns := k.kube.Namespace
 	appName := "maze-agent-" + name
 	deletePolicy := metav1.DeletePropagationBackground
@@ -474,10 +441,6 @@ func (k *KubernetesRuntime) RemoveHost(ctx context.Context, name string) error {
 
 // InspectHost 通过 label selector 查询 Pod 状态
 func (k *KubernetesRuntime) InspectHost(ctx context.Context, name string) (*protocol.ContainerInfo, error) {
-	if err := k.checkClient(); err != nil {
-		return nil, err
-	}
-
 	ns := k.kube.Namespace
 	pods, err := k.clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{
 		LabelSelector: "maze-agent-name=" + name,
@@ -545,10 +508,6 @@ func mapPodPhase(phase corev1.PodPhase) string {
 
 // GetRuntimeLogs 通过 K8s Pod logs 获取运行日志
 func (k *KubernetesRuntime) GetRuntimeLogs(ctx context.Context, name string, tailLines int) (string, error) {
-	if err := k.checkClient(); err != nil {
-		return "", err
-	}
-
 	ns := k.kube.Namespace
 	pods, err := k.clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{
 		LabelSelector: "maze-agent-name=" + name,
@@ -584,21 +543,17 @@ func (k *KubernetesRuntime) GetRuntimeLogs(ctx context.Context, name string, tai
 	return string(data), nil
 }
 
-// IsHealthy 检查 K8s Deployment 是否存在且 ReadyReplicas > 0。
-// Deployment 存在时（即使 ReadyReplicas == 0）也返回 true，由 K8s 自身处理 Pod 调度。
+// IsHealthy 检查 K8s Deployment 是否健康：Deployment 必须存在且 ReadyReplicas > 0。
+// 仅当至少一个 Pod 通过就绪探针时才视为健康，避免 CrashLoopBackOff 等异常状态被误判为健康。
 func (k *KubernetesRuntime) IsHealthy(ctx context.Context, name string) (bool, error) {
-	if err := k.checkClient(); err != nil {
-		return false, err
-	}
-
 	ns := k.kube.Namespace
 	appName := "maze-agent-" + name
-	_, err := k.clientset.AppsV1().Deployments(ns).Get(ctx, appName, metav1.GetOptions{})
+	deployment, err := k.clientset.AppsV1().Deployments(ns).Get(ctx, appName, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return false, nil
 		}
 		return false, fmt.Errorf("get deployment: %w", err)
 	}
-	return true, nil
+	return deployment.Status.ReadyReplicas > 0, nil
 }

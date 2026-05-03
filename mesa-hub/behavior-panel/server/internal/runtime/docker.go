@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -38,8 +39,7 @@ func (d *DockerRuntime) dockerCmd(args ...string) *exec.Cmd {
 
 // imageExistsLocally 检查指定镜像是否已存在于本地 docker 中
 func (d *DockerRuntime) imageExistsLocally(imageName string) bool {
-	cmd := d.dockerCmd("image", "inspect", imageName)
-	return cmd.Run() == nil
+	return builder.ImageExistsLocally(imageName)
 }
 
 // tryTagComboImage 尝试将已存在的工具组合镜像 tag 为 Host 专属镜像。
@@ -68,22 +68,7 @@ func (d *DockerRuntime) tryTagComboImage(comboTag, imageTag, expectedHash string
 
 // checkDockerfileHash 从镜像 label 中读取 dockerfile-hash 与期望值比较
 func (d *DockerRuntime) checkDockerfileHash(imageName, expectedHash string) bool {
-	cmd := d.dockerCmd("inspect", "--format", "{{index .Config.Labels \"maze.dockerfile-hash\"}}", imageName)
-	output, err := cmd.Output()
-	if err != nil {
-		return false
-	}
-	return strings.TrimSpace(string(output)) == expectedHash
-}
-
-// extractDockerfileHash 从生成的 Dockerfile 内容中提取 maze.dockerfile-hash label 值
-func extractDockerfileHash(dockerfileContent string) string {
-	for _, line := range strings.Split(dockerfileContent, "\n") {
-		if strings.HasPrefix(line, "LABEL maze.dockerfile-hash=") {
-			return strings.TrimPrefix(line, "LABEL maze.dockerfile-hash=")
-		}
-	}
-	return ""
+	return builder.CheckDockerfileHash(imageName, expectedHash)
 }
 
 // DeployHost 部署一个 Host：构建镜像 → 创建持久化目录 → 启动容器
@@ -91,7 +76,7 @@ func (d *DockerRuntime) DeployHost(ctx context.Context, spec *protocol.HostDeplo
 	deployStart := time.Now()
 	imageTag := "maze-agent:" + spec.Name
 	comboTag := builder.ToolsetImageTag(spec.Tools)
-	expectedHash := extractDockerfileHash(dockerfileContent)
+	expectedHash := builder.ExtractDockerfileHash(dockerfileContent)
 
 	cacheStart := time.Now()
 	cacheHit := d.tryTagComboImage(comboTag, imageTag, expectedHash)
@@ -157,6 +142,7 @@ func (d *DockerRuntime) DeployHost(ctx context.Context, spec *protocol.HostDeplo
 		"-e", "AGENT_ADVERTISED_ADDR=http://"+spec.Name+":8080",
 		"-e", fmt.Sprintf("AGENT_GRPC_ADDR=%s:9090", spec.Name),
 		"-e", "AGENT_CONTROLLER_ADDR="+d.docker.ManagerAddr,
+		"-e", "AGENT_CONTROLLER_GRPC_ADDR="+deriveManagerGRPCAddr(d.docker.ManagerAddr),
 		"-e", "AGENT_SERVER_AUTH_TOKEN="+spec.ServerAuthToken,
 		"-e", "AGENT_CONTROLLER_AUTH_TOKEN="+spec.AuthToken,
 	)
@@ -292,4 +278,15 @@ func (d *DockerRuntime) IsHealthy(ctx context.Context, name string) (bool, error
 		return false, err
 	}
 	return info.Status == "running", nil
+}
+
+// deriveManagerGRPCAddr 从 Manager HTTP 地址推导 gRPC 地址：去掉 scheme，将端口替换为 9090
+func deriveManagerGRPCAddr(httpAddr string) string {
+	addr := strings.TrimPrefix(httpAddr, "http://")
+	addr = strings.TrimPrefix(addr, "https://")
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return addr + ":9090"
+	}
+	return host + ":9090"
 }

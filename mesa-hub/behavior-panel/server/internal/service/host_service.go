@@ -2,12 +2,15 @@ package service
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/maze-cradle/protocol"
@@ -19,13 +22,16 @@ import (
 
 // HostService Host 业务逻辑（Manager 本地），供 HTTP handler 和 gRPC handler 共用
 type HostService struct {
-	registry *model.NodeRegistry
-	specMgr  *model.HostSpecManager
-	runtime  runtime.HostRuntime
-	auditLog AuditLogger
-	cfg      *config.Config
-	logger   logutil.Logger
-	logDir   string
+	registry     *model.NodeRegistry
+	specMgr      *model.HostSpecManager
+	runtime      runtime.HostRuntime
+	auditLog     AuditLogger
+	cfg          *config.Config
+	logger       logutil.Logger
+	logDir       string
+	deployCancel context.CancelFunc
+	deployWg     sync.WaitGroup
+	deployMu     sync.Mutex
 }
 
 // AuditLogger 审计日志接口，避免循环依赖
@@ -79,7 +85,11 @@ func (s *HostService) CreateHost(ctx context.Context, req *protocol.CreateHostRe
 			}(), ", "))
 	}
 
-	hostToken := req.Name
+	tokenBytes := make([]byte, 32)
+	if _, err := rand.Read(tokenBytes); err != nil {
+		return nil, fmt.Errorf("generate host token: %w", err)
+	}
+	hostToken := hex.EncodeToString(tokenBytes)
 
 	spec := &protocol.HostSpec{
 		Name:        req.Name,
@@ -96,7 +106,16 @@ func (s *HostService) CreateHost(ctx context.Context, req *protocol.CreateHostRe
 
 	s.registry.StoreHostToken(req.Name, hostToken)
 
-	go s.deployHostAsync(spec) //nolint:gosec // async deployment OK
+	//nolint:gosec // async deployment: 用 WithCancel 包装的 Background，支持取消
+	go func() {
+		ctx, cancel := context.WithCancel(context.Background())
+		s.deployMu.Lock()
+		s.deployCancel = cancel
+		s.deployMu.Unlock()
+		s.deployWg.Add(1)
+		defer s.deployWg.Done()
+		s.deployHostAsync(ctx, spec)
+	}() //nolint:gosec // async deployment OK
 
 	return spec, nil
 }
@@ -198,10 +217,10 @@ func (s *HostService) ListTools(ctx context.Context) ([]protocol.ToolConfig, err
 }
 
 // deployHostAsync 后台异步构建部署 Host
-func (s *HostService) deployHostAsync(spec *protocol.HostSpec) {
+func (s *HostService) deployHostAsync(ctx context.Context, spec *protocol.HostSpec) {
 	s.specMgr.UpdateStatus(spec.Name, protocol.HostStatusDeploying, "")
 
-	if err := s.runtime.StopHost(context.Background(), spec.Name); err != nil {
+	if err := s.runtime.StopHost(ctx, spec.Name); err != nil {
 		s.logger.Warnf("[host] stop old container for %s: %v", spec.Name, err)
 	}
 
@@ -224,7 +243,7 @@ func (s *HostService) deployHostAsync(spec *protocol.HostSpec) {
 
 	_, _ = fmt.Fprintf(multiWriter, "[INFO] Host %s: starting deployment, tools=%v\n", spec.Name, spec.Tools)
 
-	_, deployErr := BuildAndDeploy(context.Background(), s.runtime, spec, s.cfg)
+	_, deployErr := BuildAndDeploy(ctx, s.runtime, spec, s.cfg)
 
 	if deployErr != nil {
 		errMsg := fmt.Sprintf("deploy failed: %v", deployErr)
@@ -250,6 +269,16 @@ func (s *HostService) deployHostAsync(spec *protocol.HostSpec) {
 		PayloadSummary: fmt.Sprintf("tools=%v", spec.Tools),
 		Result:         "success",
 	})
+}
+
+// Stop 取消进行中的异步部署并等待完成，用于优雅关闭
+func (s *HostService) Stop() {
+	s.deployMu.Lock()
+	if s.deployCancel != nil {
+		s.deployCancel()
+	}
+	s.deployMu.Unlock()
+	s.deployWg.Wait()
 }
 
 // writerFunc 将函数适配为 io.Writer

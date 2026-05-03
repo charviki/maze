@@ -2,6 +2,7 @@ package transport
 
 import (
 	"context"
+	"math"
 	"time"
 
 	"google.golang.org/grpc"
@@ -634,7 +635,12 @@ var (
 	_ pb.ConfigServiceServer   = (*Server)(nil)
 )
 
-//nolint:gosec
 func safeInt32(n int) int32 {
+	if n > math.MaxInt32 {
+		return math.MaxInt32
+	}
+	if n < math.MinInt32 {
+		return math.MinInt32
+	}
 	return int32(n)
 }

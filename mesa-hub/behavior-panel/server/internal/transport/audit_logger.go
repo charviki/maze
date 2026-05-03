@@ -3,6 +3,7 @@ package transport
 import (
 	"bytes"
 	"crypto/rand"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"os"
@@ -87,7 +88,11 @@ func (a *AuditLogger) Close() {
 // generateAuditID 使用 crypto/rand 生成审计日志唯一 ID，避免高并发下的碰撞风险
 func generateAuditID() string {
 	b := make([]byte, 16)
-	_, _ = rand.Read(b)
+	n, err := rand.Read(b)
+	if err != nil || n != len(b) {
+		// rand.Read 失败时 fallback：使用时间戳拼接部分随机字节
+		binary.BigEndian.PutUint64(b, uint64(time.Now().UnixNano()))
+	}
 	return "audit-" + hex.EncodeToString(b)
 }
 

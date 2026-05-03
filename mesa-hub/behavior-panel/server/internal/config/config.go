@@ -77,7 +77,8 @@ type DockerConfig struct {
 // ServerConfig HTTP 服务配置，含监听地址、鉴权令牌、CORS 白名单
 type ServerConfig struct {
 	configutil.ServerConfig `yaml:",inline"`
-	AllowPrivateNetworks    bool `yaml:"allow_private_networks"`
+	AllowPrivateNetworks    bool   `yaml:"allow_private_networks"`
+	GRPCListenAddr          string `yaml:"grpc_listen_addr"`
 }
 
 // AllowedOrigins 返回配置中的允许来源列表

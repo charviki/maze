@@ -49,6 +49,7 @@ type CleanupResources struct {
 	HostSvc    *service.HostService
 	NodeSvc    *service.NodeService
 	AuditSvc   *service.AuditService
+	ConnMgr    *service.ConnectionManager
 }
 
 // newHTTPServer 负责装配 HTTP Server、顶层路由和后台依赖。
@@ -63,7 +64,11 @@ func newHTTPServer(cfg *config.Config, logger logutil.Logger, gwmux *gwruntime.S
 
 	var hostRuntime runtime.HostRuntime
 	if cfg.Runtime.Type == "kubernetes" {
-		hostRuntime = runtime.NewKubernetesRuntime(cfg.Kubernetes, cfg.Workspace, logger)
+		k8sRT, err := runtime.NewKubernetesRuntime(cfg.Kubernetes, cfg.Workspace, logger)
+		if err != nil {
+			logger.Fatalf("kubernetes runtime init failed: %v", err)
+		}
+		hostRuntime = k8sRT
 	} else {
 		hostRuntime = runtime.NewDockerRuntime(cfg.Docker, cfg.Workspace, logger)
 	}
@@ -113,6 +118,8 @@ func newHTTPServer(cfg *config.Config, logger logutil.Logger, gwmux *gwruntime.S
 	mux.Handle("GET /api/v1/nodes/{name}/sessions/{id}/ws", wsHandler)
 	mux.Handle("/", apiHandler)
 
+	connMgr := service.NewConnectionManager(logger, cfg.Server.AuthToken, 5*time.Minute)
+
 	resources := &CleanupResources{
 		Registry:   registry,
 		SpecMgr:    specMgr,
@@ -121,6 +128,7 @@ func newHTTPServer(cfg *config.Config, logger logutil.Logger, gwmux *gwruntime.S
 		HostSvc:    hostSvc,
 		NodeSvc:    nodeSvc,
 		AuditSvc:   auditSvc,
+		ConnMgr:    connMgr,
 	}
 
 	return &http.Server{

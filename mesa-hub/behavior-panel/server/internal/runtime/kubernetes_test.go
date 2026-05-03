@@ -15,14 +15,16 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-// newNilClientRuntime 创建 clientset 为 nil 的 KubernetesRuntime
-// 在非 K8s 集群环境中，NewKubernetesRuntime 无法初始化 in-cluster 配置，clientset 为 nil
-func newNilClientRuntime() *KubernetesRuntime {
+// TestNewKubernetesRuntime_InitError 验证非 K8s 环境下构造函数返回错误而非静默创建 nil-clientset 实例
+func TestNewKubernetesRuntime_InitError(t *testing.T) {
 	kube := config.KubernetesConfig{
 		Namespace:   "maze",
 		ManagerAddr: "agent-manager.maze.svc.cluster.local:8080",
 	}
-	return NewKubernetesRuntime(kube, config.WorkspaceConfig{}, logutil.NewNop())
+	_, err := NewKubernetesRuntime(kube, config.WorkspaceConfig{}, logutil.NewNop())
+	if err == nil {
+		t.Fatal("期望非 K8s 环境下返回错误，实际返回 nil")
+	}
 }
 
 // newFakeClientRuntime 使用 fake K8s client 创建 KubernetesRuntime
@@ -41,53 +43,6 @@ func newFakeClientRuntime() *KubernetesRuntime {
 		logger:    logutil.NewNop(),
 		clientset: fake.NewClientset(),
 	}
-}
-
-// --- nil clientset 错误路径 ---
-
-func TestKubernetesRuntime_NilClient(t *testing.T) {
-	rt := newNilClientRuntime()
-
-	t.Run("DeployHost returns error", func(t *testing.T) {
-		spec := &protocol.HostDeploySpec{
-			Name:  "test-agent",
-			Tools: []string{"claude"},
-		}
-		_, err := rt.DeployHost(context.Background(), spec, "")
-		if err == nil {
-			t.Fatal("期望 clientset 为 nil 时返回错误，实际返回 nil")
-		}
-		if err.Error() != "kubernetes client not initialized" {
-			t.Fatalf("错误信息不匹配: got %q, want %q", err.Error(), "kubernetes client not initialized")
-		}
-	})
-
-	t.Run("RemoveHost returns error", func(t *testing.T) {
-		err := rt.RemoveHost(context.Background(), "test-agent")
-		if err == nil {
-			t.Fatal("期望 clientset 为 nil 时返回错误，实际返回 nil")
-		}
-		if err.Error() != "kubernetes client not initialized" {
-			t.Fatalf("错误信息不匹配: got %q, want %q", err.Error(), "kubernetes client not initialized")
-		}
-	})
-
-	t.Run("StopHost returns error", func(t *testing.T) {
-		err := rt.StopHost(context.Background(), "test-agent")
-		if err == nil {
-			t.Fatal("期望 clientset 为 nil 时返回错误，实际返回 nil")
-		}
-	})
-
-	t.Run("InspectHost returns error", func(t *testing.T) {
-		_, err := rt.InspectHost(context.Background(), "test-agent")
-		if err == nil {
-			t.Fatal("期望 clientset 为 nil 时返回错误，实际返回 nil")
-		}
-		if err.Error() != "kubernetes client not initialized" {
-			t.Fatalf("错误信息不匹配: got %q, want %q", err.Error(), "kubernetes client not initialized")
-		}
-	})
 }
 
 // --- fake client 正常路径 ---

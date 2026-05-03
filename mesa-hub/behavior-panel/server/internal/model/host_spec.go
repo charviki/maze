@@ -7,20 +7,20 @@ import (
 	"sync"
 	"time"
 
+	"github.com/charviki/maze-cradle/configutil"
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/maze-cradle/protocol"
+	"github.com/charviki/maze-cradle/storeutil"
 )
 
-// HostSpecManager 管理所有 Host 的创建规格，复用 dirty flush 模式持久化到 host_specs.json。
+// HostSpecManager 管理所有 Host 的创建规格，通过 DirtyFlusher 持久化到 host_specs.json。
 // 作为 Manager 恢复和巡检的 source of truth。
 type HostSpecManager struct {
-	mu     sync.RWMutex
-	specs  map[string]*protocol.HostSpec
-	path   string
-	logger logutil.Logger
-	dirty  bool
-	stopCh chan struct{}
-	doneCh chan struct{}
+	mu      sync.RWMutex
+	specs   map[string]*protocol.HostSpec
+	path    string
+	logger  logutil.Logger
+	flusher *storeutil.DirtyFlusher
 }
 
 // NewHostSpecManager 创建 HostSpecManager 并从 JSON 文件加载已有数据。
@@ -29,11 +29,10 @@ func NewHostSpecManager(filePath string, logger logutil.Logger) *HostSpecManager
 		specs:  make(map[string]*protocol.HostSpec),
 		path:   filePath,
 		logger: logger,
-		stopCh: make(chan struct{}),
-		doneCh: make(chan struct{}),
 	}
+	m.flusher = storeutil.NewDirtyFlusher(m.save, flushInterval, logger)
 	m.load()
-	go m.flushLoop()
+	m.flusher.Start()
 	return m
 }
 
@@ -53,7 +52,7 @@ func (m *HostSpecManager) load() {
 	m.mu.Unlock()
 }
 
-func (m *HostSpecManager) save() {
+func (m *HostSpecManager) save() error {
 	m.mu.RLock()
 	//nolint:gosec // AuthToken is intentionally persisted
 	data, err := json.MarshalIndent(m.specs, "", "  ")
@@ -61,11 +60,12 @@ func (m *HostSpecManager) save() {
 
 	if err != nil {
 		m.logger.Errorf("[host-spec] marshal specs failed: %v", err)
-		return
+		return nil
 	}
-	if writeErr := atomicWriteFile(m.path, data, 0644); writeErr != nil {
+	if writeErr := configutil.AtomicWriteFile(m.path, data, 0644); writeErr != nil {
 		m.logger.Errorf("[host-spec] write file %s failed: %v", m.path, writeErr)
 	}
+	return nil
 }
 
 // Create 创建新的 HostSpec 并持久化。同名已存在时返回 false。
@@ -76,7 +76,7 @@ func (m *HostSpecManager) Create(spec *protocol.HostSpec) bool {
 		return false
 	}
 	m.specs[spec.Name] = spec
-	m.dirty = true
+	m.flusher.MarkDirty()
 	return true
 }
 
@@ -112,7 +112,7 @@ func (m *HostSpecManager) UpdateStatus(name, status, errMsg string) bool {
 	spec.Status = status
 	spec.ErrorMsg = errMsg
 	spec.UpdatedAt = time.Now()
-	m.dirty = true
+	m.flusher.MarkDirty()
 	return true
 }
 
@@ -124,7 +124,7 @@ func (m *HostSpecManager) Delete(name string) bool {
 		return false
 	}
 	delete(m.specs, name)
-	m.dirty = true
+	m.flusher.MarkDirty()
 	return true
 }
 
@@ -138,7 +138,7 @@ func (m *HostSpecManager) IncrementRetry(name string) bool {
 	}
 	spec.RetryCount++
 	spec.UpdatedAt = time.Now()
-	m.dirty = true
+	m.flusher.MarkDirty()
 	return true
 }
 
@@ -201,37 +201,7 @@ func (m *HostSpecManager) GetMerged(name string, registry *NodeRegistry) *protoc
 	return info
 }
 
-// WaitSave 停止后台 flush loop 并执行最终刷盘。
+// WaitSave 停止后台 DirtyFlusher 并执行最终刷盘。
 func (m *HostSpecManager) WaitSave() {
-	close(m.stopCh)
-	<-m.doneCh
-}
-
-func (m *HostSpecManager) flushLoop() {
-	defer close(m.doneCh)
-	ticker := time.NewTicker(flushInterval)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			m.mu.Lock()
-			if m.dirty {
-				m.dirty = false
-				m.mu.Unlock()
-				m.save()
-			} else {
-				m.mu.Unlock()
-			}
-		case <-m.stopCh:
-			m.mu.Lock()
-			if m.dirty {
-				m.dirty = false
-				m.mu.Unlock()
-				m.save()
-			} else {
-				m.mu.Unlock()
-			}
-			return
-		}
-	}
+	m.flusher.WaitSave()
 }
