@@ -10,36 +10,34 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-func TestProtojsonMarshaler_ContentType(t *testing.T) {
-	m := protojsonMarshaler{}
+func TestJSONPb_ContentType(t *testing.T) {
+	m := &runtime.JSONPb{}
 	if got := m.ContentType(nil); got != "application/json" {
 		t.Errorf("ContentType() = %q, 期望 %q", got, "application/json")
 	}
 }
 
-func TestProtojsonMarshaler_Marshal_ProtoMessage(t *testing.T) {
-	m := protojsonMarshaler{}
+func TestJSONPb_Marshal_ProtoMessage(t *testing.T) {
+	m := &runtime.JSONPb{MarshalOptions: protojson.MarshalOptions{EmitUnpopulated: true}}
 	data, err := m.Marshal(&emptypb.Empty{})
 	if err != nil {
 		t.Fatalf("Marshal() 返回错误: %v", err)
 	}
-
-	// 标准 proto JSON：emptypb.Empty{} 序列化为 {}
 	if string(data) != "{}" {
 		t.Errorf("Marshal() = %q, 期望 %q", string(data), "{}")
 	}
 }
 
-func TestProtojsonMarshaler_Marshal_NonProtoMessage(t *testing.T) {
-	m := protojsonMarshaler{}
+func TestJSONPb_Marshal_NonProtoMessage(t *testing.T) {
+	m := &runtime.JSONPb{MarshalOptions: protojson.MarshalOptions{EmitUnpopulated: true}}
 	data, err := m.Marshal(map[string]string{"hello": "world"})
 	if err != nil {
 		t.Fatalf("Marshal() 返回错误: %v", err)
 	}
-
 	var result map[string]string
 	if err := json.Unmarshal(data, &result); err != nil {
 		t.Fatalf("解析结果失败: %v", err)
@@ -109,7 +107,7 @@ func TestHTTPErrorHandler(t *testing.T) {
 			HTTPErrorHandler(
 				context.TODO(), //nolint:staticcheck
 				mux,
-				protojsonMarshaler{},
+				&runtime.JSONPb{},
 				rec,
 				httptest.NewRequest("GET", "/test", nil),
 				tt.err,

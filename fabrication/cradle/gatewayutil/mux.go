@@ -6,15 +6,22 @@ import (
 	"strconv"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
 // NewServeMux 创建预配置的 grpc-gateway ServeMux。
-// 统一配置：标准 proto JSON Marshaler、rpcStatus 错误处理器、ForwardResponseOption。
+// 统一配置：proto JSON Marshaler（EmitUnpopulated）、rpcStatus 错误处理器、ForwardResponseOption。
 func NewServeMux() *runtime.ServeMux {
 	return runtime.NewServeMux(
-		// 标准 proto JSON Marshaler，输出 EmitUnpopulated proto JSON，与 OpenAPI spec 一致
-		runtime.WithMarshalerOption(runtime.MIMEWildcard, protojsonMarshaler{}),
+		// 使用 runtime.JSONPb 而非默认的 runtime.JSONBuiltin。
+		// 原因：默认 JSONBuiltin 内部用 json.Marshal，proto 生成的 Go struct 的 json tag
+		// 带有 omitempty，会省略零值字段（空数组、空字符串、数字 0），导致前端收到
+		// undefined 引发运行时错误。runtime.JSONPb 使用 protojson.Marshal，配合
+		// EmitUnpopulated: true 输出所有字段（包括零值），确保前端始终收到完整结构。
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
+			MarshalOptions: protojson.MarshalOptions{EmitUnpopulated: true},
+		}),
 
 		// CreateHost 等异步操作应返回 202 Accepted 而非默认的 200 OK。
 		// 通过 ForwardResponseOption 在响应写出前检查 gRPC metadata 中携带的
@@ -38,7 +45,6 @@ func setStatusCodeFromMetadata(ctx context.Context, w http.ResponseWriter, _ pro
 		return nil
 	}
 
-	// 从 gRPC header metadata 中读取 x-http-status，由 gRPC handler 写入
 	values := md.HeaderMD.Get("x-http-status")
 	if len(values) == 0 {
 		return nil
@@ -46,7 +52,6 @@ func setStatusCodeFromMetadata(ctx context.Context, w http.ResponseWriter, _ pro
 
 	code, err := strconv.Atoi(values[0])
 	if err != nil {
-		// 值不是合法数字，忽略此 header 不中断请求
 		return nil //nolint:nilerr
 	}
 
