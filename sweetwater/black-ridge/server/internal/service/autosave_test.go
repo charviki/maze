@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charviki/sweetwater-black-ridge/biz/model"
+	"github.com/charviki/sweetwater-black-ridge/internal/model"
 	"github.com/charviki/maze-cradle/logutil"
 )
 

@@ -1,11 +1,8 @@
-package grpc
+package transport
 
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"net"
-	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -13,8 +10,8 @@ import (
 
 	pb "github.com/charviki/maze-cradle/api/gen/maze/v1"
 	"github.com/charviki/maze-cradle/logutil"
-	"github.com/charviki/sweetwater-black-ridge/biz/model"
-	"github.com/charviki/sweetwater-black-ridge/biz/service"
+	"github.com/charviki/sweetwater-black-ridge/internal/model"
+	"github.com/charviki/sweetwater-black-ridge/internal/service"
 )
 
 // Server Agent 端 gRPC 服务器
@@ -49,41 +46,12 @@ func NewServer(
 	}
 }
 
-// Start 启动 gRPC server（非阻塞）
-func (s *Server) Start(addr string, opts ...grpc.ServerOption) error {
-	lis, err := net.Listen("tcp", addr)
-	if err != nil {
-		return fmt.Errorf("grpc listen %s: %w", addr, err)
-	}
-
-	s.grpcServer = grpc.NewServer(opts...)
-	pb.RegisterSessionServiceServer(s.grpcServer, s)
-	pb.RegisterTemplateServiceServer(s.grpcServer, s)
-	pb.RegisterConfigServiceServer(s.grpcServer, s)
-
-	go func() {
-		s.logger.Infof("[grpc] server started on %s", addr)
-		if err := s.grpcServer.Serve(lis); err != nil {
-			s.logger.Errorf("[grpc] server error: %v", err)
-		}
-	}()
-	return nil
-}
-
-// Stop 优雅关闭 gRPC server
-func (s *Server) Stop() {
-	if s.grpcServer != nil {
-		stopped := make(chan struct{})
-		go func() {
-			s.grpcServer.GracefulStop()
-			close(stopped)
-		}()
-		select {
-		case <-stopped:
-		case <-time.After(5 * time.Second):
-			s.grpcServer.Stop()
-		}
-	}
+// RegisterGRPC 将服务实现注册到统一管理的 gRPC server。
+func (s *Server) RegisterGRPC(grpcServer *grpc.Server) {
+	s.grpcServer = grpcServer
+	pb.RegisterSessionServiceServer(grpcServer, s)
+	pb.RegisterTemplateServiceServer(grpcServer, s)
+	pb.RegisterConfigServiceServer(grpcServer, s)
 }
 
 // errToStatus 将业务错误映射为 gRPC status code

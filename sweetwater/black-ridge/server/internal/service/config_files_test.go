@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/charviki/sweetwater-black-ridge/biz/model"
+	"github.com/charviki/sweetwater-black-ridge/internal/model"
 )
 
 func TestConfigFileService_ReadGlobalFiles_MissingFileReturnsEmptySnapshot(t *testing.T) {

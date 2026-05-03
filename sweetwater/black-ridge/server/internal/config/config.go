@@ -1,10 +1,7 @@
 package config
 
 import (
-	"os"
 	"path/filepath"
-	"strconv"
-	"strings"
 
 	"github.com/charviki/maze-cradle/configutil"
 )
@@ -21,13 +18,21 @@ type Config struct {
 
 // ServerConfig HTTP 服务配置
 type ServerConfig struct {
-	ListenAddr     string   `yaml:"listen_addr"`
-	GRPCAddr       string   `yaml:"grpc_addr"`
-	AuthToken      string   `yaml:"auth_token"`
-	Name           string   `yaml:"name"`
-	ExternalAddr   string   `yaml:"external_addr"`
-	AdvertisedAddr string   `yaml:"advertised_addr"`
-	AllowedOrigins []string `yaml:"allowed_origins"`
+	configutil.ServerConfig `yaml:",inline"`
+	GRPCAddr                string `yaml:"grpc_addr"`
+	Name                    string `yaml:"name"`
+	ExternalAddr            string `yaml:"external_addr"`
+	AdvertisedAddr          string `yaml:"advertised_addr"`
+}
+
+// AllowedOrigins 返回经过去空白处理的来源白名单。
+func (c *Config) AllowedOrigins() []string {
+	return c.Server.Origins()
+}
+
+// IsDevMode 当鉴权令牌为空时视为开发模式。
+func (c *Config) IsDevMode() bool {
+	return c.Server.IsDevMode()
 }
 
 // TmuxConfig tmux 会话管理配置
@@ -83,62 +88,17 @@ func Load(path string) (*Config, error) {
 }
 
 func applyEnvOverrides(cfg *Config) {
-	if v := os.Getenv("AGENT_SERVER_LISTEN_ADDR"); v != "" {
-		cfg.Server.ListenAddr = v
+	if err := configutil.ApplyEnvOverrides("AGENT", cfg); err != nil {
+		panic(err)
 	}
-	if v := os.Getenv("AGENT_GRPC_ADDR"); v != "" {
-		cfg.Server.GRPCAddr = v
-	}
-	if v := os.Getenv("AGENT_SERVER_AUTH_TOKEN"); v != "" {
-		cfg.Server.AuthToken = v
-	}
-	if v := os.Getenv("AGENT_NAME"); v != "" {
-		cfg.Server.Name = v
-	}
-	if v := os.Getenv("AGENT_EXTERNAL_ADDR"); v != "" {
-		cfg.Server.ExternalAddr = v
-	}
-	if v := os.Getenv("AGENT_ADVERTISED_ADDR"); v != "" {
-		cfg.Server.AdvertisedAddr = v
-	}
-	if v := os.Getenv("AGENT_TMUX_SOCKET_PATH"); v != "" {
-		cfg.Tmux.SocketPath = v
-	}
-	if v := os.Getenv("AGENT_TMUX_DEFAULT_SHELL"); v != "" {
-		cfg.Tmux.DefaultShell = v
-	}
-	if v := os.Getenv("AGENT_TERMINAL_DEFAULT_LINES"); v != "" {
-		if n, err := strconv.Atoi(v); err == nil {
-			cfg.Terminal.DefaultLines = n
-		}
-	}
-	if v := os.Getenv("AGENT_CONTROLLER_ADDR"); v != "" {
-		cfg.Controller.Addr = v
+	// 以下环境变量是历史兼容别名，不遵循结构路径命名，需显式保留。
+	configutil.ApplyStringOverride(&cfg.Server.GRPCAddr, "AGENT_GRPC_ADDR")
+	configutil.ApplyStringOverride(&cfg.Server.Name, "AGENT_NAME")
+	configutil.ApplyStringOverride(&cfg.Server.ExternalAddr, "AGENT_EXTERNAL_ADDR")
+	configutil.ApplyStringOverride(&cfg.Server.AdvertisedAddr, "AGENT_ADVERTISED_ADDR")
+	if cfg.Controller.Addr != "" {
+		// 只要指定 controller 地址，就默认开启注册/心跳，减少部署时的重复开关配置。
 		cfg.Controller.Enabled = true
-	}
-	if v := os.Getenv("AGENT_CONTROLLER_ENABLED"); v != "" {
-		if b, err := strconv.ParseBool(v); err == nil {
-			cfg.Controller.Enabled = b
-		}
-	}
-	if v := os.Getenv("AGENT_CONTROLLER_HEARTBEAT_INTERVAL"); v != "" {
-		if n, err := strconv.Atoi(v); err == nil && n > 0 {
-			cfg.Controller.HeartbeatInterval = n
-		}
-	}
-	if v := os.Getenv("AGENT_CONTROLLER_AUTH_TOKEN"); v != "" {
-		cfg.Controller.AuthToken = v
-	}
-	if v := os.Getenv("AGENT_WORKSPACE_ROOT_DIR"); v != "" {
-		cfg.Workspace.RootDir = v
-	}
-	if v := os.Getenv("AGENT_AUTOSAVE_INTERVAL"); v != "" {
-		if n, err := strconv.Atoi(v); err == nil && n > 0 {
-			cfg.AutoSave.Interval = n
-		}
-	}
-	if v := os.Getenv("AGENT_SERVER_ALLOWED_ORIGINS"); v != "" {
-		cfg.Server.AllowedOrigins = strings.Split(v, ",")
 	}
 }
 
@@ -157,13 +117,13 @@ func validate(cfg *Config) {
 		cfg.Controller.HeartbeatInterval = 10
 	}
 	if cfg.Workspace.RootDir == "" {
-		defaultRootDir := "/home/agent"
-		cfg.Workspace.RootDir = defaultRootDir
+		cfg.Workspace.RootDir = "/home/agent"
 	}
+	cfg.Workspace.RootDir = configutil.ExpandHomePath(cfg.Workspace.RootDir)
 	if cfg.Workspace.StateDir == "" {
 		cfg.Workspace.StateDir = filepath.Join(cfg.Workspace.RootDir, ".session-state")
 	}
 	if cfg.AutoSave.Interval <= 0 {
 		cfg.AutoSave.Interval = 60
 	}
-	}
+}

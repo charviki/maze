@@ -1,4 +1,4 @@
-package grpc
+package transport
 
 import (
 	"context"
@@ -14,8 +14,8 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	pb "github.com/charviki/maze-cradle/api/gen/maze/v1"
-	"github.com/charviki/sweetwater-black-ridge/biz/model"
-	"github.com/charviki/sweetwater-black-ridge/biz/service"
+	"github.com/charviki/sweetwater-black-ridge/internal/model"
+	"github.com/charviki/sweetwater-black-ridge/internal/service"
 )
 
 // --- SessionService ---

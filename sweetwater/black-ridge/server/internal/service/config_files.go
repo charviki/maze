@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/charviki/sweetwater-black-ridge/biz/model"
+	"github.com/charviki/sweetwater-black-ridge/internal/model"
 )
 
 const configConflictMessage = "配置已变更，请重新加载后再修改"

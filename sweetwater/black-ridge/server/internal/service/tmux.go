@@ -15,8 +15,8 @@ import (
 
 	"github.com/charviki/maze-cradle/configutil"
 	"github.com/charviki/maze-cradle/logutil"
-	"github.com/charviki/sweetwater-black-ridge/biz/config"
-	"github.com/charviki/sweetwater-black-ridge/biz/model"
+	"github.com/charviki/sweetwater-black-ridge/internal/config"
+	"github.com/charviki/sweetwater-black-ridge/internal/model"
 	"github.com/creack/pty/v2"
 )
 

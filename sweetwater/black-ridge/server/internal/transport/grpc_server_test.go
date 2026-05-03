@@ -1,4 +1,4 @@
-package grpc
+package transport
 
 import (
 	"errors"
@@ -7,8 +7,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/charviki/sweetwater-black-ridge/biz/model"
-	"github.com/charviki/sweetwater-black-ridge/biz/service"
+	"github.com/charviki/sweetwater-black-ridge/internal/model"
+	"github.com/charviki/sweetwater-black-ridge/internal/service"
 )
 
 func TestErrToStatus_Nil(t *testing.T) {
