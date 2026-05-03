@@ -1578,23 +1578,23 @@ const file_maze_v1_session_proto_rawDesc = "" +
 	"\x03env\x18\x01 \x03(\v2 .maze.v1.GetEnvResponse.EnvEntryR\x03env\x1a6\n" +
 	"\bEnvEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x012\xf0\f\n" +
-	"\x0eSessionService\x12w\n" +
-	"\fListSessions\x12\x1c.maze.v1.ListSessionsRequest\x1a\x1d.maze.v1.ListSessionsResponse\"*\x82\xd3\xe4\x93\x02$\x12\"/api/v1/nodes/{node_name}/sessions\x12o\n" +
-	"\rCreateSession\x12\x1d.maze.v1.CreateSessionRequest\x1a\x10.maze.v1.Session\"-\x82\xd3\xe4\x93\x02':\x01*\"\"/api/v1/nodes/{node_name}/sessions\x12k\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x012\xf2\x0f\n" +
+	"\x0eSessionService\x12\x8b\x01\n" +
+	"\fListSessions\x12\x1c.maze.v1.ListSessionsRequest\x1a\x1d.maze.v1.ListSessionsResponse\">\x82\xd3\xe4\x93\x028Z\x12\x12\x10/api/v1/sessions\x12\"/api/v1/nodes/{node_name}/sessions\x12\x86\x01\n" +
+	"\rCreateSession\x12\x1d.maze.v1.CreateSessionRequest\x1a\x10.maze.v1.Session\"D\x82\xd3\xe4\x93\x02>:\x01*Z\x15:\x01*\"\x10/api/v1/sessions\"\"/api/v1/nodes/{node_name}/sessions\x12\x84\x01\n" +
 	"\n" +
-	"GetSession\x12\x1a.maze.v1.GetSessionRequest\x1a\x10.maze.v1.Session\"/\x82\xd3\xe4\x93\x02)\x12'/api/v1/nodes/{node_name}/sessions/{id}\x12w\n" +
-	"\rDeleteSession\x12\x1d.maze.v1.DeleteSessionRequest\x1a\x16.google.protobuf.Empty\"/\x82\xd3\xe4\x93\x02)*'/api/v1/nodes/{node_name}/sessions/{id}\x12\x88\x01\n" +
-	"\x10GetSessionConfig\x12 .maze.v1.GetSessionConfigRequest\x1a\x1a.maze.v1.SessionConfigView\"6\x82\xd3\xe4\x93\x020\x12./api/v1/nodes/{node_name}/sessions/{id}/config\x12\x91\x01\n" +
-	"\x13UpdateSessionConfig\x12#.maze.v1.UpdateSessionConfigRequest\x1a\x1a.maze.v1.SessionConfigView\"9\x82\xd3\xe4\x93\x023:\x01*\x1a./api/v1/nodes/{node_name}/sessions/{id}/config\x12\x84\x01\n" +
-	"\x0eRestoreSession\x12\x1e.maze.v1.RestoreSessionRequest\x1a\x16.google.protobuf.Empty\":\x82\xd3\xe4\x93\x024:\x01*\"//api/v1/nodes/{node_name}/sessions/{id}/restore\x12|\n" +
-	"\fSaveSessions\x12\x1c.maze.v1.SaveSessionsRequest\x1a\x1d.maze.v1.SaveSessionsResponse\"/\x82\xd3\xe4\x93\x02)\"'/api/v1/nodes/{node_name}/sessions/save\x12\x89\x01\n" +
-	"\x10GetSavedSessions\x12 .maze.v1.GetSavedSessionsRequest\x1a!.maze.v1.GetSavedSessionsResponse\"0\x82\xd3\xe4\x93\x02*\x12(/api/v1/nodes/{node_name}/sessions/saved\x12w\n" +
-	"\tGetOutput\x12\x19.maze.v1.GetOutputRequest\x1a\x17.maze.v1.TerminalOutput\"6\x82\xd3\xe4\x93\x020\x12./api/v1/nodes/{node_name}/sessions/{id}/output\x12x\n" +
-	"\tSendInput\x12\x19.maze.v1.SendInputRequest\x1a\x16.google.protobuf.Empty\"8\x82\xd3\xe4\x93\x022:\x01*\"-/api/v1/nodes/{node_name}/sessions/{id}/input\x12{\n" +
+	"GetSession\x12\x1a.maze.v1.GetSessionRequest\x1a\x10.maze.v1.Session\"H\x82\xd3\xe4\x93\x02BZ\x17\x12\x15/api/v1/sessions/{id}\x12'/api/v1/nodes/{node_name}/sessions/{id}\x12\x90\x01\n" +
+	"\rDeleteSession\x12\x1d.maze.v1.DeleteSessionRequest\x1a\x16.google.protobuf.Empty\"H\x82\xd3\xe4\x93\x02BZ\x17*\x15/api/v1/sessions/{id}*'/api/v1/nodes/{node_name}/sessions/{id}\x12\xa8\x01\n" +
+	"\x10GetSessionConfig\x12 .maze.v1.GetSessionConfigRequest\x1a\x1a.maze.v1.SessionConfigView\"V\x82\xd3\xe4\x93\x02PZ\x1e\x12\x1c/api/v1/sessions/{id}/config\x12./api/v1/nodes/{node_name}/sessions/{id}/config\x12\xb4\x01\n" +
+	"\x13UpdateSessionConfig\x12#.maze.v1.UpdateSessionConfigRequest\x1a\x1a.maze.v1.SessionConfigView\"\\\x82\xd3\xe4\x93\x02V:\x01*Z!:\x01*\x1a\x1c/api/v1/sessions/{id}/config\x1a./api/v1/nodes/{node_name}/sessions/{id}/config\x12\xa8\x01\n" +
+	"\x0eRestoreSession\x12\x1e.maze.v1.RestoreSessionRequest\x1a\x16.google.protobuf.Empty\"^\x82\xd3\xe4\x93\x02X:\x01*Z\":\x01*\"\x1d/api/v1/sessions/{id}/restore\"//api/v1/nodes/{node_name}/sessions/{id}/restore\x12\x95\x01\n" +
+	"\fSaveSessions\x12\x1c.maze.v1.SaveSessionsRequest\x1a\x1d.maze.v1.SaveSessionsResponse\"H\x82\xd3\xe4\x93\x02BZ\x17\"\x15/api/v1/sessions/save\"'/api/v1/nodes/{node_name}/sessions/save\x12\xa3\x01\n" +
+	"\x10GetSavedSessions\x12 .maze.v1.GetSavedSessionsRequest\x1a!.maze.v1.GetSavedSessionsResponse\"J\x82\xd3\xe4\x93\x02DZ\x18\x12\x16/api/v1/sessions/saved\x12(/api/v1/nodes/{node_name}/sessions/saved\x12\x97\x01\n" +
+	"\tGetOutput\x12\x19.maze.v1.GetOutputRequest\x1a\x17.maze.v1.TerminalOutput\"V\x82\xd3\xe4\x93\x02PZ\x1e\x12\x1c/api/v1/sessions/{id}/output\x12./api/v1/nodes/{node_name}/sessions/{id}/output\x12\x9a\x01\n" +
+	"\tSendInput\x12\x19.maze.v1.SendInputRequest\x1a\x16.google.protobuf.Empty\"Z\x82\xd3\xe4\x93\x02T:\x01*Z :\x01*\"\x1b/api/v1/sessions/{id}/input\"-/api/v1/nodes/{node_name}/sessions/{id}/input\x12\x9e\x01\n" +
 	"\n" +
-	"SendSignal\x12\x1a.maze.v1.SendSignalRequest\x1a\x16.google.protobuf.Empty\"9\x82\xd3\xe4\x93\x023:\x01*\"./api/v1/nodes/{node_name}/sessions/{id}/signal\x12n\n" +
-	"\x06GetEnv\x12\x16.maze.v1.GetEnvRequest\x1a\x17.maze.v1.GetEnvResponse\"3\x82\xd3\xe4\x93\x02-\x12+/api/v1/nodes/{node_name}/sessions/{id}/envB\x90\x01\n" +
+	"SendSignal\x12\x1a.maze.v1.SendSignalRequest\x1a\x16.google.protobuf.Empty\"\\\x82\xd3\xe4\x93\x02V:\x01*Z!:\x01*\"\x1c/api/v1/sessions/{id}/signal\"./api/v1/nodes/{node_name}/sessions/{id}/signal\x12\x8b\x01\n" +
+	"\x06GetEnv\x12\x16.maze.v1.GetEnvRequest\x1a\x17.maze.v1.GetEnvResponse\"P\x82\xd3\xe4\x93\x02JZ\x1b\x12\x19/api/v1/sessions/{id}/env\x12+/api/v1/nodes/{node_name}/sessions/{id}/envB\x90\x01\n" +
 	"\vcom.maze.v1B\fSessionProtoP\x01Z6github.com/charviki/maze-cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
 
 var (

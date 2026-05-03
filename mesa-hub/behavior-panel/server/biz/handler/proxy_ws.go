@@ -2,8 +2,11 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 
@@ -108,4 +111,63 @@ func (h *SessionProxyHandler) ProxyWebSocket(_ context.Context, c *app.RequestCo
 	if err != nil {
 		h.logger.Errorf("[ws-proxy] upgrade failed: %v", err)
 	}
+}
+
+// validateAgentURL 校验代理目标 URL 安全性，防止 SSRF 攻击：
+// - 必须是 http/https/ws/wss 协议
+// - 主机名不能解析为内网 IP（127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16）
+// - allowPrivate 为 true 时跳过内网 IP 检查（适用于 Docker/Kubernetes 等容器网络环境）
+func validateAgentURL(rawURL string, allowPrivate bool) error {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return fmt.Errorf("invalid url: %w", err)
+	}
+	if u.Scheme != "http" && u.Scheme != "https" && u.Scheme != "ws" && u.Scheme != "wss" {
+		return fmt.Errorf("unsupported scheme: %s", u.Scheme)
+	}
+	host := u.Hostname()
+	if host == "" {
+		return errors.New("empty host")
+	}
+	ips, err := net.LookupIP(host)
+	if err != nil {
+		return fmt.Errorf("resolve host %s: %w", host, err)
+	}
+	if !allowPrivate {
+		for _, ip := range ips {
+			if isPrivateIP(ip) {
+				return fmt.Errorf("host %s resolves to private IP %s", host, ip)
+			}
+		}
+	}
+	return nil
+}
+
+// isPrivateIP 判断 IP 是否为内网地址
+func isPrivateIP(ip net.IP) bool {
+	privateRanges := []struct {
+		network *net.IPNet
+	}{
+		{mustParseCIDR("127.0.0.0/8")},
+		{mustParseCIDR("10.0.0.0/8")},
+		{mustParseCIDR("172.16.0.0/12")},
+		{mustParseCIDR("192.168.0.0/16")},
+		{mustParseCIDR("169.254.0.0/16")},
+		{mustParseCIDR("::1/128")},
+		{mustParseCIDR("fc00::/7")},
+	}
+	for _, r := range privateRanges {
+		if r.network.Contains(ip) {
+			return true
+		}
+	}
+	return false
+}
+
+func mustParseCIDR(s string) *net.IPNet {
+	_, network, err := net.ParseCIDR(s)
+	if err != nil {
+		panic(err)
+	}
+	return network
 }

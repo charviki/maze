@@ -63,7 +63,7 @@ func New(component string) *SlogLogger {
 // NewNop 创建一个丢弃所有输出的 Logger，用于测试。
 // Fatalf 仍会调用 os.Exit(1)。
 func NewNop() *SlogLogger {
-	w := ioDiscard{}
+	w := io.Discard
 	level := slog.LevelInfo
 	l := &SlogLogger{
 		w:     w,
@@ -228,7 +228,3 @@ func (l *SlogLogger) SetOutput(w io.Writer) {
 }
 
 // --- 辅助类型 ---
-
-type ioDiscard struct{}
-
-func (ioDiscard) Write(p []byte) (int, error) { return len(p), nil }

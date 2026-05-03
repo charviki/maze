@@ -8,6 +8,15 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 )
 
+// buildOriginSet 将 origin 列表转为小写 map，用于 CORS 和 WebSocket origin 校验。
+func buildOriginSet(origins []string) map[string]struct{} {
+	set := make(map[string]struct{}, len(origins))
+	for _, o := range origins {
+		set[strings.ToLower(o)] = struct{}{}
+	}
+	return set
+}
+
 // CORS 返回一个允许所有来源跨域访问的中间件。
 // 生产环境应使用 CORSWithOrigins 限制 Access-Control-Allow-Origin 为指定域名。
 func CORS() app.HandlerFunc {
@@ -19,10 +28,7 @@ func CORS() app.HandlerFunc {
 // 非空时仅允许列表中的 Origin 通过，其余返回 403。
 func CORSWithOrigins(allowedOrigins []string) app.HandlerFunc {
 	allowAll := len(allowedOrigins) == 0
-	originSet := make(map[string]struct{}, len(allowedOrigins))
-	for _, o := range allowedOrigins {
-		originSet[strings.ToLower(o)] = struct{}{}
-	}
+	originSet := buildOriginSet(allowedOrigins)
 
 	return func(ctx context.Context, c *app.RequestContext) {
 		origin := string(c.GetHeader("Origin"))
@@ -55,10 +61,7 @@ func CheckOrigin(allowedOrigins []string) func(c *app.RequestContext) bool {
 	if len(allowedOrigins) == 0 {
 		return func(_ *app.RequestContext) bool { return true }
 	}
-	originSet := make(map[string]struct{}, len(allowedOrigins))
-	for _, o := range allowedOrigins {
-		originSet[strings.ToLower(o)] = struct{}{}
-	}
+	originSet := buildOriginSet(allowedOrigins)
 	return func(c *app.RequestContext) bool {
 		origin := string(c.GetHeader("Origin"))
 		if origin == "" {

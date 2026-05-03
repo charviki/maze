@@ -16,7 +16,6 @@ import (
 )
 
 const (
-	truncateLength       = 200
 	defaultAuditPageSize = 50
 	defaultAuditPage     = 1
 	maxAuditEntries      = 10000
@@ -181,14 +180,6 @@ func (a *AuditLogger) Query(node, action string) []protocol.AuditLogEntry {
 		result = append(result, entry)
 	}
 	return result
-}
-
-// truncateString 截断字符串到指定长度，避免审计日志膨胀
-func truncateString(s string, maxLen int) string {
-	if len(s) <= maxLen {
-		return s
-	}
-	return s[:maxLen] + "..."
 }
 
 func reverseEntries(s []protocol.AuditLogEntry) {

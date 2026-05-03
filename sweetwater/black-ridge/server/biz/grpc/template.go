@@ -116,7 +116,7 @@ func (s *Server) UpdateTemplateConfig(ctx context.Context, req *pb.UpdateTemplat
 	updates := protoConfigUpdatesToModel(req.GetFiles())
 	files, err := service.NewConfigFileService().SaveGlobalFiles(existing.Defaults.Files, updates)
 	if err != nil {
-		return nil, errToStatus(err)
+		return nil, configConflictToStatus(err)
 	}
 	updated := cloneTemplateWithGlobalContents(existing, updates)
 	if err := s.templateStore.Set(updated); err != nil {

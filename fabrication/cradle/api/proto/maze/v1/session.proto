@@ -158,75 +158,90 @@ message GetEnvResponse {
 }
 
 // SessionService — Agent 端实现，Manager 通过 gRPC client 调用
+// additional_bindings 提供 Agent 内部视角路径（无 /nodes/{node_name}/ 前缀），
+// 供 black-ridge 通过 grpc-gateway 直接暴露 REST API。
 service SessionService {
   rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse) {
     option (google.api.http) = {
       get: "/api/v1/nodes/{node_name}/sessions"
+      additional_bindings { get: "/api/v1/sessions" }
     };
   }
   rpc CreateSession(CreateSessionRequest) returns (Session) {
     option (google.api.http) = {
       post: "/api/v1/nodes/{node_name}/sessions"
       body: "*"
+      additional_bindings { post: "/api/v1/sessions" body: "*" }
     };
   }
   rpc GetSession(GetSessionRequest) returns (Session) {
     option (google.api.http) = {
       get: "/api/v1/nodes/{node_name}/sessions/{id}"
+      additional_bindings { get: "/api/v1/sessions/{id}" }
     };
   }
   rpc DeleteSession(DeleteSessionRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       delete: "/api/v1/nodes/{node_name}/sessions/{id}"
+      additional_bindings { delete: "/api/v1/sessions/{id}" }
     };
   }
   rpc GetSessionConfig(GetSessionConfigRequest) returns (SessionConfigView) {
     option (google.api.http) = {
       get: "/api/v1/nodes/{node_name}/sessions/{id}/config"
+      additional_bindings { get: "/api/v1/sessions/{id}/config" }
     };
   }
   rpc UpdateSessionConfig(UpdateSessionConfigRequest) returns (SessionConfigView) {
     option (google.api.http) = {
       put: "/api/v1/nodes/{node_name}/sessions/{id}/config"
       body: "*"
+      additional_bindings { put: "/api/v1/sessions/{id}/config" body: "*" }
     };
   }
   rpc RestoreSession(RestoreSessionRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       post: "/api/v1/nodes/{node_name}/sessions/{id}/restore"
       body: "*"
+      additional_bindings { post: "/api/v1/sessions/{id}/restore" body: "*" }
     };
   }
   rpc SaveSessions(SaveSessionsRequest) returns (SaveSessionsResponse) {
     option (google.api.http) = {
       post: "/api/v1/nodes/{node_name}/sessions/save"
+      additional_bindings { post: "/api/v1/sessions/save" }
     };
   }
   rpc GetSavedSessions(GetSavedSessionsRequest) returns (GetSavedSessionsResponse) {
     option (google.api.http) = {
       get: "/api/v1/nodes/{node_name}/sessions/saved"
+      additional_bindings { get: "/api/v1/sessions/saved" }
     };
   }
   rpc GetOutput(GetOutputRequest) returns (TerminalOutput) {
     option (google.api.http) = {
       get: "/api/v1/nodes/{node_name}/sessions/{id}/output"
+      additional_bindings { get: "/api/v1/sessions/{id}/output" }
     };
   }
   rpc SendInput(SendInputRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       post: "/api/v1/nodes/{node_name}/sessions/{id}/input"
       body: "*"
+      additional_bindings { post: "/api/v1/sessions/{id}/input" body: "*" }
     };
   }
   rpc SendSignal(SendSignalRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       post: "/api/v1/nodes/{node_name}/sessions/{id}/signal"
       body: "*"
+      additional_bindings { post: "/api/v1/sessions/{id}/signal" body: "*" }
     };
   }
   rpc GetEnv(GetEnvRequest) returns (GetEnvResponse) {
     option (google.api.http) = {
       get: "/api/v1/nodes/{node_name}/sessions/{id}/env"
+      additional_bindings { get: "/api/v1/sessions/{id}/env" }
     };
   }
 }

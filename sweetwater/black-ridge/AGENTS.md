@@ -8,8 +8,18 @@
 
 - **管线编排** — 会话创建/恢复由 system/template/user 三层管线驱动，所有步骤按顺序原子执行
 - **接口隔离** — TmuxService 通过接口抽象，外部 Handler 不感知 tmux 命令细节
-- **安全默认** — 敏感步骤（env/file）执行前关闭 shell 回显，所有 API 端点经 Bearer Token 鉴权
+- **安全默认** — 敏感步骤（env/file）执行前关闭 shell 回显，所有 API 端点经 Bearer Token 鉴权（gRPC interceptor）
 - **可观测性** — 心跳定期上报完整状态快照（Session 详情、内存、本地配置），配置文件使用乐观并发控制
+
+## 路由架构
+
+Agent 采用 **Hertz HTTP 外壳 + grpc-gateway 嵌入** 的统一路由架构：
+
+- **Hertz** 负责 WebSocket 路由（终端连接）、健康检查和静态中间件（CORS、AccessLog）
+- **grpc-gateway ServeMux** 通过 Hertz `NoRoute` 接管所有 `/api/` REST 请求，由 proto 注解驱动路由
+- **gRPC Server** 运行在 `:9090`（进程内直连），经过 `UnaryAuthInterceptor` 认证拦截
+- 所有 REST API（Session/Template/Config）由 proto `google.api.http` 注解定义，含 `additional_bindings` 支持 Agent 内部路径
+- SPA 静态文件通过 `go:embed` 嵌入，非 `/api/` 路径 fallback 到 `index.html`
 
 ## 依赖关系
 
@@ -20,25 +30,17 @@
 
 | 路径                               | 职责                                                                                                              | 文档同步                                |
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| server/main.go                     | 入口：配置加载、HTTP+gRPC 双协议服务初始化、信号处理                                                              | [architecture.md](docs/architecture.md) |
-| server/biz/grpc/server.go          | gRPC Server 框架（Session/Config/Template Service）                                                               | —                                       |
-| server/biz/grpc/template.go        | TemplateService gRPC 实现（ListTemplates/CreateTemplate/GetTemplate/UpdateTemplate/DeleteTemplate + Config 管理） | —                                       |
-| server/biz/grpc/session.go         | SessionService + ConfigService gRPC 实现                                                                          | —                                       |
+| server/main.go                     | 入口：配置加载、grpc-gateway ServeMux 创建、gRPC Server 启动、3 个 Service 注册、Hertz 服务初始化                 | [architecture.md](docs/architecture.md) |
+| server/router.go                   | 顶层路由注册：NoRoute 转发 `/api/` 到 grpc-gateway、SPA fallback                                                 | [architecture.md](docs/architecture.md) |
+| server/biz/grpc/                   | gRPC Server 框架 + Session/Template Service 实现（含 working_dir 解析、session_confs 校验）                      | —                                       |
 | server/biz/config/config.go        | 全局配置结构与校验                                                                                                | [architecture.md](docs/architecture.md) |
-| server/biz/service/tmux.go         | Tmux 会话管理与管线执行                                                                                           | [architecture.md](docs/architecture.md) |
-| server/biz/service/heartbeat.go    | Manager 心跳注册与状态上报                                                                                        | [architecture.md](docs/architecture.md) |
-| server/biz/service/autosave.go     | 定时管线状态自动保存                                                                                              | [architecture.md](docs/architecture.md) |
-| server/biz/service/config_files.go | 配置文件读写与乐观并发控制                                                                                        | [architecture.md](docs/architecture.md) |
+| server/biz/service/                | Tmux 会话管理 + 心跳注册 + 自动保存 + 配置文件读写（乐观并发控制）                                               | [architecture.md](docs/architecture.md) |
 | server/biz/model/template.go       | 模板存储与内置模板加载                                                                                            | [architecture.md](docs/architecture.md) |
-| server/biz/router/register.go      | API 路由注册                                                                                                      | [api.md](docs/api.md)                   |
-| server/biz/handler/session.go      | Session CRUD Handler                                                                                              | [api.md](docs/api.md)                   |
-| server/biz/handler/terminal.go     | 终端交互与 WebSocket Handler                                                                                      | [api.md](docs/api.md)                   |
-| Dockerfile                         | 多阶段构建（前端+后端+运行时）                                                                                    | [architecture.md](docs/architecture.md) |
-| entrypoint.sh                      | 容器启动初始化脚本                                                                                                | [architecture.md](docs/architecture.md) |
+| server/biz/router/                 | Hertz 中间件 + WebSocket + 健康检查                                                                               | —                                       |
+| Dockerfile + entrypoint.sh         | 多阶段构建 + 容器启动初始化                                                                                       | [architecture.md](docs/architecture.md) |
 
 ## 详细文档
 
 | 文档                                         | 内容                                                                                          |
 | -------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | [docs/architecture.md](docs/architecture.md) | 系统架构、启动流程、Tmux 管理、管线编排、状态持久化、心跳、自动保存、配置管理、模板系统、部署 |
-| [docs/api.md](docs/api.md)                   | 完整 REST API 参考，含请求/响应格式、WebSocket 协议、数据模型                                 |

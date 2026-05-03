@@ -1,3 +1,5 @@
+// Package httputil 提供 Hertz HTTP 工具函数，包括统一 JSON 响应封装和 CORS 中间件。
+// gatewayutil 包提供了 grpc-gateway 等价的响应格式包装功能，输出格式与本包的 Success/Error 一致。
 package httputil
 
 import (

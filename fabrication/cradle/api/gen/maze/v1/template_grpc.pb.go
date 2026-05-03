@@ -32,6 +32,10 @@ const (
 // TemplateServiceClient is the client API for TemplateService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// TemplateService — Agent 端实现，Manager 通过 gRPC client 调用。
+// additional_bindings 提供 Agent 内部视角路径（无 /nodes/{node_name}/ 前缀），
+// 供 black-ridge 通过 grpc-gateway 直接暴露 REST API。
 type TemplateServiceClient interface {
 	ListTemplates(ctx context.Context, in *ListTemplatesRequest, opts ...grpc.CallOption) (*ListTemplatesResponse, error)
 	CreateTemplate(ctx context.Context, in *CreateTemplateRequest, opts ...grpc.CallOption) (*SessionTemplate, error)
@@ -123,6 +127,10 @@ func (c *templateServiceClient) UpdateTemplateConfig(ctx context.Context, in *Up
 // TemplateServiceServer is the server API for TemplateService service.
 // All implementations must embed UnimplementedTemplateServiceServer
 // for forward compatibility.
+//
+// TemplateService — Agent 端实现，Manager 通过 gRPC client 调用。
+// additional_bindings 提供 Agent 内部视角路径（无 /nodes/{node_name}/ 前缀），
+// 供 black-ridge 通过 grpc-gateway 直接暴露 REST API。
 type TemplateServiceServer interface {
 	ListTemplates(context.Context, *ListTemplatesRequest) (*ListTemplatesResponse, error)
 	CreateTemplate(context.Context, *CreateTemplateRequest) (*SessionTemplate, error)

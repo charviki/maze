@@ -9,20 +9,24 @@ import (
 	"github.com/charviki/mesa-hub-behavior-panel/biz/model"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 // AgentProxyService Agent gRPC 代理 — Session/Template/Config 请求转发到 Agent 节点
 type AgentProxyService struct {
-	registry *model.NodeRegistry
-	logger   logutil.Logger
+	registry  *model.NodeRegistry
+	logger    logutil.Logger
+	authToken string
 }
 
-// NewAgentProxyService 创建 AgentProxyService
-func NewAgentProxyService(registry *model.NodeRegistry, logger logutil.Logger) *AgentProxyService {
+// NewAgentProxyService 创建 AgentProxyService。
+// authToken 用于代理请求时注入到 gRPC metadata，使 Agent 端认证通过。
+func NewAgentProxyService(registry *model.NodeRegistry, authToken string, logger logutil.Logger) *AgentProxyService {
 	return &AgentProxyService{
-		registry: registry,
-		logger:   logger,
+		registry:  registry,
+		authToken: authToken,
+		logger:    logger,
 	}
 }
 
@@ -74,9 +78,28 @@ func (s *AgentProxyService) dial(addr, nodeName string) (*grpc.ClientConn, error
 		return nil, fmt.Errorf("node %q has no gRPC address", nodeName)
 	}
 
-	conn, err := grpc.NewClient(addr,
+	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
+	}
+
+	// Manager 代理请求到 Agent 时注入全局认证 token，
+	// 否则 Agent 端的 UnaryAuthInterceptor 会拒绝请求。
+	if s.authToken != "" {
+		opts = append(opts, grpc.WithUnaryInterceptor(func(
+			ctx context.Context,
+			method string,
+			req interface{},
+			reply interface{},
+			cc *grpc.ClientConn,
+			invoker grpc.UnaryInvoker,
+			opts ...grpc.CallOption,
+		) error {
+			ctx = metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+s.authToken)
+			return invoker(ctx, method, req, reply, cc, opts...)
+		}))
+	}
+
+	conn, err := grpc.NewClient(addr, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("dial %s for %s: %w", addr, nodeName, err)
 	}

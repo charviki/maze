@@ -197,6 +197,53 @@ paths:
           description: An unexpected error response.
       tags:
       - HostService
+  /api/v1/local-config:
+    get:
+      operationId: ConfigService_GetConfig2
+      parameters:
+      - in: query
+        name: nodeName
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1LocalAgentConfig"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - ConfigService
+    put:
+      operationId: ConfigService_UpdateConfig2
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/v1UpdateConfigRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1LocalAgentConfig"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - ConfigService
+      x-codegen-request-body-name: body
   /api/v1/nodes:
     get:
       operationId: NodeService_ListNodes
@@ -970,6 +1017,556 @@ paths:
       tags:
       - TemplateService
       x-codegen-request-body-name: body
+  /api/v1/sessions:
+    get:
+      operationId: SessionService_ListSessions2
+      parameters:
+      - in: query
+        name: nodeName
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1ListSessionsResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SessionService
+    post:
+      operationId: SessionService_CreateSession2
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/v1CreateSessionRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1Session"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SessionService
+      x-codegen-request-body-name: body
+  /api/v1/sessions/save:
+    post:
+      operationId: SessionService_SaveSessions2
+      parameters:
+      - in: query
+        name: nodeName
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1SaveSessionsResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SessionService
+  /api/v1/sessions/saved:
+    get:
+      operationId: SessionService_GetSavedSessions2
+      parameters:
+      - in: query
+        name: nodeName
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1GetSavedSessionsResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SessionService
+  /api/v1/sessions/{id}:
+    delete:
+      operationId: SessionService_DeleteSession2
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: nodeName
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SessionService
+    get:
+      operationId: SessionService_GetSession2
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: nodeName
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1Session"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SessionService
+  /api/v1/sessions/{id}/config:
+    get:
+      operationId: SessionService_GetSessionConfig2
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: nodeName
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1SessionConfigView"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SessionService
+    put:
+      operationId: SessionService_UpdateSessionConfig2
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SessionServiceUpdateSessionConfigBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1SessionConfigView"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SessionService
+      x-codegen-request-body-name: body
+  /api/v1/sessions/{id}/env:
+    get:
+      operationId: SessionService_GetEnv2
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: nodeName
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1GetEnvResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SessionService
+  /api/v1/sessions/{id}/input:
+    post:
+      operationId: SessionService_SendInput2
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SessionServiceSendInputBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SessionService
+      x-codegen-request-body-name: body
+  /api/v1/sessions/{id}/output:
+    get:
+      operationId: SessionService_GetOutput2
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: nodeName
+        schema:
+          type: string
+      - in: query
+        name: lines
+        schema:
+          format: int32
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1TerminalOutput"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SessionService
+  /api/v1/sessions/{id}/restore:
+    post:
+      operationId: SessionService_RestoreSession2
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SessionServiceRestoreSessionBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SessionService
+      x-codegen-request-body-name: body
+  /api/v1/sessions/{id}/signal:
+    post:
+      operationId: SessionService_SendSignal2
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SessionServiceSendSignalBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SessionService
+      x-codegen-request-body-name: body
+  /api/v1/templates:
+    get:
+      operationId: TemplateService_ListTemplates2
+      parameters:
+      - in: query
+        name: nodeName
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1ListTemplatesResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - TemplateService
+    post:
+      operationId: TemplateService_CreateTemplate2
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/v1CreateTemplateRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1SessionTemplate"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - TemplateService
+      x-codegen-request-body-name: body
+  /api/v1/templates/{id}:
+    delete:
+      operationId: TemplateService_DeleteTemplate2
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: nodeName
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - TemplateService
+    get:
+      operationId: TemplateService_GetTemplate2
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: nodeName
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1SessionTemplate"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - TemplateService
+    put:
+      operationId: TemplateService_UpdateTemplate2
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TemplateServiceUpdateTemplateBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1SessionTemplate"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - TemplateService
+      x-codegen-request-body-name: body
+  /api/v1/templates/{id}/config:
+    get:
+      operationId: TemplateService_GetTemplateConfig2
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: nodeName
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1TemplateConfigView"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - TemplateService
+    put:
+      operationId: TemplateService_UpdateTemplateConfig2
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TemplateServiceUpdateTemplateConfigBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1TemplateConfigView"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - TemplateService
+      x-codegen-request-body-name: body
 components:
   schemas:
     ConfigServiceUpdateConfigBody:
@@ -1017,23 +1614,35 @@ components:
       title: 与 model.CreateSessionRequest 对齐
       type: object
     SessionServiceRestoreSessionBody:
+      example:
+        nodeName: nodeName
+      properties:
+        nodeName:
+          type: string
       type: object
     SessionServiceSendInputBody:
       example:
+        nodeName: nodeName
         command: command
       properties:
+        nodeName:
+          type: string
         command:
           type: string
       type: object
     SessionServiceSendSignalBody:
       example:
+        nodeName: nodeName
         signal: signal
       properties:
+        nodeName:
+          type: string
         signal:
           type: string
       type: object
     SessionServiceUpdateSessionConfigBody:
       example:
+        nodeName: nodeName
         files:
         - path: path
           baseHash: baseHash
@@ -1042,6 +1651,8 @@ components:
           baseHash: baseHash
           content: content
       properties:
+        nodeName:
+          type: string
         files:
           items:
             $ref: "#/components/schemas/v1ConfigFileUpdate"
@@ -1093,6 +1704,7 @@ components:
       type: object
     TemplateServiceUpdateTemplateBody:
       example:
+        nodeName: nodeName
         template:
           defaults:
             files:
@@ -1132,11 +1744,14 @@ components:
           command: command
           sessionFilePattern: sessionFilePattern
       properties:
+        nodeName:
+          type: string
         template:
           $ref: "#/components/schemas/v1SessionTemplate"
       type: object
     TemplateServiceUpdateTemplateConfigBody:
       example:
+        nodeName: nodeName
         files:
         - path: path
           baseHash: baseHash
@@ -1145,6 +1760,8 @@ components:
           baseHash: baseHash
           content: content
       properties:
+        nodeName:
+          type: string
         files:
           items:
             $ref: "#/components/schemas/v1ConfigFileUpdate"
@@ -1367,6 +1984,33 @@ components:
           type: string
         resources:
           $ref: "#/components/schemas/v1ResourceLimits"
+      type: object
+    v1CreateSessionRequest:
+      properties:
+        nodeName:
+          type: string
+        name:
+          type: string
+        command:
+          type: string
+        workingDir:
+          type: string
+        sessionConfs:
+          items:
+            $ref: "#/components/schemas/v1ConfigItem"
+          type: array
+        restoreStrategy:
+          type: string
+        templateId:
+          type: string
+      title: 与 model.CreateSessionRequest 对齐
+      type: object
+    v1CreateTemplateRequest:
+      properties:
+        nodeName:
+          type: string
+        template:
+          $ref: "#/components/schemas/v1SessionTemplate"
       type: object
     v1EnvDef:
       example:
@@ -2273,5 +2917,16 @@ components:
         category:
           type: string
       title: 与 protocol.ToolConfig 对齐
+      type: object
+    v1UpdateConfigRequest:
+      properties:
+        nodeName:
+          type: string
+        workingDir:
+          type: string
+        env:
+          additionalProperties:
+            type: string
+          type: object
       type: object
 x-original-swagger-version: "2.0"

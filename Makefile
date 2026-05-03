@@ -18,7 +18,6 @@ ifeq ($(ENV),dev)
   COMPOSE_PROJECT := maze-dev
   HOST_DATA_DIR := $(HOME)/.maze-dev
   PORT_MANAGER := 7090
-  PORT_GATEWAY := 7091
   PORT_WEB := 7080
 else ifeq ($(ENV),test)
   K8S_NAMESPACE := maze-test
@@ -26,7 +25,6 @@ else ifeq ($(ENV),test)
   COMPOSE_PROJECT := maze-test
   HOST_DATA_DIR := $(HOME)/.maze-test
   PORT_MANAGER := 9090
-  PORT_GATEWAY := 9091
   PORT_WEB := 9080
 else ifeq ($(ENV),prod)
   K8S_NAMESPACE := maze-prod
@@ -34,12 +32,11 @@ else ifeq ($(ENV),prod)
   COMPOSE_PROJECT := maze-prod
   HOST_DATA_DIR := $(HOME)/.maze-prod
   PORT_MANAGER := 8090
-  PORT_GATEWAY := 8091
   PORT_WEB := 10800
 endif
 
 # Export variables so docker compose can resolve ${VAR:-default} in YAML
-export PORT_WEB PORT_MANAGER PORT_GATEWAY HOST_DATA_DIR
+export PORT_WEB PORT_MANAGER HOST_DATA_DIR
 
 # ===== 镜像配置 =====
 MANAGER_IMAGE := maze-manager:latest
@@ -69,6 +66,7 @@ TEST_NAME ?=
 .PHONY: help \
         build build-manager build-web build-agent build-deps \
         vet test check \
+        gen-proto gen-client gen \
         up down status \
         deploy undeploy \
         proxy proxy-web proxy-manager \
@@ -87,7 +85,32 @@ help: ## 显示帮助信息
 	@echo "    make up PLATFORM=docker                # Docker Compose 启动"
 	@echo "    make up PLATFORM=kubernetes ENV=prod"
 	@echo "    make test-integration PLATFORM=docker"
+	@echo "    make gen                                # 一键生成 proto + HTTP client"
 	@echo "    make test-integration                  # K8s 集成测试"
+
+# ============================================================
+#  代码生成（proto → Go + HTTP client）
+# ============================================================
+
+CRADLE_API_DIR := $(PROJECT_ROOT)/fabrication/cradle/api
+
+gen-proto: ## buf generate 生成 Go 类型 + gRPC stub + grpc-gateway + OpenAPI spec
+	cd $(CRADLE_API_DIR) && buf generate
+
+gen-client: gen-proto ## 重新生成 OpenAPI Go HTTP client（需要 openapi-generator + Java）
+	cd $(CRADLE_API_DIR) && \
+		if [ -z "$$JAVA_HOME" ]; then \
+			echo "Error: JAVA_HOME not set. Install Java and set JAVA_HOME."; exit 1; \
+		fi && \
+		export PATH="$$JAVA_HOME/bin:$$PATH" && \
+		openapi-generator generate \
+			-i gen/openapiv2/maze.swagger.json \
+			-g go \
+			-o gen/http \
+			--package-name client \
+			--additional-properties=isGoSubmodule=true,withGoMod=false,enumClassPrefix=true
+
+gen: gen-client ## 一键生成 proto + HTTP client
 
 # ============================================================
 #  Go 编译 / 检查 / 测试
@@ -237,17 +260,14 @@ ifeq ($(PLATFORM),docker)
 	@echo "\033[0;32m[INFO]\033[0m Docker mode: ports already exposed."
 	@echo "  Web:      http://localhost:$(PORT_WEB)"
 	@echo "  Manager:  http://localhost:$(PORT_MANAGER)/health"
-	@echo "  Gateway:  http://localhost:$(PORT_GATEWAY)"
 else ifeq ($(PLATFORM),kubernetes)
 	@echo "\033[0;32m[INFO]\033[0m Starting port-forward..."
 	@echo "  Web:      http://localhost:$(PORT_WEB)"
 	@echo "  Manager:  http://localhost:$(PORT_MANAGER)/health"
-	@echo "  Gateway:  http://localhost:$(PORT_GATEWAY)"
 	@bash -c '\
 		trap "kill 0" SIGINT SIGTERM; \
 		kubectl port-forward svc/web $(PORT_WEB):80 -n $(K8S_NAMESPACE) & \
 		kubectl port-forward svc/agent-manager $(PORT_MANAGER):8080 -n $(K8S_NAMESPACE) & \
-		kubectl port-forward svc/agent-manager $(PORT_GATEWAY):8081 -n $(K8S_NAMESPACE) & \
 		wait'
 endif
 
@@ -258,12 +278,11 @@ else
 	@echo "Docker mode: http://localhost:$(PORT_WEB)"
 endif
 
-proxy-manager: ## 只代理 Manager API（含 gRPC-gateway）
+proxy-manager: ## 只代理 Manager API
 ifeq ($(PLATFORM),kubernetes)
 	@bash -c '\
 		trap "kill 0" SIGINT SIGTERM; \
 		kubectl port-forward svc/agent-manager $(PORT_MANAGER):8080 -n $(K8S_NAMESPACE) & \
-		kubectl port-forward svc/agent-manager $(PORT_GATEWAY):8081 -n $(K8S_NAMESPACE) & \
 		wait'
 else
 	@echo "Docker mode: http://localhost:$(PORT_MANAGER)/health"
@@ -313,7 +332,6 @@ test-integration: override K8S_OVERLAY := overlays/test
 test-integration: override COMPOSE_PROJECT := maze-test
 test-integration: override HOST_DATA_DIR := $(HOME)/.maze-test
 test-integration: override PORT_MANAGER := 9090
-test-integration: override PORT_GATEWAY := 9091
 test-integration: override PORT_WEB := 9080
 test-integration: override K8S_OVERLAY_DIR := $(PROJECT_ROOT)/fabrication/kubernetes/overlays/test
 
@@ -346,7 +364,7 @@ ifeq ($(PLATFORM),docker)
 		MAZE_TEST_ENV=$(PLATFORM) \
 		MAZE_TEST_DATA_DIR=$(HOST_DATA_DIR) \
 		MAZE_TEST_AGENT_STORAGE_BACKEND=bind \
-		MAZE_TEST_MANAGER_URL=http://localhost:$(PORT_GATEWAY) \
+		MAZE_TEST_MANAGER_URL=http://localhost:$(PORT_MANAGER) \
 		MAZE_TEST_AUTH_TOKEN=test-integration-token \
 		go test -v -count=1 -tags=integration -timeout=10m $(if $(TEST_NAME),-run $(TEST_NAME),) ./...; \
 		TEST_EXIT=$$?; \
@@ -364,7 +382,6 @@ else ifeq ($(PLATFORM),kubernetes)
 		NS="$(K8S_NAMESPACE)"; \
 		PF_PIDS=""; \
 		DEPLOYED=false; \
-		lsof -ti:$(PORT_GATEWAY) | xargs kill -9 2>/dev/null; \
 		lsof -ti:$(PORT_MANAGER) | xargs kill -9 2>/dev/null; \
 		cleanup() { \
 			echo -e "$$INFO Cleaning up test environment..."; \
@@ -397,14 +414,12 @@ else ifeq ($(PLATFORM),kubernetes)
 		echo -e "$$INFO [4/5] Starting port-forward..."; \
 		kubectl port-forward svc/agent-manager $(PORT_MANAGER):8080 -n $$NS 2>&1 | grep -v "^Handling" & \
 		PF_PID1=$$!; \
-		kubectl port-forward svc/agent-manager $(PORT_GATEWAY):8081 -n $$NS 2>&1 | grep -v "^Handling" & \
-		PF_PID2=$$!; \
-		PF_PIDS="$$PF_PID1 $$PF_PID2"; \
+		PF_PIDS="$$PF_PID1"; \
 		for i in $$(seq 1 30); do \
 			if curl -sf http://localhost:$(PORT_MANAGER)/health > /dev/null 2>&1; then \
 				break; \
 			fi; \
-			if ! kill -0 $$PF_PID1 2>/dev/null || ! kill -0 $$PF_PID2 2>/dev/null; then \
+			if ! kill -0 $$PF_PID1 2>/dev/null; then \
 				echo -e "$$ERROR port-forward process died. Check kubectl and cluster status."; \
 				exit 1; \
 			fi; \
@@ -414,13 +429,13 @@ else ifeq ($(PLATFORM),kubernetes)
 			echo -e "$$ERROR port-forward not ready after 60s."; \
 			exit 1; \
 		fi; \
-		echo -e "$$INFO Port-forward active: manager=$(PORT_MANAGER) gateway=$(PORT_GATEWAY)"; \
+		echo -e "$$INFO Port-forward active: manager=$(PORT_MANAGER)"; \
 		echo -e "$$INFO [5/5] Running tests..."; \
 		cd $(TEST_DIR) && \
 			MAZE_TEST_ENV=$(PLATFORM) \
 			MAZE_TEST_DATA_DIR=$(HOST_DATA_DIR) \
 			MAZE_TEST_AGENT_STORAGE_BACKEND=hostpath \
-			MAZE_TEST_MANAGER_URL=http://localhost:$(PORT_GATEWAY) \
+			MAZE_TEST_MANAGER_URL=http://localhost:$(PORT_MANAGER) \
 			MAZE_TEST_AUTH_TOKEN=test-integration-token \
 			MAZE_TEST_NAMESPACE=$(K8S_NAMESPACE) \
 			go test -v -count=1 -tags=integration -timeout=10m $(if $(TEST_NAME),-run $(TEST_NAME),) ./...'

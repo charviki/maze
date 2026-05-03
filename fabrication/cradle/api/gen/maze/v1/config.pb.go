@@ -200,10 +200,10 @@ const file_maze_v1_config_proto_rawDesc = "" +
 	"\x03env\x18\x02 \x03(\v2\".maze.v1.LocalAgentConfig.EnvEntryR\x03env\x1a6\n" +
 	"\bEnvEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x012\xfe\x01\n" +
-	"\rConfigService\x12q\n" +
-	"\tGetConfig\x12\x19.maze.v1.GetConfigRequest\x1a\x19.maze.v1.LocalAgentConfig\".\x82\xd3\xe4\x93\x02(\x12&/api/v1/nodes/{node_name}/local-config\x12z\n" +
-	"\fUpdateConfig\x12\x1c.maze.v1.UpdateConfigRequest\x1a\x19.maze.v1.LocalAgentConfig\"1\x82\xd3\xe4\x93\x02+:\x01*\x1a&/api/v1/nodes/{node_name}/local-configB\x8f\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x012\xb3\x02\n" +
+	"\rConfigService\x12\x89\x01\n" +
+	"\tGetConfig\x12\x19.maze.v1.GetConfigRequest\x1a\x19.maze.v1.LocalAgentConfig\"F\x82\xd3\xe4\x93\x02@Z\x16\x12\x14/api/v1/local-config\x12&/api/v1/nodes/{node_name}/local-config\x12\x95\x01\n" +
+	"\fUpdateConfig\x12\x1c.maze.v1.UpdateConfigRequest\x1a\x19.maze.v1.LocalAgentConfig\"L\x82\xd3\xe4\x93\x02F:\x01*Z\x19:\x01*\x1a\x14/api/v1/local-config\x1a&/api/v1/nodes/{node_name}/local-configB\x8f\x01\n" +
 	"\vcom.maze.v1B\vConfigProtoP\x01Z6github.com/charviki/maze-cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
 
 var (

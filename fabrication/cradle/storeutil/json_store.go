@@ -54,7 +54,8 @@ func (s *JSONStore[T]) Save() error {
 	return configutil.AtomicWriteFile(s.path, data, 0644)
 }
 
-// Get 返回数据的副本（深拷贝通过 JSON 序列化实现）
+// Get 返回数据的值拷贝。对于包含引用类型（指针、切片、map）的 T，
+// 调用方应注意浅拷贝风险。
 func (s *JSONStore[T]) Get() T {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

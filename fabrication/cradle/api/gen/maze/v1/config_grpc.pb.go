@@ -26,6 +26,10 @@ const (
 // ConfigServiceClient is the client API for ConfigService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// ConfigService — Agent 端实现，Manager 通过 gRPC client 调用。
+// additional_bindings 提供 Agent 内部视角路径（无 /nodes/{node_name}/ 前缀），
+// 供 black-ridge 通过 grpc-gateway 直接暴露 REST API。
 type ConfigServiceClient interface {
 	GetConfig(ctx context.Context, in *GetConfigRequest, opts ...grpc.CallOption) (*LocalAgentConfig, error)
 	UpdateConfig(ctx context.Context, in *UpdateConfigRequest, opts ...grpc.CallOption) (*LocalAgentConfig, error)
@@ -62,6 +66,10 @@ func (c *configServiceClient) UpdateConfig(ctx context.Context, in *UpdateConfig
 // ConfigServiceServer is the server API for ConfigService service.
 // All implementations must embed UnimplementedConfigServiceServer
 // for forward compatibility.
+//
+// ConfigService — Agent 端实现，Manager 通过 gRPC client 调用。
+// additional_bindings 提供 Agent 内部视角路径（无 /nodes/{node_name}/ 前缀），
+// 供 black-ridge 通过 grpc-gateway 直接暴露 REST API。
 type ConfigServiceServer interface {
 	GetConfig(context.Context, *GetConfigRequest) (*LocalAgentConfig, error)
 	UpdateConfig(context.Context, *UpdateConfigRequest) (*LocalAgentConfig, error)

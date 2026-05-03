@@ -98,43 +98,53 @@ message SessionTemplate {
   SessionSchema session_schema = 10;
 }
 
+// TemplateService — Agent 端实现，Manager 通过 gRPC client 调用。
+// additional_bindings 提供 Agent 内部视角路径（无 /nodes/{node_name}/ 前缀），
+// 供 black-ridge 通过 grpc-gateway 直接暴露 REST API。
 service TemplateService {
   rpc ListTemplates(ListTemplatesRequest) returns (ListTemplatesResponse) {
     option (google.api.http) = {
       get: "/api/v1/nodes/{node_name}/templates"
+      additional_bindings { get: "/api/v1/templates" }
     };
   }
   rpc CreateTemplate(CreateTemplateRequest) returns (SessionTemplate) {
     option (google.api.http) = {
       post: "/api/v1/nodes/{node_name}/templates"
       body: "*"
+      additional_bindings { post: "/api/v1/templates" body: "*" }
     };
   }
   rpc GetTemplate(GetTemplateRequest) returns (SessionTemplate) {
     option (google.api.http) = {
       get: "/api/v1/nodes/{node_name}/templates/{id}"
+      additional_bindings { get: "/api/v1/templates/{id}" }
     };
   }
   rpc UpdateTemplate(UpdateTemplateRequest) returns (SessionTemplate) {
     option (google.api.http) = {
       put: "/api/v1/nodes/{node_name}/templates/{id}"
       body: "*"
+      additional_bindings { put: "/api/v1/templates/{id}" body: "*" }
     };
   }
   rpc DeleteTemplate(DeleteTemplateRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       delete: "/api/v1/nodes/{node_name}/templates/{id}"
+      additional_bindings { delete: "/api/v1/templates/{id}" }
     };
   }
   rpc GetTemplateConfig(GetTemplateConfigRequest) returns (TemplateConfigView) {
     option (google.api.http) = {
       get: "/api/v1/nodes/{node_name}/templates/{id}/config"
+      additional_bindings { get: "/api/v1/templates/{id}/config" }
     };
   }
   rpc UpdateTemplateConfig(UpdateTemplateConfigRequest) returns (TemplateConfigView) {
     option (google.api.http) = {
       put: "/api/v1/nodes/{node_name}/templates/{id}/config"
       body: "*"
+      additional_bindings { put: "/api/v1/templates/{id}/config" body: "*" }
     };
   }
 }

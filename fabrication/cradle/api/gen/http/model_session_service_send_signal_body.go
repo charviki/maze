@@ -19,6 +19,7 @@ var _ MappedNullable = &SessionServiceSendSignalBody{}
 
 // SessionServiceSendSignalBody struct for SessionServiceSendSignalBody
 type SessionServiceSendSignalBody struct {
+	NodeName *string `json:"nodeName,omitempty"`
 	Signal *string `json:"signal,omitempty"`
 }
 
@@ -37,6 +38,38 @@ func NewSessionServiceSendSignalBody() *SessionServiceSendSignalBody {
 func NewSessionServiceSendSignalBodyWithDefaults() *SessionServiceSendSignalBody {
 	this := SessionServiceSendSignalBody{}
 	return &this
+}
+
+// GetNodeName returns the NodeName field value if set, zero value otherwise.
+func (o *SessionServiceSendSignalBody) GetNodeName() string {
+	if o == nil || IsNil(o.NodeName) {
+		var ret string
+		return ret
+	}
+	return *o.NodeName
+}
+
+// GetNodeNameOk returns a tuple with the NodeName field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *SessionServiceSendSignalBody) GetNodeNameOk() (*string, bool) {
+	if o == nil || IsNil(o.NodeName) {
+		return nil, false
+	}
+	return o.NodeName, true
+}
+
+// HasNodeName returns a boolean if a field has been set.
+func (o *SessionServiceSendSignalBody) HasNodeName() bool {
+	if o != nil && !IsNil(o.NodeName) {
+		return true
+	}
+
+	return false
+}
+
+// SetNodeName gets a reference to the given string and assigns it to the NodeName field.
+func (o *SessionServiceSendSignalBody) SetNodeName(v string) {
+	o.NodeName = &v
 }
 
 // GetSignal returns the Signal field value if set, zero value otherwise.
@@ -81,6 +114,9 @@ func (o SessionServiceSendSignalBody) MarshalJSON() ([]byte, error) {
 
 func (o SessionServiceSendSignalBody) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
+	if !IsNil(o.NodeName) {
+		toSerialize["nodeName"] = o.NodeName
+	}
 	if !IsNil(o.Signal) {
 		toSerialize["signal"] = o.Signal
 	}

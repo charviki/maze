@@ -40,6 +40,8 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
 // SessionService — Agent 端实现，Manager 通过 gRPC client 调用
+// additional_bindings 提供 Agent 内部视角路径（无 /nodes/{node_name}/ 前缀），
+// 供 black-ridge 通过 grpc-gateway 直接暴露 REST API。
 type SessionServiceClient interface {
 	ListSessions(ctx context.Context, in *ListSessionsRequest, opts ...grpc.CallOption) (*ListSessionsResponse, error)
 	CreateSession(ctx context.Context, in *CreateSessionRequest, opts ...grpc.CallOption) (*Session, error)
@@ -199,6 +201,8 @@ func (c *sessionServiceClient) GetEnv(ctx context.Context, in *GetEnvRequest, op
 // for forward compatibility.
 //
 // SessionService — Agent 端实现，Manager 通过 gRPC client 调用
+// additional_bindings 提供 Agent 内部视角路径（无 /nodes/{node_name}/ 前缀），
+// 供 black-ridge 通过 grpc-gateway 直接暴露 REST API。
 type SessionServiceServer interface {
 	ListSessions(context.Context, *ListSessionsRequest) (*ListSessionsResponse, error)
 	CreateSession(context.Context, *CreateSessionRequest) (*Session, error)

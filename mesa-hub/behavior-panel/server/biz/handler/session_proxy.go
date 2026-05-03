@@ -2,10 +2,16 @@ package handler
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/mesa-hub-behavior-panel/biz/model"
 	"github.com/charviki/mesa-hub-behavior-panel/biz/service"
+)
+
+const (
+	proxyTimeout  = 30 * time.Second
+	auditOperator = "frontend"
 )
 
 // SessionProxyHandler Session/Template/Config HTTP 代理 handler，转发请求到 Agent

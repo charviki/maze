@@ -1,6 +1,7 @@
 package grpc
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -22,10 +23,11 @@ type Server struct {
 	pb.UnimplementedTemplateServiceServer
 	pb.UnimplementedConfigServiceServer
 
-	tmuxService   service.TmuxService
-	localConfig   *service.LocalConfigStore
-	templateStore *model.TemplateStore
-	logger        logutil.Logger
+	tmuxService      service.TmuxService
+	localConfig      *service.LocalConfigStore
+	templateStore    *model.TemplateStore
+	workspaceRootDir string
+	logger           logutil.Logger
 
 	grpcServer *grpc.Server
 }
@@ -35,24 +37,26 @@ func NewServer(
 	tmuxService service.TmuxService,
 	localConfig *service.LocalConfigStore,
 	templateStore *model.TemplateStore,
+	workspaceRootDir string,
 	logger logutil.Logger,
 ) *Server {
 	return &Server{
-		tmuxService:   tmuxService,
-		localConfig:   localConfig,
-		templateStore: templateStore,
-		logger:        logger,
+		tmuxService:      tmuxService,
+		localConfig:      localConfig,
+		templateStore:    templateStore,
+		workspaceRootDir: workspaceRootDir,
+		logger:           logger,
 	}
 }
 
 // Start 启动 gRPC server（非阻塞）
-func (s *Server) Start(addr string) error {
+func (s *Server) Start(addr string, opts ...grpc.ServerOption) error {
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		return fmt.Errorf("grpc listen %s: %w", addr, err)
 	}
 
-	s.grpcServer = grpc.NewServer()
+	s.grpcServer = grpc.NewServer(opts...)
 	pb.RegisterSessionServiceServer(s.grpcServer, s)
 	pb.RegisterTemplateServiceServer(s.grpcServer, s)
 	pb.RegisterConfigServiceServer(s.grpcServer, s)
@@ -89,6 +93,12 @@ func errToStatus(err error) error {
 	}
 	if errors.Is(err, service.ErrSessionNotFound) {
 		return status.Error(codes.NotFound, err.Error())
+	}
+	// ConfigConflictError 携带冲突详情，映射为 FailedPrecondition
+	var confErr *service.ConfigConflictError
+	if errors.As(err, &confErr) {
+		detail, _ := json.Marshal(confErr.Conflicts)
+		return status.Error(codes.FailedPrecondition, string(detail))
 	}
 	return status.Error(codes.Internal, err.Error())
 }

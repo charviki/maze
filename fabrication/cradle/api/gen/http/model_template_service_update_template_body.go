@@ -19,6 +19,7 @@ var _ MappedNullable = &TemplateServiceUpdateTemplateBody{}
 
 // TemplateServiceUpdateTemplateBody struct for TemplateServiceUpdateTemplateBody
 type TemplateServiceUpdateTemplateBody struct {
+	NodeName *string `json:"nodeName,omitempty"`
 	Template *V1SessionTemplate `json:"template,omitempty"`
 }
 
@@ -37,6 +38,38 @@ func NewTemplateServiceUpdateTemplateBody() *TemplateServiceUpdateTemplateBody {
 func NewTemplateServiceUpdateTemplateBodyWithDefaults() *TemplateServiceUpdateTemplateBody {
 	this := TemplateServiceUpdateTemplateBody{}
 	return &this
+}
+
+// GetNodeName returns the NodeName field value if set, zero value otherwise.
+func (o *TemplateServiceUpdateTemplateBody) GetNodeName() string {
+	if o == nil || IsNil(o.NodeName) {
+		var ret string
+		return ret
+	}
+	return *o.NodeName
+}
+
+// GetNodeNameOk returns a tuple with the NodeName field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *TemplateServiceUpdateTemplateBody) GetNodeNameOk() (*string, bool) {
+	if o == nil || IsNil(o.NodeName) {
+		return nil, false
+	}
+	return o.NodeName, true
+}
+
+// HasNodeName returns a boolean if a field has been set.
+func (o *TemplateServiceUpdateTemplateBody) HasNodeName() bool {
+	if o != nil && !IsNil(o.NodeName) {
+		return true
+	}
+
+	return false
+}
+
+// SetNodeName gets a reference to the given string and assigns it to the NodeName field.
+func (o *TemplateServiceUpdateTemplateBody) SetNodeName(v string) {
+	o.NodeName = &v
 }
 
 // GetTemplate returns the Template field value if set, zero value otherwise.
@@ -81,6 +114,9 @@ func (o TemplateServiceUpdateTemplateBody) MarshalJSON() ([]byte, error) {
 
 func (o TemplateServiceUpdateTemplateBody) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
+	if !IsNil(o.NodeName) {
+		toSerialize["nodeName"] = o.NodeName
+	}
 	if !IsNil(o.Template) {
 		toSerialize["template"] = o.Template
 	}

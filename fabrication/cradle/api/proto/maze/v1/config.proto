@@ -22,16 +22,21 @@ message LocalAgentConfig {
   map<string, string> env = 2;
 }
 
+// ConfigService — Agent 端实现，Manager 通过 gRPC client 调用。
+// additional_bindings 提供 Agent 内部视角路径（无 /nodes/{node_name}/ 前缀），
+// 供 black-ridge 通过 grpc-gateway 直接暴露 REST API。
 service ConfigService {
   rpc GetConfig(GetConfigRequest) returns (LocalAgentConfig) {
     option (google.api.http) = {
       get: "/api/v1/nodes/{node_name}/local-config"
+      additional_bindings { get: "/api/v1/local-config" }
     };
   }
   rpc UpdateConfig(UpdateConfigRequest) returns (LocalAgentConfig) {
     option (google.api.http) = {
       put: "/api/v1/nodes/{node_name}/local-config"
       body: "*"
+      additional_bindings { put: "/api/v1/local-config" body: "*" }
     };
   }
 }

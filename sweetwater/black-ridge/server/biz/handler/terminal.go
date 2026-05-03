@@ -7,15 +7,13 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strconv"
 	"sync"
 
-	"github.com/charviki/maze-cradle/logutil"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/hertz-contrib/websocket"
 
 	"github.com/charviki/maze-cradle/httputil"
-	"github.com/charviki/sweetwater-black-ridge/biz/model"
+	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/sweetwater-black-ridge/biz/service"
 	"github.com/creack/pty/v2"
 )
@@ -26,16 +24,7 @@ const (
 	ptyBufferSize       = 4096
 )
 
-// handleSessionError 根据 error 类型自动选择 404 或 500 状态码
-func handleSessionError(c *app.RequestContext, err error) {
-	if errors.Is(err, service.ErrSessionNotFound) {
-		httputil.Error(c, http.StatusNotFound, "session not found")
-	} else {
-		httputil.Error(c, http.StatusInternalServerError, err.Error())
-	}
-}
-
-// TerminalHandler 终端交互 handler，处理终端输出读取、命令输入、信号发送和 WebSocket 实时连接
+// TerminalHandler 终端 WebSocket handler，处理实时终端连接
 type TerminalHandler struct {
 	tmuxService    service.TmuxService
 	defaultLines   int
@@ -43,104 +32,9 @@ type TerminalHandler struct {
 	allowedOrigins []string
 }
 
-// NewTerminalHandler 创建 TerminalHandler，需传入默认终端行数。
-// allowedOrigins 用于 WebSocket 升级时的 Origin 校验，为空时允许所有来源。
+// NewTerminalHandler 创建 TerminalHandler，allowedOrigins 用于 WebSocket Origin 校验。
 func NewTerminalHandler(tmuxService service.TmuxService, defaultLines int, logger logutil.Logger, allowedOrigins []string) *TerminalHandler {
 	return &TerminalHandler{tmuxService: tmuxService, defaultLines: defaultLines, logger: logger, allowedOrigins: allowedOrigins}
-}
-
-// GetOutput 获取指定会话的终端输出内容（HTTP 轮询模式）
-func (h *TerminalHandler) GetOutput(ctx context.Context, c *app.RequestContext) {
-	id := c.Param("id")
-	if id == "" {
-		httputil.Error(c, http.StatusBadRequest, "id is required")
-		return
-	}
-
-	lines := h.defaultLines
-	if l := c.Query("lines"); l != "" {
-		if n, err := strconv.Atoi(l); err == nil && n > 0 {
-			lines = n
-		}
-	}
-
-	output, err := h.tmuxService.CapturePane(id, lines)
-	if err != nil {
-		handleSessionError(c, err)
-		return
-	}
-
-	httputil.Success(c, model.TerminalOutput{
-		SessionID: id,
-		Lines:     lines,
-		Output:    output,
-	})
-}
-
-// SendInput 向指定会话发送命令文本（模拟键盘输入）
-func (h *TerminalHandler) SendInput(ctx context.Context, c *app.RequestContext) {
-	id := c.Param("id")
-	if id == "" {
-		httputil.Error(c, http.StatusBadRequest, "id is required")
-		return
-	}
-
-	var req model.SendInputRequest
-	if err := c.Bind(&req); err != nil {
-		httputil.Error(c, http.StatusBadRequest, "invalid request body")
-		return
-	}
-	if req.Command == "" {
-		httputil.Error(c, http.StatusBadRequest, "command is required")
-		return
-	}
-
-	if err := h.tmuxService.SendKeys(id, req.Command); err != nil {
-		handleSessionError(c, err)
-		return
-	}
-	httputil.Success(c, nil)
-}
-
-// SendSignal 向指定会话发送控制信号（如 SIGINT）
-func (h *TerminalHandler) SendSignal(ctx context.Context, c *app.RequestContext) {
-	id := c.Param("id")
-	if id == "" {
-		httputil.Error(c, http.StatusBadRequest, "id is required")
-		return
-	}
-
-	var req model.SendSignalRequest
-	if err := c.Bind(&req); err != nil {
-		httputil.Error(c, http.StatusBadRequest, "invalid request body")
-		return
-	}
-	if req.Signal == "" {
-		httputil.Error(c, http.StatusBadRequest, "signal is required")
-		return
-	}
-
-	if err := h.tmuxService.SendSignal(id, req.Signal); err != nil {
-		handleSessionError(c, err)
-		return
-	}
-	httputil.Success(c, nil)
-}
-
-// GetEnv 获取指定会话的环境变量列表
-func (h *TerminalHandler) GetEnv(ctx context.Context, c *app.RequestContext) {
-	id := c.Param("id")
-	if id == "" {
-		httputil.Error(c, http.StatusBadRequest, "id is required")
-		return
-	}
-
-	env, err := h.tmuxService.GetSessionEnv(id)
-	if err != nil {
-		handleSessionError(c, err)
-		return
-	}
-	httputil.Success(c, env)
 }
 
 type wsResizeMessage struct {
@@ -149,10 +43,9 @@ type wsResizeMessage struct {
 	Rows uint16 `json:"rows"`
 }
 
-// HandleWs WebSocket 实时终端连接。将 WebSocket 与 tmux PTY 双向绑定：
-// 1. PTY 输出 → WebSocket：后台 goroutine 持续读取 PTY 输出并推送到 WebSocket
-// 2. WebSocket → PTY 输入：主循环读取 WebSocket 消息，区分 resize 控制消息和普通输入
-// 3. 资源清理：使用 sync.Once 确保 WebSocket 和 PTY 只关闭一次
+// HandleWs 处理 WebSocket 终端实时连接。
+// 流程：WebSocket 升级 → AttachSession → 双向数据转发（PTY↔WS）+ resize 处理。
+// 资源清理使用 sync.Once 确保 WebSocket 和 PTY 只关闭一次。
 func (h *TerminalHandler) HandleWs(_ context.Context, c *app.RequestContext) {
 	id := c.Param("id")
 	if id == "" {
@@ -160,7 +53,6 @@ func (h *TerminalHandler) HandleWs(_ context.Context, c *app.RequestContext) {
 		return
 	}
 
-	// 使用配置化的 Origin 校验替代硬编码的"允许所有来源"，避免跨站 WebSocket 劫持
 	upgrader := websocket.HertzUpgrader{CheckOrigin: httputil.CheckOrigin(h.allowedOrigins)}
 
 	err := upgrader.Upgrade(c, func(conn *websocket.Conn) {
@@ -173,9 +65,8 @@ func (h *TerminalHandler) HandleWs(_ context.Context, c *app.RequestContext) {
 		}
 		defer func() { _ = ptmx.Close() }()
 
-		// 在 attach 之后立即检查 tmux 进程是否存活，捕获 session 不存在等快速失败场景
-		// AttachSession 返回后 tmux 进程已在后台运行，若 session 不存在，进程会立即退出
-		// 此时给 tmux 一个短暂的启动窗口，然后检查 PTY 是否可读
+		// attach 后 tmux 进程在后台运行，若 session 不存在进程会立即退出
+		// 使用 sync.Once 确保 WebSocket 和 PTY 只关闭一次
 		var once sync.Once
 		cleanup := func() {
 			once.Do(func() {
@@ -185,6 +76,7 @@ func (h *TerminalHandler) HandleWs(_ context.Context, c *app.RequestContext) {
 		}
 		defer cleanup()
 
+		// PTY → WebSocket：读取终端输出并发送到前端
 		go func() {
 			buf := make([]byte, ptyBufferSize)
 			for {
@@ -204,6 +96,7 @@ func (h *TerminalHandler) HandleWs(_ context.Context, c *app.RequestContext) {
 			}
 		}()
 
+		// WebSocket → PTY：读取前端输入和 resize 指令
 		for {
 			_, msg, err := conn.ReadMessage()
 			if err != nil {
@@ -222,7 +115,6 @@ func (h *TerminalHandler) HandleWs(_ context.Context, c *app.RequestContext) {
 					}); err != nil {
 						h.logger.Errorf("[ws] pty resize for session %s failed: %v", id, err)
 					}
-					// 同步 tmux session 的内部尺寸，避免外层 PTY 与 tmux session 尺寸不一致
 					if err := h.tmuxService.ResizeSession(id, resize.Rows, resize.Cols); err != nil {
 						h.logger.Warnf("[ws] tmux resize for session %s failed: %v", id, err)
 					}

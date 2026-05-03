@@ -47,8 +47,7 @@ func TestSessionSaveAndRestore(t *testing.T) {
 	}
 
 	t.Log("[step] restoring session...")
-	emptyBody := map[string]interface{}{}
-	_, _, err = h.apiClient.SessionServiceAPI.SessionServiceRestoreSession(context.Background(), nodeName, sid).Body(emptyBody).Execute()
+	_, _, err = h.apiClient.SessionServiceAPI.SessionServiceRestoreSession(context.Background(), nodeName, sid).Body(client.SessionServiceRestoreSessionBody{}).Execute()
 	if err != nil {
 		t.Fatalf("restore session failed: %v", err)
 	}

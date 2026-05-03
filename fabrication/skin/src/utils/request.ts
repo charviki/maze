@@ -9,11 +9,13 @@ const DEFAULT_TIMEOUT_MS = 30000;
 /**
  * 创建带 baseUrl 前缀的请求函数。
  * 所有 API client 共享统一的错误处理和响应解析逻辑。
+ *
+ * 服务端 grpc-gateway 返回标准 proto JSON（成功时直接是业务数据，失败时为 rpcStatus 格式），
+ * 此函数在解析层自行包装为 ApiResponse<T>，对调用方完全透明。
  */
 export function createRequest(baseUrl = '') {
   return async function request<T>(url: string, options?: RequestInit): Promise<ApiResponse<T>> {
     try {
-      // 如果调用方提供了 signal（自定义超时控制），直接使用；否则用默认超时
       const externalSignal = options?.signal;
       let controller: AbortController | null = null;
       let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -41,23 +43,27 @@ export function createRequest(baseUrl = '') {
       if (timeoutId) clearTimeout(timeoutId);
 
       const text = await response.text();
+
       if (!response.ok) {
-        if (!text) {
-          return { status: 'error', message: `HTTP ${response.status}` };
+        // 服务端返回 rpcStatus 格式 {"code": int32, "message": "..."}
+        if (text) {
+          try {
+            const parsed = JSON.parse(text) as { code?: number; message?: string };
+            return { status: 'error', message: parsed.message || `HTTP ${response.status}` };
+          } catch {
+            // 非 JSON 响应，用 HTTP 状态码兜底
+          }
         }
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-          return JSON.parse(text);
-        } catch {
-          return { status: 'error', message: `HTTP ${response.status}` };
-        }
+        return { status: 'error', message: `HTTP ${response.status}` };
       }
+
+      // 成功：标准 proto JSON 直接就是业务数据，包装为 ApiResponse
       if (!text) {
         return { status: 'ok', data: undefined };
       }
       try {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-        return JSON.parse(text);
+        const parsed = JSON.parse(text) as T;
+        return { status: 'ok', data: parsed };
       } catch {
         return { status: 'error', message: '响应解析失败' };
       }

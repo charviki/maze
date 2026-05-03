@@ -19,6 +19,7 @@ var _ MappedNullable = &SessionServiceUpdateSessionConfigBody{}
 
 // SessionServiceUpdateSessionConfigBody struct for SessionServiceUpdateSessionConfigBody
 type SessionServiceUpdateSessionConfigBody struct {
+	NodeName *string `json:"nodeName,omitempty"`
 	Files []V1ConfigFileUpdate `json:"files,omitempty"`
 }
 
@@ -37,6 +38,38 @@ func NewSessionServiceUpdateSessionConfigBody() *SessionServiceUpdateSessionConf
 func NewSessionServiceUpdateSessionConfigBodyWithDefaults() *SessionServiceUpdateSessionConfigBody {
 	this := SessionServiceUpdateSessionConfigBody{}
 	return &this
+}
+
+// GetNodeName returns the NodeName field value if set, zero value otherwise.
+func (o *SessionServiceUpdateSessionConfigBody) GetNodeName() string {
+	if o == nil || IsNil(o.NodeName) {
+		var ret string
+		return ret
+	}
+	return *o.NodeName
+}
+
+// GetNodeNameOk returns a tuple with the NodeName field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *SessionServiceUpdateSessionConfigBody) GetNodeNameOk() (*string, bool) {
+	if o == nil || IsNil(o.NodeName) {
+		return nil, false
+	}
+	return o.NodeName, true
+}
+
+// HasNodeName returns a boolean if a field has been set.
+func (o *SessionServiceUpdateSessionConfigBody) HasNodeName() bool {
+	if o != nil && !IsNil(o.NodeName) {
+		return true
+	}
+
+	return false
+}
+
+// SetNodeName gets a reference to the given string and assigns it to the NodeName field.
+func (o *SessionServiceUpdateSessionConfigBody) SetNodeName(v string) {
+	o.NodeName = &v
 }
 
 // GetFiles returns the Files field value if set, zero value otherwise.
@@ -81,6 +114,9 @@ func (o SessionServiceUpdateSessionConfigBody) MarshalJSON() ([]byte, error) {
 
 func (o SessionServiceUpdateSessionConfigBody) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
+	if !IsNil(o.NodeName) {
+		toSerialize["nodeName"] = o.NodeName
+	}
 	if !IsNil(o.Files) {
 		toSerialize["files"] = o.Files
 	}

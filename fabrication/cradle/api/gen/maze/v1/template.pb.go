@@ -985,15 +985,15 @@ const file_maze_v1_template_proto_rawDesc = "" +
 	"\abuiltin\x18\b \x01(\bR\abuiltin\x120\n" +
 	"\bdefaults\x18\t \x01(\v2\x14.maze.v1.ConfigLayerR\bdefaults\x12=\n" +
 	"\x0esession_schema\x18\n" +
-	" \x01(\v2\x16.maze.v1.SessionSchemaR\rsessionSchema2\xa6\a\n" +
-	"\x0fTemplateService\x12{\n" +
-	"\rListTemplates\x12\x1d.maze.v1.ListTemplatesRequest\x1a\x1e.maze.v1.ListTemplatesResponse\"+\x82\xd3\xe4\x93\x02%\x12#/api/v1/nodes/{node_name}/templates\x12z\n" +
-	"\x0eCreateTemplate\x12\x1e.maze.v1.CreateTemplateRequest\x1a\x18.maze.v1.SessionTemplate\".\x82\xd3\xe4\x93\x02(:\x01*\"#/api/v1/nodes/{node_name}/templates\x12v\n" +
-	"\vGetTemplate\x12\x1b.maze.v1.GetTemplateRequest\x1a\x18.maze.v1.SessionTemplate\"0\x82\xd3\xe4\x93\x02*\x12(/api/v1/nodes/{node_name}/templates/{id}\x12\x7f\n" +
-	"\x0eUpdateTemplate\x12\x1e.maze.v1.UpdateTemplateRequest\x1a\x18.maze.v1.SessionTemplate\"3\x82\xd3\xe4\x93\x02-:\x01*\x1a(/api/v1/nodes/{node_name}/templates/{id}\x12z\n" +
-	"\x0eDeleteTemplate\x12\x1e.maze.v1.DeleteTemplateRequest\x1a\x16.google.protobuf.Empty\"0\x82\xd3\xe4\x93\x02**(/api/v1/nodes/{node_name}/templates/{id}\x12\x8c\x01\n" +
-	"\x11GetTemplateConfig\x12!.maze.v1.GetTemplateConfigRequest\x1a\x1b.maze.v1.TemplateConfigView\"7\x82\xd3\xe4\x93\x021\x12//api/v1/nodes/{node_name}/templates/{id}/config\x12\x95\x01\n" +
-	"\x14UpdateTemplateConfig\x12$.maze.v1.UpdateTemplateConfigRequest\x1a\x1b.maze.v1.TemplateConfigView\":\x82\xd3\xe4\x93\x024:\x01*\x1a//api/v1/nodes/{node_name}/templates/{id}/configB\x91\x01\n" +
+	" \x01(\v2\x16.maze.v1.SessionSchemaR\rsessionSchema2\xee\b\n" +
+	"\x0fTemplateService\x12\x90\x01\n" +
+	"\rListTemplates\x12\x1d.maze.v1.ListTemplatesRequest\x1a\x1e.maze.v1.ListTemplatesResponse\"@\x82\xd3\xe4\x93\x02:Z\x13\x12\x11/api/v1/templates\x12#/api/v1/nodes/{node_name}/templates\x12\x92\x01\n" +
+	"\x0eCreateTemplate\x12\x1e.maze.v1.CreateTemplateRequest\x1a\x18.maze.v1.SessionTemplate\"F\x82\xd3\xe4\x93\x02@:\x01*Z\x16:\x01*\"\x11/api/v1/templates\"#/api/v1/nodes/{node_name}/templates\x12\x90\x01\n" +
+	"\vGetTemplate\x12\x1b.maze.v1.GetTemplateRequest\x1a\x18.maze.v1.SessionTemplate\"J\x82\xd3\xe4\x93\x02DZ\x18\x12\x16/api/v1/templates/{id}\x12(/api/v1/nodes/{node_name}/templates/{id}\x12\x9c\x01\n" +
+	"\x0eUpdateTemplate\x12\x1e.maze.v1.UpdateTemplateRequest\x1a\x18.maze.v1.SessionTemplate\"P\x82\xd3\xe4\x93\x02J:\x01*Z\x1b:\x01*\x1a\x16/api/v1/templates/{id}\x1a(/api/v1/nodes/{node_name}/templates/{id}\x12\x94\x01\n" +
+	"\x0eDeleteTemplate\x12\x1e.maze.v1.DeleteTemplateRequest\x1a\x16.google.protobuf.Empty\"J\x82\xd3\xe4\x93\x02DZ\x18*\x16/api/v1/templates/{id}*(/api/v1/nodes/{node_name}/templates/{id}\x12\xad\x01\n" +
+	"\x11GetTemplateConfig\x12!.maze.v1.GetTemplateConfigRequest\x1a\x1b.maze.v1.TemplateConfigView\"X\x82\xd3\xe4\x93\x02RZ\x1f\x12\x1d/api/v1/templates/{id}/config\x12//api/v1/nodes/{node_name}/templates/{id}/config\x12\xb9\x01\n" +
+	"\x14UpdateTemplateConfig\x12$.maze.v1.UpdateTemplateConfigRequest\x1a\x1b.maze.v1.TemplateConfigView\"^\x82\xd3\xe4\x93\x02X:\x01*Z\":\x01*\x1a\x1d/api/v1/templates/{id}/config\x1a//api/v1/nodes/{node_name}/templates/{id}/configB\x91\x01\n" +
 	"\vcom.maze.v1B\rTemplateProtoP\x01Z6github.com/charviki/maze-cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
 
 var (

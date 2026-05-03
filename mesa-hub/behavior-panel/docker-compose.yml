@@ -14,7 +14,6 @@ services:
       dockerfile: mesa-hub/behavior-panel/Dockerfile
     ports:
       - '${PORT_MANAGER:-8090}:8080'
-      - '${PORT_GATEWAY:-8091}:8081'
     container_name: agent-manager
     environment:
       AGENT_MANAGER_SERVER_AUTH_TOKEN: '${MAZE_AUTH_TOKEN:-}'

@@ -20,37 +20,37 @@
 
 | 路径                             | 职责                                                 | 文档同步                                   |
 | -------------------------------- | ---------------------------------------------------- | ------------------------------------------ |
-| api/buf.yaml                     | buf 项目配置（lint + breaking change 规则）          | —                                          |
-| api/buf.gen.yaml                 | 代码生成配置（Go + gRPC + grpc-gateway + OpenAPI）   | —                                          |
-| api/proto/maze/v1/agent.proto    | Agent 注册/心跳 RPC + 消息定义                       | —                                          |
-| api/proto/maze/v1/session.proto  | Session CRUD + 终端操作 RPC + 消息定义               | —                                          |
-| api/proto/maze/v1/template.proto | Template CRUD + Config RPC + 消息定义                | —                                          |
-| api/proto/maze/v1/config.proto   | LocalConfig RPC + 消息定义                           | —                                          |
-| api/proto/maze/v1/host.proto     | Host 生命周期 RPC + 消息定义（含 HTTP 注解）         | —                                          |
-| api/proto/maze/v1/node.proto     | Node 查询/删除 RPC + 消息定义（含 HTTP 注解）        | —                                          |
-| api/proto/maze/v1/audit.proto    | 审计日志查询 RPC + 消息定义（含 HTTP 注解）          | —                                          |
-| api/gen/maze/v1/\*.pb.go         | buf 生成的 Go protobuf 类型                          | 自动生成，勿手动编辑                       |
-| api/gen/maze/v1/\*\_grpc.pb.go   | buf 生成的 gRPC server/client stub                   | 自动生成，勿手动编辑                       |
-| api/gen/maze/v1/\*.pb.gw.go      | buf 生成的 grpc-gateway HTTP handler                 | 自动生成，勿手动编辑                       |
-| api/gen/openapiv2/               | buf 生成的 OpenAPI/Swagger 文档                      | 自动生成，勿手动编辑                       |
-| configutil/loader.go             | YAML 配置文件搜索与加载                              | [packages.md#configutil](docs/packages.md) |
-| configutil/merge.go              | 多配置层合并                                         | [packages.md#configutil](docs/packages.md) |
-| configutil/config_layer.go       | 配置层数据结构定义                                   | [packages.md#configutil](docs/packages.md) |
-| configutil/atomic_write.go       | 原子文件写入                                         | [packages.md#configutil](docs/packages.md) |
-| httputil/response.go             | 统一 JSON 响应封装                                   | [packages.md#httputil](docs/packages.md)   |
-| httputil/cors.go                 | CORS 中间件与 WebSocket Origin 校验                  | [packages.md#httputil](docs/packages.md)   |
-| logutil/logger.go                | 结构化日志接口与 slog 实现                           | [packages.md#logutil](docs/packages.md)    |
-| middleware/auth.go               | Bearer Token 鉴权中间件                              | [packages.md#middleware](docs/packages.md) |
-| middleware/cors.go               | CORS 中间件（委托 httputil）                         | [packages.md#middleware](docs/packages.md) |
-| pipeline/pipeline.go             | 管线步骤定义与层级过滤                               | [packages.md#pipeline](docs/packages.md)   |
-| protocol/register.go             | Agent 注册与心跳协议（过渡期保留，将迁移至 api/gen） | [packages.md#protocol](docs/packages.md)   |
-| protocol/host.go                 | Host 部署协议（过渡期保留，将迁移至 api/gen）        | [packages.md#protocol](docs/packages.md)   |
-| protocol/audit.go                | 审计日志条目定义（过渡期保留，将迁移至 api/gen）     | [packages.md#protocol](docs/packages.md)   |
-| maskutil/mask.go                 | 敏感值脱敏                                           | [packages.md#maskutil](docs/packages.md)   |
-| storeutil/json_store.go          | 泛型 JSON 持久化存储                                 | [packages.md#storeutil](docs/packages.md)  |
+| api/buf.yaml + buf.gen.yaml      | buf 项目配置 + 代码生成配置（Go/gRPC/gateway/OpenAPI） | —                                          |
+| api/proto/                       | Protobuf IDL 定义（agent/session/template/config/host/node/audit） | —                                          |
+| api/gen/                         | buf 生成的 Go 类型 + gRPC stub + grpc-gateway handler（自动生成，勿手动编辑） | —                                          |
+| api/gen/openapiv2/               | buf 生成的 OpenAPI/Swagger 文档（maze.swagger.json 为合并后的完整 spec） | 自动生成，勿手动编辑                       |
+| api/gen/http/                    | openapi-generator 生成的 Go HTTP client（自动生成，勿手动编辑）     | —                                          |
+| configutil/                      | 配置搜索/加载/合并/层定义/原子写入                    | [packages.md](docs/packages.md)            |
+| httputil/                        | 统一 JSON 响应封装 + CORS 中间件                     | [packages.md](docs/packages.md)            |
+| logutil/logger.go                | 结构化日志接口与 slog 实现                           | [packages.md](docs/packages.md)            |
+| middleware/                      | Bearer Token 鉴权 + CORS 中间件（委托 httputil）     | [packages.md](docs/packages.md)            |
+| gatewayutil/                     | grpc-gateway 响应包装器 + ServeMux 工厂 + 认证/审计 interceptor | [packages.md](docs/packages.md)            |
+| pipeline/pipeline.go             | 管线步骤定义与层级过滤                               | [packages.md](docs/packages.md)            |
+| protocol/                        | 领域模型：Agent 注册/心跳 + Host 部署 + 审计日志（JSON 持久化） | [packages.md](docs/packages.md)            |
+| maskutil/mask.go                 | 敏感值脱敏                                           | [packages.md](docs/packages.md)            |
+| storeutil/json_store.go          | 泛型 JSON 持久化存储                                 | [packages.md](docs/packages.md)            |
 
 ## 详细文档
 
 | 文档                                 | 内容                  |
 | ------------------------------------ | --------------------- |
 | [docs/packages.md](docs/packages.md) | 各子包说明 + 导出 API |
+
+## 代码生成流程
+
+修改 proto 文件后，需重新生成 Go 类型和 HTTP client：
+
+```bash
+make gen    # 一键生成 proto + HTTP client
+```
+
+等价于依次执行：
+1. `make gen-proto` — `buf generate` 生成 Go 类型 + gRPC stub + grpc-gateway + OpenAPI spec（`maze.swagger.json`）
+2. `make gen-client` — 以 `maze.swagger.json` 为输入，`openapi-generator` 生成 Go HTTP client
+
+前置依赖：`buf`、`openapi-generator`、`Java`

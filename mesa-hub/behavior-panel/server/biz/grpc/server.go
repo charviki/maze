@@ -8,6 +8,8 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
@@ -32,6 +34,7 @@ type Server struct {
 	nodeSvc  *service.NodeService
 	auditSvc *service.AuditService
 	proxy    *service.AgentProxyService
+	registry *model.NodeRegistry
 	logger   logutil.Logger
 
 	grpcServer *grpc.Server
@@ -43,6 +46,7 @@ func NewServer(
 	nodeSvc *service.NodeService,
 	auditSvc *service.AuditService,
 	proxy *service.AgentProxyService,
+	registry *model.NodeRegistry,
 	logger logutil.Logger,
 ) *Server {
 	return &Server{
@@ -50,18 +54,20 @@ func NewServer(
 		nodeSvc:  nodeSvc,
 		auditSvc: auditSvc,
 		proxy:    proxy,
+		registry: registry,
 		logger:   logger,
 	}
 }
 
-// Start 启动 gRPC server（非阻塞）
-func (s *Server) Start(addr string) error {
+// Start 启动 gRPC server（非阻塞）。
+// opts 透传给 grpc.NewServer，用于注入 interceptor chain 等服务端选项。
+func (s *Server) Start(addr string, opts ...grpc.ServerOption) error {
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		return fmt.Errorf("grpc listen %s: %w", addr, err)
 	}
 
-	s.grpcServer = grpc.NewServer()
+	s.grpcServer = grpc.NewServer(opts...)
 	pb.RegisterHostServiceServer(s.grpcServer, s)
 	pb.RegisterNodeServiceServer(s.grpcServer, s)
 	pb.RegisterAuditServiceServer(s.grpcServer, s)
@@ -100,16 +106,184 @@ func (s *Server) GrpcServer() *grpc.Server {
 	return s.grpcServer
 }
 
-// AgentService — 保持 Unimplemented
+// AgentService — Register / Heartbeat
 
-// Register Agent 注册 gRPC 接口（Manager 端由 HTTP 处理）
+// Register Agent 注册 gRPC 接口：校验参数 → 注册到 registry → 异步恢复已保存 session
 func (s *Server) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "use HTTP POST /api/v1/nodes/register")
+	if req.GetName() == "" {
+		return nil, status.Error(codes.InvalidArgument, "name is required")
+	}
+	if req.GetAddress() == "" {
+		return nil, status.Error(codes.InvalidArgument, "address is required")
+	}
+
+	protoReq := pbRegisterToProtocol(req)
+	node := s.registry.Register(protoReq)
+
+	// 恢复 session 是后台异步操作，不应阻塞注册响应，故使用独立 context
+	go s.restoreAgentSessions(req.GetName(), req.GetGrpcAddress()) //nolint:gosec
+
+	return &pb.RegisterResponse{
+		Name:   node.Name,
+		Status: node.Status,
+	}, nil
 }
 
-// Heartbeat Agent 心跳 gRPC 接口（Manager 端由 HTTP 处理）
+// Heartbeat Agent 心跳 gRPC 接口：校验参数 → 更新心跳和状态快照
 func (s *Server) Heartbeat(ctx context.Context, req *pb.HeartbeatRequest) (*pb.HeartbeatResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "use HTTP POST /api/v1/nodes/heartbeat")
+	if req.GetName() == "" {
+		return nil, status.Error(codes.InvalidArgument, "name is required")
+	}
+
+	protoReq := pbHeartbeatToProtocol(req)
+	node := s.registry.Heartbeat(protoReq)
+	if node == nil {
+		return nil, status.Error(codes.NotFound, "node not found")
+	}
+
+	return &pb.HeartbeatResponse{
+		Name:   node.Name,
+		Status: node.Status,
+	}, nil
+}
+
+// restoreAgentSessions 在 Agent 注册后异步恢复已保存的 session。
+// 通过 gRPC client 调用 Agent 的 GetSavedSessions 和 RestoreSession，
+// 跳过 restore_strategy 为 "running" 的 session。
+func (s *Server) restoreAgentSessions(name, grpcAddr string) {
+	if grpcAddr == "" {
+		s.logger.Warnf("[session-restore] node %s has no gRPC address, skip", name)
+		return
+	}
+
+	conn, err := grpc.NewClient(grpcAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		s.logger.Warnf("[session-restore] dial %s (%s) failed: %v", name, grpcAddr, err)
+		return
+	}
+	defer func() { _ = conn.Close() }()
+
+	client := pb.NewSessionServiceClient(conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := client.GetSavedSessions(ctx, &pb.GetSavedSessionsRequest{NodeName: name})
+	if err != nil {
+		s.logger.Warnf("[session-restore] get saved sessions from %s failed: %v", name, err)
+		return
+	}
+
+	if len(resp.GetSessions()) == 0 {
+		s.logger.Infof("[session-restore] no saved sessions for %s", name)
+		return
+	}
+
+	restored := 0
+	for _, ss := range resp.GetSessions() {
+		// "running" 表示 session 仍在运行，无需恢复
+		if ss.GetRestoreStrategy() == "running" {
+			continue
+		}
+
+		restoreCtx, restoreCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		_, err := client.RestoreSession(restoreCtx, &pb.RestoreSessionRequest{
+			NodeName: name,
+			Id:       ss.GetSessionName(),
+		})
+		restoreCancel()
+
+		if err != nil {
+			s.logger.Warnf("[session-restore] restore session %s/%s failed: %v", name, ss.GetSessionName(), err)
+			continue
+		}
+
+		restored++
+		s.logger.Infof("[session-restore] restored session %s/%s", name, ss.GetSessionName())
+	}
+
+	if restored > 0 {
+		s.logger.Infof("[session-restore] restored %d sessions for %s", restored, name)
+	}
+}
+
+// pb → protocol 转换函数
+
+func pbRegisterToProtocol(req *pb.RegisterRequest) protocol.RegisterRequest {
+	return protocol.RegisterRequest{
+		Name:         req.GetName(),
+		Address:      req.GetAddress(),
+		ExternalAddr: req.GetExternalAddr(),
+		GrpcAddress:  req.GetGrpcAddress(),
+		Capabilities: pbCapabilitiesToProtocol(req.GetCapabilities()),
+		Status:       pbAgentStatusToProtocol(req.GetStatus()),
+		Metadata:     pbMetadataToProtocol(req.GetMetadata()),
+	}
+}
+
+func pbHeartbeatToProtocol(req *pb.HeartbeatRequest) protocol.HeartbeatRequest {
+	return protocol.HeartbeatRequest{
+		Name:   req.GetName(),
+		Status: pbAgentStatusToProtocol(req.GetStatus()),
+	}
+}
+
+func pbCapabilitiesToProtocol(c *pb.AgentCapabilities) protocol.AgentCapabilities {
+	if c == nil {
+		return protocol.AgentCapabilities{}
+	}
+	return protocol.AgentCapabilities{
+		SupportedTemplates: c.GetSupportedTemplates(),
+		MaxSessions:        int(c.GetMaxSessions()),
+		Tools:              c.GetTools(),
+	}
+}
+
+func pbAgentStatusToProtocol(s *pb.AgentStatus) protocol.AgentStatus {
+	if s == nil {
+		return protocol.AgentStatus{}
+	}
+	details := make([]protocol.SessionDetail, 0, len(s.GetSessionDetails()))
+	for _, d := range s.GetSessionDetails() {
+		if d == nil {
+			continue
+		}
+		details = append(details, protocol.SessionDetail{
+			ID:            d.GetId(),
+			Template:      d.GetTemplate(),
+			WorkingDir:    d.GetWorkingDir(),
+			UptimeSeconds: d.GetUptimeSeconds(),
+		})
+	}
+	var localCfg *protocol.LocalAgentConfig
+	if lc := s.GetLocalConfig(); lc != nil {
+		localCfg = &protocol.LocalAgentConfig{
+			WorkingDir: lc.GetWorkingDir(),
+			Env:        lc.GetEnv(),
+		}
+	}
+	return protocol.AgentStatus{
+		ActiveSessions: int(s.GetActiveSessions()),
+		CPUUsage:       s.GetCpuUsage(),
+		MemoryUsageMB:  s.GetMemoryUsageMb(),
+		WorkspaceRoot:  s.GetWorkspaceRoot(),
+		SessionDetails: details,
+		LocalConfig:    localCfg,
+	}
+}
+
+func pbMetadataToProtocol(m *pb.AgentMetadata) protocol.AgentMetadata {
+	if m == nil {
+		return protocol.AgentMetadata{}
+	}
+	startedAt, _ := time.Parse(time.RFC3339, m.GetStartedAt())
+	return protocol.AgentMetadata{
+		Version:   m.GetVersion(),
+		Hostname:  m.GetHostname(),
+		StartedAt: startedAt,
+	}
 }
 
 // CreateHost 创建 Host（异步：持久化 HostSpec → Reconciler 构建/启动容器）
@@ -130,6 +304,9 @@ func (s *Server) CreateHost(ctx context.Context, req *pb.CreateHostRequest) (*pb
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
+	// CreateHost 是异步操作（Reconciler 后续构建/启动容器），返回 202 Accepted 与旧 handler 行为一致
+	_ = grpc.SetHeader(ctx, metadata.Pairs("x-http-status", "202"))
 
 	return hostSpecToProto(spec), nil
 }

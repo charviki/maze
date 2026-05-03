@@ -7,6 +7,7 @@ import (
 
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/server"
+	gwruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/hertz-contrib/logger/accesslog"
 
 	"github.com/charviki/maze-cradle/logutil"
@@ -17,61 +18,26 @@ import (
 	"github.com/charviki/sweetwater-black-ridge/biz/service"
 )
 
-// Register 注册所有 API 路由
-func Register(h *server.Hertz, cfg *config.Config, logger logutil.Logger) *model.TemplateStore {
+// Register 注册所有 API 路由（便捷入口，内部创建 TmuxService）
+func Register(h *server.Hertz, cfg *config.Config, logger logutil.Logger, gwmux *gwruntime.ServeMux) *model.TemplateStore {
 	tmuxService := service.NewTmuxService(&cfg.Tmux, cfg.Workspace.StateDir, logger)
-	return RegisterWithService(h, cfg, tmuxService, logger)
+	return RegisterWithService(h, cfg, tmuxService, logger, gwmux)
 }
 
-// RegisterWithService 注册所有 API 路由（含外部 TmuxService）
-func RegisterWithService(h *server.Hertz, cfg *config.Config, tmuxService service.TmuxService, logger logutil.Logger) *model.TemplateStore {
+// RegisterWithService 注册路由：中间件 + WebSocket + 健康检查。
+// REST API 路由由 grpc-gateway（通过 Hertz NoRoute 转发）处理。
+func RegisterWithService(h *server.Hertz, cfg *config.Config, tmuxService service.TmuxService, logger logutil.Logger, _ *gwruntime.ServeMux) *model.TemplateStore {
 	templateStore := model.NewTemplateStore(filepath.Join(cfg.Workspace.StateDir, "templates.json"), logger)
-	sessionHandler := handler.NewSessionHandler(tmuxService, templateStore, cfg, logger)
+
 	terminalHandler := handler.NewTerminalHandler(tmuxService, cfg.Terminal.DefaultLines, logger, cfg.Server.AllowedOrigins)
 
-	templateHandler := handler.NewTemplateHandler(templateStore)
-
-	localConfigStore := service.NewLocalConfigStore(cfg.Workspace.RootDir, logger)
-	localConfigHandler := handler.NewLocalConfigHandler(localConfigStore)
-
+	// Hertz 中间件：CORS 和 AccessLog 仍由 Hertz 处理
 	h.Use(cradlemw.CORS())
 	h.Use(accesslog.New())
 
-	api := h.Group("/api/v1", cradlemw.Auth(cfg.Server.AuthToken))
-
-	// Session CRUD
-	api.GET("/sessions", sessionHandler.ListSessions)
-	api.POST("/sessions", sessionHandler.CreateSession)
-	api.GET("/sessions/:id", sessionHandler.GetSession)
-	api.DELETE("/sessions/:id", sessionHandler.DeleteSession)
-	api.GET("/sessions/:id/config", sessionHandler.GetSessionConfig)
-	api.PUT("/sessions/:id/config", sessionHandler.UpdateSessionConfig)
-
-	// 终端操作
-	api.GET("/sessions/:id/output", terminalHandler.GetOutput)
-	api.POST("/sessions/:id/input", terminalHandler.SendInput)
-	api.POST("/sessions/:id/signal", terminalHandler.SendSignal)
-	api.GET("/sessions/:id/env", terminalHandler.GetEnv)
-	// WebSocket 端点也纳入 Auth 保护，防止未授权终端访问
-	api.GET("/sessions/:id/ws", terminalHandler.HandleWs)
-
-	// 管线保存与恢复
-	api.GET("/sessions/saved", sessionHandler.GetSavedSessions)
-	api.POST("/sessions/:id/restore", sessionHandler.RestoreSession)
-	api.POST("/sessions/save", sessionHandler.SaveSessions)
-
-	// Templates
-	api.GET("/templates", templateHandler.ListTemplates)
-	api.POST("/templates", templateHandler.CreateTemplate)
-	api.GET("/templates/:id", templateHandler.GetTemplate)
-	api.PUT("/templates/:id", templateHandler.UpdateTemplate)
-	api.DELETE("/templates/:id", templateHandler.DeleteTemplate)
-	api.GET("/templates/:id/config", templateHandler.GetTemplateConfig)
-	api.PUT("/templates/:id/config", templateHandler.UpdateTemplateConfig)
-
-	// Local Config
-	api.GET("/local-config", localConfigHandler.GetConfig)
-	api.PUT("/local-config", localConfigHandler.UpdateConfig)
+	// WebSocket 端点由 Hertz 直接管理（gRPC 不支持 WebSocket 升级）
+	protected := h.Group("/api/v1", cradlemw.Auth(cfg.Server.AuthToken))
+	protected.GET("/sessions/:id/ws", terminalHandler.HandleWs)
 
 	h.GET("/health", func(ctx context.Context, c *app.RequestContext) {
 		c.JSON(http.StatusOK, map[string]string{"status": "ok"})

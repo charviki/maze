@@ -21,7 +21,7 @@ type TestConfig struct {
 // LoadTestConfig 从环境变量加载集成测试配置。
 func LoadTestConfig() *TestConfig {
 	cfg := &TestConfig{
-		ManagerURL:          getEnv("MAZE_TEST_MANAGER_URL", "http://localhost:9091"),
+		ManagerURL:          getEnv("MAZE_TEST_MANAGER_URL", "http://localhost:9090"),
 		Env:                 getEnv("MAZE_TEST_ENV", "docker"),
 		Namespace:           getEnv("MAZE_TEST_NAMESPACE", "maze-test"),
 		DataDir:             getEnv("MAZE_TEST_DATA_DIR", os.Getenv("HOME")+"/.maze-test"),
@@ -49,7 +49,8 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
-// NewTestAPIClient 创建指向 gRPC-gateway (:9091) 的 OpenAPI 生成 client
+// NewTestAPIClient 创建指向 Manager HTTP 端口的 OpenAPI 生成 client。
+// 服务端 grpc-gateway 已返回标准 proto JSON，与 OpenAPI spec 完全一致，无需额外解包。
 func NewTestAPIClient(cfg *TestConfig) *client.APIClient {
 	config := client.NewConfiguration()
 	config.Servers = client.ServerConfigurations{

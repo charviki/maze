@@ -1,0 +1,3 @@
+# .openapi-generator-ignore 无法阻止 .openapi-generator/ 元数据目录的生成，
+# 在此忽略。
+.openapi-generator/

@@ -16,6 +16,8 @@ import (
 	"github.com/charviki/mesa-hub-behavior-panel/biz/reconciler"
 	"github.com/charviki/mesa-hub-behavior-panel/biz/runtime"
 	"github.com/charviki/mesa-hub-behavior-panel/biz/service"
+
+	gwruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 )
 
 // dataDir 返回数据文件存储目录。
@@ -42,10 +44,10 @@ type CleanupResources struct {
 	AuditSvc   *service.AuditService
 }
 
-// Register 注册所有 API 路由并初始化各 Store 和 Handler。
-// 通过构造函数注入 Store 依赖到 Handler，实现手动依赖注入。
-// 返回 CleanupResources 供调用方在优雅关闭时执行资源清理。
-func Register(h *server.Hertz, cfg *config.Config, logger logutil.Logger) *CleanupResources {
+// Register 初始化依赖、注册 Hertz 中间件和 WebSocket 路由，启动 Reconciler。
+// REST API 路由已迁移到 grpc-gateway（由 main.go 通过 NoRoute 转发），此处不再注册。
+// gwmux 参数保持接口一致性，本函数不直接使用。
+func Register(h *server.Hertz, cfg *config.Config, logger logutil.Logger, gwmux *gwruntime.ServeMux) *CleanupResources {
 	dir := dataDir(cfg)
 
 	registry := model.NewNodeRegistry(filepath.Join(dir, "nodes.json"), logger)
@@ -66,9 +68,8 @@ func Register(h *server.Hertz, cfg *config.Config, logger logutil.Logger) *Clean
 	nodeSvc := service.NewNodeService(registry, logger)
 	auditSvc := service.NewAuditService(auditLog)
 
-	nodeHandler := handler.NewNodeHandler(nodeSvc, registry, cfg.Server.AuthToken, logger)
+	// SessionProxyHandler 仍需保留：WebSocket 终端代理需要访问 registry、auditLog 等依赖
 	sessionProxyHandler := handler.NewSessionProxyHandler(registry, auditLog, auditSvc, logger, cfg.Server.AuthToken, cfg.AllowedOrigins(), cfg.Server.AllowPrivateNetworks)
-	hostHandler := handler.NewHostHandler(hostSvc)
 
 	// 启动恢复：路由注册后、HTTP 服务启动前执行
 	rec := reconciler.NewReconciler(specMgr, registry, hostRuntime, cfg, logger, logDir)
@@ -87,58 +88,10 @@ func Register(h *server.Hertz, cfg *config.Config, logger logutil.Logger) *Clean
 		h.Use(cradlemw.CORS())
 	}
 
-	api := h.Group("/api/v1")
-
-	// 节点注册和心跳端点：认证在 handler 内部完成（支持 Host 令牌 + 全局令牌分层校验）
-	api.POST("/nodes/register", nodeHandler.Register)
-	api.POST("/nodes/heartbeat", nodeHandler.Heartbeat)
-
-	// 其余 API 需要 Auth 保护（当 config.auth_token 非空时生效）
-	protected := api.Group("", cradlemw.Auth(cfg.Server.AuthToken))
-
-	// 节点查询和删除
-	protected.GET("/nodes", nodeHandler.ListNodes)
-	protected.GET("/nodes/:name", nodeHandler.GetNode)
-	protected.DELETE("/nodes/:name", nodeHandler.DeleteNode)
-
-	// Session/Template/LocalConfig 管理代理路由（前端通过 Manager 代理到 Agent）
-	protected.GET("/nodes/:name/sessions", sessionProxyHandler.ListSessions)
-	protected.POST("/nodes/:name/sessions", sessionProxyHandler.CreateSession)
-	protected.GET("/nodes/:name/sessions/saved", sessionProxyHandler.GetSavedSessions)
-	protected.GET("/nodes/:name/sessions/:id", sessionProxyHandler.GetSession)
-	protected.DELETE("/nodes/:name/sessions/:id", sessionProxyHandler.DeleteSession)
-	protected.GET("/nodes/:name/sessions/:id/config", sessionProxyHandler.GetSessionConfig)
-	protected.PUT("/nodes/:name/sessions/:id/config", sessionProxyHandler.UpdateSessionConfig)
-	protected.POST("/nodes/:name/sessions/:id/restore", sessionProxyHandler.RestoreSession)
-	protected.POST("/nodes/:name/sessions/save", sessionProxyHandler.SaveAllSessions)
-
-	// Template 代理
-	protected.GET("/nodes/:name/templates", sessionProxyHandler.ListTemplates)
-	protected.POST("/nodes/:name/templates", sessionProxyHandler.CreateTemplate)
-	protected.GET("/nodes/:name/templates/:id", sessionProxyHandler.GetTemplate)
-	protected.PUT("/nodes/:name/templates/:id", sessionProxyHandler.UpdateTemplate)
-	protected.DELETE("/nodes/:name/templates/:id", sessionProxyHandler.DeleteTemplate)
-	protected.GET("/nodes/:name/templates/:id/config", sessionProxyHandler.GetTemplateConfig)
-	protected.PUT("/nodes/:name/templates/:id/config", sessionProxyHandler.UpdateTemplateConfig)
-
-	// Local Config 代理
-	protected.GET("/nodes/:name/local-config", sessionProxyHandler.GetLocalConfig)
-	protected.PUT("/nodes/:name/local-config", sessionProxyHandler.UpdateLocalConfig)
-
-	// WebSocket 终端代理（前端通过 Manager 代理到 Agent 的 WebSocket 连接）
+	// WebSocket 终端代理：前端通过 Manager 代理到 Agent 的 WebSocket 连接。
+	// 认证由 Hertz Auth 中间件保护，WebSocket 路由不经过 grpc-gateway（grpc-gateway 不支持 HTTP 升级）
+	protected := h.Group("/api/v1", cradlemw.Auth(cfg.Server.AuthToken))
 	protected.GET("/nodes/:name/sessions/:id/ws", sessionProxyHandler.ProxyWebSocket)
-
-	// Host 生命周期管理（异步创建 + 全生命周期状态）
-	protected.POST("/hosts", hostHandler.CreateHost)
-	protected.GET("/hosts", hostHandler.ListHosts)
-	protected.GET("/hosts/:name", hostHandler.GetHost)
-	protected.GET("/host/tools", hostHandler.ListTools)
-	protected.DELETE("/hosts/:name", hostHandler.DeleteHost)
-	protected.GET("/hosts/:name/logs/build", hostHandler.GetBuildLog)
-	protected.GET("/hosts/:name/logs/runtime", hostHandler.GetRuntimeLog)
-
-	// 审计日志路由
-	protected.GET("/audit/logs", sessionProxyHandler.GetAuditLogs)
 
 	return &CleanupResources{
 		Registry:   registry,

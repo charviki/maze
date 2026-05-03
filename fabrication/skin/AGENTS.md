@@ -21,14 +21,9 @@
 | 路径                               | 职责                                                                                              | 文档同步                            |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------- |
 | src/index.ts                       | 模块入口，统一导出所有组件、工具函数和类型                                                        | 本文件                              |
-| src/types.ts                       | 全局类型定义（Session, Pipeline, Template, Config, Tool, CreateHostRequest, HostStatus, Host 等） | 本文件                              |
-| src/api.ts                         | IAgentApiClient 接口定义，规范所有 Agent 交互方法                                                 | 本文件                              |
-| src/utils.ts                       | cn 类名合并工具                                                                                   | 本文件                              |
-| src/utils/mask.ts                  | 环境变量和文件内容脱敏工具                                                                        | 本文件                              |
-| src/utils/request.ts               | HTTP 请求工厂函数 createRequest                                                                   | 本文件                              |
-| src/hooks/usePollingWithBackoff.ts | 带指数退避的轮询 Hook                                                                             | 本文件                              |
-| src/components/ui/                 | 视觉特效和基础 UI 组件（20 个文件）                                                               | [components.md](docs/components.md) |
-| src/components/agent/              | Agent 业务组件（6 个文件）                                                                        | [components.md](docs/components.md) |
+| src/types.ts + src/api.ts          | 全局类型定义 + IAgentApiClient 接口                                                               | 本文件                              |
+| src/utils/ + src/hooks/            | 工具函数（cn/脱敏/请求工厂）+ 轮询 Hook                                                           | 本文件                              |
+| src/components/                    | 视觉特效 + 基础 UI 组件 + Agent 业务组件（共 26 个文件）                                          | [components.md](docs/components.md) |
 
 ## 详细文档
 

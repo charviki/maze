@@ -2,8 +2,10 @@ package grpc
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -38,14 +40,36 @@ func (s *Server) CreateSession(ctx context.Context, req *pb.CreateSessionRequest
 		return nil, status.Error(codes.InvalidArgument, "name is required")
 	}
 
+	// working_dir 安全解析：相对路径基于 workspace root 解析为绝对路径
+	resolvedWorkingDir, err := resolveWorkingDir(req.GetWorkingDir(), s.workspaceRootDir)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// 从模板获取 restoreCommand，用于恢复时使用专用恢复命令
+	var restoreCommand string
+	var tpl *model.SessionTemplate
+	if req.GetTemplateId() != "" {
+		tpl = s.templateStore.Get(req.GetTemplateId())
+		if tpl == nil {
+			return nil, status.Error(codes.InvalidArgument, "template not found")
+		}
+		restoreCommand = tpl.RestoreCommand
+	}
+
 	confs := make([]model.ConfigItem, len(req.GetSessionConfs()))
 	for i, c := range req.GetSessionConfs() {
 		confs[i] = model.ConfigItem{Type: c.GetType(), Key: c.GetKey(), Value: c.GetValue()}
 	}
 
+	// session_confs 校验：确保 env key 和 file path 在模板声明的范围内
+	if err := validateSessionConfs(confs, tpl); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	session, err := s.tmuxService.CreateSession(
-		sessionName, req.GetCommand(), req.GetWorkingDir(),
-		confs, req.GetRestoreStrategy(), req.GetTemplateId(), "",
+		sessionName, req.GetCommand(), resolvedWorkingDir,
+		confs, req.GetRestoreStrategy(), req.GetTemplateId(), restoreCommand,
 	)
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate session") {
@@ -65,13 +89,25 @@ func (s *Server) GetSession(ctx context.Context, req *pb.GetSessionRequest) (*pb
 	return modelSessionToProto(session), nil
 }
 
-// DeleteSession 删除指定 Session
+// DeleteSession 删除指定 Session，同时清理工作目录
 func (s *Server) DeleteSession(ctx context.Context, req *pb.DeleteSessionRequest) (*emptypb.Empty, error) {
 	if err := s.tmuxService.SaveAllPipelineStates(); err != nil {
 		s.logger.Warnf("[grpc] save pipeline states before delete %s: %v", req.GetId(), err)
 	}
 	if err := s.tmuxService.KillSession(req.GetId()); err != nil {
-		return nil, errToStatus(err)
+		// tmux session 不存在时（如 saved session），不中断流程
+		if !errors.Is(err, service.ErrSessionNotFound) {
+			return nil, errToStatus(err)
+		}
+		s.logger.Warnf("[grpc] tmux session %s not found, proceeding to clean state", req.GetId())
+	}
+	// 清理 session 工作目录，保护 workspace root 不被误删
+	if err := s.tmuxService.DeleteSessionWorkspace(req.GetId(), s.workspaceRootDir); err != nil {
+		if errors.Is(err, service.ErrWorkspaceRootProtected) {
+			s.logger.Warnf("[grpc] skip deleting protected workspace root: %v", err)
+		} else {
+			s.logger.Warnf("[grpc] delete session workspace %s: %v", req.GetId(), err)
+		}
 	}
 	if err := s.tmuxService.DeleteSessionState(req.GetId()); err != nil {
 		s.logger.Warnf("[grpc] delete session state %s: %v", req.GetId(), err)
@@ -173,7 +209,7 @@ func (s *Server) UpdateSessionConfig(ctx context.Context, req *pb.UpdateSessionC
 		protoConfigUpdatesToModel(req.GetFiles()),
 	)
 	if err != nil {
-		return nil, errToStatus(err)
+		return nil, configConflictToStatus(err)
 	}
 	return &pb.SessionConfigView{
 		SessionId:  req.GetId(),
@@ -269,10 +305,10 @@ func modelSessionToProto(sess *model.Session) *pb.Session {
 		return nil
 	}
 	return &pb.Session{
-		Id:          sess.ID,
-		Name:        sess.Name,
-		Status:      sess.Status,
-		CreatedAt:   sess.CreatedAt,
+		Id:        sess.ID,
+		Name:      sess.Name,
+		Status:    sess.Status,
+		CreatedAt: sess.CreatedAt,
 		//nolint:gosec
 		WindowCount: int32(sess.WindowCount),
 	}
@@ -301,4 +337,85 @@ func protoConfigUpdatesToModel(files []*pb.ConfigFileUpdate) []model.ConfigFileU
 		}
 	}
 	return updates
+}
+
+// resolveWorkingDir 解析 working_dir：相对路径基于 workspace root 转为绝对路径，
+// 防止路径遍历（../）和 workspace root 本身被占用。
+func resolveWorkingDir(rawWorkingDir string, workspaceRoot string) (string, error) {
+	trimmed := strings.TrimSpace(rawWorkingDir)
+	if trimmed == "" {
+		return "", errors.New("working_dir is required")
+	}
+
+	root := filepath.Clean(workspaceRoot)
+	var resolved string
+	if filepath.IsAbs(trimmed) {
+		resolved = filepath.Clean(trimmed)
+	} else {
+		cleanedRelative := filepath.Clean(trimmed)
+		// 相对目录必须留在基础根目录内，避免通过 ../ 跳出工作区
+		if cleanedRelative == "." || cleanedRelative == ".." || strings.HasPrefix(cleanedRelative, ".."+string(filepath.Separator)) {
+			return "", errors.New("working_dir must stay under workspace root")
+		}
+		resolved = filepath.Join(root, cleanedRelative)
+	}
+
+	// session 工作目录不能是 workspace root 本身，否则删除时有整根清理风险
+	if resolved == root {
+		return "", errors.New("working_dir cannot be workspace root")
+	}
+	return resolved, nil
+}
+
+// validateSessionConfs 校验 session 配置项：env key 和 file path 必须在模板声明范围内
+func validateSessionConfs(configs []model.ConfigItem, tpl *model.SessionTemplate) error {
+	if len(configs) == 0 {
+		return nil
+	}
+	if tpl == nil {
+		return errors.New("template_id is required when session_confs are provided")
+	}
+
+	allowedEnvKeys := make(map[string]struct{}, len(tpl.SessionSchema.EnvDefs))
+	for _, def := range tpl.SessionSchema.EnvDefs {
+		allowedEnvKeys[def.Key] = struct{}{}
+	}
+
+	allowedFilePaths := make(map[string]struct{}, len(tpl.SessionSchema.FileDefs))
+	for _, def := range tpl.SessionSchema.FileDefs {
+		allowedFilePaths[filepath.Clean(def.Path)] = struct{}{}
+	}
+
+	for i := range configs {
+		cfg := &configs[i]
+		switch cfg.Type {
+		case "env":
+			if _, ok := allowedEnvKeys[cfg.Key]; !ok {
+				return errors.New("session env key is not allowed by template")
+			}
+		case "file":
+			cleaned := filepath.Clean(strings.TrimSpace(cfg.Key))
+			// 强制路径规范化并限制为模板声明的相对路径
+			if filepath.IsAbs(cleaned) || cleaned == "." || cleaned == ".." || strings.HasPrefix(cleaned, ".."+string(filepath.Separator)) {
+				return errors.New("session file path must stay under working directory")
+			}
+			if _, ok := allowedFilePaths[cleaned]; !ok {
+				return errors.New("session file path is not allowed by template")
+			}
+			cfg.Key = cleaned
+		default:
+			return errors.New("unsupported session config type")
+		}
+	}
+	return nil
+}
+
+// configConflictToStatus 将 ConfigConflictError 转为 gRPC status，携带冲突详情 JSON
+func configConflictToStatus(err error) error {
+	var confErr *service.ConfigConflictError
+	if errors.As(err, &confErr) {
+		detail, _ := json.Marshal(confErr.Conflicts)
+		return status.Error(codes.FailedPrecondition, string(detail))
+	}
+	return errToStatus(err)
 }
