@@ -1,112 +1,119 @@
 import type {
-  Session,
-  CreateSessionRequest,
-  TerminalOutput,
-  SavedSession,
-  SessionTemplate,
-  LocalAgentConfig,
   IAgentApiClient,
-  SaveConfigRequest,
-  SessionConfigView,
-  TemplateConfigView,
+  ApiResponse,
+  V1SessionTemplate,
+  NormalizedTemplate,
 } from '@maze/fabrication';
-import { createRequest } from '@maze/fabrication';
-
-const emptySchema = { envDefs: [], fileDefs: [] };
-const emptyDefaults = { env: {}, files: [] };
-
-function normalizeTemplate(tpl: SessionTemplate): SessionTemplate {
-  return {
-    ...tpl,
-    defaults: tpl.defaults || emptyDefaults,
-    sessionSchema: tpl.sessionSchema || emptySchema,
-  };
-}
+import {
+  SessionServiceApi,
+  TemplateServiceApi,
+  ConfigServiceApi,
+  createSdkConfiguration,
+  unwrapSdkResponse,
+  unwrapVoidResponse,
+  normalizeTemplate,
+} from '@maze/fabrication';
 
 export function createAgentApi(managerBase: string, nodeName: string): IAgentApiClient {
-  const nodeBase = `${managerBase}/api/v1/nodes/${encodeURIComponent(nodeName)}`;
-  const base = `${nodeBase}/sessions`;
-  const request = createRequest();
+  const config = createSdkConfiguration(managerBase);
+  const sessionApi = new SessionServiceApi(config);
+  const templateApi = new TemplateServiceApi(config);
+  const configApi = new ConfigServiceApi(config);
+
+  function normalizeList(result: V1SessionTemplate[] | undefined): NormalizedTemplate[] {
+    return (result || []).map(normalizeTemplate);
+  }
+
+  function normalizeSingle(res: ApiResponse<V1SessionTemplate>): ApiResponse<NormalizedTemplate> {
+    if (res.status === 'ok' && res.data) {
+      return { ...res, data: normalizeTemplate(res.data) };
+    }
+    return res as ApiResponse<NormalizedTemplate>;
+  }
 
   return {
     listSessions: async () => {
-      const res = await request<{ sessions: Session[] }>(base);
+      const res = await unwrapSdkResponse(sessionApi.sessionServiceListSessions({ nodeName }));
       return { ...res, data: res.data?.sessions };
     },
 
-    createSession: (data: CreateSessionRequest) =>
-      request<Session>(base, { method: 'POST', body: JSON.stringify(data) }),
+    createSession: (data) =>
+      unwrapSdkResponse(sessionApi.sessionServiceCreateSession({ nodeName, body: data })),
 
-    getSession: (id: string) => request<Session>(`${base}/${id}`),
+    getSession: (id) => unwrapSdkResponse(sessionApi.sessionServiceGetSession({ nodeName, id })),
 
-    getSessionConfig: (id: string) => request<SessionConfigView>(`${base}/${id}/config`),
+    deleteSession: (id) =>
+      unwrapVoidResponse(sessionApi.sessionServiceDeleteSession({ nodeName, id })),
 
-    deleteSession: (id: string) => request<void>(`${base}/${id}`, { method: 'DELETE' }),
+    getOutput: (id, lines = 50) =>
+      unwrapSdkResponse(sessionApi.sessionServiceGetOutput({ nodeName, id, lines })),
 
-    updateSessionConfig: (id: string, req: SaveConfigRequest) =>
-      request<SessionConfigView>(`${base}/${id}/config`, {
-        method: 'PUT',
-        body: JSON.stringify(req),
-      }),
+    sendInput: (id, command) =>
+      unwrapVoidResponse(sessionApi.sessionServiceSendInput({ nodeName, id, body: { command } })),
 
-    getOutput: (id: string, lines = 50) =>
-      request<TerminalOutput>(`${base}/${id}/output?lines=${lines}`),
-
-    sendInput: (id: string, command: string) =>
-      request<void>(`${base}/${id}/input`, { method: 'POST', body: JSON.stringify({ command }) }),
-
-    sendSignal: (id: string, signal: string) =>
-      request<void>(`${base}/${id}/signal`, { method: 'POST', body: JSON.stringify({ signal }) }),
+    sendSignal: (id, signal) =>
+      unwrapVoidResponse(sessionApi.sessionServiceSendSignal({ nodeName, id, body: { signal } })),
 
     getSavedSessions: async () => {
-      const res = await request<{ sessions: SavedSession[] }>(`${base}/saved`);
+      const res = await unwrapSdkResponse(sessionApi.sessionServiceGetSavedSessions({ nodeName }));
       return { ...res, data: res.data?.sessions };
     },
 
-    restoreSession: (id: string) => request<void>(`${base}/${id}/restore`, { method: 'POST' }),
+    restoreSession: (id) =>
+      unwrapVoidResponse(sessionApi.sessionServiceRestoreSession({ nodeName, id, body: {} })),
 
-    saveSessions: () => request<{ savedAt: string }>(`${base}/save`, { method: 'POST' }),
+    saveSessions: () => unwrapSdkResponse(sessionApi.sessionServiceSaveSessions({ nodeName })),
 
-    buildWsUrl: (sessionId: string) => {
+    buildWsUrl: (sessionId) => {
       const loc = window.location;
       const protocol = loc.protocol === 'https:' ? 'wss:' : 'ws:';
       return `${protocol}//${loc.host}/api/v1/nodes/${encodeURIComponent(nodeName)}/sessions/${sessionId}/ws`;
     },
 
     listTemplates: async () => {
-      const res = await request<{ templates: SessionTemplate[] }>(`${nodeBase}/templates`);
-      return { ...res, data: res.data?.templates?.map(normalizeTemplate) };
+      const res = await unwrapSdkResponse(templateApi.templateServiceListTemplates({ nodeName }));
+      return { ...res, data: normalizeList(res.data?.templates) };
     },
-    createTemplate: (tpl: SessionTemplate) =>
-      request<SessionTemplate>(`${nodeBase}/templates`, {
-        method: 'POST',
-        body: JSON.stringify(tpl),
-      }).then((res) => ({ ...res, data: res.data ? normalizeTemplate(res.data) : undefined })),
-    getTemplate: (id: string) =>
-      request<SessionTemplate>(`${nodeBase}/templates/${id}`).then((res) => ({
-        ...res,
-        data: res.data ? normalizeTemplate(res.data) : undefined,
-      })),
-    getTemplateConfig: (id: string) =>
-      request<TemplateConfigView>(`${nodeBase}/templates/${id}/config`),
-    updateTemplate: (id: string, tpl: SessionTemplate) =>
-      request<SessionTemplate>(`${nodeBase}/templates/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(tpl),
-      }).then((res) => ({ ...res, data: res.data ? normalizeTemplate(res.data) : undefined })),
-    updateTemplateConfig: (id: string, req: SaveConfigRequest) =>
-      request<TemplateConfigView>(`${nodeBase}/templates/${id}/config`, {
-        method: 'PUT',
-        body: JSON.stringify(req),
-      }),
-    deleteTemplate: (id: string) =>
-      request<void>(`${nodeBase}/templates/${id}`, { method: 'DELETE' }),
 
-    getLocalConfig: () => request<LocalAgentConfig>(`${nodeBase}/local-config`),
-    updateLocalConfig: (cfg: Partial<LocalAgentConfig>) =>
-      request<LocalAgentConfig>(`${nodeBase}/local-config`, {
-        method: 'PUT',
-        body: JSON.stringify(cfg),
-      }),
+    createTemplate: async (tpl) => {
+      const res = await unwrapSdkResponse(
+        templateApi.templateServiceCreateTemplate({ nodeName, body: { template: tpl } }),
+      );
+      return normalizeSingle(res);
+    },
+
+    getTemplate: async (id) => {
+      const res = await unwrapSdkResponse(templateApi.templateServiceGetTemplate({ nodeName, id }));
+      return normalizeSingle(res);
+    },
+
+    updateTemplate: async (id, tpl) => {
+      const res = await unwrapSdkResponse(
+        templateApi.templateServiceUpdateTemplate({ nodeName, id, body: { template: tpl } }),
+      );
+      return normalizeSingle(res);
+    },
+
+    deleteTemplate: (id) =>
+      unwrapVoidResponse(templateApi.templateServiceDeleteTemplate({ nodeName, id })),
+
+    getTemplateConfig: (id) =>
+      unwrapSdkResponse(templateApi.templateServiceGetTemplateConfig({ nodeName, id })),
+
+    updateTemplateConfig: (id, req) =>
+      unwrapSdkResponse(
+        templateApi.templateServiceUpdateTemplateConfig({ nodeName, id, body: req }),
+      ),
+
+    getSessionConfig: (id) =>
+      unwrapSdkResponse(sessionApi.sessionServiceGetSessionConfig({ nodeName, id })),
+
+    updateSessionConfig: (id, req) =>
+      unwrapSdkResponse(sessionApi.sessionServiceUpdateSessionConfig({ nodeName, id, body: req })),
+
+    getLocalConfig: () => unwrapSdkResponse(configApi.configServiceGetConfig({ nodeName })),
+
+    updateLocalConfig: (cfg) =>
+      unwrapSdkResponse(configApi.configServiceUpdateConfig({ nodeName, body: cfg })),
   };
 }

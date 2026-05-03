@@ -16,7 +16,7 @@ import {
   CreateHostDialog,
   HostLogPanel,
 } from '@maze/fabrication';
-import type { Host, RadarNode, Tool, CreateHostRequest } from '@maze/fabrication';
+import type { Host, RadarNode, Tool, CreateHostRequest, HostSpec } from '@maze/fabrication';
 import { Server, Activity, Menu, Settings, Plus } from 'lucide-react';
 import './index.css';
 
@@ -40,12 +40,15 @@ function App() {
 
   const handleNodesChange = useCallback((nodes: Host[]) => {
     setRadarNodes(
-      nodes.map((n) => ({ name: n.name, status: n.status === 'online' ? 'online' : 'offline' })),
+      nodes.map((n) => ({
+        name: n.name ?? '',
+        status: n.status === 'online' ? 'online' : 'offline',
+      })),
     );
   }, []);
 
   const agentApi = useMemo(
-    () => (selectedHost ? createAgentApi('', selectedHost.name) : null),
+    () => (selectedHost?.name ? createAgentApi('', selectedHost.name) : null),
     [selectedHost],
   );
 
@@ -63,7 +66,7 @@ function App() {
     }
   }, []);
 
-  const handleCreateHost = useCallback(async (data: CreateHostRequest): Promise<Host> => {
+  const handleCreateHost = useCallback(async (data: CreateHostRequest): Promise<HostSpec> => {
     const res = await controllerApi.createHost(data);
     if (res.status === 'error') {
       throw new Error(res.message || '创建失败');

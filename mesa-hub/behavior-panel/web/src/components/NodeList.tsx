@@ -132,13 +132,15 @@ export function NodeList({
         ))}
       {!isLoading &&
         hosts.map((host) => {
-          const isSelected = selectedNodeName === host.name;
-          const cfg = statusConfig(host.status);
-          const isOperational = host.status === 'online' || host.status === 'offline';
+          const hostName = host.name ?? '';
+          const hostStatus = host.status ?? '';
+          const isSelected = selectedNodeName === hostName;
+          const cfg = statusConfig(hostStatus);
+          const isOperational = hostStatus === 'online' || hostStatus === 'offline';
           return (
             <GlitchEffect
-              key={host.name}
-              isActive={host.status === 'offline' || host.status === 'failed'}
+              key={hostName}
+              isActive={hostStatus === 'offline' || hostStatus === 'failed'}
               className="block"
             >
               <div
@@ -164,12 +166,12 @@ export function NodeList({
                 <div className="flex items-center justify-between pl-1">
                   <div className="flex items-center gap-3 font-mono text-sm tracking-wide text-primary">
                     <div className="relative flex h-3 w-1.5 shrink-0">
-                      {host.status === 'online' && (
+                      {hostStatus === 'online' && (
                         <span
                           className={`animate-pulse absolute inline-flex h-full w-full ${cfg.dotClass} opacity-75 ${cfg.glowClass}`}
                         ></span>
                       )}
-                      {(host.status === 'pending' || host.status === 'deploying') && (
+                      {(hostStatus === 'pending' || hostStatus === 'deploying') && (
                         <span
                           className={`animate-pulse absolute inline-flex h-full w-full ${cfg.dotClass} opacity-60`}
                         ></span>
@@ -177,7 +179,7 @@ export function NodeList({
                       <span className={`relative inline-flex h-3 w-1.5 ${cfg.dotClass}`}></span>
                     </div>
                     <span className={`truncate uppercase font-bold ${cfg.textClass}`}>
-                      {isSelected ? <DecryptText text={host.name} /> : host.name}
+                      {isSelected ? <DecryptText text={hostName} /> : hostName}
                     </span>
                   </div>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -188,7 +190,7 @@ export function NodeList({
                         className="h-6 w-6 rounded-none text-muted-foreground hover:text-primary"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onViewLog(host.name);
+                          onViewLog(hostName);
                         }}
                       >
                         <FileText className="w-3 h-3" />
@@ -200,7 +202,7 @@ export function NodeList({
                       className="h-6 w-6 rounded-none text-muted-foreground hover:text-destructive"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setDeleteTarget(host.name);
+                        setDeleteTarget(hostName);
                       }}
                     >
                       <Trash2 className="w-3 h-3" />
@@ -210,7 +212,7 @@ export function NodeList({
 
                 <div className="text-[10px] text-muted-foreground space-y-1.5 font-mono uppercase tracking-widest pl-4">
                   <div className="flex justify-between items-center opacity-80">
-                    <span>[ HOST_ID: {host.name.substring(0, 8)} ]</span>
+                    <span>[ HOST_ID: {hostName.substring(0, 8)} ]</span>
                     <span className={`border px-1.5 text-[9px] ${cfg.labelClass}`}>
                       {isOperational ? `${host.sessionCount} LOOPS` : cfg.label}
                     </span>
@@ -225,8 +227,10 @@ export function NodeList({
                       </>
                     ) : (
                       <>
-                        <span>TOOLS: {host.tools.join(', ')}</span>
-                        <span>CREATED: {formatTimeAgo(host.createdAt)}</span>
+                        <span>TOOLS: {(host.tools ?? []).join(', ')}</span>
+                        <span>
+                          CREATED: {host.createdAt ? formatTimeAgo(host.createdAt) : 'N/A'}
+                        </span>
                       </>
                     )}
                   </div>

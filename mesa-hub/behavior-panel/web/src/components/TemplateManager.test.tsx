@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { TemplateManager, ToastProvider } from '@maze/fabrication';
-import type { IAgentApiClient, SessionTemplate } from '@maze/fabrication';
+import type { IAgentApiClient, NormalizedTemplate } from '@maze/fabrication';
 
-const builtinClaudeTemplate: SessionTemplate = {
+const builtinClaudeTemplate: NormalizedTemplate = {
   id: 'claude',
   name: 'Claude Code',
   command: 'IS_SANDBOX=1 claude --dangerously-skip-permissions',
@@ -57,7 +57,7 @@ function createMockApi(overrides: Partial<IAgentApiClient> = {}): IAgentApiClien
     saveSessions: vi.fn(() => ok({ savedAt: new Date().toISOString() })),
     buildWsUrl: vi.fn(() => 'ws://localhost/test'),
     listTemplates: vi.fn(() => ok([builtinClaudeTemplate])),
-    createTemplate: vi.fn((tpl: SessionTemplate) => ok(tpl)),
+    createTemplate: vi.fn((tpl: NormalizedTemplate) => ok(tpl)),
     getTemplate: vi.fn((id: string) => ok({ ...builtinClaudeTemplate, id })),
     getTemplateConfig: vi.fn(() =>
       ok({
@@ -74,7 +74,7 @@ function createMockApi(overrides: Partial<IAgentApiClient> = {}): IAgentApiClien
         ],
       }),
     ),
-    updateTemplate: vi.fn((id: string, tpl: SessionTemplate) => ok({ ...tpl, id })),
+    updateTemplate: vi.fn((id: string, tpl: NormalizedTemplate) => ok({ ...tpl, id })),
     updateTemplateConfig: vi.fn(() =>
       ok({
         templateId: 'claude',
