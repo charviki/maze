@@ -65,8 +65,8 @@ TEST_NAME ?=
 
 .PHONY: help \
         build build-manager build-web build-agent build-deps \
-        vet test check \
-        gen-proto gen-client gen \
+        vet test check check-frontend \
+        gen-proto gen-client gen-sdk gen \
         up down status \
         deploy undeploy \
         proxy proxy-web proxy-manager \
@@ -110,7 +110,21 @@ gen-client: gen-proto ## 重新生成 OpenAPI Go HTTP client（需要 openapi-ge
 			--package-name client \
 			--additional-properties=isGoSubmodule=true,withGoMod=false,enumClassPrefix=true
 
-gen: gen-client ## 一键生成 proto + HTTP client
+gen-sdk: ## 生成 TypeScript SDK from OpenAPI spec (fabrication/skin)
+	@echo "\033[0;32m[gen-sdk]\033[0m Generating TypeScript SDK..."
+	cd fabrication/skin && JAVA_HOME=$(JAVA_HOME) npx openapi-generator-cli generate \
+		-i ../cradle/api/gen/http/api/openapi.yaml \
+		-c openapi-generator-config.yaml \
+		-o src/api/gen \
+		-g typescript-fetch
+	@# SDK gen 文件包含跨文件引用的内部 helper，在消费端 tsc -b 编译时会触发 noUnusedLocals。
+	@# @ts-nocheck 只加在自动生成的文件上，不影响业务代码的类型安全。
+	find fabrication/skin/src/api/gen -name '*.ts' -exec sed -i '' '/^\/\/ @ts-nocheck$$/d' {} \;
+	find fabrication/skin/src/api/gen -name '*.ts' -exec sed -i '' '1i\
+// @ts-nocheck' {} \;
+	@echo "\033[0;32m[gen-sdk]\033[0m SDK generated at fabrication/skin/src/api/gen/"
+
+gen: gen-client gen-sdk ## 一键生成 proto + HTTP client + TypeScript SDK
 
 # ============================================================
 #  Go 编译 / 检查 / 测试
@@ -162,8 +176,21 @@ test: ## 运行所有 Go 单元测试
 		cd $(PROJECT_ROOT); \
 	done
 
-check: build-go lint test ## 编译 + golangci-lint + 单元测试（交付铁律）
-	@echo "\033[0;32m[check]\033[0m All checks passed!"
+check: build-go lint test ## 编译 + golangci-lint + 单元测试（Go 交付铁律）
+	@echo "\033[0;32m[check]\033[0m All Go checks passed!"
+
+# ===== 前端检查 =====
+
+FRONTEND_MODULES := fabrication/skin mesa-hub/behavior-panel/web sweetwater/black-ridge/web
+
+check-frontend: ## 前端三道检查：tsc → eslint → vitest（每个模块按序执行，任何一步失败即中止）
+	@cd fabrication/skin && npx tsc --noEmit || exit 1 && npx eslint . || exit 1 && npx vitest run || exit 1; \
+	cd $(PROJECT_ROOT)
+	@cd mesa-hub/behavior-panel/web && npx tsc -b --noEmit || exit 1 && npx eslint . || exit 1 && npx vitest run || exit 1; \
+	cd $(PROJECT_ROOT)
+	@cd sweetwater/black-ridge/web && npx tsc -b --noEmit || exit 1 && npx eslint . || exit 1 && npx vitest run || exit 1; \
+	cd $(PROJECT_ROOT)
+	@echo "\033[0;32m[check-frontend]\033[0m All frontend checks passed!"
 
 format-js: ## 格式化所有 TS/TSX/JSON/MD 文件
 	@echo "\033[0;32m[format-js]\033[0m Formatting with Prettier..."

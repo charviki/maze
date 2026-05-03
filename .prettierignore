@@ -10,6 +10,9 @@ pnpm-lock.yaml
 # 自动生成的代码和文档
 fabrication/cradle/api/gen/
 
+# TypeScript SDK 自动生成代码
+fabrication/skin/src/api/gen/
+
 # 自动生成的嵌入资源（从 YAML 模板生成）
 sweetwater/black-ridge/server/templates.json
 
