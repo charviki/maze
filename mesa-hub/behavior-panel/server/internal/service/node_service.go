@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/charviki/maze-cradle/logutil"
-	"github.com/charviki/mesa-hub-behavior-panel/biz/model"
+	"github.com/charviki/mesa-hub-behavior-panel/internal/model"
 )
 
 // NodeService 节点管理业务逻辑（Manager 本地），供 HTTP handler 和 gRPC handler 共用

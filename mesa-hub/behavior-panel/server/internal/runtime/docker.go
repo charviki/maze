@@ -13,8 +13,8 @@ import (
 
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/maze-cradle/protocol"
-	"github.com/charviki/mesa-hub-behavior-panel/biz/builder"
-	"github.com/charviki/mesa-hub-behavior-panel/biz/config"
+	"github.com/charviki/mesa-hub-behavior-panel/internal/config"
+	builder "github.com/charviki/mesa-hub-behavior-panel/internal/imagebuilder"
 )
 
 // DockerRuntime 通过 docker CLI 实现的容器运行时

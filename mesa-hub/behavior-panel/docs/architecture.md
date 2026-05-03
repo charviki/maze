@@ -2,9 +2,9 @@
 
 ## 概述
 
-Behavior Panel 是 Mesa-Hub 的控制中心模块，由 **Agent Manager**（Go 后端，Hertz HTTP 外壳 + grpc-gateway + gRPC Server 三层架构）和 **Web 前端**（React + @maze/fabrication 组件库）组成。Manager 作为代理网关和 Host 编排引擎，统一管理所有 Agent 节点，代理前端到 Agent 的所有 HTTP 和 WebSocket 请求，并通过声明式 HostSpec 持久化 + Reconciler 实现 Host 的全生命周期自动化管理。
+Behavior Panel 是 Mesa-Hub 的控制中心模块，由 **Agent Manager**（Go 后端，`net/http` + grpc-gateway + gRPC Server 三层架构）和 **Web 前端**（React + @maze/fabrication 组件库）组成。Manager 作为代理网关和 Host 编排引擎，统一管理所有 Agent 节点，代理前端到 Agent 的所有 HTTP 和 WebSocket 请求，并通过声明式 HostSpec 持久化 + Reconciler 实现 Host 的全生命周期自动化管理。
 
-所有 REST API 由 proto 注解驱动，通过 grpc-gateway ServeMux 处理（Hertz `NoRoute` 转发），WebSocket 路由由 Hertz 直接管理。gRPC Server 运行在独立端口（`:9090`），gateway 进程内直连，经过 interceptor chain（认证→分层令牌→审计）。
+所有 REST API 由 proto 注解驱动，通过 grpc-gateway ServeMux 处理，WebSocket 路由由 `http.ServeMux` 直接管理。gRPC Server 运行在独立端口（`:9090`），gateway 进程内直连，经过 interceptor chain（认证→分层令牌→审计）。
 
 ## Manager 角色：代理网关
 
@@ -46,7 +46,7 @@ Agent 定时 → gRPC AgentService.Heartbeat (Authorization: Bearer <hostToken>,
             → 超过 30 秒无心跳 → ListNodes/GetNode 时标记为 offline
 ```
 
-离线阈值定义在 [node.go](../server/biz/model/node.go) 中的 `nodeOfflineThreshold = 30 * time.Second`。
+离线阈值定义在 [node.go](../server/internal/model/node.go) 中的 `nodeOfflineThreshold = 30 * time.Second`。
 
 ### 代理请求流程（HTTP → gRPC 转发）
 
@@ -62,7 +62,7 @@ Agent 定时 → gRPC AgentService.Heartbeat (Authorization: Bearer <hostToken>,
 
 ```
 前端 ws:// → Manager /api/v1/nodes/:name/sessions/:id/ws
-           → HertzUpgrader.Upgrade() 升级为 WebSocket
+           → gorilla/websocket.Upgrader.Upgrade() 升级为 WebSocket
            → scheme 替换 (http→ws, https→wss) 构建 Agent WS URL
            → validateAgentURL() SSRF 校验
            → gorilla/websocket.Dial() 连接 Agent
@@ -70,13 +70,13 @@ Agent 定时 → gRPC AgentService.Heartbeat (Authorization: Bearer <hostToken>,
            → 任一端断开 → 另一端自动关闭
 ```
 
-WebSocket Origin 校验使用配置化的 `allowedOrigins` 列表，为空时允许所有来源（开发模式）。详见 [proxy_ws.go](../server/biz/handler/proxy_ws.go)。
+WebSocket Origin 校验使用配置化的 `allowedOrigins` 列表，为空时允许所有来源（开发模式）。详见 [proxy_ws.go](../server/internal/transport/proxy_ws.go)。
 
 ## 节点注册表（NodeRegistry）
 
 ### 数据结构
 
-Node 结构定义在 [node.go](../server/biz/model/node.go)，包含：`Name`, `Address`, `ExternalAddr`, `AuthToken`, `Status`(online/offline), `RegisteredAt`, `LastHeartbeat`, `Capabilities`, `AgentStatus`, `Metadata`。
+Node 结构定义在 [node.go](../server/internal/model/node.go)，包含：`Name`, `Address`, `ExternalAddr`, `AuthToken`, `Status`(online/offline), `RegisteredAt`, `LastHeartbeat`, `Capabilities`, `AgentStatus`, `Metadata`。
 
 ### 持久化策略：dirty flush
 

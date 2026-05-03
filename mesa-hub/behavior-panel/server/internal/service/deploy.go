@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/charviki/maze-cradle/protocol"
-	"github.com/charviki/mesa-hub-behavior-panel/biz/builder"
-	"github.com/charviki/mesa-hub-behavior-panel/biz/config"
-	"github.com/charviki/mesa-hub-behavior-panel/biz/runtime"
+	"github.com/charviki/mesa-hub-behavior-panel/internal/config"
+	builder "github.com/charviki/mesa-hub-behavior-panel/internal/imagebuilder"
+	"github.com/charviki/mesa-hub-behavior-panel/internal/runtime"
 )
 
 // BuildAndDeploy 执行 Host 的构建部署：生成 Dockerfile → 调用运行时部署。

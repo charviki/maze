@@ -3,7 +3,6 @@ package config
 import (
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/charviki/maze-cradle/configutil"
 )
@@ -77,20 +76,18 @@ type DockerConfig struct {
 
 // ServerConfig HTTP 服务配置，含监听地址、鉴权令牌、CORS 白名单
 type ServerConfig struct {
-	ListenAddr           string   `yaml:"listen_addr"`
-	AuthToken            string   `yaml:"auth_token"`
-	AllowedOrigins       []string `yaml:"allowed_origins"`
-	AllowPrivateNetworks bool     `yaml:"allow_private_networks"`
+	configutil.ServerConfig `yaml:",inline"`
+	AllowPrivateNetworks    bool `yaml:"allow_private_networks"`
 }
 
 // AllowedOrigins 返回配置中的允许来源列表
 func (c *Config) AllowedOrigins() []string {
-	return c.Server.AllowedOrigins
+	return c.Server.Origins()
 }
 
 // IsDevMode 当 auth_token 为空时视为开发模式
 func (c *Config) IsDevMode() bool {
-	return c.Server.AuthToken == ""
+	return c.Server.IsDevMode()
 }
 
 // LoadFromExe 搜索并加载配置文件（当前目录 → 可执行文件所在目录 → 上级目录），
@@ -118,83 +115,11 @@ func Load(path string) (*Config, error) {
 
 // 用环境变量覆盖 YAML 配置值
 func applyEnvOverrides(cfg *Config) {
-	if v := os.Getenv("AGENT_MANAGER_SERVER_LISTEN_ADDR"); v != "" {
-		cfg.Server.ListenAddr = v
+	if err := configutil.ApplyEnvOverrides("AGENT_MANAGER", cfg); err != nil {
+		panic(err)
 	}
-	if v := os.Getenv("AGENT_MANAGER_SERVER_AUTH_TOKEN"); v != "" {
-		cfg.Server.AuthToken = v
-	}
-	if v := os.Getenv("AGENT_MANAGER_WORKSPACE_BASE_DIR"); v != "" {
-		cfg.Workspace.BaseDir = v
-	}
-	if v := os.Getenv("AGENT_MANAGER_WORKSPACE_MOUNT_DIR"); v != "" {
-		cfg.Workspace.MountDir = v
-	}
-	if v := os.Getenv("AGENT_MANAGER_SERVER_ALLOWED_ORIGINS"); v != "" {
-		cfg.Server.AllowedOrigins = strings.Split(v, ",")
-	}
-	if v := os.Getenv("AGENT_MANAGER_ALLOW_PRIVATE_NETWORKS"); v != "" {
-		cfg.Server.AllowPrivateNetworks = v == "true" || v == "1"
-	}
-	if v := os.Getenv("AGENT_MANAGER_DOCKER_SOCKET_PATH"); v != "" {
-		cfg.Docker.SocketPath = v
-	}
-	if v := os.Getenv("AGENT_MANAGER_DOCKER_NETWORK"); v != "" {
-		cfg.Docker.Network = v
-	}
-	if v := os.Getenv("AGENT_MANAGER_DOCKER_BUILD_CONTEXT_DIR"); v != "" {
-		cfg.Docker.BuildContextDir = v
-	}
-	if v := os.Getenv("AGENT_MANAGER_DOCKER_AGENT_BASE_IMAGE"); v != "" {
-		cfg.Docker.AgentBaseImage = v
-	}
-	if v := os.Getenv("AGENT_MANAGER_DOCKER_AGENT_DATA_DIR"); v != "" {
-		cfg.Docker.AgentDataDir = v
-	}
-	if v := os.Getenv("AGENT_MANAGER_DOCKER_MANAGER_ADDR"); v != "" {
-		cfg.Docker.ManagerAddr = v
-	}
-
-	// Runtime / Kubernetes 环境变量覆盖
-	if v := os.Getenv("AGENT_MANAGER_RUNTIME_TYPE"); v != "" {
-		cfg.Runtime.Type = v
-	}
-	if v := os.Getenv("AGENT_MANAGER_KUBERNETES_NAMESPACE"); v != "" {
-		cfg.Kubernetes.Namespace = v
-	}
-	if v := os.Getenv("AGENT_MANAGER_KUBERNETES_KUBECONFIG"); v != "" {
-		cfg.Kubernetes.Kubeconfig = v
-	}
-	if v := os.Getenv("AGENT_MANAGER_KUBERNETES_AGENT_IMAGE_PREFIX"); v != "" {
-		cfg.Kubernetes.AgentImagePrefix = v
-	}
-	if v := os.Getenv("AGENT_MANAGER_KUBERNETES_AGENT_IMAGE_TAG"); v != "" {
-		cfg.Kubernetes.AgentImageTag = v
-	}
-	if v := os.Getenv("AGENT_MANAGER_KUBERNETES_IMAGE_PULL_POLICY"); v != "" {
-		cfg.Kubernetes.ImagePullPolicy = v
-	}
-	if v := os.Getenv("AGENT_MANAGER_KUBERNETES_IMAGE_PULL_SECRET"); v != "" {
-		cfg.Kubernetes.ImagePullSecret = v
-	}
-	if v := os.Getenv("AGENT_MANAGER_KUBERNETES_SERVICE_ACCOUNT"); v != "" {
-		cfg.Kubernetes.ServiceAccount = v
-	}
-	if v := os.Getenv("AGENT_MANAGER_KUBERNETES_PVC_STORAGE_CLASS"); v != "" {
-		cfg.Kubernetes.PVCStorageClass = v
-	}
-	if v := os.Getenv("AGENT_MANAGER_KUBERNETES_PVC_SIZE"); v != "" {
-		cfg.Kubernetes.PVCSize = v
-	}
-	if v := os.Getenv("AGENT_MANAGER_KUBERNETES_MANAGER_ADDR"); v != "" {
-		cfg.Kubernetes.ManagerAddr = v
-	}
-	if v := os.Getenv("AGENT_MANAGER_KUBERNETES_VOLUME_TYPE"); v != "" {
-		cfg.Kubernetes.VolumeType = v
-	}
-	if v := os.Getenv("AGENT_MANAGER_KUBERNETES_HOST_PATH_BASE"); v != "" {
-		cfg.Kubernetes.HostPathBase = v
-	}
+	// 该字段历史上使用顶层环境变量名，不走 server 前缀；显式保留以兼容既有部署脚本。
+	configutil.ApplyBoolOverride(&cfg.Server.AllowPrivateNetworks, "AGENT_MANAGER_ALLOW_PRIVATE_NETWORKS")
 }
 
 // validate 校验配置完整性并填充默认值
@@ -211,12 +136,7 @@ func validate(cfg *Config) {
 		cfg.Workspace.BaseDir = filepath.Join(home, ".maze", "docker")
 	}
 	// 展开 ~/ 路径前缀，Docker volume 挂载要求绝对路径
-	if strings.HasPrefix(cfg.Workspace.BaseDir, "~/") {
-		home, err := os.UserHomeDir()
-		if err == nil {
-			cfg.Workspace.BaseDir = filepath.Join(home, cfg.Workspace.BaseDir[2:])
-		}
-	}
+	cfg.Workspace.BaseDir = configutil.ExpandHomePath(cfg.Workspace.BaseDir)
 	if cfg.Workspace.MountDir == "" {
 		cfg.Workspace.MountDir = cfg.Workspace.BaseDir
 	}
@@ -227,12 +147,7 @@ func validate(cfg *Config) {
 		// Docker 默认沿用统一目录模型：workspace.base_dir 负责 Manager 元数据，agents/ 子目录负责 Agent 工作目录。
 		cfg.Docker.AgentDataDir = filepath.Join(cfg.Workspace.BaseDir, "agents")
 	}
-	if strings.HasPrefix(cfg.Docker.AgentDataDir, "~/") {
-		home, err := os.UserHomeDir()
-		if err == nil {
-			cfg.Docker.AgentDataDir = filepath.Join(home, cfg.Docker.AgentDataDir[2:])
-		}
-	}
+	cfg.Docker.AgentDataDir = configutil.ExpandHomePath(cfg.Docker.AgentDataDir)
 	if cfg.Docker.ManagerAddr == "" {
 		cfg.Docker.ManagerAddr = "http://agent-manager:8080"
 	}
@@ -264,11 +179,6 @@ func validate(cfg *Config) {
 		}
 		cfg.Kubernetes.HostPathBase = filepath.Join(home, ".maze", "kubernetes", "agents")
 	}
-	if strings.HasPrefix(cfg.Kubernetes.HostPathBase, "~/") {
-		home, err := os.UserHomeDir()
-		if err == nil {
-			cfg.Kubernetes.HostPathBase = filepath.Join(home, cfg.Kubernetes.HostPathBase[2:])
-		}
-	}
+	cfg.Kubernetes.HostPathBase = configutil.ExpandHomePath(cfg.Kubernetes.HostPathBase)
 
 }

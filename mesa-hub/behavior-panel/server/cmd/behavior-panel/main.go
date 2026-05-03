@@ -2,29 +2,27 @@ package main
 
 import (
 	"context"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
-	"github.com/cloudwego/hertz/pkg/app/server"
-	"github.com/cloudwego/hertz/pkg/common/hlog"
+	"github.com/charviki/maze-cradle/grpcutil"
 	"google.golang.org/grpc"
 
 	pb "github.com/charviki/maze-cradle/api/gen/maze/v1"
 	"github.com/charviki/maze-cradle/gatewayutil"
+	"github.com/charviki/maze-cradle/lifecycle"
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/maze-cradle/protocol"
-	"github.com/charviki/mesa-hub-behavior-panel/biz/config"
-	managergrpc "github.com/charviki/mesa-hub-behavior-panel/biz/grpc"
-	"github.com/charviki/mesa-hub-behavior-panel/biz/handler"
-	"github.com/charviki/mesa-hub-behavior-panel/biz/service"
+	"github.com/charviki/mesa-hub-behavior-panel/internal/config"
+	"github.com/charviki/mesa-hub-behavior-panel/internal/service"
+	"github.com/charviki/mesa-hub-behavior-panel/internal/transport"
 )
 
-// auditLoggerAdapter 将 handler.AuditLogger 适配为 gatewayutil.AuditLogger 接口。
-// gatewayutil interceptor 产生 gatewayutil.AuditEntry，需转换为 handler 层使用的 protocol.AuditLogEntry。
+const grpcListenAddr = ":9090"
+
+// auditLoggerAdapter 将 transport.AuditLogger 适配为 gatewayutil.AuditLogger 接口。
+// gatewayutil interceptor 产生 gatewayutil.AuditEntry，需转换为 transport 层使用的 protocol.AuditLogEntry。
 type auditLoggerAdapter struct {
-	inner *handler.AuditLogger
+	inner *transport.AuditLogger
 }
 
 func (a *auditLoggerAdapter) Log(entry gatewayutil.AuditEntry) {
@@ -40,26 +38,14 @@ func (a *auditLoggerAdapter) Log(entry gatewayutil.AuditEntry) {
 func main() {
 	logger := logutil.New("manager")
 
-	hlog.SetLogger(logger)
-
 	cfg, err := config.LoadFromExe()
 	if err != nil {
 		logger.Fatalf("load config: %v", err)
 	}
 
-	// 禁用 Hertz trailing slash 自动重定向（301），
-	// 否则 /api/v1/nodes/x/sessions/saved 会被重定向到 /api/v1/nodes/x/sessions/saved/，
-	// 导致 grpc-gateway 路径匹配失败。
-	h := server.Default(
-		server.WithHostPorts(cfg.Server.ListenAddr),
-		server.WithRedirectTrailingSlash(false),
-	)
-
-	// 先创建 grpc-gateway ServeMux，后续需传给 register 层
 	gwmux := gatewayutil.NewServeMux()
-
-	// register 层初始化依赖、注册 Hertz 中间件和 WebSocket 路由
-	resources := register(h, cfg, logger, gwmux)
+	httpServer, resources := newHTTPServer(cfg, logger, gwmux)
+	defer cleanupResources(resources)
 
 	proxySvc := service.NewAgentProxyService(resources.Registry, cfg.Server.AuthToken, logger)
 
@@ -70,21 +56,19 @@ func main() {
 		gatewayutil.UnaryAuditInterceptor(&auditLoggerAdapter{inner: resources.AuditLog}),
 	}
 
-	grpcServer := managergrpc.NewServer(
+	grpcServer := transport.NewServer(
 		resources.HostSvc,
 		resources.NodeSvc,
 		resources.AuditSvc,
 		proxySvc,
 		resources.Registry,
+		cfg.Server.AuthToken,
 		logger,
 	)
-	if err := grpcServer.Start(":9090",
-		grpc.ChainUnaryInterceptor(interceptors...),
-	); err != nil {
-		logger.Fatalf("start grpc server: %v", err)
-	}
+	grpcCore := grpc.NewServer(grpc.ChainUnaryInterceptor(interceptors...))
+	grpcServer.RegisterGRPC(grpcCore)
+	managedGRPC := grpcutil.NewManagedGRPCServer(grpcListenAddr, grpcCore, logger)
 
-	// 注册全部 7 个 Service 的 grpc-gateway handler（进程内直连 gRPC Server）
 	ctx := context.Background()
 	if err := pb.RegisterHostServiceHandlerServer(ctx, gwmux, grpcServer); err != nil {
 		logger.Fatalf("register HostService gateway: %v", err)
@@ -109,6 +93,13 @@ func main() {
 		logger.Fatalf("register AgentService gateway: %v", err)
 	}
 
+	manager := &lifecycle.Manager{
+		ShutdownTimeout: 5 * time.Second,
+		Logger:          logger,
+	}
+	manager.Add(httpServer)
+	manager.Add(managedGRPC)
+
 	logger.Infof("agent-manager controller started on %s", cfg.Server.ListenAddr)
 	if cfg.IsDevMode() {
 		logger.Warnf("[security] running in DEV mode: auth_token is empty, all API endpoints are open")
@@ -117,24 +108,18 @@ func main() {
 		logger.Warnf("[security] running in DEV mode: CORS and WebSocket allow all origins")
 	}
 
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		<-sigCh
-		logger.Infof("shutting down...")
+	if err := manager.Run(context.Background()); err != nil {
+		logger.Fatalf("run server lifecycle: %v", err)
+	}
+}
 
-		grpcServer.Stop()
+func cleanupResources(resources *CleanupResources) {
+	if resources == nil {
+		return
+	}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if err := h.Shutdown(ctx); err != nil {
-			logger.Errorf("shutdown error: %v", err)
-		}
-		resources.Reconciler.Stop()
-		resources.Registry.WaitSave()
-		resources.SpecMgr.WaitSave()
-		resources.AuditLog.Close()
-	}()
-
-	h.Spin()
+	resources.Reconciler.Stop()
+	resources.Registry.WaitSave()
+	resources.SpecMgr.WaitSave()
+	resources.AuditLog.Close()
 }

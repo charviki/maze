@@ -8,10 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/charviki/maze-cradle/configutil"
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/maze-cradle/protocol"
-	"github.com/charviki/mesa-hub-behavior-panel/biz/config"
-	"github.com/charviki/mesa-hub-behavior-panel/biz/model"
+	"github.com/charviki/mesa-hub-behavior-panel/internal/config"
+	"github.com/charviki/mesa-hub-behavior-panel/internal/model"
 )
 
 type mockReconcilerRuntime struct {
@@ -63,7 +64,9 @@ func newTestReconciler(t *testing.T, rt *mockReconcilerRuntime) (*Reconciler, *m
 	specMgr := model.NewHostSpecManager(filepath.Join(tmpDir, "host_specs.json"), logutil.NewNop())
 	registry := model.NewNodeRegistry(filepath.Join(tmpDir, "nodes.json"), logutil.NewNop())
 	cfg := &config.Config{
-		Server: config.ServerConfig{AuthToken: "test-token"},
+		Server: config.ServerConfig{
+			ServerConfig: configutil.ServerConfig{AuthToken: "test-token"},
+		},
 		Docker: config.DockerConfig{AgentBaseImage: "test-base:latest"},
 	}
 	logDir := filepath.Join(tmpDir, "host_logs")

@@ -11,8 +11,8 @@ import (
 
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/maze-cradle/protocol"
-	"github.com/charviki/mesa-hub-behavior-panel/biz/builder"
-	"github.com/charviki/mesa-hub-behavior-panel/biz/config"
+	"github.com/charviki/mesa-hub-behavior-panel/internal/config"
+	builder "github.com/charviki/mesa-hub-behavior-panel/internal/imagebuilder"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -81,9 +81,10 @@ func (k *KubernetesRuntime) imageExistsLocally(imageName string) bool {
 }
 
 // checkDockerfileHash 从镜像 label 中读取 dockerfile-hash 与期望值比较
-	//nolint:gosec // docker CLI args are internally constructed
+//
+//nolint:gosec // docker CLI args are internally constructed
 func (k *KubernetesRuntime) checkDockerfileHash(imageName, expectedHash string) bool {
- //nolint:gosec
+	//nolint:gosec
 	cmd := exec.Command("docker", "inspect", "--format",
 		"{{index .Config.Labels \"maze.dockerfile-hash\"}}", imageName)
 	output, err := cmd.Output()
@@ -107,7 +108,7 @@ func (k *KubernetesRuntime) buildDockerImage(spec *protocol.HostDeploySpec, dock
 		}
 		// hash 不匹配，删除旧镜像触发重建
 		k.logger.Infof("image %s hash mismatch, rebuilding", imageName)
-  //nolint:gosec
+		//nolint:gosec
 		_ = exec.Command("docker", "rmi", imageName).Run()
 	}
 
@@ -116,7 +117,7 @@ func (k *KubernetesRuntime) buildDockerImage(spec *protocol.HostDeploySpec, dock
 	if k.imageExistsLocally(comboTag) {
 		if k.checkDockerfileHash(comboTag, expectedHash) {
 			k.logger.Infof("combo image %s exists, tagging as %s", comboTag, imageName)
-   //nolint:gosec
+			//nolint:gosec
 			cmd := exec.Command("docker", "tag", comboTag, imageName)
 			if cmd.Run() == nil {
 				return imageName, nil
@@ -124,7 +125,7 @@ func (k *KubernetesRuntime) buildDockerImage(spec *protocol.HostDeploySpec, dock
 		}
 		// hash 不匹配，删除旧缓存触发重建
 		k.logger.Infof("combo image %s hash mismatch, rebuilding", comboTag)
-  //nolint:gosec
+		//nolint:gosec
 		func() { _ = exec.Command("docker", "rmi", comboTag).Run() }()
 	}
 
@@ -146,7 +147,7 @@ func (k *KubernetesRuntime) buildDockerImage(spec *protocol.HostDeploySpec, dock
 	}
 
 	// 执行 docker build，启用 BuildKit 加速构建
- //nolint:gosec
+	//nolint:gosec
 	cmd := exec.Command("docker", "build", "-f", dockerfilePath, "-t", imageName, "--cache-from", imageName, tmpDir)
 	cmd.Env = append(os.Environ(), "DOCKER_BUILDKIT=1")
 	output, err := cmd.CombinedOutput()
@@ -157,7 +158,7 @@ func (k *KubernetesRuntime) buildDockerImage(spec *protocol.HostDeploySpec, dock
 	k.logger.Infof("built image %s for host %s", imageName, spec.Name)
 
 	// 构建完成后打上组合标签，供后续相同组合的 Host 复用
- //nolint:gosec
+	//nolint:gosec
 	tagCmd := exec.Command("docker", "tag", imageName, comboTag)
 	_ = tagCmd.Run()
 
@@ -167,7 +168,7 @@ func (k *KubernetesRuntime) buildDockerImage(spec *protocol.HostDeploySpec, dock
 // removeDockerImage 清理动态构建的 Agent 镜像
 func (k *KubernetesRuntime) removeDockerImage(name string) {
 	imageName := "maze-agent:" + name
- //nolint:gosec
+	//nolint:gosec
 	cmd := exec.Command("docker", "rmi", imageName, "-f")
 	_ = cmd.Run()
 }

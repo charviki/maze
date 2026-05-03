@@ -18,7 +18,7 @@ COPY mesa-hub/behavior-panel/server/ ./
 RUN sed -i 's|../../../fabrication/cradle|./mesa-hub/cradle|g' go.mod
 
 RUN --mount=type=cache,id=go-pkg-mod,target=/go/pkg/mod \
-    CGO_ENABLED=0 go build -o /bin/agent-manager .
+    CGO_ENABLED=0 go build -o /bin/agent-manager ./cmd/behavior-panel
 
 FROM public.ecr.aws/docker/library/docker:cli AS docker-cli
 

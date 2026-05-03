@@ -1,9 +1,7 @@
-package grpc
+package transport
 
 import (
 	"context"
-	"fmt"
-	"net"
 	"time"
 
 	"google.golang.org/grpc"
@@ -16,8 +14,8 @@ import (
 	pb "github.com/charviki/maze-cradle/api/gen/maze/v1"
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/maze-cradle/protocol"
-	"github.com/charviki/mesa-hub-behavior-panel/biz/model"
-	"github.com/charviki/mesa-hub-behavior-panel/biz/service"
+	"github.com/charviki/mesa-hub-behavior-panel/internal/model"
+	"github.com/charviki/mesa-hub-behavior-panel/internal/service"
 )
 
 // Server Manager 端 gRPC 服务器
@@ -36,6 +34,9 @@ type Server struct {
 	proxy    *service.AgentProxyService
 	registry *model.NodeRegistry
 	logger   logutil.Logger
+	// managerAuthToken 复用 manager server.auth_token，因为 Agent 的 server.auth_token
+	// 也是由 manager 在部署 Host 时下发；manager 主动回调 Agent 的内部 RPC 必须携带它。
+	managerAuthToken string
 
 	grpcServer *grpc.Server
 }
@@ -47,63 +48,31 @@ func NewServer(
 	auditSvc *service.AuditService,
 	proxy *service.AgentProxyService,
 	registry *model.NodeRegistry,
+	managerAuthToken string,
 	logger logutil.Logger,
 ) *Server {
 	return &Server{
-		hostSvc:  hostSvc,
-		nodeSvc:  nodeSvc,
-		auditSvc: auditSvc,
-		proxy:    proxy,
-		registry: registry,
-		logger:   logger,
+		hostSvc:          hostSvc,
+		nodeSvc:          nodeSvc,
+		auditSvc:         auditSvc,
+		proxy:            proxy,
+		registry:         registry,
+		logger:           logger,
+		managerAuthToken: managerAuthToken,
 	}
 }
 
-// Start 启动 gRPC server（非阻塞）。
-// opts 透传给 grpc.NewServer，用于注入 interceptor chain 等服务端选项。
-func (s *Server) Start(addr string, opts ...grpc.ServerOption) error {
-	lis, err := net.Listen("tcp", addr)
-	if err != nil {
-		return fmt.Errorf("grpc listen %s: %w", addr, err)
-	}
-
-	s.grpcServer = grpc.NewServer(opts...)
-	pb.RegisterHostServiceServer(s.grpcServer, s)
-	pb.RegisterNodeServiceServer(s.grpcServer, s)
-	pb.RegisterAuditServiceServer(s.grpcServer, s)
-	pb.RegisterAgentServiceServer(s.grpcServer, s)
-	pb.RegisterSessionServiceServer(s.grpcServer, s)
-	pb.RegisterTemplateServiceServer(s.grpcServer, s)
-	pb.RegisterConfigServiceServer(s.grpcServer, s)
-
-	go func() {
-		s.logger.Infof("[grpc] server started on %s", addr)
-		if err := s.grpcServer.Serve(lis); err != nil {
-			s.logger.Errorf("[grpc] server error: %v", err)
-		}
-	}()
-	return nil
-}
-
-// Stop 优雅关闭 gRPC server
-func (s *Server) Stop() {
-	if s.grpcServer != nil {
-		stopped := make(chan struct{})
-		go func() {
-			s.grpcServer.GracefulStop()
-			close(stopped)
-		}()
-		select {
-		case <-stopped:
-		case <-time.After(5 * time.Second):
-			s.grpcServer.Stop()
-		}
-	}
-}
-
-// GrpcServer 返回底层 gRPC Server，供 gateway 进程内直连使用
-func (s *Server) GrpcServer() *grpc.Server {
-	return s.grpcServer
+// RegisterGRPC 将当前服务实现注册到给定 gRPC server。
+// 这样 main 层可以用 cradle/lifecycle 统一管理监听与关闭，而业务层只关心接口实现。
+func (s *Server) RegisterGRPC(grpcServer *grpc.Server) {
+	s.grpcServer = grpcServer
+	pb.RegisterHostServiceServer(grpcServer, s)
+	pb.RegisterNodeServiceServer(grpcServer, s)
+	pb.RegisterAuditServiceServer(grpcServer, s)
+	pb.RegisterAgentServiceServer(grpcServer, s)
+	pb.RegisterSessionServiceServer(grpcServer, s)
+	pb.RegisterTemplateServiceServer(grpcServer, s)
+	pb.RegisterConfigServiceServer(grpcServer, s)
 }
 
 // AgentService — Register / Heartbeat
@@ -169,6 +138,7 @@ func (s *Server) restoreAgentSessions(name, grpcAddr string) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+	ctx = attachBearerToken(ctx, s.managerAuthToken)
 
 	resp, err := client.GetSavedSessions(ctx, &pb.GetSavedSessionsRequest{NodeName: name})
 	if err != nil {
@@ -189,6 +159,7 @@ func (s *Server) restoreAgentSessions(name, grpcAddr string) {
 		}
 
 		restoreCtx, restoreCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		restoreCtx = attachBearerToken(restoreCtx, s.managerAuthToken)
 		_, err := client.RestoreSession(restoreCtx, &pb.RestoreSessionRequest{
 			NodeName: name,
 			Id:       ss.GetSessionName(),
@@ -207,6 +178,13 @@ func (s *Server) restoreAgentSessions(name, grpcAddr string) {
 	if restored > 0 {
 		s.logger.Infof("[session-restore] restored %d sessions for %s", restored, name)
 	}
+}
+
+func attachBearerToken(ctx context.Context, token string) context.Context {
+	if token == "" {
+		return ctx
+	}
+	return metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+token))
 }
 
 // pb → protocol 转换函数

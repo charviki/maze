@@ -11,10 +11,10 @@ import (
 
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/maze-cradle/protocol"
-	"github.com/charviki/mesa-hub-behavior-panel/biz/builder"
-	"github.com/charviki/mesa-hub-behavior-panel/biz/config"
-	"github.com/charviki/mesa-hub-behavior-panel/biz/model"
-	"github.com/charviki/mesa-hub-behavior-panel/biz/runtime"
+	"github.com/charviki/mesa-hub-behavior-panel/internal/config"
+	builder "github.com/charviki/mesa-hub-behavior-panel/internal/imagebuilder"
+	"github.com/charviki/mesa-hub-behavior-panel/internal/model"
+	"github.com/charviki/mesa-hub-behavior-panel/internal/runtime"
 )
 
 // HostService Host 业务逻辑（Manager 本地），供 HTTP handler 和 gRPC handler 共用

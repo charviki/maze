@@ -9,10 +9,10 @@ import (
 
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/maze-cradle/protocol"
-	"github.com/charviki/mesa-hub-behavior-panel/biz/config"
-	"github.com/charviki/mesa-hub-behavior-panel/biz/model"
-	"github.com/charviki/mesa-hub-behavior-panel/biz/runtime"
-	"github.com/charviki/mesa-hub-behavior-panel/biz/service"
+	"github.com/charviki/mesa-hub-behavior-panel/internal/config"
+	"github.com/charviki/mesa-hub-behavior-panel/internal/model"
+	"github.com/charviki/mesa-hub-behavior-panel/internal/runtime"
+	"github.com/charviki/mesa-hub-behavior-panel/internal/service"
 )
 
 const (

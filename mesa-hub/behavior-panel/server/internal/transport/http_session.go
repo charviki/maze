@@ -1,12 +1,12 @@
-package handler
+package transport
 
 import (
 	"net/http"
 	"time"
 
 	"github.com/charviki/maze-cradle/logutil"
-	"github.com/charviki/mesa-hub-behavior-panel/biz/model"
-	"github.com/charviki/mesa-hub-behavior-panel/biz/service"
+	"github.com/charviki/mesa-hub-behavior-panel/internal/model"
+	"github.com/charviki/mesa-hub-behavior-panel/internal/service"
 )
 
 const (
