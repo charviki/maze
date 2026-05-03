@@ -2,7 +2,6 @@ package transport
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -67,12 +66,17 @@ func (s *Server) CreateSession(ctx context.Context, req *pb.CreateSessionRequest
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	session, err := s.tmuxService.CreateSession(
-		sessionName, req.GetCommand(), resolvedWorkingDir,
-		confs, req.GetRestoreStrategy(), req.GetTemplateId(), restoreCommand,
-	)
+	session, err := s.tmuxService.CreateSession(service.CreateSessionOptions{
+		Name:            sessionName,
+		Command:         req.GetCommand(),
+		WorkingDir:      resolvedWorkingDir,
+		Configs:         confs,
+		RestoreStrategy: req.GetRestoreStrategy(),
+		TemplateID:      req.GetTemplateId(),
+		RestoreCommand:  restoreCommand,
+	})
 	if err != nil {
-		if strings.Contains(err.Error(), "duplicate session") {
+		if errors.Is(err, service.ErrDuplicateSession) {
 			return nil, status.Error(codes.AlreadyExists, "session already exists")
 		}
 		return nil, errToStatus(err)
@@ -209,7 +213,7 @@ func (s *Server) UpdateSessionConfig(ctx context.Context, req *pb.UpdateSessionC
 		protoConfigUpdatesToModel(req.GetFiles()),
 	)
 	if err != nil {
-		return nil, configConflictToStatus(err)
+		return nil, errToStatus(err)
 	}
 	return &pb.SessionConfigView{
 		SessionId:  req.GetId(),
@@ -408,14 +412,4 @@ func validateSessionConfs(configs []model.ConfigItem, tpl *model.SessionTemplate
 		}
 	}
 	return nil
-}
-
-// configConflictToStatus 将 ConfigConflictError 转为 gRPC status，携带冲突详情 JSON
-func configConflictToStatus(err error) error {
-	var confErr *service.ConfigConflictError
-	if errors.As(err, &confErr) {
-		detail, _ := json.Marshal(confErr.Conflicts)
-		return status.Error(codes.FailedPrecondition, string(detail))
-	}
-	return errToStatus(err)
 }

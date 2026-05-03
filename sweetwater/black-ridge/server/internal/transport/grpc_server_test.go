@@ -58,28 +58,17 @@ func TestErrToStatus_GenericError(t *testing.T) {
 	}
 }
 
-func TestConfigConflictToStatus_ConfigConflict(t *testing.T) {
+func TestErrToStatus_ConfigConflict(t *testing.T) {
 	conflicts := []model.ConfigConflict{
 		{Path: "CLAUDE.md", CurrentHash: "md5:xyz"},
 	}
 	confErr := &service.ConfigConflictError{Conflicts: conflicts}
-	err := configConflictToStatus(confErr)
+	err := errToStatus(confErr)
 	st, ok := status.FromError(err)
 	if !ok {
 		t.Fatal("应返回 gRPC status")
 	}
 	if st.Code() != codes.FailedPrecondition {
 		t.Errorf("code = %v, 期望 FailedPrecondition", st.Code())
-	}
-}
-
-func TestConfigConflictToStatus_GenericError(t *testing.T) {
-	err := configConflictToStatus(errors.New("other error"))
-	st, ok := status.FromError(err)
-	if !ok {
-		t.Fatal("应返回 gRPC status")
-	}
-	if st.Code() != codes.Internal {
-		t.Errorf("code = %v, 期望 Internal", st.Code())
 	}
 }

@@ -193,7 +193,11 @@ func TestSavePipelineState_WritesFile(t *testing.T) {
 
 	// 创建 tmux session 以便 CapturePane 和 GetSessionEnv 可以工作
 	// 由于没有真实 tmux，直接调用会失败，但 SavePipelineState 内部会忽略这些错误
-	err := svc.SavePipelineState("test-session", pipeline, "auto", "", "", "")
+	err := svc.SavePipelineState(SavePipelineStateOptions{
+		SessionName:     "test-session",
+		Pipeline:        pipeline,
+		RestoreStrategy: "auto",
+	})
 	if err != nil {
 		t.Fatalf("SavePipelineState 失败: %v", err)
 	}

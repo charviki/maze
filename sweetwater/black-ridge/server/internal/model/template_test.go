@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/charviki/maze-cradle/configutil"
 	"github.com/charviki/maze-cradle/logutil"
 )
 
@@ -73,11 +74,11 @@ func TestTemplateStore_SetAndGet(t *testing.T) {
 		Description: "测试用自定义模板",
 		Icon:        "🔧",
 		Builtin:     false,
-		Defaults: ConfigLayer{
+		Defaults: configutil.ConfigLayer{
 			Env:   map[string]string{"FOO": "bar"},
-			Files: []ConfigFile{},
+			Files: []configutil.ConfigFile{},
 		},
-		SessionSchema: SessionSchema{},
+		SessionSchema: configutil.SessionSchema{},
 	}
 
 	err := store.Set(custom)

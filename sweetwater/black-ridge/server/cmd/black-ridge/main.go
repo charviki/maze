@@ -60,7 +60,10 @@ func main() {
 		logger.Fatalf("register config service to gateway: %v", err)
 	}
 
-	heartbeatService := service.NewHeartbeatService(cfg, tmuxService, localConfig, logger)
+	heartbeatService, err := service.NewHeartbeatService(cfg, tmuxService, localConfig, logger)
+	if err != nil {
+		logger.Fatalf("create heartbeat service: %v", err)
+	}
 	autoSaveService := service.NewAutoSaveService(tmuxService, cfg.AutoSave.Interval, logger)
 	heartbeatRunner := newBackgroundRunner("heartbeat", logger, heartbeatService.Start)
 	autoSaveRunner := newBackgroundRunner("autosave", logger, autoSaveService.Start)

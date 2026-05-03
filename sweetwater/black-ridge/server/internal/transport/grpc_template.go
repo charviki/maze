@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	pb "github.com/charviki/maze-cradle/api/gen/maze/v1"
+	"github.com/charviki/maze-cradle/configutil"
 	"github.com/charviki/sweetwater-black-ridge/internal/model"
 	"github.com/charviki/sweetwater-black-ridge/internal/service"
 )
@@ -116,7 +117,7 @@ func (s *Server) UpdateTemplateConfig(ctx context.Context, req *pb.UpdateTemplat
 	updates := protoConfigUpdatesToModel(req.GetFiles())
 	files, err := service.NewConfigFileService().SaveGlobalFiles(existing.Defaults.Files, updates)
 	if err != nil {
-		return nil, configConflictToStatus(err)
+		return nil, errToStatus(err)
 	}
 	updated := cloneTemplateWithGlobalContents(existing, updates)
 	if err := s.templateStore.Set(updated); err != nil {
@@ -165,7 +166,7 @@ func protoToModelTemplate(t *pb.SessionTemplate) model.SessionTemplate {
 	}
 }
 
-func configLayerToProto(layer model.ConfigLayer) *pb.ConfigLayer {
+func configLayerToProto(layer configutil.ConfigLayer) *pb.ConfigLayer {
 	files := make([]*pb.ConfigFile, len(layer.Files))
 	for i, file := range layer.Files {
 		files[i] = &pb.ConfigFile{Path: file.Path, Content: file.Content}
@@ -173,18 +174,18 @@ func configLayerToProto(layer model.ConfigLayer) *pb.ConfigLayer {
 	return &pb.ConfigLayer{Env: layer.Env, Files: files}
 }
 
-func protoToConfigLayer(layer *pb.ConfigLayer) model.ConfigLayer {
+func protoToConfigLayer(layer *pb.ConfigLayer) configutil.ConfigLayer {
 	if layer == nil {
-		return model.ConfigLayer{}
+		return configutil.ConfigLayer{}
 	}
-	files := make([]model.ConfigFile, len(layer.GetFiles()))
+	files := make([]configutil.ConfigFile, len(layer.GetFiles()))
 	for i, file := range layer.GetFiles() {
-		files[i] = model.ConfigFile{Path: file.GetPath(), Content: file.GetContent()}
+		files[i] = configutil.ConfigFile{Path: file.GetPath(), Content: file.GetContent()}
 	}
-	return model.ConfigLayer{Env: layer.GetEnv(), Files: files}
+	return configutil.ConfigLayer{Env: layer.GetEnv(), Files: files}
 }
 
-func sessionSchemaToProto(schema model.SessionSchema) *pb.SessionSchema {
+func sessionSchemaToProto(schema configutil.SessionSchema) *pb.SessionSchema {
 	envDefs := make([]*pb.EnvDef, len(schema.EnvDefs))
 	for i, envDef := range schema.EnvDefs {
 		envDefs[i] = &pb.EnvDef{
@@ -207,13 +208,13 @@ func sessionSchemaToProto(schema model.SessionSchema) *pb.SessionSchema {
 	return &pb.SessionSchema{EnvDefs: envDefs, FileDefs: fileDefs}
 }
 
-func protoToSessionSchema(schema *pb.SessionSchema) model.SessionSchema {
+func protoToSessionSchema(schema *pb.SessionSchema) configutil.SessionSchema {
 	if schema == nil {
-		return model.SessionSchema{}
+		return configutil.SessionSchema{}
 	}
-	envDefs := make([]model.EnvDef, len(schema.GetEnvDefs()))
+	envDefs := make([]configutil.EnvDef, len(schema.GetEnvDefs()))
 	for i, envDef := range schema.GetEnvDefs() {
-		envDefs[i] = model.EnvDef{
+		envDefs[i] = configutil.EnvDef{
 			Key:         envDef.GetKey(),
 			Label:       envDef.GetLabel(),
 			Required:    envDef.GetRequired(),
@@ -221,24 +222,24 @@ func protoToSessionSchema(schema *pb.SessionSchema) model.SessionSchema {
 			Sensitive:   envDef.GetSensitive(),
 		}
 	}
-	fileDefs := make([]model.FileDef, len(schema.GetFileDefs()))
+	fileDefs := make([]configutil.FileDef, len(schema.GetFileDefs()))
 	for i, fileDef := range schema.GetFileDefs() {
-		fileDefs[i] = model.FileDef{
+		fileDefs[i] = configutil.FileDef{
 			Path:           fileDef.GetPath(),
 			Label:          fileDef.GetLabel(),
 			Required:       fileDef.GetRequired(),
 			DefaultContent: fileDef.GetDefaultContent(),
 		}
 	}
-	return model.SessionSchema{EnvDefs: envDefs, FileDefs: fileDefs}
+	return configutil.SessionSchema{EnvDefs: envDefs, FileDefs: fileDefs}
 }
 
 func cloneTemplateWithGlobalContents(existing *model.SessionTemplate, updates []model.ConfigFileUpdate) *model.SessionTemplate {
 	cloned := *existing
 	cloned.Defaults.Env = cloneStringMap(existing.Defaults.Env)
 	cloned.Defaults.Files = cloneConfigFiles(existing.Defaults.Files)
-	cloned.SessionSchema.EnvDefs = append([]model.EnvDef(nil), existing.SessionSchema.EnvDefs...)
-	cloned.SessionSchema.FileDefs = append([]model.FileDef(nil), existing.SessionSchema.FileDefs...)
+	cloned.SessionSchema.EnvDefs = append([]configutil.EnvDef(nil), existing.SessionSchema.EnvDefs...)
+	cloned.SessionSchema.FileDefs = append([]configutil.FileDef(nil), existing.SessionSchema.FileDefs...)
 
 	contentByPath := make(map[string]string, len(updates))
 	for _, update := range updates {
@@ -265,11 +266,11 @@ func cloneStringMap(src map[string]string) map[string]string {
 	return dst
 }
 
-func cloneConfigFiles(src []model.ConfigFile) []model.ConfigFile {
+func cloneConfigFiles(src []configutil.ConfigFile) []configutil.ConfigFile {
 	if src == nil {
 		return nil
 	}
-	dst := make([]model.ConfigFile, len(src))
+	dst := make([]configutil.ConfigFile, len(src))
 	copy(dst, src)
 	return dst
 }

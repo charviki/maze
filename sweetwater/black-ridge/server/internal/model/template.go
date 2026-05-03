@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/charviki/maze-cradle/configutil"
 	"github.com/charviki/maze-cradle/logutil"
 	"gopkg.in/yaml.v3"
 )
@@ -16,16 +17,16 @@ var builtinTemplatesFS embed.FS
 
 // SessionTemplate 会话模板，定义创建 Agent 会话时需要的命令、配置和用户输入字段
 type SessionTemplate struct {
-	ID                 string        `json:"id"`
-	Name               string        `json:"name"`
-	Command            string        `json:"command"`
-	RestoreCommand     string        `json:"restore_command"`
-	SessionFilePattern string        `json:"session_file_pattern"`
-	Description        string        `json:"description"`
-	Icon               string        `json:"icon"`
-	Builtin            bool          `json:"builtin"`
-	Defaults           ConfigLayer   `json:"defaults"`
-	SessionSchema      SessionSchema `json:"session_schema"`
+	ID                 string                   `json:"id"`
+	Name               string                   `json:"name"`
+	Command            string                   `json:"command"`
+	RestoreCommand     string                   `json:"restore_command"`
+	SessionFilePattern string                   `json:"session_file_pattern"`
+	Description        string                   `json:"description"`
+	Icon               string                   `json:"icon"`
+	Builtin            bool                     `json:"builtin"`
+	Defaults           configutil.ConfigLayer   `json:"defaults"`
+	SessionSchema      configutil.SessionSchema `json:"session_schema"`
 }
 
 // TemplateStore 模板持久化存储。内置模板在每次启动时会被无条件覆盖
@@ -77,7 +78,7 @@ func (s *TemplateStore) save() error {
 	if err != nil {
 		return err
 	}
-	return atomicWriteFile(s.path, data, 0644)
+	return configutil.AtomicWriteFile(s.path, data, 0644)
 }
 
 // --- YAML 解析中间结构体 ---
@@ -130,22 +131,22 @@ type yamlTemplate struct {
 
 // 将 YAML 中间结构体转换为 SessionTemplate
 func (y *yamlTemplate) toSessionTemplate() *SessionTemplate {
-	files := make([]ConfigFile, len(y.Defaults.Files))
+	files := make([]configutil.ConfigFile, len(y.Defaults.Files))
 	for i, f := range y.Defaults.Files {
-		files[i] = ConfigFile{Path: f.Path, Content: f.Content}
+		files[i] = configutil.ConfigFile{Path: f.Path, Content: f.Content}
 	}
 
-	envDefs := make([]EnvDef, len(y.SessionSchema.EnvDefs))
+	envDefs := make([]configutil.EnvDef, len(y.SessionSchema.EnvDefs))
 	for i, d := range y.SessionSchema.EnvDefs {
-		envDefs[i] = EnvDef{
+		envDefs[i] = configutil.EnvDef{
 			Key: d.Key, Label: d.Label, Required: d.Required,
 			Placeholder: d.Placeholder, Sensitive: d.Sensitive,
 		}
 	}
 
-	fileDefs := make([]FileDef, len(y.SessionSchema.FileDefs))
+	fileDefs := make([]configutil.FileDef, len(y.SessionSchema.FileDefs))
 	for i, d := range y.SessionSchema.FileDefs {
-		fileDefs[i] = FileDef{
+		fileDefs[i] = configutil.FileDef{
 			Path: d.Path, Label: d.Label, Required: d.Required,
 			DefaultContent: d.DefaultContent,
 		}
@@ -155,8 +156,8 @@ func (y *yamlTemplate) toSessionTemplate() *SessionTemplate {
 		ID: y.ID, Name: y.Name, Command: y.Command,
 		RestoreCommand: y.RestoreCommand, SessionFilePattern: y.SessionFilePattern,
 		Description: y.Description, Icon: y.Icon, Builtin: y.Builtin,
-		Defaults:      ConfigLayer{Env: y.Defaults.Env, Files: files},
-		SessionSchema: SessionSchema{EnvDefs: envDefs, FileDefs: fileDefs},
+		Defaults:      configutil.ConfigLayer{Env: y.Defaults.Env, Files: files},
+		SessionSchema: configutil.SessionSchema{EnvDefs: envDefs, FileDefs: fileDefs},
 	}
 }
 
@@ -215,17 +216,17 @@ func hardcodedBuiltins() []SessionTemplate {
 			RestoreCommand:     `IS_SANDBOX=1 claude --dangerously-skip-permissions --resume {session_id}`,
 			SessionFilePattern: `~/.claude/projects/{encoded_working_dir}/*.jsonl`,
 			Description:        "Anthropic Claude CLI Agent", Icon: "🤖", Builtin: true,
-			Defaults: ConfigLayer{
+			Defaults: configutil.ConfigLayer{
 				Env: map[string]string{},
-				Files: []ConfigFile{
+				Files: []configutil.ConfigFile{
 					{Path: "~/.claude.json", Content: "{\n  \"hasCompletedOnboarding\": true,\n  \"firstStartTime\": \"\",\n  \"opusProMigrationComplete\": true,\n  \"sonnet1m45MigrationComplete\": true,\n  \"migrationVersion\": 11,\n  \"projects\": {}\n}\n"},
 					{Path: "~/.claude/settings.json", Content: "{\n  \"permissions\": {\n    \"allow\": [\n      \"Bash(*)\",\n      \"Read(*)\",\n      \"Write(*)\",\n      \"Edit(*)\",\n      \"MultiEdit(*)\",\n      \"WebFetch(*)\",\n      \"WebSearch(*)\"\n    ],\n    \"deny\": [],\n    \"skipDangerousModePermissionPrompt\": true\n  },\n  \"skipDangerousModePermissionPrompt\": true,\n  \"theme\": \"dark\"\n}\n"},
 					{Path: "~/.claude/CLAUDE.md", Content: "# Global Instructions\n"},
 				},
 			},
-			SessionSchema: SessionSchema{
-				EnvDefs: []EnvDef{},
-				FileDefs: []FileDef{
+			SessionSchema: configutil.SessionSchema{
+				EnvDefs: []configutil.EnvDef{},
+				FileDefs: []configutil.FileDef{
 					{Path: "CLAUDE.md", Label: "CLAUDE.md（项目记忆）", Required: false, DefaultContent: "# Project Instructions\n"},
 					{Path: ".claude/settings.json", Label: "项目级 Settings", Required: false, DefaultContent: "{}"},
 				},
@@ -234,16 +235,16 @@ func hardcodedBuiltins() []SessionTemplate {
 		{
 			ID: "codex", Name: "Codex", Command: "codex --full-auto",
 			Description: "OpenAI Codex Agent", Icon: "⚡", Builtin: true,
-			Defaults: ConfigLayer{
+			Defaults: configutil.ConfigLayer{
 				Env: map[string]string{},
-				Files: []ConfigFile{
+				Files: []configutil.ConfigFile{
 					{Path: "~/.codex/config.toml", Content: "# model = \"o3\"\n# approval_policy = \"on-request\"\n"},
 					{Path: "~/AGENTS.md", Content: "# Global Instructions\n"},
 				},
 			},
-			SessionSchema: SessionSchema{
-				EnvDefs: []EnvDef{},
-				FileDefs: []FileDef{
+			SessionSchema: configutil.SessionSchema{
+				EnvDefs: []configutil.EnvDef{},
+				FileDefs: []configutil.FileDef{
 					{Path: "AGENTS.md", Label: "AGENTS.md（项目指令）", Required: false, DefaultContent: "# Project Instructions\n"},
 					{Path: ".codex/config.toml", Label: "项目级 Config", Required: false, DefaultContent: "# model = \"o3\"\n# approval_policy = \"on-request\"\n"},
 				},
@@ -252,11 +253,11 @@ func hardcodedBuiltins() []SessionTemplate {
 		{
 			ID: "bash", Name: "Bash Shell", Command: "",
 			Description: "纯 Bash 终端", Icon: "🖥️", Builtin: true,
-			Defaults: ConfigLayer{
+			Defaults: configutil.ConfigLayer{
 				Env:   map[string]string{},
-				Files: []ConfigFile{},
+				Files: []configutil.ConfigFile{},
 			},
-			SessionSchema: SessionSchema{EnvDefs: []EnvDef{}, FileDefs: []FileDef{}},
+			SessionSchema: configutil.SessionSchema{EnvDefs: []configutil.EnvDef{}, FileDefs: []configutil.FileDef{}},
 		},
 	}
 }

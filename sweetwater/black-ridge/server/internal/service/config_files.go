@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/charviki/maze-cradle/configutil"
 	"github.com/charviki/sweetwater-black-ridge/internal/model"
 )
 
@@ -39,7 +40,7 @@ func NewConfigFileService() *ConfigFileService {
 }
 
 // ReadGlobalFiles 读取模板声明的全局固定文件集合。
-func (s *ConfigFileService) ReadGlobalFiles(defs []model.ConfigFile) ([]model.ConfigFileSnapshot, error) {
+func (s *ConfigFileService) ReadGlobalFiles(defs []configutil.ConfigFile) ([]model.ConfigFileSnapshot, error) {
 	targets, _, err := buildGlobalTargets(defs)
 	if err != nil {
 		return nil, err
@@ -48,7 +49,7 @@ func (s *ConfigFileService) ReadGlobalFiles(defs []model.ConfigFile) ([]model.Co
 }
 
 // SaveGlobalFiles 直接写回真实全局文件，并在写入前校验 base_hash。
-func (s *ConfigFileService) SaveGlobalFiles(defs []model.ConfigFile, updates []model.ConfigFileUpdate) ([]model.ConfigFileSnapshot, error) {
+func (s *ConfigFileService) SaveGlobalFiles(defs []configutil.ConfigFile, updates []model.ConfigFileUpdate) ([]model.ConfigFileSnapshot, error) {
 	targets, targetMap, err := buildGlobalTargets(defs)
 	if err != nil {
 		return nil, err
@@ -60,7 +61,7 @@ func (s *ConfigFileService) SaveGlobalFiles(defs []model.ConfigFile, updates []m
 }
 
 // ReadProjectFiles 读取 session 工作目录下的固定项目级文件集合。
-func (s *ConfigFileService) ReadProjectFiles(workingDir string, defs []model.FileDef) ([]model.ConfigFileSnapshot, error) {
+func (s *ConfigFileService) ReadProjectFiles(workingDir string, defs []configutil.FileDef) ([]model.ConfigFileSnapshot, error) {
 	targets, _, err := buildProjectTargets(workingDir, defs)
 	if err != nil {
 		return nil, err
@@ -69,7 +70,7 @@ func (s *ConfigFileService) ReadProjectFiles(workingDir string, defs []model.Fil
 }
 
 // SaveProjectFiles 直接写回 session 工作目录中的真实项目级文件。
-func (s *ConfigFileService) SaveProjectFiles(workingDir string, defs []model.FileDef, updates []model.ConfigFileUpdate) ([]model.ConfigFileSnapshot, error) {
+func (s *ConfigFileService) SaveProjectFiles(workingDir string, defs []configutil.FileDef, updates []model.ConfigFileUpdate) ([]model.ConfigFileSnapshot, error) {
 	targets, targetMap, err := buildProjectTargets(workingDir, defs)
 	if err != nil {
 		return nil, err
@@ -137,7 +138,7 @@ func (s *ConfigFileService) validateAndWriteTargets(_ []configTarget, targetMap 
 	return nil
 }
 
-func buildGlobalTargets(defs []model.ConfigFile) ([]configTarget, map[string]configTarget, error) {
+func buildGlobalTargets(defs []configutil.ConfigFile) ([]configTarget, map[string]configTarget, error) {
 	targets := make([]configTarget, 0, len(defs))
 	targetMap := make(map[string]configTarget, len(defs))
 
@@ -166,7 +167,7 @@ func buildGlobalTargets(defs []model.ConfigFile) ([]configTarget, map[string]con
 	return targets, targetMap, nil
 }
 
-func buildProjectTargets(workingDir string, defs []model.FileDef) ([]configTarget, map[string]configTarget, error) {
+func buildProjectTargets(workingDir string, defs []configutil.FileDef) ([]configTarget, map[string]configTarget, error) {
 	if strings.TrimSpace(workingDir) == "" {
 		return nil, nil, errors.New("working_dir is required")
 	}
@@ -230,7 +231,7 @@ func writeConfigFile(path string, content string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0750); err != nil {
 		return fmt.Errorf("create config parent dir for %s: %w", path, err)
 	}
-	if err := model.AtomicWriteFile(path, []byte(content), 0644); err != nil {
+	if err := configutil.AtomicWriteFile(path, []byte(content), 0644); err != nil {
 		return fmt.Errorf("write config file %s: %w", path, err)
 	}
 	return nil

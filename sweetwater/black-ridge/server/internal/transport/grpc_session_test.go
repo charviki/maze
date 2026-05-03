@@ -3,6 +3,7 @@ package transport
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	pb "github.com/charviki/maze-cradle/api/gen/maze/v1"
+	"github.com/charviki/maze-cradle/configutil"
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/sweetwater-black-ridge/internal/model"
 	"github.com/charviki/sweetwater-black-ridge/internal/service"
@@ -112,8 +114,8 @@ func TestValidateSessionConfs_NoTemplate(t *testing.T) {
 
 func TestValidateSessionConfs_ValidEnv(t *testing.T) {
 	tpl := &model.SessionTemplate{
-		SessionSchema: model.SessionSchema{
-			EnvDefs: []model.EnvDef{{Key: "API_KEY"}},
+		SessionSchema: configutil.SessionSchema{
+			EnvDefs: []configutil.EnvDef{{Key: "API_KEY"}},
 		},
 	}
 	configs := []model.ConfigItem{{Type: "env", Key: "API_KEY", Value: "secret"}}
@@ -125,8 +127,8 @@ func TestValidateSessionConfs_ValidEnv(t *testing.T) {
 
 func TestValidateSessionConfs_InvalidEnv(t *testing.T) {
 	tpl := &model.SessionTemplate{
-		SessionSchema: model.SessionSchema{
-			EnvDefs: []model.EnvDef{{Key: "API_KEY"}},
+		SessionSchema: configutil.SessionSchema{
+			EnvDefs: []configutil.EnvDef{{Key: "API_KEY"}},
 		},
 	}
 	configs := []model.ConfigItem{{Type: "env", Key: "UNAUTHORIZED", Value: "val"}}
@@ -138,8 +140,8 @@ func TestValidateSessionConfs_InvalidEnv(t *testing.T) {
 
 func TestValidateSessionConfs_ValidFile(t *testing.T) {
 	tpl := &model.SessionTemplate{
-		SessionSchema: model.SessionSchema{
-			FileDefs: []model.FileDef{{Path: "CLAUDE.md"}},
+		SessionSchema: configutil.SessionSchema{
+			FileDefs: []configutil.FileDef{{Path: "CLAUDE.md"}},
 		},
 	}
 	configs := []model.ConfigItem{{Type: "file", Key: "CLAUDE.md", Value: "# Instructions"}}
@@ -151,8 +153,8 @@ func TestValidateSessionConfs_ValidFile(t *testing.T) {
 
 func TestValidateSessionConfs_InvalidFile(t *testing.T) {
 	tpl := &model.SessionTemplate{
-		SessionSchema: model.SessionSchema{
-			FileDefs: []model.FileDef{{Path: "CLAUDE.md"}},
+		SessionSchema: configutil.SessionSchema{
+			FileDefs: []configutil.FileDef{{Path: "CLAUDE.md"}},
 		},
 	}
 	configs := []model.ConfigItem{{Type: "file", Key: "/etc/passwd", Value: "hacked"}}
@@ -173,8 +175,8 @@ func TestValidateSessionConfs_UnsupportedType(t *testing.T) {
 
 func TestValidateSessionConfs_FilePathTraversal(t *testing.T) {
 	tpl := &model.SessionTemplate{
-		SessionSchema: model.SessionSchema{
-			FileDefs: []model.FileDef{{Path: "CLAUDE.md"}},
+		SessionSchema: configutil.SessionSchema{
+			FileDefs: []configutil.FileDef{{Path: "CLAUDE.md"}},
 		},
 	}
 	configs := []model.ConfigItem{{Type: "file", Key: "../secret", Value: "data"}}
@@ -201,11 +203,11 @@ func (m *mockTmuxService) ListSessions() ([]model.Session, error) {
 	return m.sessions, nil
 }
 
-func (m *mockTmuxService) CreateSession(name, command, workingDir string, configs []model.ConfigItem, restoreStrategy, templateID, restoreCommand string) (*model.Session, error) {
+func (m *mockTmuxService) CreateSession(opts service.CreateSessionOptions) (*model.Session, error) {
 	if m.createErr != nil {
 		return nil, m.createErr
 	}
-	m.created = &model.Session{ID: name, Name: name, Status: "running", CreatedAt: "2026-01-01T00:00:00Z"}
+	m.created = &model.Session{ID: opts.Name, Name: opts.Name, Status: "running", CreatedAt: "2026-01-01T00:00:00Z"}
 	return m.created, nil
 }
 
@@ -255,7 +257,7 @@ func (m *mockTmuxService) BuildPipeline(workingDir, command string, configs []mo
 	return nil
 }
 
-func (m *mockTmuxService) SavePipelineState(sessionName string, pipeline model.Pipeline, restoreStrategy, templateID, cliSessionID, restoreCommand string) error {
+func (m *mockTmuxService) SavePipelineState(opts service.SavePipelineStateOptions) error {
 	return nil
 }
 
@@ -371,7 +373,7 @@ func TestCreateSession_MissingWorkingDir(t *testing.T) {
 
 func TestCreateSession_Duplicate(t *testing.T) {
 	mock := &mockTmuxService{
-		createErr: errors.New("duplicate session: test"),
+		createErr: fmt.Errorf("%w: test", service.ErrDuplicateSession),
 	}
 	srv := newTestServer(t, mock)
 

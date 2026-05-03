@@ -48,7 +48,11 @@ type TerminalConfig struct {
 
 // ControllerConfig Agent Manager 控制器连接配置，用于心跳注册和上报
 type ControllerConfig struct {
-	Addr              string `yaml:"addr"`
+	// Addr Manager HTTP 地址（用于兼容/回退），格式: http://host:port
+	Addr string `yaml:"addr"`
+	// GRPCAddr Manager gRPC 地址（用于心跳注册/上报），格式: host:port。
+	// 若为空，heartbeat 启动时从 Addr 推导（取 host + :9090）。
+	GRPCAddr          string `yaml:"grpc_addr"`
 	Enabled           bool   `yaml:"enabled"`
 	HeartbeatInterval int    `yaml:"heartbeat_interval"`
 	AuthToken         string `yaml:"auth_token"`
@@ -96,6 +100,8 @@ func applyEnvOverrides(cfg *Config) {
 	configutil.ApplyStringOverride(&cfg.Server.Name, "AGENT_NAME")
 	configutil.ApplyStringOverride(&cfg.Server.ExternalAddr, "AGENT_EXTERNAL_ADDR")
 	configutil.ApplyStringOverride(&cfg.Server.AdvertisedAddr, "AGENT_ADVERTISED_ADDR")
+	// 历史兼容别名：不遵循结构路径命名，需显式保留。
+	configutil.ApplyStringOverride(&cfg.Controller.GRPCAddr, "AGENT_CONTROLLER_GRPC_ADDR")
 	if cfg.Controller.Addr != "" {
 		// 只要指定 controller 地址，就默认开启注册/心跳，减少部署时的重复开关配置。
 		cfg.Controller.Enabled = true

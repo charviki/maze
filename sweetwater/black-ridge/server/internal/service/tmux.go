@@ -23,7 +23,10 @@ import (
 // ErrSessionNotFound session 不存在时返回的 sentinel error
 var ErrSessionNotFound = errors.New("session not found")
 
-// ErrWorkspaceRootProtected 表示命中了基础工作目录根保护，不能删除整个根目录。
+// ErrDuplicateSession session 已存在时返回的 sentinel error
+var ErrDuplicateSession = errors.New("duplicate session")
+
+// ErrWorkspaceRootProtected 表示命中了基础工作目录根保护，不能删除整个根目录
 var ErrWorkspaceRootProtected = errors.New("workspace root is protected")
 
 // generateUUID 生成符合 RFC 4122 v4 的 UUID 字符串，用于 Claude CLI 的 --session-id 参数
@@ -36,27 +39,72 @@ func generateUUID() string {
 		b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
 }
 
-// TmuxService Tmux 会话管理接口。通过接口抽象便于测试时 mock
-type TmuxService interface {
+// CreateSessionOptions 聚合 CreateSession 的全部参数，避免方法签名过长。
+// 调用方按需填充字段，后续新增参数只需扩展此结构体而无需改动方法签名。
+type CreateSessionOptions struct {
+	Name            string
+	Command         string
+	WorkingDir      string
+	Configs         []model.ConfigItem
+	RestoreStrategy string
+	TemplateID      string
+	RestoreCommand  string
+}
+
+// SavePipelineStateOptions 聚合 SavePipelineState 的全部参数，
+// 与 CreateSessionOptions 同理，降低方法签名耦合。
+type SavePipelineStateOptions struct {
+	SessionName     string
+	Pipeline        model.Pipeline
+	RestoreStrategy string
+	TemplateID      string
+	CLISessionID    string
+	RestoreCommand  string
+}
+
+// SessionManager 管理 session 的完整生命周期（创建、查询、终止、恢复、销毁）
+type SessionManager interface {
 	ListSessions() ([]model.Session, error)
-	CreateSession(name string, command string, workingDir string, configs []model.ConfigItem, restoreStrategy string, templateID string, restoreCommand string) (*model.Session, error)
-	KillSession(name string) error
 	GetSession(name string) (*model.Session, error)
+	CreateSession(opts CreateSessionOptions) (*model.Session, error)
+	KillSession(name string) error
+	RestoreSession(name string) error
+	DeleteSessionWorkspace(sessionName string, workspaceRoot string) error
+	DeleteSessionState(sessionName string) error
+}
+
+// PipelineExecutor 负责管线构建与执行
+type PipelineExecutor interface {
+	BuildPipeline(workingDir string, command string, configs []model.ConfigItem) model.Pipeline
+	ExecutePipeline(sessionName string, pipeline model.Pipeline) error
+}
+
+// TerminalController 控制终端的输入输出与尺寸
+type TerminalController interface {
 	CapturePane(name string, lines int) (string, error)
 	SendKeys(name string, command string) error
 	SendSignal(name string, signal string) error
 	AttachSession(name string, rows, cols uint16) (*os.File, error)
 	ResizeSession(name string, rows, cols uint16) error
-	GetSessionEnv(name string) (map[string]string, error)
-	ExecutePipeline(sessionName string, pipeline model.Pipeline) error
-	BuildPipeline(workingDir string, command string, configs []model.ConfigItem) model.Pipeline
-	SavePipelineState(sessionName string, pipeline model.Pipeline, restoreStrategy string, templateID string, cliSessionID string, restoreCommand string) error
+}
+
+// SessionStateStore 管理 session 管线状态的持久化与读取
+type SessionStateStore interface {
+	SavePipelineState(opts SavePipelineStateOptions) error
 	SaveAllPipelineStates() error
 	GetSavedSessions() ([]model.SessionState, error)
 	GetSessionState(sessionName string) (*model.SessionState, error)
-	RestoreSession(sessionName string) error
-	DeleteSessionWorkspace(sessionName string, workspaceRoot string) error
-	DeleteSessionState(sessionName string) error
+}
+
+// TmuxService 聚合所有子接口，作为外部依赖注入的唯一入口。
+// 通过拆分为 SessionManager/PipelineExecutor/TerminalController/SessionStateStore，
+// 测试时可按需 mock 单个职责维度而非整个大接口。
+type TmuxService interface {
+	SessionManager
+	PipelineExecutor
+	TerminalController
+	SessionStateStore
+	GetSessionEnv(name string) (map[string]string, error)
 }
 
 // TrustBootstrapper 为外部 CLI 工具注入工作目录信任的接口。
@@ -172,7 +220,7 @@ func (s *tmuxServiceImpl) BuildPipeline(workingDir string, command string, confi
 			Key:   workingDir,
 			Value: "",
 		})
-		_ = order
+		order++
 	}
 
 	// system 层: 环境变量
@@ -186,7 +234,7 @@ func (s *tmuxServiceImpl) BuildPipeline(workingDir string, command string, confi
 				Key:   cfg.Key,
 				Value: cfg.Value,
 			})
-			_ = order
+			order++
 		}
 	}
 
@@ -201,7 +249,7 @@ func (s *tmuxServiceImpl) BuildPipeline(workingDir string, command string, confi
 				Key:   cfg.Key,
 				Value: cfg.Value,
 			})
-			_ = order
+			order++
 		}
 	}
 
@@ -215,7 +263,6 @@ func (s *tmuxServiceImpl) BuildPipeline(workingDir string, command string, confi
 			Key:   "",
 			Value: command,
 		})
-		_ = order
 	}
 
 	return pipeline
@@ -244,18 +291,6 @@ func (s *tmuxServiceImpl) ExecutePipeline(sessionName string, pipeline model.Pip
 			_ = s.waitForPrompt(sessionName)
 		}
 	}()
-
-	// 提取工作目录，用于 claude --resume 时匹配正确的 session
-	var workingDir string
-	for _, step := range sorted {
-		if step.Type == model.StepCD {
-			workingDir = step.Key
-			if workingDir == "" {
-				_ = step.Value
-			}
-			break
-		}
-	}
 
 	for _, step := range sorted {
 		// 在第一个敏感步骤前关闭回显，防止 token 等敏感值泄露到终端
@@ -334,9 +369,20 @@ func (s *tmuxServiceImpl) ExecutePipeline(sessionName string, pipeline model.Pip
 // 4. 为 command 步骤中的 {session_id} 占位符填充预生成的 UUID
 // 5. ExecutePipeline 按顺序执行所有步骤
 // 6. SavePipelineState 保存管线状态到本地文件
-func (s *tmuxServiceImpl) CreateSession(name string, command string, workingDir string, configs []model.ConfigItem, restoreStrategy string, templateID string, restoreCommand string) (*model.Session, error) {
+func (s *tmuxServiceImpl) CreateSession(opts CreateSessionOptions) (*model.Session, error) {
+	name := opts.Name
+	command := opts.Command
+	workingDir := opts.WorkingDir
+	configs := opts.Configs
+	restoreStrategy := opts.RestoreStrategy
+	templateID := opts.TemplateID
+	restoreCommand := opts.RestoreCommand
+
 	args := []string{"new-session", "-d", "-s", name}
 	if _, err := s.runTmux(args...); err != nil {
+		if strings.Contains(err.Error(), "duplicate session") {
+			return nil, fmt.Errorf("%w: %s", ErrDuplicateSession, err)
+		}
 		return nil, fmt.Errorf("create session: %w", err)
 	}
 
@@ -375,7 +421,14 @@ func (s *tmuxServiceImpl) CreateSession(name string, command string, workingDir 
 	if restoreStrategy == "" {
 		restoreStrategy = "auto"
 	}
-	if err := s.SavePipelineState(name, pipeline, restoreStrategy, templateID, cliSessionID, restoreCommand); err != nil {
+	if err := s.SavePipelineState(SavePipelineStateOptions{
+		SessionName:     name,
+		Pipeline:        pipeline,
+		RestoreStrategy: restoreStrategy,
+		TemplateID:      templateID,
+		CLISessionID:    cliSessionID,
+		RestoreCommand:  restoreCommand,
+	}); err != nil {
 		s.logger.Errorf("[tmux] save pipeline state for session %s failed: %v", name, err)
 	}
 
@@ -580,11 +633,11 @@ func (s *tmuxServiceImpl) GetSessionEnv(name string) (map[string]string, error) 
 }
 
 // SavePipelineState 保存单个 session 的管线状态到本地 JSON 文件
-func (s *tmuxServiceImpl) SavePipelineState(sessionName string, pipeline model.Pipeline, restoreStrategy string, templateID string, cliSessionID string, restoreCommand string) error {
+func (s *tmuxServiceImpl) SavePipelineState(opts SavePipelineStateOptions) error {
 	s.saveMu.Lock()
 	defer s.saveMu.Unlock()
 
-	return s.savePipelineStateLocked(sessionName, pipeline, restoreStrategy, templateID, cliSessionID, restoreCommand)
+	return s.savePipelineStateLocked(opts.SessionName, opts.Pipeline, opts.RestoreStrategy, opts.TemplateID, opts.CLISessionID, opts.RestoreCommand)
 }
 
 // savePipelineStateLocked 在持有 saveMu 时写入单个 session 状态。

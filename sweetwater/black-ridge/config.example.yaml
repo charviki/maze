@@ -11,6 +11,7 @@ terminal:
 
 controller:
   addr: ''
+  grpc_addr: ''
   enabled: false
   heartbeat_interval: 10
   auth_token: ''

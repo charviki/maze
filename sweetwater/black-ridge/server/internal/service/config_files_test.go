@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/charviki/maze-cradle/configutil"
 	"github.com/charviki/sweetwater-black-ridge/internal/model"
 )
 
@@ -14,7 +15,7 @@ func TestConfigFileService_ReadGlobalFiles_MissingFileReturnsEmptySnapshot(t *te
 	t.Setenv("HOME", home)
 
 	svc := NewConfigFileService()
-	files, err := svc.ReadGlobalFiles([]model.ConfigFile{
+	files, err := svc.ReadGlobalFiles([]configutil.ConfigFile{
 		{Path: "~/.claude/settings.json"},
 	})
 	if err != nil {
@@ -40,7 +41,7 @@ func TestConfigFileService_ReadGlobalFiles_MissingFileReturnsEmptySnapshot(t *te
 func TestConfigFileService_SaveProjectFiles_WritesFileAfterHashCheck(t *testing.T) {
 	workingDir := t.TempDir()
 	svc := NewConfigFileService()
-	defs := []model.FileDef{
+	defs := []configutil.FileDef{
 		{Path: ".claude/settings.json"},
 		{Path: "CLAUDE.md"},
 	}
@@ -79,7 +80,7 @@ func TestConfigFileService_SaveProjectFiles_WritesFileAfterHashCheck(t *testing.
 func TestConfigFileService_SaveProjectFiles_RejectsConflict(t *testing.T) {
 	workingDir := t.TempDir()
 	svc := NewConfigFileService()
-	defs := []model.FileDef{
+	defs := []configutil.FileDef{
 		{Path: ".claude/settings.json"},
 	}
 
@@ -127,7 +128,7 @@ func TestConfigFileService_SaveGlobalFiles_RejectsUnknownPath(t *testing.T) {
 	t.Setenv("HOME", home)
 
 	svc := NewConfigFileService()
-	_, err := svc.SaveGlobalFiles([]model.ConfigFile{
+	_, err := svc.SaveGlobalFiles([]configutil.ConfigFile{
 		{Path: "~/.claude/CLAUDE.md"},
 	}, []model.ConfigFileUpdate{
 		{

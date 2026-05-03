@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charviki/sweetwater-black-ridge/internal/model"
 	"github.com/charviki/maze-cradle/logutil"
+	"github.com/charviki/sweetwater-black-ridge/internal/model"
 )
 
 func TestGetSavedSessions_EmptyDir(t *testing.T) {
@@ -116,7 +116,11 @@ func TestSavePipelineState_FileContent(t *testing.T) {
 		{ID: "tpl-cmd", Type: model.StepCommand, Phase: model.PhaseTemplate, Order: 1, Value: "claude --dangerously-skip-permissions"},
 	}
 
-	err := svc.SavePipelineState("my-session", pipeline, "auto", "", "", "")
+	err := svc.SavePipelineState(SavePipelineStateOptions{
+		SessionName:     "my-session",
+		Pipeline:        pipeline,
+		RestoreStrategy: "auto",
+	})
 	if err != nil {
 		t.Fatalf("SavePipelineState 失败: %v", err)
 	}
