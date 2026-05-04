@@ -57,9 +57,10 @@ pre-commit:
 
     prettier:
       tags: [format, fast]
-      glob: '*.{ts,tsx,js,jsx,json,css,md}'
+      # CI 会执行 `prettier --check .`，这里保持同样的文件类型覆盖，避免 YAML 只在 CI 才暴露格式问题。
+      glob: '*.{ts,tsx,js,jsx,json,css,md,yml,yaml}'
       run: |
-        STAGED=$(git diff --name-only --cached --diff-filter=ACMR -- '*.ts' '*.tsx' '*.js' '*.jsx' '*.json' '*.css' '*.md' | head -50)
+        STAGED=$(git diff --name-only --cached --diff-filter=ACMR -- '*.ts' '*.tsx' '*.js' '*.jsx' '*.json' '*.css' '*.md' '*.yml' '*.yaml' | head -50)
         if [ -z "$STAGED" ]; then exit 0; fi
         VALID_FILES=""
         for f in $STAGED; do
@@ -70,6 +71,10 @@ pre-commit:
 
 pre-push:
   commands:
+    format-check:
+      tags: [format, slow]
+      run: pnpm run format:check
+
     go-lint:
       tags: [go, slow]
       run: make lint
