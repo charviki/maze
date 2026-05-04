@@ -1,0 +1,174 @@
+syntax = "proto3";
+
+package maze.v1;
+
+option go_package = "github.com/charviki/maze-cradle/api/gen/maze/v1";
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+// PermissionTarget 描述一次权限申请里的一项资源动作组合。
+// 当前授权模型固定为 Casbin 三元组 sub,obj,act，这里对应 obj + act。
+message PermissionTarget {
+  // resource 是稳定的授权资源名，按 Manager 当前能力边界命名。
+  string resource = 1;
+  // action 是对 resource 执行的动作，例如 read/create/update/review。
+  string action = 2;
+}
+
+// PermissionApplicationStatus 表示权限申请单的生命周期状态。
+enum PermissionApplicationStatus {
+  PERMISSION_APPLICATION_STATUS_UNSPECIFIED = 0;
+  // PENDING 表示申请单已创建，尚未审批。
+  PERMISSION_APPLICATION_STATUS_PENDING = 1;
+  // APPROVED 表示申请已批准，并已生成对应 grant。
+  PERMISSION_APPLICATION_STATUS_APPROVED = 2;
+  // DENIED 表示申请已被拒绝，不会生成 grant。
+  PERMISSION_APPLICATION_STATUS_DENIED = 3;
+  // REVOKED 表示已批准申请对应的 grant 已被撤销。
+  PERMISSION_APPLICATION_STATUS_REVOKED = 4;
+  // EXPIRED 表示申请关联的 grant 已因 TTL 到期被回收。
+  PERMISSION_APPLICATION_STATUS_EXPIRED = 5;
+}
+
+// CreatePermissionApplicationRequest 创建一张新的权限申请单。
+message CreatePermissionApplicationRequest {
+  // subject_key 是外部稳定主体标识，格式固定为 <type>:<name>。
+  string subject_key = 1;
+  // targets 是本次申请希望获得的一组资源动作。
+  repeated PermissionTarget targets = 2;
+  // reason 记录申请理由，供审批与审计使用。
+  string reason = 3;
+  // expires_at 为可选过期时间；为空表示不设置 TTL。
+  google.protobuf.Timestamp expires_at = 4;
+}
+
+// ListPermissionApplicationsRequest 按状态分页列出申请单。
+message ListPermissionApplicationsRequest {
+  // status 为空时返回全部状态；非空时按状态过滤。
+  string status = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+// GetPermissionApplicationRequest 根据业务主键读取单个申请单。
+// permission_application_id 是业务资源 ID，不是 trace/request id。
+message GetPermissionApplicationRequest {
+  string permission_application_id = 1;
+}
+
+// ReviewPermissionApplicationRequest 审批一张申请单。
+message ReviewPermissionApplicationRequest {
+  // permission_application_id 是待审批申请单的业务主键。
+  string permission_application_id = 1;
+  // approved=true 表示批准；false 表示拒绝。
+  bool approved = 2;
+  // review_comment 记录审批意见；拒绝时应提供原因。
+  string review_comment = 3;
+}
+
+// RevokePermissionApplicationRequest 撤销一张已批准申请对应的授权结果。
+message RevokePermissionApplicationRequest {
+  // permission_application_id 是待撤销申请单的业务主键。
+  string permission_application_id = 1;
+  // revoke_reason 记录撤销原因，供审计与排障使用。
+  string revoke_reason = 2;
+}
+
+// ListSubjectPermissionsRequest 查询主体当前生效的 grant。
+message ListSubjectPermissionsRequest {
+  string subject_key = 1;
+}
+
+// PermissionApplication 表示一张权限申请单。
+// 它记录“申请了什么”，不是运行时最终生效的权限本身。
+message PermissionApplication {
+  // id 是权限申请单的业务主键，不承担链路追踪职责。
+  string id = 1;
+  string subject_key = 2;
+  repeated PermissionTarget targets = 3;
+  string reason = 4;
+  PermissionApplicationStatus status = 5;
+  // reviewed_by 记录审批人主体标识。
+  string reviewed_by = 6;
+  string review_comment = 7;
+  google.protobuf.Timestamp expires_at = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+}
+
+// ListPermissionApplicationsResponse 返回分页申请单结果。
+message ListPermissionApplicationsResponse {
+  repeated PermissionApplication applications = 1;
+  int32 total = 2;
+}
+
+// SubjectPermissionGrant 表示真正生效的一条授权结果。
+// 一张申请单审批通过后，可能拆成一条或多条 grant。
+message SubjectPermissionGrant {
+  string grant_id = 1;
+  string subject_key = 2;
+  string resource = 3;
+  string action = 4;
+  // source_permission_application_id 指向生成该 grant 的申请单。
+  string source_permission_application_id = 5;
+  string status = 6;
+  google.protobuf.Timestamp expires_at = 7;
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+}
+
+// ListSubjectPermissionsResponse 返回主体当前生效或可见的 grant 列表。
+message ListSubjectPermissionsResponse {
+  string subject_key = 1;
+  repeated SubjectPermissionGrant grants = 2;
+}
+
+// PermissionService 暴露首批最小权限闭环接口：
+// 创建申请、列出申请、查看申请、审批、撤销、查看主体当前权限。
+service PermissionService {
+  // CreatePermissionApplication 创建一张权限申请单。
+  rpc CreatePermissionApplication(CreatePermissionApplicationRequest) returns (PermissionApplication) {
+    option (google.api.http) = {
+      post: "/api/v1/permission-applications"
+      body: "*"
+    };
+  }
+
+  // ListPermissionApplications 按分页和状态过滤列出申请单。
+  rpc ListPermissionApplications(ListPermissionApplicationsRequest) returns (ListPermissionApplicationsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/permission-applications"
+    };
+  }
+
+  // GetPermissionApplication 读取单个申请单详情。
+  rpc GetPermissionApplication(GetPermissionApplicationRequest) returns (PermissionApplication) {
+    option (google.api.http) = {
+      get: "/api/v1/permission-applications/{permission_application_id}"
+    };
+  }
+
+  // ReviewPermissionApplication 对申请单执行批准或拒绝。
+  rpc ReviewPermissionApplication(ReviewPermissionApplicationRequest) returns (PermissionApplication) {
+    option (google.api.http) = {
+      post: "/api/v1/permission-applications/{permission_application_id}:review"
+      body: "*"
+    };
+  }
+
+  // RevokePermissionApplication 撤销已批准申请对应的 grant。
+  rpc RevokePermissionApplication(RevokePermissionApplicationRequest) returns (PermissionApplication) {
+    option (google.api.http) = {
+      post: "/api/v1/permission-applications/{permission_application_id}:revoke"
+      body: "*"
+    };
+  }
+
+  // ListSubjectPermissions 列出主体当前权限视图。
+  rpc ListSubjectPermissions(ListSubjectPermissionsRequest) returns (ListSubjectPermissionsResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/subjects/{subject_key}/permissions"
+    };
+  }
+}

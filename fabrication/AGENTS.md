@@ -34,7 +34,7 @@
 | kubernetes/Makefile                     | K8s 部署 Makefile（up/down/update）                          | 本文件                                                        |
 | kubernetes/overlays/dev/                | 开发环境 overlay（hostPath + 动态构建，namespace maze-dev）  | [kubernetes-deploy-guide.md](docs/kubernetes-deploy-guide.md) |
 | kubernetes/overlays/test/               | 集成测试 overlay（hostPath + 动态构建，namespace maze-test） | [kubernetes-deploy-guide.md](docs/kubernetes-deploy-guide.md) |
-| kubernetes/overlays/production/         | 生产环境 overlay（PVC + 远程镜像，namespace maze-prod）      | [kubernetes-deploy-guide.md](docs/kubernetes-deploy-guide.md) |
+| kubernetes/overlays/production/         | 生产环境 overlay（PVC + Docker socket 动态构建，namespace maze-prod） | [kubernetes-deploy-guide.md](docs/kubernetes-deploy-guide.md) |
 
 ## 详细文档
 

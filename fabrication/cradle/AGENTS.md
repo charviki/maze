@@ -25,6 +25,7 @@
 | api/gen/                         | buf 生成的 Go 类型 + gRPC stub + grpc-gateway handler（自动生成，勿手动编辑） | —                                          |
 | api/gen/openapiv2/               | buf 生成的 OpenAPI/Swagger 文档（maze.swagger.json 为合并后的完整 spec） | 自动生成，勿手动编辑                       |
 | api/gen/http/                    | openapi-generator 生成的 Go HTTP client（自动生成，勿手动编辑）     | —                                          |
+| db/                              | PostgreSQL 共享能力：连接池、migration runner、事务边界；不拥有业务表结构 | [postgresql-guide.md](../../docs/postgresql-guide.md) |
 | configutil/                      | 配置搜索/加载/合并/层定义/原子写入 + 反射式 env override + 路径展开 + 共享 ServerConfig | [packages.md](docs/packages.md)            |
 | httputil/                        | 统一 JSON 响应封装 + CORS + WebSocket + SSRF 工具     | [packages.md](docs/packages.md)            |
 | logutil/logger.go                | 结构化日志接口与 slog 实现                           | [packages.md](docs/packages.md)            |
@@ -41,6 +42,7 @@
 | 文档                                 | 内容                  |
 | ------------------------------------ | --------------------- |
 | [docs/packages.md](docs/packages.md) | 各子包说明 + 导出 API |
+| [postgresql-guide.md](../../docs/postgresql-guide.md) | 仓库统一 PostgreSQL 接入规范 |
 
 ## 代码生成流程
 

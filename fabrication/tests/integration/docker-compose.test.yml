@@ -1,4 +1,17 @@
 services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: maze-test-postgres
+    environment:
+      POSTGRES_DB: maze_auth
+      POSTGRES_USER: maze
+      POSTGRES_PASSWORD: maze
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U maze -d maze_auth']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
   agent-manager:
     build:
       context: ../../..
@@ -9,6 +22,9 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${HOST_DATA_DIR:-${HOME}/.maze-test}/docker:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       AGENT_MANAGER_SERVER_AUTH_TOKEN: test-integration-token
       AGENT_MANAGER_ALLOW_PRIVATE_NETWORKS: 'true'
@@ -17,3 +33,11 @@ services:
       AGENT_MANAGER_WORKSPACE_MOUNT_DIR: /data
       AGENT_MANAGER_DOCKER_AGENT_BASE_IMAGE: maze-agent:latest
       AGENT_MANAGER_DOCKER_AGENT_DATA_DIR: ${HOST_DATA_DIR:-${HOME}/.maze-test}/docker/agents
+      AGENT_MANAGER_DATABASE_HOST: postgres
+      AGENT_MANAGER_DATABASE_PORT: '5432'
+      AGENT_MANAGER_DATABASE_NAME: maze_auth
+      AGENT_MANAGER_DATABASE_USER: maze
+      AGENT_MANAGER_DATABASE_PASSWORD: maze
+      AGENT_MANAGER_AUTHZ_ENABLED: 'true'
+      AGENT_MANAGER_AUTHZ_ADMIN_SUBJECT_KEY: user:admin
+      AGENT_MANAGER_AUTHZ_ADMIN_DISPLAY_NAME: admin

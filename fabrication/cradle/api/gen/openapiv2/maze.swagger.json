@@ -15,6 +15,9 @@
       "name": "AuditService"
     },
     {
+      "name": "PermissionService"
+    },
+    {
       "name": "HostService"
     },
     {
@@ -1282,6 +1285,194 @@
         ]
       }
     },
+    "/api/v1/permission-applications": {
+      "get": {
+        "summary": "ListPermissionApplications 按分页和状态过滤列出申请单。",
+        "operationId": "PermissionService_ListPermissionApplications",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListPermissionApplicationsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "status",
+            "description": "status 为空时返回全部状态；非空时按状态过滤。",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "tags": [
+          "PermissionService"
+        ]
+      },
+      "post": {
+        "summary": "CreatePermissionApplication 创建一张权限申请单。",
+        "operationId": "PermissionService_CreatePermissionApplication",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1PermissionApplication"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreatePermissionApplicationRequest"
+            }
+          }
+        ],
+        "tags": [
+          "PermissionService"
+        ]
+      }
+    },
+    "/api/v1/permission-applications/{permissionApplicationId}": {
+      "get": {
+        "summary": "GetPermissionApplication 读取单个申请单详情。",
+        "operationId": "PermissionService_GetPermissionApplication",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1PermissionApplication"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "permissionApplicationId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "PermissionService"
+        ]
+      }
+    },
+    "/api/v1/permission-applications/{permissionApplicationId}:review": {
+      "post": {
+        "summary": "ReviewPermissionApplication 对申请单执行批准或拒绝。",
+        "operationId": "PermissionService_ReviewPermissionApplication",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1PermissionApplication"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "permissionApplicationId",
+            "description": "permission_application_id 是待审批申请单的业务主键。",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/PermissionServiceReviewPermissionApplicationBody"
+            }
+          }
+        ],
+        "tags": [
+          "PermissionService"
+        ]
+      }
+    },
+    "/api/v1/permission-applications/{permissionApplicationId}:revoke": {
+      "post": {
+        "summary": "RevokePermissionApplication 撤销已批准申请对应的 grant。",
+        "operationId": "PermissionService_RevokePermissionApplication",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1PermissionApplication"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "permissionApplicationId",
+            "description": "permission_application_id 是待撤销申请单的业务主键。",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/PermissionServiceRevokePermissionApplicationBody"
+            }
+          }
+        ],
+        "tags": [
+          "PermissionService"
+        ]
+      }
+    },
     "/api/v1/sessions": {
       "get": {
         "operationId": "SessionService_ListSessions2",
@@ -1741,6 +1932,37 @@
         ]
       }
     },
+    "/api/v1/subjects/{subjectKey}/permissions": {
+      "get": {
+        "summary": "ListSubjectPermissions 列出主体当前权限视图。",
+        "operationId": "PermissionService_ListSubjectPermissions",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListSubjectPermissionsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "subjectKey",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "PermissionService"
+        ]
+      }
+    },
     "/api/v1/templates": {
       "get": {
         "operationId": "TemplateService_ListTemplates2",
@@ -1995,6 +2217,30 @@
           }
         }
       }
+    },
+    "PermissionServiceReviewPermissionApplicationBody": {
+      "type": "object",
+      "properties": {
+        "approved": {
+          "type": "boolean",
+          "title": "approved=true 表示批准；false 表示拒绝。"
+        },
+        "reviewComment": {
+          "type": "string",
+          "title": "review_comment 记录审批意见；拒绝时应提供原因。"
+        }
+      },
+      "title": "ReviewPermissionApplicationRequest 审批一张申请单。"
+    },
+    "PermissionServiceRevokePermissionApplicationBody": {
+      "type": "object",
+      "properties": {
+        "revokeReason": {
+          "type": "string",
+          "title": "revoke_reason 记录撤销原因，供审计与排障使用。"
+        }
+      },
+      "title": "RevokePermissionApplicationRequest 撤销一张已批准申请对应的授权结果。"
     },
     "SessionServiceCreateSessionBody": {
       "type": "object",
@@ -2325,6 +2571,33 @@
         }
       }
     },
+    "v1CreatePermissionApplicationRequest": {
+      "type": "object",
+      "properties": {
+        "subjectKey": {
+          "type": "string",
+          "title": "subject_key 是外部稳定主体标识，格式固定为 \u003ctype\u003e:\u003cname\u003e。"
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1PermissionTarget"
+          },
+          "title": "targets 是本次申请希望获得的一组资源动作。"
+        },
+        "reason": {
+          "type": "string",
+          "title": "reason 记录申请理由，供审批与审计使用。"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "expires_at 为可选过期时间；为空表示不设置 TTL。"
+        }
+      },
+      "title": "CreatePermissionApplicationRequest 创建一张新的权限申请单。"
+    },
     "v1CreateSessionRequest": {
       "type": "object",
       "properties": {
@@ -2601,6 +2874,23 @@
         }
       }
     },
+    "v1ListPermissionApplicationsResponse": {
+      "type": "object",
+      "properties": {
+        "applications": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1PermissionApplication"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "format": "int32"
+        }
+      },
+      "title": "ListPermissionApplicationsResponse 返回分页申请单结果。"
+    },
     "v1ListSessionsResponse": {
       "type": "object",
       "properties": {
@@ -2612,6 +2902,22 @@
           }
         }
       }
+    },
+    "v1ListSubjectPermissionsResponse": {
+      "type": "object",
+      "properties": {
+        "subjectKey": {
+          "type": "string"
+        },
+        "grants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1SubjectPermissionGrant"
+          }
+        }
+      },
+      "title": "ListSubjectPermissionsResponse 返回主体当前生效或可见的 grant 列表。"
     },
     "v1ListTemplatesResponse": {
       "type": "object",
@@ -2690,6 +2996,79 @@
         }
       },
       "title": "与 model.Node 对齐"
+    },
+    "v1PermissionApplication": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "id 是权限申请单的业务主键，不承担链路追踪职责。"
+        },
+        "subjectKey": {
+          "type": "string"
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1PermissionTarget"
+          }
+        },
+        "reason": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/definitions/v1PermissionApplicationStatus"
+        },
+        "reviewedBy": {
+          "type": "string",
+          "title": "reviewed_by 记录审批人主体标识。"
+        },
+        "reviewComment": {
+          "type": "string"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "PermissionApplication 表示一张权限申请单。\n它记录“申请了什么”，不是运行时最终生效的权限本身。"
+    },
+    "v1PermissionApplicationStatus": {
+      "type": "string",
+      "enum": [
+        "PERMISSION_APPLICATION_STATUS_UNSPECIFIED",
+        "PERMISSION_APPLICATION_STATUS_PENDING",
+        "PERMISSION_APPLICATION_STATUS_APPROVED",
+        "PERMISSION_APPLICATION_STATUS_DENIED",
+        "PERMISSION_APPLICATION_STATUS_REVOKED",
+        "PERMISSION_APPLICATION_STATUS_EXPIRED"
+      ],
+      "default": "PERMISSION_APPLICATION_STATUS_UNSPECIFIED",
+      "description": "- PERMISSION_APPLICATION_STATUS_PENDING: PENDING 表示申请单已创建，尚未审批。\n - PERMISSION_APPLICATION_STATUS_APPROVED: APPROVED 表示申请已批准，并已生成对应 grant。\n - PERMISSION_APPLICATION_STATUS_DENIED: DENIED 表示申请已被拒绝，不会生成 grant。\n - PERMISSION_APPLICATION_STATUS_REVOKED: REVOKED 表示已批准申请对应的 grant 已被撤销。\n - PERMISSION_APPLICATION_STATUS_EXPIRED: EXPIRED 表示申请关联的 grant 已因 TTL 到期被回收。",
+      "title": "PermissionApplicationStatus 表示权限申请单的生命周期状态。"
+    },
+    "v1PermissionTarget": {
+      "type": "object",
+      "properties": {
+        "resource": {
+          "type": "string",
+          "title": "resource 是稳定的授权资源名，按 Manager 当前能力边界命名。"
+        },
+        "action": {
+          "type": "string",
+          "title": "action 是对 resource 执行的动作，例如 read/create/update/review。"
+        }
+      },
+      "title": "PermissionTarget 描述一次权限申请里的一项资源动作组合。\n当前授权模型固定为 Casbin 三元组 sub,obj,act，这里对应 obj + act。"
     },
     "v1RegisterRequest": {
       "type": "object",
@@ -2914,6 +3293,43 @@
         }
       },
       "title": "与 model.SessionTemplate 对齐"
+    },
+    "v1SubjectPermissionGrant": {
+      "type": "object",
+      "properties": {
+        "grantId": {
+          "type": "string"
+        },
+        "subjectKey": {
+          "type": "string"
+        },
+        "resource": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string"
+        },
+        "sourcePermissionApplicationId": {
+          "type": "string",
+          "title": "source_permission_application_id 指向生成该 grant 的申请单。"
+        },
+        "status": {
+          "type": "string"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "title": "SubjectPermissionGrant 表示真正生效的一条授权结果。\n一张申请单审批通过后，可能拆成一条或多条 grant。"
     },
     "v1TemplateConfigView": {
       "type": "object",

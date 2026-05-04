@@ -1,0 +1,8 @@
+go 1.26.0
+
+use (
+	./fabrication/cradle
+	./fabrication/tests/integration
+	./mesa-hub/behavior-panel/server
+	./sweetwater/black-ridge/server
+)

@@ -8,6 +8,7 @@ tags:
 - name: ConfigService
 - name: AgentService
 - name: AuditService
+- name: PermissionService
 - name: HostService
 - name: NodeService
 - name: SessionService
@@ -1017,6 +1018,157 @@ paths:
       tags:
       - TemplateService
       x-codegen-request-body-name: body
+  /api/v1/permission-applications:
+    get:
+      operationId: PermissionService_ListPermissionApplications
+      parameters:
+      - description: status 为空时返回全部状态；非空时按状态过滤。
+        in: query
+        name: status
+        schema:
+          type: string
+      - in: query
+        name: page
+        schema:
+          format: int32
+          type: integer
+      - in: query
+        name: pageSize
+        schema:
+          format: int32
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1ListPermissionApplicationsResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      summary: ListPermissionApplications 按分页和状态过滤列出申请单。
+      tags:
+      - PermissionService
+    post:
+      operationId: PermissionService_CreatePermissionApplication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/v1CreatePermissionApplicationRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1PermissionApplication"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      summary: CreatePermissionApplication 创建一张权限申请单。
+      tags:
+      - PermissionService
+      x-codegen-request-body-name: body
+  /api/v1/permission-applications/{permissionApplicationId}:
+    get:
+      operationId: PermissionService_GetPermissionApplication
+      parameters:
+      - in: path
+        name: permissionApplicationId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1PermissionApplication"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      summary: GetPermissionApplication 读取单个申请单详情。
+      tags:
+      - PermissionService
+  /api/v1/permission-applications/{permissionApplicationId}:review:
+    post:
+      operationId: PermissionService_ReviewPermissionApplication
+      parameters:
+      - description: permission_application_id 是待审批申请单的业务主键。
+        in: path
+        name: permissionApplicationId
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PermissionServiceReviewPermissionApplicationBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1PermissionApplication"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      summary: ReviewPermissionApplication 对申请单执行批准或拒绝。
+      tags:
+      - PermissionService
+      x-codegen-request-body-name: body
+  /api/v1/permission-applications/{permissionApplicationId}:revoke:
+    post:
+      operationId: PermissionService_RevokePermissionApplication
+      parameters:
+      - description: permission_application_id 是待撤销申请单的业务主键。
+        in: path
+        name: permissionApplicationId
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PermissionServiceRevokePermissionApplicationBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1PermissionApplication"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      summary: RevokePermissionApplication 撤销已批准申请对应的 grant。
+      tags:
+      - PermissionService
+      x-codegen-request-body-name: body
   /api/v1/sessions:
     get:
       operationId: SessionService_ListSessions2
@@ -1377,6 +1529,31 @@ paths:
       tags:
       - SessionService
       x-codegen-request-body-name: body
+  /api/v1/subjects/{subjectKey}/permissions:
+    get:
+      operationId: PermissionService_ListSubjectPermissions
+      parameters:
+      - in: path
+        name: subjectKey
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1ListSubjectPermissionsResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      summary: ListSubjectPermissions 列出主体当前权限视图。
+      tags:
+      - PermissionService
   /api/v1/templates:
     get:
       operationId: TemplateService_ListTemplates2
@@ -1581,6 +1758,28 @@ components:
           additionalProperties:
             type: string
           type: object
+      type: object
+    PermissionServiceReviewPermissionApplicationBody:
+      example:
+        approved: true
+        reviewComment: reviewComment
+      properties:
+        approved:
+          title: approved=true 表示批准；false 表示拒绝。
+          type: boolean
+        reviewComment:
+          title: review_comment 记录审批意见；拒绝时应提供原因。
+          type: string
+      title: ReviewPermissionApplicationRequest 审批一张申请单。
+      type: object
+    PermissionServiceRevokePermissionApplicationBody:
+      example:
+        revokeReason: revokeReason
+      properties:
+        revokeReason:
+          title: revoke_reason 记录撤销原因，供审计与排障使用。
+          type: string
+      title: RevokePermissionApplicationRequest 撤销一张已批准申请对应的授权结果。
       type: object
     SessionServiceCreateSessionBody:
       example:
@@ -1985,6 +2184,25 @@ components:
         resources:
           $ref: "#/components/schemas/v1ResourceLimits"
       type: object
+    v1CreatePermissionApplicationRequest:
+      properties:
+        subjectKey:
+          title: subject_key 是外部稳定主体标识，格式固定为 <type>:<name>。
+          type: string
+        targets:
+          items:
+            $ref: "#/components/schemas/v1PermissionTarget"
+          title: targets 是本次申请希望获得的一组资源动作。
+          type: array
+        reason:
+          title: reason 记录申请理由，供审批与审计使用。
+          type: string
+        expiresAt:
+          format: date-time
+          title: expires_at 为可选过期时间；为空表示不设置 TTL。
+          type: string
+      title: CreatePermissionApplicationRequest 创建一张新的权限申请单。
+      type: object
     v1CreateSessionRequest:
       properties:
         nodeName:
@@ -2374,6 +2592,48 @@ components:
             $ref: "#/components/schemas/v1NodeInfo"
           type: array
       type: object
+    v1ListPermissionApplicationsResponse:
+      example:
+        total: 0
+        applications:
+        - reason: reason
+          createdAt: 2000-01-23T04:56:07.000+00:00
+          reviewComment: reviewComment
+          id: id
+          reviewedBy: reviewedBy
+          subjectKey: subjectKey
+          targets:
+          - resource: resource
+            action: action
+          - resource: resource
+            action: action
+          expiresAt: 2000-01-23T04:56:07.000+00:00
+          status: PERMISSION_APPLICATION_STATUS_UNSPECIFIED
+          updatedAt: 2000-01-23T04:56:07.000+00:00
+        - reason: reason
+          createdAt: 2000-01-23T04:56:07.000+00:00
+          reviewComment: reviewComment
+          id: id
+          reviewedBy: reviewedBy
+          subjectKey: subjectKey
+          targets:
+          - resource: resource
+            action: action
+          - resource: resource
+            action: action
+          expiresAt: 2000-01-23T04:56:07.000+00:00
+          status: PERMISSION_APPLICATION_STATUS_UNSPECIFIED
+          updatedAt: 2000-01-23T04:56:07.000+00:00
+      properties:
+        applications:
+          items:
+            $ref: "#/components/schemas/v1PermissionApplication"
+          type: array
+        total:
+          format: int32
+          type: integer
+      title: ListPermissionApplicationsResponse 返回分页申请单结果。
+      type: object
     v1ListSessionsResponse:
       example:
         sessions:
@@ -2396,6 +2656,37 @@ components:
           items:
             $ref: "#/components/schemas/v1Session"
           type: array
+      type: object
+    v1ListSubjectPermissionsResponse:
+      example:
+        grants:
+        - sourcePermissionApplicationId: sourcePermissionApplicationId
+          createdAt: 2000-01-23T04:56:07.000+00:00
+          grantId: grantId
+          resource: resource
+          action: action
+          subjectKey: subjectKey
+          expiresAt: 2000-01-23T04:56:07.000+00:00
+          status: status
+          updatedAt: 2000-01-23T04:56:07.000+00:00
+        - sourcePermissionApplicationId: sourcePermissionApplicationId
+          createdAt: 2000-01-23T04:56:07.000+00:00
+          grantId: grantId
+          resource: resource
+          action: action
+          subjectKey: subjectKey
+          expiresAt: 2000-01-23T04:56:07.000+00:00
+          status: status
+          updatedAt: 2000-01-23T04:56:07.000+00:00
+        subjectKey: subjectKey
+      properties:
+        subjectKey:
+          type: string
+        grants:
+          items:
+            $ref: "#/components/schemas/v1SubjectPermissionGrant"
+          type: array
+      title: ListSubjectPermissionsResponse 返回主体当前生效或可见的 grant 列表。
       type: object
     v1ListTemplatesResponse:
       example:
@@ -2589,6 +2880,86 @@ components:
         metadata:
           $ref: "#/components/schemas/v1AgentMetadata"
       title: 与 model.Node 对齐
+      type: object
+    v1PermissionApplication:
+      example:
+        reason: reason
+        createdAt: 2000-01-23T04:56:07.000+00:00
+        reviewComment: reviewComment
+        id: id
+        reviewedBy: reviewedBy
+        subjectKey: subjectKey
+        targets:
+        - resource: resource
+          action: action
+        - resource: resource
+          action: action
+        expiresAt: 2000-01-23T04:56:07.000+00:00
+        status: PERMISSION_APPLICATION_STATUS_UNSPECIFIED
+        updatedAt: 2000-01-23T04:56:07.000+00:00
+      properties:
+        id:
+          title: id 是权限申请单的业务主键，不承担链路追踪职责。
+          type: string
+        subjectKey:
+          type: string
+        targets:
+          items:
+            $ref: "#/components/schemas/v1PermissionTarget"
+          type: array
+        reason:
+          type: string
+        status:
+          $ref: "#/components/schemas/v1PermissionApplicationStatus"
+        reviewedBy:
+          title: reviewed_by 记录审批人主体标识。
+          type: string
+        reviewComment:
+          type: string
+        expiresAt:
+          format: date-time
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        updatedAt:
+          format: date-time
+          type: string
+      title: |-
+        PermissionApplication 表示一张权限申请单。
+        它记录“申请了什么”，不是运行时最终生效的权限本身。
+      type: object
+    v1PermissionApplicationStatus:
+      default: PERMISSION_APPLICATION_STATUS_UNSPECIFIED
+      description: |-
+        - PERMISSION_APPLICATION_STATUS_PENDING: PENDING 表示申请单已创建，尚未审批。
+         - PERMISSION_APPLICATION_STATUS_APPROVED: APPROVED 表示申请已批准，并已生成对应 grant。
+         - PERMISSION_APPLICATION_STATUS_DENIED: DENIED 表示申请已被拒绝，不会生成 grant。
+         - PERMISSION_APPLICATION_STATUS_REVOKED: REVOKED 表示已批准申请对应的 grant 已被撤销。
+         - PERMISSION_APPLICATION_STATUS_EXPIRED: EXPIRED 表示申请关联的 grant 已因 TTL 到期被回收。
+      enum:
+      - PERMISSION_APPLICATION_STATUS_UNSPECIFIED
+      - PERMISSION_APPLICATION_STATUS_PENDING
+      - PERMISSION_APPLICATION_STATUS_APPROVED
+      - PERMISSION_APPLICATION_STATUS_DENIED
+      - PERMISSION_APPLICATION_STATUS_REVOKED
+      - PERMISSION_APPLICATION_STATUS_EXPIRED
+      title: PermissionApplicationStatus 表示权限申请单的生命周期状态。
+      type: string
+    v1PermissionTarget:
+      example:
+        resource: resource
+        action: action
+      properties:
+        resource:
+          title: resource 是稳定的授权资源名，按 Manager 当前能力边界命名。
+          type: string
+        action:
+          title: action 是对 resource 执行的动作，例如 read/create/update/review。
+          type: string
+      title: |-
+        PermissionTarget 描述一次权限申请里的一项资源动作组合。
+        当前授权模型固定为 Casbin 三元组 sub,obj,act，这里对应 obj + act。
       type: object
     v1RegisterRequest:
       properties:
@@ -2843,6 +3214,44 @@ components:
         sessionSchema:
           $ref: "#/components/schemas/v1SessionSchema"
       title: 与 model.SessionTemplate 对齐
+      type: object
+    v1SubjectPermissionGrant:
+      example:
+        sourcePermissionApplicationId: sourcePermissionApplicationId
+        createdAt: 2000-01-23T04:56:07.000+00:00
+        grantId: grantId
+        resource: resource
+        action: action
+        subjectKey: subjectKey
+        expiresAt: 2000-01-23T04:56:07.000+00:00
+        status: status
+        updatedAt: 2000-01-23T04:56:07.000+00:00
+      properties:
+        grantId:
+          type: string
+        subjectKey:
+          type: string
+        resource:
+          type: string
+        action:
+          type: string
+        sourcePermissionApplicationId:
+          title: source_permission_application_id 指向生成该 grant 的申请单。
+          type: string
+        status:
+          type: string
+        expiresAt:
+          format: date-time
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        updatedAt:
+          format: date-time
+          type: string
+      title: |-
+        SubjectPermissionGrant 表示真正生效的一条授权结果。
+        一张申请单审批通过后，可能拆成一条或多条 grant。
       type: object
     v1TemplateConfigView:
       example:

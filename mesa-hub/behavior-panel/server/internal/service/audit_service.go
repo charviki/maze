@@ -8,18 +8,23 @@ import (
 
 // AuditService 审计日志业务逻辑（Manager 本地），供 HTTP handler 和 gRPC handler 共用
 type AuditService struct {
-	auditLog AuditLogPaginator
+	auditLog AuditLogRepository
 }
 
-// AuditLogPaginator 审计日志分页接口
-type AuditLogPaginator interface {
+// AuditLogWriter 定义审计日志写入边界。
+type AuditLogWriter interface {
 	Log(entry protocol.AuditLogEntry)
+}
+
+// AuditLogRepository 定义审计日志查询与写入边界。
+type AuditLogRepository interface {
+	AuditLogWriter
 	List() []protocol.AuditLogEntry
 	ListPage(page, pageSize int) (logs []protocol.AuditLogEntry, total int)
 }
 
 // NewAuditService 创建 AuditService
-func NewAuditService(auditLog AuditLogPaginator) *AuditService {
+func NewAuditService(auditLog AuditLogRepository) *AuditService {
 	return &AuditService{
 		auditLog: auditLog,
 	}

@@ -7,6 +7,7 @@ resources:
   - ../../base
   - manager-configmap.yaml
   - manager-deployment.yaml
+  - postgres.yaml
 
 patches:
   - target:

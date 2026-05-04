@@ -15,7 +15,7 @@ import (
 	pb "github.com/charviki/maze-cradle/api/gen/maze/v1"
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/maze-cradle/protocol"
-	"github.com/charviki/mesa-hub-behavior-panel/internal/model"
+	"github.com/charviki/mesa-hub-behavior-panel/internal/agentclient"
 	"github.com/charviki/mesa-hub-behavior-panel/internal/service"
 )
 
@@ -32,8 +32,8 @@ type Server struct {
 	hostSvc  *service.HostService
 	nodeSvc  *service.NodeService
 	auditSvc *service.AuditService
-	proxy    *service.AgentProxyService
-	registry *model.NodeRegistry
+	proxy    *agentclient.Proxy
+	registry service.NodeRegistry
 	logger   logutil.Logger
 	// managerAuthToken 复用 manager server.auth_token，因为 Agent 的 server.auth_token
 	// 也是由 manager 在部署 Host 时下发；manager 主动回调 Agent 的内部 RPC 必须携带它。
@@ -47,8 +47,8 @@ func NewServer(
 	hostSvc *service.HostService,
 	nodeSvc *service.NodeService,
 	auditSvc *service.AuditService,
-	proxy *service.AgentProxyService,
-	registry *model.NodeRegistry,
+	proxy *agentclient.Proxy,
+	registry service.NodeRegistry,
 	managerAuthToken string,
 	logger logutil.Logger,
 ) *Server {
@@ -523,7 +523,7 @@ func (s *Server) UpdateConfig(ctx context.Context, req *pb.UpdateConfigRequest) 
 
 // 转换函数
 
-func modelNodeToProto(n *model.Node) *pb.NodeInfo {
+func modelNodeToProto(n *service.Node) *pb.NodeInfo {
 	info := &pb.NodeInfo{
 		Name:          n.Name,
 		Address:       n.Address,

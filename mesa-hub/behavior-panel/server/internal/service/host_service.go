@@ -11,52 +11,49 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/maze-cradle/protocol"
 	"github.com/charviki/mesa-hub-behavior-panel/internal/config"
-	builder "github.com/charviki/mesa-hub-behavior-panel/internal/imagebuilder"
-	"github.com/charviki/mesa-hub-behavior-panel/internal/model"
+	hostbuilder "github.com/charviki/mesa-hub-behavior-panel/internal/hostbuilder"
 	"github.com/charviki/mesa-hub-behavior-panel/internal/runtime"
 )
 
 // HostService Host 业务逻辑（Manager 本地），供 HTTP handler 和 gRPC handler 共用
 type HostService struct {
-	registry     *model.NodeRegistry
-	specMgr      *model.HostSpecManager
-	runtime      runtime.HostRuntime
-	auditLog     AuditLogger
-	cfg          *config.Config
-	logger       logutil.Logger
-	logDir       string
-	deployCancel context.CancelFunc
-	deployWg     sync.WaitGroup
-	deployMu     sync.Mutex
-}
-
-// AuditLogger 审计日志接口，避免循环依赖
-type AuditLogger interface {
-	Log(entry protocol.AuditLogEntry)
+	registry      NodeRegistry
+	hostSpecRepo  HostSpecRepository
+	runtime       runtime.HostRuntime
+	auditLog      AuditLogWriter
+	cfg           *config.Config
+	logger        logutil.Logger
+	logDir        string
+	deployCancels map[uint64]context.CancelFunc
+	nextDeployID  uint64
+	deployWg      sync.WaitGroup
+	deployMu      sync.Mutex
 }
 
 // NewHostService 创建 HostService
 func NewHostService(
-	registry *model.NodeRegistry,
-	specMgr *model.HostSpecManager,
+	registry NodeRegistry,
+	hostSpecRepo HostSpecRepository,
 	rt runtime.HostRuntime,
-	auditLog AuditLogger,
+	auditLog AuditLogWriter,
 	cfg *config.Config,
 	logger logutil.Logger,
 	logDir string,
 ) *HostService {
 	return &HostService{
-		registry: registry,
-		specMgr:  specMgr,
-		runtime:  rt,
-		auditLog: auditLog,
-		cfg:      cfg,
-		logger:   logger,
-		logDir:   logDir,
+		registry:      registry,
+		hostSpecRepo:  hostSpecRepo,
+		runtime:       rt,
+		auditLog:      auditLog,
+		cfg:           cfg,
+		logger:        logger,
+		logDir:        logDir,
+		deployCancels: make(map[uint64]context.CancelFunc),
 	}
 }
 
@@ -68,15 +65,15 @@ func (s *HostService) CreateHost(ctx context.Context, req *protocol.CreateHostRe
 	if len(req.Tools) == 0 {
 		return nil, errors.New("at least one tool is required")
 	}
-	if s.specMgr.Get(req.Name) != nil {
+	if s.hostSpecRepo.Get(req.Name) != nil {
 		return nil, fmt.Errorf("host %q already exists", req.Name)
 	}
 
-	if unknown := builder.ValidateTools(req.Tools); len(unknown) > 0 {
+	if unknown := hostbuilder.ValidateTools(req.Tools); len(unknown) > 0 {
 		return nil, fmt.Errorf("unknown tools: %s. available: %s",
 			strings.Join(unknown, ", "),
 			strings.Join(func() []string {
-				tools := builder.ListAvailableTools()
+				tools := hostbuilder.ListAvailableTools()
 				ids := make([]string, len(tools))
 				for i, t := range tools {
 					ids[i] = t.ID
@@ -100,21 +97,28 @@ func (s *HostService) CreateHost(ctx context.Context, req *protocol.CreateHostRe
 		Status:      protocol.HostStatusPending,
 	}
 
-	if !s.specMgr.Create(spec) {
+	if !s.hostSpecRepo.Create(spec) {
 		return nil, fmt.Errorf("host %q already exists", req.Name)
 	}
 
 	s.registry.StoreHostToken(req.Name, hostToken)
 
+	// 在启动 goroutine 之前先登记 WaitGroup 和 cancel，避免 Stop 与 Add/注册时序竞争导致漏等后台部署。
 	//nolint:gosec // async deployment: 用 WithCancel 包装的 Background，支持取消
+	deployCtx, cancel := context.WithCancel(context.Background())
+	deployID := atomic.AddUint64(&s.nextDeployID, 1)
+	s.deployWg.Add(1)
+	s.deployMu.Lock()
+	s.deployCancels[deployID] = cancel
+	s.deployMu.Unlock()
 	go func() {
-		ctx, cancel := context.WithCancel(context.Background())
-		s.deployMu.Lock()
-		s.deployCancel = cancel
-		s.deployMu.Unlock()
-		s.deployWg.Add(1)
 		defer s.deployWg.Done()
-		s.deployHostAsync(ctx, spec)
+		defer func() {
+			s.deployMu.Lock()
+			delete(s.deployCancels, deployID)
+			s.deployMu.Unlock()
+		}()
+		s.deployHostAsync(deployCtx, spec)
 	}() //nolint:gosec // async deployment OK
 
 	return spec, nil
@@ -122,7 +126,12 @@ func (s *HostService) CreateHost(ctx context.Context, req *protocol.CreateHostRe
 
 // ListHosts 返回所有 Host（含运行时合并状态）
 func (s *HostService) ListHosts(ctx context.Context) ([]*protocol.HostInfo, error) {
-	return s.specMgr.ListMerged(s.registry), nil
+	specs := s.hostSpecRepo.List()
+	infos := make([]*protocol.HostInfo, 0, len(specs))
+	for _, spec := range specs {
+		infos = append(infos, BuildHostInfo(spec, s.registry.Get(spec.Name)))
+	}
+	return infos, nil
 }
 
 // GetHost 返回单个 Host 信息
@@ -130,7 +139,7 @@ func (s *HostService) GetHost(ctx context.Context, name string) (*protocol.HostI
 	if name == "" {
 		return nil, errors.New("name is required")
 	}
-	info := s.specMgr.GetMerged(name, s.registry)
+	info := BuildHostInfo(s.hostSpecRepo.Get(name), s.registry.Get(name))
 	if info == nil {
 		return nil, fmt.Errorf("host %q not found", name)
 	}
@@ -157,7 +166,7 @@ func (s *HostService) DeleteHost(ctx context.Context, name string) error {
 
 	s.registry.Delete(name)
 	s.registry.RemoveHostToken(name)
-	s.specMgr.Delete(name)
+	s.hostSpecRepo.Delete(name)
 
 	s.auditLog.Log(protocol.AuditLogEntry{
 		Operator:       "frontend",
@@ -177,7 +186,7 @@ func (s *HostService) GetBuildLog(ctx context.Context, name string) (string, err
 		return "", errors.New("name is required")
 	}
 
-	if s.specMgr.Get(name) == nil {
+	if s.hostSpecRepo.Get(name) == nil {
 		return "", fmt.Errorf("host %q not found", name)
 	}
 
@@ -199,7 +208,7 @@ func (s *HostService) GetRuntimeLog(ctx context.Context, name string) (string, e
 		return "", errors.New("name is required")
 	}
 
-	if s.specMgr.Get(name) == nil {
+	if s.hostSpecRepo.Get(name) == nil {
 		return "", fmt.Errorf("host %q not found", name)
 	}
 
@@ -212,26 +221,26 @@ func (s *HostService) GetRuntimeLog(ctx context.Context, name string) (string, e
 
 // ListTools 返回可用工具列表
 func (s *HostService) ListTools(ctx context.Context) ([]protocol.ToolConfig, error) {
-	tools := builder.ListAvailableTools()
+	tools := hostbuilder.ListAvailableTools()
 	return tools, nil
 }
 
 // deployHostAsync 后台异步构建部署 Host
 func (s *HostService) deployHostAsync(ctx context.Context, spec *protocol.HostSpec) {
-	s.specMgr.UpdateStatus(spec.Name, protocol.HostStatusDeploying, "")
+	s.hostSpecRepo.UpdateStatus(spec.Name, protocol.HostStatusDeploying, "")
 
 	if err := s.runtime.StopHost(ctx, spec.Name); err != nil {
 		s.logger.Warnf("[host] stop old container for %s: %v", spec.Name, err)
 	}
 
 	if err := os.MkdirAll(s.logDir, 0750); err != nil {
-		s.specMgr.UpdateStatus(spec.Name, protocol.HostStatusFailed, fmt.Sprintf("create log dir: %v", err))
+		s.hostSpecRepo.UpdateStatus(spec.Name, protocol.HostStatusFailed, fmt.Sprintf("create log dir: %v", err))
 		return
 	}
 	logPath := filepath.Join(s.logDir, spec.Name+".log")
 	logFile, err := os.Create(filepath.Clean(logPath))
 	if err != nil {
-		s.specMgr.UpdateStatus(spec.Name, protocol.HostStatusFailed, fmt.Sprintf("create log file: %v", err))
+		s.hostSpecRepo.UpdateStatus(spec.Name, protocol.HostStatusFailed, fmt.Sprintf("create log file: %v", err))
 		return
 	}
 	defer func() { _ = logFile.Close() }()
@@ -247,7 +256,7 @@ func (s *HostService) deployHostAsync(ctx context.Context, spec *protocol.HostSp
 
 	if deployErr != nil {
 		errMsg := fmt.Sprintf("deploy failed: %v", deployErr)
-		s.specMgr.UpdateStatus(spec.Name, protocol.HostStatusFailed, errMsg)
+		s.hostSpecRepo.UpdateStatus(spec.Name, protocol.HostStatusFailed, errMsg)
 		_, _ = fmt.Fprintf(multiWriter, "[ERROR] %s\n", errMsg)
 
 		s.auditLog.Log(protocol.AuditLogEntry{
@@ -274,10 +283,14 @@ func (s *HostService) deployHostAsync(ctx context.Context, spec *protocol.HostSp
 // Stop 取消进行中的异步部署并等待完成，用于优雅关闭
 func (s *HostService) Stop() {
 	s.deployMu.Lock()
-	if s.deployCancel != nil {
-		s.deployCancel()
+	cancels := make([]context.CancelFunc, 0, len(s.deployCancels))
+	for _, cancel := range s.deployCancels {
+		cancels = append(cancels, cancel)
 	}
 	s.deployMu.Unlock()
+	for _, cancel := range cancels {
+		cancel()
+	}
 	s.deployWg.Wait()
 }
 

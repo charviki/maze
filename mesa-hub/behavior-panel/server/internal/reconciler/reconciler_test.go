@@ -12,7 +12,7 @@ import (
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/maze-cradle/protocol"
 	"github.com/charviki/mesa-hub-behavior-panel/internal/config"
-	"github.com/charviki/mesa-hub-behavior-panel/internal/model"
+	filerepo "github.com/charviki/mesa-hub-behavior-panel/internal/repository/file"
 )
 
 type mockReconcilerRuntime struct {
@@ -58,11 +58,11 @@ func (m *mockReconcilerRuntime) IsHealthy(ctx context.Context, name string) (boo
 	return m.healthy[name], nil
 }
 
-func newTestReconciler(t *testing.T, rt *mockReconcilerRuntime) (*Reconciler, *model.HostSpecManager) {
+func newTestReconciler(t *testing.T, rt *mockReconcilerRuntime) (*Reconciler, *filerepo.HostSpecRepository) {
 	t.Helper()
 	tmpDir := t.TempDir()
-	specMgr := model.NewHostSpecManager(filepath.Join(tmpDir, "host_specs.json"), logutil.NewNop())
-	registry := model.NewNodeRegistry(filepath.Join(tmpDir, "nodes.json"), logutil.NewNop())
+	hostSpecRepo := filerepo.NewHostSpecRepository(filepath.Join(tmpDir, "host_specs.json"), logutil.NewNop())
+	registry := filerepo.NewNodeRegistry(filepath.Join(tmpDir, "nodes.json"), logutil.NewNop())
 	cfg := &config.Config{
 		Server: config.ServerConfig{
 			ServerConfig: configutil.ServerConfig{AuthToken: "test-token"},
@@ -70,8 +70,8 @@ func newTestReconciler(t *testing.T, rt *mockReconcilerRuntime) (*Reconciler, *m
 		Docker: config.DockerConfig{AgentBaseImage: "test-base:latest"},
 	}
 	logDir := filepath.Join(tmpDir, "host_logs")
-	rec := NewReconciler(specMgr, registry, rt, cfg, logutil.NewNop(), logDir)
-	return rec, specMgr
+	rec := NewReconciler(hostSpecRepo, registry, rt, cfg, logutil.NewNop(), logDir)
+	return rec, hostSpecRepo
 }
 
 // ========== RecoverOnStartup 测试 ==========

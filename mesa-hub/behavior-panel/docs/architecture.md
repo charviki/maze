@@ -32,7 +32,7 @@ Agent 启动 → gRPC AgentService.Register (Authorization: Bearer <hostToken>)
                 1. 开发模式（全局 auth_token 为空）→ 放行
                 2. 已知 Host（hostTokens 中有预存令牌）→ 精确匹配
                 3. 未知 Host → 回退到全局 auth_token 校验
-            → NodeRegistry.Register() → 标记 dirty → 返回 Node 信息
+            → repository/file.NodeRegistry.Register() → 标记 dirty → 返回 Node 信息
 ```
 
 令牌校验逻辑定义在 [gatewayutil/auth.go](../../../fabrication/cradle/gatewayutil/auth.go) 的 `UnaryHostTokenInterceptor` 中。
@@ -42,11 +42,11 @@ Agent 启动 → gRPC AgentService.Register (Authorization: Bearer <hostToken>)
 ```
 Agent 定时 → gRPC AgentService.Heartbeat (Authorization: Bearer <hostToken>, name, status 快照)
             → UnaryHostTokenInterceptor 校验令牌身份
-            → NodeRegistry.Heartbeat() → 更新 LastHeartbeat + AgentStatus → 标记 dirty
+            → repository/file.NodeRegistry.Heartbeat() → 更新 LastHeartbeat + AgentStatus → 标记 dirty
             → 超过 30 秒无心跳 → ListNodes/GetNode 时标记为 offline
 ```
 
-离线阈值定义在 [node.go](../server/internal/model/node.go) 中的 `nodeOfflineThreshold = 30 * time.Second`。
+离线阈值定义在 [node_registry.go](../server/internal/repository/file/node_registry.go) 中的 `nodeOfflineThreshold = 30 * time.Second`。
 
 ### 代理请求流程（HTTP → gRPC 转发）
 
@@ -54,7 +54,8 @@ Agent 定时 → gRPC AgentService.Heartbeat (Authorization: Bearer <hostToken>,
 前端 → Manager REST API（grpc-gateway 路由）
      → grpc-gateway ServeMux 匹配 proto 注解路由
      → 进程内 gRPC 调用 Manager Server（SessionService/TemplateService/ConfigService）
-     → Server.proxy 转发到 Agent gRPC Server
+     → transport.Server 调用 internal/agentclient.Proxy
+     → agentclient.ConnectionManager 复用到目标 Agent 的 gRPC 长连接
      → UnaryAuditInterceptor 记录审计日志（operator=frontend, action, target_node, result, status_code）
 ```
 
@@ -70,13 +71,18 @@ Agent 定时 → gRPC AgentService.Heartbeat (Authorization: Bearer <hostToken>,
            → 任一端断开 → 另一端自动关闭
 ```
 
-WebSocket Origin 校验使用配置化的 `allowedOrigins` 列表，为空时允许所有来源（开发模式）。详见 [proxy_ws.go](../server/internal/transport/proxy_ws.go)。
+WebSocket Origin 校验使用配置化的 `allowedOrigins` 列表，为空时允许所有来源（开发模式）。详见 [ws_proxy.go](../server/internal/transport/ws_proxy.go)。
 
 ## 节点注册表（NodeRegistry）
 
 ### 数据结构
 
-Node 结构定义在 [node.go](../server/internal/model/node.go)，包含：`Name`, `Address`, `ExternalAddr`, `AuthToken`, `Status`(online/offline), `RegisteredAt`, `LastHeartbeat`, `Capabilities`, `AgentStatus`, `Metadata`。
+Node 业务对象定义在 [host_node.go](../server/internal/service/host_node.go)，包含：`Name`, `Address`, `ExternalAddr`, `AuthToken`, `Status`(online/offline), `RegisteredAt`, `LastHeartbeat`, `Capabilities`, `AgentStatus`, `Metadata`。
+
+### 分层职责
+
+- `internal/service` — owning `Node`、`BuildHostInfo()`、离线判定规则，以及 `NodeRegistry` / `HostSpecRepository` 业务边界
+- `internal/repository/file` — 提供基于 JSON 文件的持久化实现和 dirty flush
 
 ### 持久化策略：dirty flush
 
@@ -88,11 +94,11 @@ Node 结构定义在 [node.go](../server/internal/model/node.go)，包含：`Nam
 - **启动恢复** — Manager 重启后从 `nodes.json` 加载已有节点，Agent 下次心跳时更新状态
 - **并发安全** — 读写锁（`sync.RWMutex`）保护所有内存操作
 
-## HostSpec 持久化（HostSpecManager）
+## HostSpec 持久化（HostSpecRepository）
 
 ### 数据结构
 
-HostSpec 结构定义在 [host_spec.go](../server/biz/model/host_spec.go)，包含：`Name`, `Tools`, `Resources`, `AuthToken`, `Status`(pending/deploying/online/offline/failed), `ErrorMsg`, `RetryCount`, `CreatedAt`, `UpdatedAt`。
+HostSpec 的持久化实现位于 [host_spec_repository.go](../server/internal/repository/file/host_spec_repository.go)，原始数据结构仍使用 `protocol.HostSpec`，包含：`Name`, `Tools`, `Resources`, `AuthToken`, `Status`(pending/deploying/online/offline/failed), `ErrorMsg`, `RetryCount`, `CreatedAt`, `UpdatedAt`。
 
 ### 状态流转
 
@@ -110,13 +116,13 @@ failed → deploying（Reconciler 自动重试，最多 3 次）
 - **后台 flush loop** — 每 30 秒检查 dirty 标记，有变更时执行原子写入
 - **优雅关闭** — `WaitSave()` 停止 flush loop 并执行最终刷盘
 - **启动恢复** — Manager 重启后从 `host_specs.json` 加载已有 HostSpec
-- **ListMerged** — 将 HostSpec 与 NodeRegistry 合并，返回带地址/心跳的完整视图
+- **业务投影** — `HostInfo` 合并逻辑已收回业务侧，由 [host_node.go](../server/internal/service/host_node.go) 的 `BuildHostInfo()` 负责
 
 ### 与 NodeRegistry 的关系
 
 - NodeRegistry 记录已注册的 Agent 节点（运行时状态）
-- HostSpecManager 记录期望的 Host 规格（声明式意图）
-- ListMerged 合并两者：HostSpec.Status 为 online/offline 时从 NodeRegistry 获取地址和心跳
+- HostSpecRepository 记录期望的 Host 规格（声明式意图）
+- HostService 读取 HostSpecRepository + NodeRegistry，并通过 `service.BuildHostInfo()` 生成对外视图
 
 ## Reconciler（声明式恢复）
 
@@ -172,7 +178,10 @@ Manager 启动时执行一次：
 
 `docker build` 启用 `DOCKER_BUILDKIT=1`，利用 BuildKit 并行 COPY 和层缓存加速构建。
 
-## 审计日志（AuditLogger）
+## 审计日志（AuditLogRepository）
+
+审计日志的存储实现位于 `server/internal/repository/audit`，与 `internal/service`、`internal/transport` 解耦。
+这样做是为了让 service 只保留业务查询接口，transport 只负责协议适配，而文件持久化、分页和过滤查询由明确的 repository 实现承接。
 
 ### 持久化策略：append-only JSON Lines
 
@@ -220,8 +229,8 @@ agent-manager
   │   ├── /api/v1/nodes/:name/sessions/:id/ws → WebSocket 双向代理
   │   └── NoRoute → grpc-gateway ServeMux → REST API（proto 注解驱动）
   └── gRPC Server (:9090)
-      ├── 7 个 Service（Host/Node/Audit/Agent/Session/Template/Config）
-      └── Interceptor chain：认证 → 分层令牌 → 审计
+      ├── 8 个 Service（Host/Node/Audit/Agent/Session/Template/Config/Permission）
+      └── Interceptor chain：认证 → 分层令牌 → 授权 → 审计
 
 Agent 实例（动态创建）
   └── 通过 Manager UI 创建，由 Docker/K8s 运行时部署
@@ -274,6 +283,7 @@ Agent 实例（动态创建）
 - 所有 API 端点无鉴权保护（Auth 中间件空 token 时 pass-through）
 - CORS 和 WebSocket 允许所有来源
 - Manager 启动时打印 DEV mode 警告日志
+- 若同时启用 `authz.enabled`，当前实现仍会将请求映射到 `user:admin`，仅用于本地开发调试，不建议在共享环境使用
 
 ## 安全设计
 
@@ -285,9 +295,17 @@ Agent 实例（动态创建）
   3. 未知 Host（非 Manager 创建）→ 回退到全局 `auth_token` 校验
 - Host 专属令牌在 `CreateHost` 时生成（当前阶段使用 hostname），通过 `AGENT_CONTROLLER_AUTH_TOKEN` 注入容器
 - Agent 自身 API 鉴权使用全局 `auth_token`（`AGENT_SERVER_AUTH_TOKEN`），与注册令牌独立
-- 其余 REST API 认证由 gRPC interceptor chain 统一处理（`UnaryAuthInterceptor`），WebSocket 路由由 Hertz `cradlemw.Auth()` 中间件保护
+- 其余 REST API 认证由 gRPC interceptor chain 统一处理（`UnaryAuthInterceptor`），gateway 统一回环到本地 gRPC Server，避免 REST 路由绕过 interceptor
 - Auth Token 为空时中间件 pass-through（开发模式）
 - Manager 到 Agent 代理时透传 Auth Token
+
+### 权限系统
+
+- `authz.enabled=true` 时，Manager 启动流程会先执行 PostgreSQL migration，再 bootstrap `user:admin`
+- 当前 Bearer token 认证成功后，授权层统一映射到稳定主体 `user:admin`
+- 授权模型采用 Casbin `sub, obj, act` 三元组，不引入 domain 或角色继承
+- `PermissionService` 负责权限申请闭环：创建申请单、审批、撤销、查询主体当前 grant
+- 过期 grant 由后台 janitor 定期回收，并同步删除对应 Casbin rule
 
 ### SSRF 防护
 

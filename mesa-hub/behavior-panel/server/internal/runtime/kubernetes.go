@@ -11,7 +11,7 @@ import (
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/maze-cradle/protocol"
 	"github.com/charviki/mesa-hub-behavior-panel/internal/config"
-	builder "github.com/charviki/mesa-hub-behavior-panel/internal/imagebuilder"
+	hostbuilder "github.com/charviki/mesa-hub-behavior-panel/internal/hostbuilder"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -60,19 +60,19 @@ func NewKubernetesRuntime(kube config.KubernetesConfig, workspace config.Workspa
 
 // imageExistsLocally 检查指定镜像是否已存在于本地 docker 中
 func (k *KubernetesRuntime) imageExistsLocally(imageName string) bool {
-	return builder.ImageExistsLocally(imageName)
+	return hostbuilder.ImageExistsLocally(imageName)
 }
 
 // checkDockerfileHash 从镜像 label 中读取 dockerfile-hash 与期望值比较
 func (k *KubernetesRuntime) checkDockerfileHash(imageName, expectedHash string) bool {
-	return builder.CheckDockerfileHash(imageName, expectedHash)
+	return hostbuilder.CheckDockerfileHash(imageName, expectedHash)
 }
 
 // buildDockerImage 使用 docker build 从 Dockerfile 内容构建镜像
 // 复用 Docker 模式相同的动态构建逻辑，K8s 模式下只是把 docker run 换成创建 Deployment
 func (k *KubernetesRuntime) buildDockerImage(spec *protocol.HostDeploySpec, dockerfileContent string) (string, error) {
 	imageName := "maze-agent:" + spec.Name
-	expectedHash := builder.ExtractDockerfileHash(dockerfileContent)
+	expectedHash := hostbuilder.ExtractDockerfileHash(dockerfileContent)
 
 	// 优先检查 Host 专属镜像是否已存在且 hash 匹配
 	if k.imageExistsLocally(imageName) {
@@ -87,7 +87,7 @@ func (k *KubernetesRuntime) buildDockerImage(spec *protocol.HostDeploySpec, dock
 	}
 
 	// 检查工具组合镜像是否已存在且 hash 匹配
-	comboTag := builder.ToolsetImageTag(spec.Tools)
+	comboTag := hostbuilder.ToolsetImageTag(spec.Tools)
 	if k.imageExistsLocally(comboTag) {
 		if k.checkDockerfileHash(comboTag, expectedHash) {
 			k.logger.Infof("combo image %s exists, tagging as %s", comboTag, imageName)

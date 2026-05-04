@@ -1,10 +1,40 @@
 server:
   listen_addr: ':8080'
+  grpc_listen_addr: ':9090'
   auth_token: ''
 
-tmux:
-  socket_path: ''
-  default_shell: '/bin/bash'
+workspace:
+  base_dir: '~/.maze/docker'
+  mount_dir: '~/.maze/docker'
 
-terminal:
-  default_lines: 50
+docker:
+  socket_path: '/var/run/docker.sock'
+  network: 'behavior-panel_default'
+  build_context_dir: '/tmp/maze-build-context'
+  agent_base_image: 'behavior-panel-agent:latest'
+  agent_data_dir: '~/.maze/docker/agents'
+  manager_addr: 'http://agent-manager:8080'
+
+runtime:
+  type: 'docker'
+
+kubernetes:
+  namespace: 'default'
+  agent_image_prefix: 'maze-agent'
+  agent_image_tag: 'latest'
+  image_pull_policy: 'IfNotPresent'
+  pvc_size: '10Gi'
+  volume_type: 'pvc'
+  host_path_base: '~/.maze/kubernetes/agents'
+
+database:
+  host: '127.0.0.1'
+  port: 5432
+  name: 'maze_auth'
+  user: 'maze'
+  password: 'maze'
+
+authz:
+  enabled: true
+  admin_subject_key: 'user:admin'
+  admin_display_name: 'admin'

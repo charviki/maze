@@ -6,14 +6,14 @@ import (
 
 	"github.com/charviki/maze-cradle/protocol"
 	"github.com/charviki/mesa-hub-behavior-panel/internal/config"
-	builder "github.com/charviki/mesa-hub-behavior-panel/internal/imagebuilder"
+	hostbuilder "github.com/charviki/mesa-hub-behavior-panel/internal/hostbuilder"
 	"github.com/charviki/mesa-hub-behavior-panel/internal/runtime"
 )
 
 // BuildAndDeploy 执行 Host 的构建部署：生成 Dockerfile → 调用运行时部署。
 // 调用方负责状态更新、日志记录和审计日志。
 func BuildAndDeploy(ctx context.Context, rt runtime.HostRuntime, spec *protocol.HostSpec, cfg *config.Config) (*protocol.CreateHostResponse, error) {
-	dockerfileContent := builder.GenerateHostDockerfile(spec.Tools, cfg.Docker.AgentBaseImage)
+	dockerfileContent := hostbuilder.GenerateHostDockerfile(spec.Tools, cfg.Docker.AgentBaseImage)
 
 	deploySpec := &protocol.HostDeploySpec{
 		Name:            spec.Name,

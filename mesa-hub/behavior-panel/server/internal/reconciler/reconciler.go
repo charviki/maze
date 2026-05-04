@@ -10,7 +10,6 @@ import (
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/maze-cradle/protocol"
 	"github.com/charviki/mesa-hub-behavior-panel/internal/config"
-	"github.com/charviki/mesa-hub-behavior-panel/internal/model"
 	"github.com/charviki/mesa-hub-behavior-panel/internal/runtime"
 	"github.com/charviki/mesa-hub-behavior-panel/internal/service"
 )
@@ -24,40 +23,40 @@ const (
 
 // Reconciler 负责 Host 的启动恢复和定期健康巡检
 type Reconciler struct {
-	specMgr  *model.HostSpecManager
-	registry *model.NodeRegistry
-	runtime  runtime.HostRuntime
-	cfg      *config.Config
-	logger   logutil.Logger
-	logDir   string
-	stopCh   chan struct{}
-	doneCh   chan struct{}
+	hostSpecRepo service.HostSpecRepository
+	registry     service.NodeRegistry
+	runtime      runtime.HostRuntime
+	cfg          *config.Config
+	logger       logutil.Logger
+	logDir       string
+	stopCh       chan struct{}
+	doneCh       chan struct{}
 }
 
 // NewReconciler 创建 Reconciler
 func NewReconciler(
-	specMgr *model.HostSpecManager,
-	registry *model.NodeRegistry,
+	hostSpecRepo service.HostSpecRepository,
+	registry service.NodeRegistry,
 	rt runtime.HostRuntime,
 	cfg *config.Config,
 	logger logutil.Logger,
 	logDir string,
 ) *Reconciler {
 	return &Reconciler{
-		specMgr:  specMgr,
-		registry: registry,
-		runtime:  rt,
-		cfg:      cfg,
-		logger:   logger,
-		logDir:   logDir,
-		stopCh:   make(chan struct{}),
-		doneCh:   make(chan struct{}),
+		hostSpecRepo: hostSpecRepo,
+		registry:     registry,
+		runtime:      rt,
+		cfg:          cfg,
+		logger:       logger,
+		logDir:       logDir,
+		stopCh:       make(chan struct{}),
+		doneCh:       make(chan struct{}),
 	}
 }
 
 // RecoverOnStartup 启动时对比 host_specs 与实际运行状态，自动补齐缺失的 Host。
 func (r *Reconciler) RecoverOnStartup(ctx context.Context) {
-	specs := r.specMgr.List()
+	specs := r.hostSpecRepo.List()
 	if len(specs) == 0 {
 		r.logger.Infof("[reconciler] no host specs to recover")
 		return
@@ -105,8 +104,8 @@ func (r *Reconciler) recoverOne(ctx context.Context, spec *protocol.HostSpec) {
 	case protocol.HostStatusFailed:
 		if spec.RetryCount < maxRetryCount {
 			r.logger.Infof("[reconciler] host %s failed (retry %d/%d), retrying", spec.Name, spec.RetryCount, maxRetryCount)
-			r.specMgr.IncrementRetry(spec.Name)
-			r.redeploy(ctx, r.specMgr.Get(spec.Name))
+			r.hostSpecRepo.IncrementRetry(spec.Name)
+			r.redeploy(ctx, r.hostSpecRepo.Get(spec.Name))
 		} else {
 			r.logger.Infof("[reconciler] host %s failed (retry %d/%d), skipping", spec.Name, spec.RetryCount, maxRetryCount)
 		}
@@ -138,7 +137,7 @@ func (r *Reconciler) Stop() {
 }
 
 func (r *Reconciler) runHealthCheck(ctx context.Context) {
-	specs := r.specMgr.List()
+	specs := r.hostSpecRepo.List()
 	for _, spec := range specs {
 		r.checkOne(ctx, spec)
 	}
@@ -176,15 +175,15 @@ func (r *Reconciler) checkOne(ctx context.Context, spec *protocol.HostSpec) {
 	case protocol.HostStatusFailed:
 		if spec.RetryCount < maxRetryCount {
 			r.logger.Infof("[health-check] host %s failed (retry %d/%d), retrying", spec.Name, spec.RetryCount, maxRetryCount)
-			r.specMgr.IncrementRetry(spec.Name)
-			r.redeploy(ctx, r.specMgr.Get(spec.Name))
+			r.hostSpecRepo.IncrementRetry(spec.Name)
+			r.redeploy(ctx, r.hostSpecRepo.Get(spec.Name))
 		}
 
 	case protocol.HostStatusPending:
 		// pending 超过 5 分钟视为后台任务丢失
 		if time.Since(spec.CreatedAt) > pendingTimeout {
 			r.logger.Infof("[health-check] host %s pending timeout, marking as failed", spec.Name)
-			r.specMgr.UpdateStatus(spec.Name, protocol.HostStatusFailed, "pending timeout: background task may be lost")
+			r.hostSpecRepo.UpdateStatus(spec.Name, protocol.HostStatusFailed, "pending timeout: background task may be lost")
 		}
 	}
 }
@@ -203,7 +202,7 @@ func (r *Reconciler) redeploy(ctx context.Context, spec *protocol.HostSpec) {
 		r.logger.Warnf("[reconciler] cleanup old runtime for %s failed: %v", spec.Name, err)
 	}
 
-	r.specMgr.UpdateStatus(spec.Name, protocol.HostStatusDeploying, "")
+	r.hostSpecRepo.UpdateStatus(spec.Name, protocol.HostStatusDeploying, "")
 
 	if err := os.MkdirAll(r.logDir, 0750); err == nil {
 		logPath := filepath.Join(r.logDir, spec.Name+".log")
@@ -217,7 +216,7 @@ func (r *Reconciler) redeploy(ctx context.Context, spec *protocol.HostSpec) {
 	_, deployErr := service.BuildAndDeploy(ctx, r.runtime, spec, r.cfg)
 	if deployErr != nil {
 		errMsg := fmt.Sprintf("redeploy failed: %v", deployErr)
-		r.specMgr.UpdateStatus(spec.Name, protocol.HostStatusFailed, errMsg)
+		r.hostSpecRepo.UpdateStatus(spec.Name, protocol.HostStatusFailed, errMsg)
 		r.logger.Errorf("[reconciler] %s: %s", spec.Name, errMsg)
 		return
 	}

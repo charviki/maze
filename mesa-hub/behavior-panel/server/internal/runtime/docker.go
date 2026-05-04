@@ -15,7 +15,7 @@ import (
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/maze-cradle/protocol"
 	"github.com/charviki/mesa-hub-behavior-panel/internal/config"
-	builder "github.com/charviki/mesa-hub-behavior-panel/internal/imagebuilder"
+	hostbuilder "github.com/charviki/mesa-hub-behavior-panel/internal/hostbuilder"
 )
 
 // DockerRuntime 通过 docker CLI 实现的容器运行时
@@ -39,7 +39,7 @@ func (d *DockerRuntime) dockerCmd(args ...string) *exec.Cmd {
 
 // imageExistsLocally 检查指定镜像是否已存在于本地 docker 中
 func (d *DockerRuntime) imageExistsLocally(imageName string) bool {
-	return builder.ImageExistsLocally(imageName)
+	return hostbuilder.ImageExistsLocally(imageName)
 }
 
 // tryTagComboImage 尝试将已存在的工具组合镜像 tag 为 Host 专属镜像。
@@ -68,15 +68,15 @@ func (d *DockerRuntime) tryTagComboImage(comboTag, imageTag, expectedHash string
 
 // checkDockerfileHash 从镜像 label 中读取 dockerfile-hash 与期望值比较
 func (d *DockerRuntime) checkDockerfileHash(imageName, expectedHash string) bool {
-	return builder.CheckDockerfileHash(imageName, expectedHash)
+	return hostbuilder.CheckDockerfileHash(imageName, expectedHash)
 }
 
 // DeployHost 部署一个 Host：构建镜像 → 创建持久化目录 → 启动容器
 func (d *DockerRuntime) DeployHost(ctx context.Context, spec *protocol.HostDeploySpec, dockerfileContent string) (*protocol.CreateHostResponse, error) {
 	deployStart := time.Now()
 	imageTag := "maze-agent:" + spec.Name
-	comboTag := builder.ToolsetImageTag(spec.Tools)
-	expectedHash := builder.ExtractDockerfileHash(dockerfileContent)
+	comboTag := hostbuilder.ToolsetImageTag(spec.Tools)
+	expectedHash := hostbuilder.ExtractDockerfileHash(dockerfileContent)
 
 	cacheStart := time.Now()
 	cacheHit := d.tryTagComboImage(comboTag, imageTag, expectedHash)

@@ -11,9 +11,11 @@ import (
 	"github.com/charviki/maze-cradle/httputil"
 	"github.com/charviki/maze-cradle/logutil"
 	cradlemw "github.com/charviki/maze-cradle/middleware"
+	"github.com/charviki/mesa-hub-behavior-panel/internal/agentclient"
 	"github.com/charviki/mesa-hub-behavior-panel/internal/config"
-	"github.com/charviki/mesa-hub-behavior-panel/internal/model"
 	"github.com/charviki/mesa-hub-behavior-panel/internal/reconciler"
+	auditrepo "github.com/charviki/mesa-hub-behavior-panel/internal/repository/audit"
+	filerepo "github.com/charviki/mesa-hub-behavior-panel/internal/repository/file"
 	"github.com/charviki/mesa-hub-behavior-panel/internal/runtime"
 	"github.com/charviki/mesa-hub-behavior-panel/internal/service"
 	"github.com/charviki/mesa-hub-behavior-panel/internal/transport"
@@ -42,14 +44,14 @@ func dataDir(cfg *config.Config) string {
 
 // CleanupResources 持有优雅关闭时需要清理的资源引用。
 type CleanupResources struct {
-	Registry   *model.NodeRegistry
-	SpecMgr    *model.HostSpecManager
-	AuditLog   *transport.AuditLogger
-	Reconciler *reconciler.Reconciler
-	HostSvc    *service.HostService
-	NodeSvc    *service.NodeService
-	AuditSvc   *service.AuditService
-	ConnMgr    *service.ConnectionManager
+	Registry     service.NodeRegistry
+	HostSpecRepo service.HostSpecRepository
+	AuditLog     *auditrepo.Logger
+	Reconciler   *reconciler.Reconciler
+	HostSvc      *service.HostService
+	NodeSvc      *service.NodeService
+	AuditSvc     *service.AuditService
+	ConnMgr      *agentclient.ConnectionManager
 }
 
 // newHTTPServer 负责装配 HTTP Server、顶层路由和后台依赖。
@@ -57,10 +59,10 @@ type CleanupResources struct {
 func newHTTPServer(cfg *config.Config, logger logutil.Logger, gwmux *gwruntime.ServeMux) (*http.Server, *CleanupResources) {
 	dir := dataDir(cfg)
 
-	registry := model.NewNodeRegistry(filepath.Join(dir, "nodes.json"), logger)
-	specMgr := model.NewHostSpecManager(filepath.Join(dir, "host_specs.json"), logger)
+	registry := filerepo.NewNodeRegistry(filepath.Join(dir, "nodes.json"), logger)
+	hostSpecRepo := filerepo.NewHostSpecRepository(filepath.Join(dir, "host_specs.json"), logger)
 
-	auditLog := transport.NewAuditLogger(filepath.Join(dir, "audit.log"), logger)
+	auditLog := auditrepo.NewLogger(filepath.Join(dir, "audit.log"), logger)
 
 	var hostRuntime runtime.HostRuntime
 	if cfg.Runtime.Type == "kubernetes" {
@@ -75,15 +77,15 @@ func newHTTPServer(cfg *config.Config, logger logutil.Logger, gwmux *gwruntime.S
 
 	logDir := filepath.Join(dir, "host_logs")
 
-	hostSvc := service.NewHostService(registry, specMgr, hostRuntime, auditLog, cfg, logger, logDir)
+	hostSvc := service.NewHostService(registry, hostSpecRepo, hostRuntime, auditLog, cfg, logger, logDir)
 	nodeSvc := service.NewNodeService(registry, logger)
 	auditSvc := service.NewAuditService(auditLog)
 
 	// SessionProxyHandler 仍需保留：WebSocket 终端代理需要访问 registry、auditLog 等依赖
-	sessionProxyHandler := transport.NewSessionProxyHandler(registry, auditLog, auditSvc, logger, cfg.Server.AuthToken, cfg.AllowedOrigins(), cfg.Server.AllowPrivateNetworks)
+	sessionProxyHandler := transport.NewSessionProxyHandler(registry, auditLog, logger, cfg.Server.AuthToken, cfg.AllowedOrigins(), cfg.Server.AllowPrivateNetworks)
 
 	// 启动恢复：路由注册后、HTTP 服务启动前执行
-	rec := reconciler.NewReconciler(specMgr, registry, hostRuntime, cfg, logger, logDir)
+	rec := reconciler.NewReconciler(hostSpecRepo, registry, hostRuntime, cfg, logger, logDir)
 	rec.RecoverOnStartup(context.Background())
 	// 启动健康巡检后台 goroutine
 	rec.StartHealthCheck(context.Background())
@@ -118,17 +120,17 @@ func newHTTPServer(cfg *config.Config, logger logutil.Logger, gwmux *gwruntime.S
 	mux.Handle("GET /api/v1/nodes/{name}/sessions/{id}/ws", wsHandler)
 	mux.Handle("/", apiHandler)
 
-	connMgr := service.NewConnectionManager(logger, cfg.Server.AuthToken, 5*time.Minute)
+	connMgr := agentclient.NewConnectionManager(logger, cfg.Server.AuthToken, 5*time.Minute)
 
 	resources := &CleanupResources{
-		Registry:   registry,
-		SpecMgr:    specMgr,
-		AuditLog:   auditLog,
-		Reconciler: rec,
-		HostSvc:    hostSvc,
-		NodeSvc:    nodeSvc,
-		AuditSvc:   auditSvc,
-		ConnMgr:    connMgr,
+		Registry:     registry,
+		HostSpecRepo: hostSpecRepo,
+		AuditLog:     auditLog,
+		Reconciler:   rec,
+		HostSvc:      hostSvc,
+		NodeSvc:      nodeSvc,
+		AuditSvc:     auditSvc,
+		ConnMgr:      connMgr,
 	}
 
 	return &http.Server{

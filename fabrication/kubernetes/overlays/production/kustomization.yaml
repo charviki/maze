@@ -3,5 +3,6 @@ kind: Kustomization
 
 resources:
   - ../../base
+  - postgres.yaml
   - manager-configmap.yaml
   - manager-deployment.yaml

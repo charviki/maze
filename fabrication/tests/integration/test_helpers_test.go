@@ -46,7 +46,7 @@ func newTestHelper(t *testing.T) *testHelper {
 	defer cancel()
 	_, _, err := apiClient.HostServiceAPI.HostServiceListHosts(ctx).Execute()
 	if err != nil {
-		t.Skipf("Manager API not available at %s: %v", cfg.ManagerURL, err)
+		t.Fatalf("Manager API not available at %s: %v", cfg.ManagerURL, err)
 	}
 
 	return &testHelper{apiClient: apiClient, cfg: cfg}

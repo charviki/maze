@@ -1,4 +1,21 @@
 services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: behavior-panel-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-maze_auth}
+      POSTGRES_USER: ${POSTGRES_USER:-maze}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-maze}
+    ports:
+      - '${PORT_POSTGRES:-5432}:5432'
+    volumes:
+      - behavior-panel-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-maze} -d ${POSTGRES_DB:-maze_auth}']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
   web:
     build:
       context: ../..
@@ -15,6 +32,9 @@ services:
     ports:
       - '${PORT_MANAGER:-8090}:8080'
     container_name: agent-manager
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       AGENT_MANAGER_SERVER_AUTH_TOKEN: '${MAZE_AUTH_TOKEN:-}'
       AGENT_MANAGER_ALLOW_PRIVATE_NETWORKS: 'true'
@@ -23,6 +43,17 @@ services:
       AGENT_MANAGER_WORKSPACE_MOUNT_DIR: '/data'
       AGENT_MANAGER_DOCKER_AGENT_BASE_IMAGE: '${AGENT_BASE_IMAGE:-behavior-panel-agent-1:latest}'
       AGENT_MANAGER_DOCKER_AGENT_DATA_DIR: '${HOST_DATA_DIR:-~/.maze-prod}/docker/agents'
+      AGENT_MANAGER_DATABASE_HOST: 'postgres'
+      AGENT_MANAGER_DATABASE_PORT: '5432'
+      AGENT_MANAGER_DATABASE_NAME: '${POSTGRES_DB:-maze_auth}'
+      AGENT_MANAGER_DATABASE_USER: '${POSTGRES_USER:-maze}'
+      AGENT_MANAGER_DATABASE_PASSWORD: '${POSTGRES_PASSWORD:-maze}'
+      AGENT_MANAGER_AUTHZ_ENABLED: '${AUTHZ_ENABLED:-true}'
+      AGENT_MANAGER_AUTHZ_ADMIN_SUBJECT_KEY: '${AUTHZ_ADMIN_SUBJECT_KEY:-user:admin}'
+      AGENT_MANAGER_AUTHZ_ADMIN_DISPLAY_NAME: '${AUTHZ_ADMIN_DISPLAY_NAME:-admin}'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${HOST_DATA_DIR:-~/.maze-prod}/docker:/data
+
+volumes:
+  behavior-panel-postgres-data:

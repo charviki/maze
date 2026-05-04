@@ -7,13 +7,37 @@ import (
 	"github.com/charviki/maze-cradle/configutil"
 )
 
-// Config 全局配置结构体，含 Server、Workspace、Docker、Runtime、Kubernetes 五个维度
+// Config 全局配置结构体，含 Server、Workspace、Docker、Runtime、Kubernetes、Database、Casbin 维度
 type Config struct {
 	Server     ServerConfig     `yaml:"server"`
 	Workspace  WorkspaceConfig  `yaml:"workspace"`
 	Docker     DockerConfig     `yaml:"docker"`
 	Runtime    RuntimeConfig    `yaml:"runtime"`
 	Kubernetes KubernetesConfig `yaml:"kubernetes"`
+	Database   DatabaseConfig   `yaml:"database"`
+	Casbin     CasbinConfig     `yaml:"casbin"`
+	Authz      AuthzConfig      `yaml:"authz"`
+}
+
+// DatabaseConfig PostgreSQL 权限数据库配置
+type DatabaseConfig struct {
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`     // 默认 5432
+	Name     string `yaml:"name"`     // 默认 maze_auth
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+}
+
+// CasbinConfig Casbin RBAC 配置
+type CasbinConfig struct {
+	ModelPath string `yaml:"model_path"`
+}
+
+// AuthzConfig 权限系统启用与 bootstrap 配置。
+type AuthzConfig struct {
+	Enabled          bool   `yaml:"enabled"`
+	AdminSubjectKey  string `yaml:"admin_subject_key"`
+	AdminDisplayName string `yaml:"admin_display_name"`
 }
 
 // RuntimeConfig 运行时类型选择
@@ -182,4 +206,19 @@ func validate(cfg *Config) {
 	}
 	cfg.Kubernetes.HostPathBase = configutil.ExpandHomePath(cfg.Kubernetes.HostPathBase)
 
+	// Database 默认值
+	if cfg.Database.Port == 0 {
+		cfg.Database.Port = 5432
+	}
+	if cfg.Database.Name == "" {
+		cfg.Database.Name = "maze_auth"
+	}
+
+	// Authz 默认值
+	if cfg.Authz.AdminSubjectKey == "" {
+		cfg.Authz.AdminSubjectKey = "user:admin"
+	}
+	if cfg.Authz.AdminDisplayName == "" {
+		cfg.Authz.AdminDisplayName = "admin"
+	}
 }

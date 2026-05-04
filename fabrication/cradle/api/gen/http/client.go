@@ -59,6 +59,8 @@ type APIClient struct {
 
 	NodeServiceAPI *NodeServiceAPIService
 
+	PermissionServiceAPI *PermissionServiceAPIService
+
 	SessionServiceAPI *SessionServiceAPIService
 
 	TemplateServiceAPI *TemplateServiceAPIService
@@ -85,6 +87,7 @@ func NewAPIClient(cfg *Configuration) *APIClient {
 	c.ConfigServiceAPI = (*ConfigServiceAPIService)(&c.common)
 	c.HostServiceAPI = (*HostServiceAPIService)(&c.common)
 	c.NodeServiceAPI = (*NodeServiceAPIService)(&c.common)
+	c.PermissionServiceAPI = (*PermissionServiceAPIService)(&c.common)
 	c.SessionServiceAPI = (*SessionServiceAPIService)(&c.common)
 	c.TemplateServiceAPI = (*TemplateServiceAPIService)(&c.common)
 

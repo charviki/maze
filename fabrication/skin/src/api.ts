@@ -175,10 +175,12 @@ export function createAgentApiClient(urlPrefix: string): IAgentApiClient {
         body: JSON.stringify(req),
       }),
 
-    getLocalConfig: () => request<V1LocalAgentConfig>(`${prefix}config`),
+    // LocalConfig 在 proto/gateway 中的稳定路由是 `local-config`；
+    // 这里如果继续走旧的 `config` 路径，Manager 代理模式下会直接命中 404。
+    getLocalConfig: () => request<V1LocalAgentConfig>(`${prefix}local-config`),
 
     updateLocalConfig: (cfg) =>
-      request<V1LocalAgentConfig>(`${prefix}config`, {
+      request<V1LocalAgentConfig>(`${prefix}local-config`, {
         method: 'PUT',
         body: JSON.stringify(cfg),
       }),

@@ -5,17 +5,16 @@ import (
 	"errors"
 
 	"github.com/charviki/maze-cradle/logutil"
-	"github.com/charviki/mesa-hub-behavior-panel/internal/model"
 )
 
 // NodeService 节点管理业务逻辑（Manager 本地），供 HTTP handler 和 gRPC handler 共用
 type NodeService struct {
-	registry *model.NodeRegistry
+	registry NodeRegistry
 	logger   logutil.Logger
 }
 
 // NewNodeService 创建 NodeService
-func NewNodeService(registry *model.NodeRegistry, logger logutil.Logger) *NodeService {
+func NewNodeService(registry NodeRegistry, logger logutil.Logger) *NodeService {
 	return &NodeService{
 		registry: registry,
 		logger:   logger,
@@ -23,12 +22,12 @@ func NewNodeService(registry *model.NodeRegistry, logger logutil.Logger) *NodeSe
 }
 
 // ListNodes 返回所有已注册节点
-func (s *NodeService) ListNodes(ctx context.Context) ([]*model.Node, error) {
+func (s *NodeService) ListNodes(ctx context.Context) ([]*Node, error) {
 	return s.registry.List(), nil
 }
 
 // GetNode 返回指定节点信息
-func (s *NodeService) GetNode(ctx context.Context, name string) (*model.Node, error) {
+func (s *NodeService) GetNode(ctx context.Context, name string) (*Node, error) {
 	if name == "" {
 		return nil, errors.New("name is required")
 	}

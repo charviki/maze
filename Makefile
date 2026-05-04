@@ -42,7 +42,6 @@ export PORT_WEB PORT_MANAGER HOST_DATA_DIR
 MANAGER_IMAGE := maze-manager:latest
 WEB_IMAGE := maze-web:latest
 AGENT_IMAGE := maze-agent:latest
-
 MANAGER_DOCKERFILE := $(PROJECT_ROOT)/mesa-hub/behavior-panel/Dockerfile
 WEB_DOCKERFILE := $(PROJECT_ROOT)/mesa-hub/behavior-panel/Dockerfile.web
 AGENT_DOCKERFILE := $(PROJECT_ROOT)/sweetwater/black-ridge/Dockerfile
@@ -119,9 +118,11 @@ gen-sdk: ## 生成 TypeScript SDK from OpenAPI spec (fabrication/skin)
 		-g typescript-fetch
 	@# SDK gen 文件包含跨文件引用的内部 helper，在消费端 tsc -b 编译时会触发 noUnusedLocals。
 	@# @ts-nocheck 只加在自动生成的文件上，不影响业务代码的类型安全。
-	find fabrication/skin/src/api/gen -name '*.ts' -exec sed -i '' '/^\/\/ @ts-nocheck$$/d' {} \;
-	find fabrication/skin/src/api/gen -name '*.ts' -exec sed -i '' '1i\
-// @ts-nocheck' {} \;
+	find fabrication/skin/src/api/gen -name '*.ts' -exec python3 -c 'from pathlib import Path; import sys; \
+path = Path(sys.argv[1]); prefix = "// @ts-nocheck\n"; content = path.read_text(); \
+lines = [line for line in content.splitlines() if line != "// @ts-nocheck"]; \
+normalized = "\n".join(lines); normalized += "\n" if content.endswith("\n") else ""; \
+path.write_text(prefix + normalized.lstrip("\n"))' {} \;
 	@echo "\033[0;32m[gen-sdk]\033[0m SDK generated at fabrication/skin/src/api/gen/"
 
 gen: gen-client gen-sdk ## 一键生成 proto + HTTP client + TypeScript SDK
@@ -241,16 +242,38 @@ ifeq ($(PLATFORM),docker)
 	@echo "  Web:      http://localhost:$(PORT_WEB)"
 	@echo "  Manager:  http://localhost:$(PORT_MANAGER)/health"
 else ifeq ($(PLATFORM),kubernetes)
+	# K8s 正常部署路径：
+	# 1. 直接渲染仓库中的静态 overlay
+	# 2. 仅等待当前 overlay 中实际存在的 deployment，再等待 Pod ready
+	# 3. 全部就绪后提示精确的代理命令，避免默认 ENV=dev 误导
+	#
+	# 注意：这里和集成测试一样采用严格失败策略，避免 manager 在数据库还未就绪时过早启动。
 	@echo "\033[0;32m[INFO]\033[0m Deploying to Kubernetes ($(ENV))..."
-	@mkdir -p $(HOST_DATA_DIR)/docker/agents $(HOST_DATA_DIR)/kubernetes/agents
+	@mkdir -p $(HOST_DATA_DIR)/docker/agents
+	@if [ "$(ENV)" = "dev" ]; then \
+		mkdir -p /tmp/maze-dev/kubernetes/agents; \
+	elif [ "$(ENV)" = "test" ]; then \
+		mkdir -p /tmp/maze-test/kubernetes/agents; \
+	fi
 	@kubectl create namespace $(K8S_NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
-	@kubectl kustomize $(K8S_OVERLAY_DIR) | sed 's|__HOST_HOME__|$(HOME)|g' | kubectl apply -f -
+	@kubectl kustomize "$(K8S_OVERLAY_DIR)" | kubectl apply -f -
+	@echo "\033[0;32m[INFO]\033[0m Waiting for deployments to roll out..."
+	@if kubectl get deployment/postgresql -n $(K8S_NAMESPACE) >/dev/null 2>&1; then \
+		kubectl rollout status deployment/postgresql -n $(K8S_NAMESPACE) --timeout=180s || \
+			(echo "\033[1;33m[WARN]\033[0m PostgreSQL rollout timed out." && kubectl get pods -n $(K8S_NAMESPACE) && exit 1); \
+	else \
+		echo "\033[0;32m[INFO]\033[0m Skip PostgreSQL rollout wait: deployment/postgresql not managed by overlay $(K8S_OVERLAY)."; \
+	fi
+	@kubectl rollout status deployment/agent-manager -n $(K8S_NAMESPACE) --timeout=180s || \
+		(echo "\033[1;33m[WARN]\033[0m agent-manager rollout timed out." && kubectl get pods -n $(K8S_NAMESPACE) && exit 1)
+	@kubectl rollout status deployment/web -n $(K8S_NAMESPACE) --timeout=180s || \
+		(echo "\033[1;33m[WARN]\033[0m web rollout timed out." && kubectl get pods -n $(K8S_NAMESPACE) && exit 1)
 	@echo "\033[0;32m[INFO]\033[0m Waiting for pods to be ready..."
-	@kubectl wait --for=condition=ready pods -l app --timeout=120s -n $(K8S_NAMESPACE) 2>/dev/null || \
-		(echo "\033[1;33m[WARN]\033[0m Timeout or partial readiness." && kubectl get pods -n $(K8S_NAMESPACE))
+	@kubectl wait --for=condition=ready pods -l app --timeout=180s -n $(K8S_NAMESPACE) 2>/dev/null || \
+		(echo "\033[1;33m[WARN]\033[0m Timeout or partial readiness." && kubectl get pods -n $(K8S_NAMESPACE) && exit 1)
 	@echo ""
 	@echo "\033[0;32m[INFO]\033[0m Maze is running on Kubernetes! ($(ENV))"
-	@echo "  Next: make proxy"
+	@echo "  Next: make proxy PLATFORM=$(PLATFORM) ENV=$(ENV)"
 endif
 
 down: ## 停止并删除所有服务
@@ -368,6 +391,7 @@ ifeq ($(PLATFORM),docker)
 	@bash -c '\
 		set -o pipefail; \
 		INFO="\033[0;32m[INFO]\033[0m"; \
+		ERROR="\033[0;31m[ERROR]\033[0m"; \
 		TIME="\033[0;36m[TIME]\033[0m"; \
 		cleanup() { \
 			echo -e "$$INFO Stopping test environment..."; \
@@ -390,10 +414,20 @@ ifeq ($(PLATFORM),docker)
 		echo -e "$$TIME Test environment started in $${ELAPSED2}s"; \
 		echo -e "$$INFO [3/4] Waiting for Manager to be ready..."; \
 		START3=$$(date +%s); \
+		MANAGER_READY=0; \
 		for i in $$(seq 1 60); do \
-			curl -sf http://localhost:$(PORT_MANAGER)/health > /dev/null 2>&1 && break; \
+			if curl -sf http://localhost:$(PORT_MANAGER)/health > /dev/null 2>&1; then \
+				MANAGER_READY=1; \
+				break; \
+			fi; \
 			echo "  waiting... ($$i/60)"; sleep 2; \
 		done; \
+		if [ "$$MANAGER_READY" != "1" ]; then \
+			echo -e "$$ERROR Manager did not become ready within 120s."; \
+			docker compose -f $(COMPOSE_TEST_FILE) -p $(COMPOSE_PROJECT) ps; \
+			docker compose -f $(COMPOSE_TEST_FILE) -p $(COMPOSE_PROJECT) logs --tail=200 agent-manager postgres; \
+			exit 1; \
+		fi; \
 		ELAPSED3=$$(($$(date +%s) - $$START3)); \
 		echo -e "$$TIME Manager ready in $${ELAPSED3}s"; \
 		TOTAL_SETUP=$$(($$(date +%s) - $$START)); \
@@ -438,6 +472,14 @@ ifeq ($(PLATFORM),docker)
 		fi \
 	'
 else ifeq ($(PLATFORM),kubernetes)
+	# K8s 集成测试会自己准备一个一次性的 namespace。
+	#
+	# 整个流程分成 5 段：
+	# 1. 本地构建测试镜像，避免依赖外部镜像仓库
+	# 2. 重建隔离 namespace，确保每次测试从干净环境启动
+	# 3. 直接渲染静态 test overlay
+	# 4. 先等待 deployment rollout，再等待 Pod ready，最后再启动 port-forward
+	# 5. 通过本地 manager 端口执行集成测试，失败后统一清理 namespace 和 port-forward 进程
 	@bash -c '\
 		set -o pipefail; \
 		INFO="\033[0;32m[INFO]\033[0m"; \
@@ -467,14 +509,24 @@ else ifeq ($(PLATFORM),kubernetes)
 		kubectl create namespace $$NS --dry-run=client -o yaml | kubectl apply -f -; \
 		DEPLOYED=true; \
 		echo -e "$$INFO [3/5] Deploying test environment to namespace $$NS..."; \
-		kubectl kustomize $(K8S_OVERLAY_DIR) | sed "s|__HOST_HOME__|$(HOME)|g" | kubectl apply -f -; \
-		if [ $$? -ne 0 ]; then \
+		echo -e "$$INFO Applying rendered manifests..."; \
+		mkdir -p /tmp/maze-test/kubernetes/agents; \
+		if ! kubectl kustomize "$(K8S_OVERLAY_DIR)" | kubectl apply -f -; then \
 			echo -e "$$ERROR Failed to deploy test environment."; \
 			exit 1; \
 		fi; \
+		echo -e "$$INFO Waiting for deployments to roll out..."; \
+		if kubectl get deployment/postgresql -n $$NS >/dev/null 2>&1; then \
+			kubectl rollout status deployment/postgresql -n $$NS --timeout=180s || \
+				(echo -e "$$WARN PostgreSQL rollout timed out." && kubectl get pods -n $$NS && exit 1); \
+		else \
+			echo -e "$$INFO Skip PostgreSQL rollout wait: deployment/postgresql not managed by overlay."; \
+		fi; \
+		kubectl rollout status deployment/agent-manager -n $$NS --timeout=180s || \
+			(echo -e "$$WARN agent-manager rollout timed out." && kubectl get pods -n $$NS && exit 1); \
 		echo -e "$$INFO Waiting for pods to be ready..."; \
-		kubectl wait --for=condition=ready pods -l app --timeout=120s -n $$NS 2>/dev/null || \
-			(echo -e "$$WARN Timeout or partial readiness." && kubectl get pods -n $$NS); \
+		kubectl wait --for=condition=ready pods -l app --timeout=180s -n $$NS 2>/dev/null || \
+			(echo -e "$$WARN Timeout or partial readiness." && kubectl get pods -n $$NS && exit 1); \
 		echo -e "$$INFO [4/5] Starting port-forward..."; \
 		kubectl port-forward svc/agent-manager $(PORT_MANAGER):8080 -n $$NS 2>&1 | grep -v "^Handling" & \
 		PF_PID1=$$!; \
