@@ -1,4 +1,4 @@
-package model
+package service
 
 import (
 	"embed"
@@ -15,7 +15,7 @@ import (
 //go:embed templates/*.yaml
 var builtinTemplatesFS embed.FS
 
-// SessionTemplate 会话模板，定义创建 Agent 会话时需要的命令、配置和用户输入字段
+// SessionTemplate 描述一个会话模板的完整定义，包含命令、配置默认值和 schema
 type SessionTemplate struct {
 	ID                 string                   `json:"id"`
 	Name               string                   `json:"name"`
@@ -29,7 +29,7 @@ type SessionTemplate struct {
 	SessionSchema      configutil.SessionSchema `json:"session_schema"`
 }
 
-// TemplateStore 模板持久化存储。内置模板在每次启动时会被无条件覆盖
+// TemplateStore 管理内置和自定义会话模板的持久化存储
 type TemplateStore struct {
 	mu        sync.RWMutex
 	templates map[string]*SessionTemplate
@@ -37,7 +37,7 @@ type TemplateStore struct {
 	logger    logutil.Logger
 }
 
-// NewTemplateStore 创建 TemplateStore，加载已有数据后注入内置模板
+// NewTemplateStore 创建模板存储，加载磁盘文件并确保内置模板就绪
 func NewTemplateStore(filePath string, logger logutil.Logger) *TemplateStore {
 	dir := filepath.Dir(filePath)
 	if err := os.MkdirAll(dir, 0750); err != nil {
@@ -53,7 +53,6 @@ func NewTemplateStore(filePath string, logger logutil.Logger) *TemplateStore {
 	return s
 }
 
-// 从 JSON 文件加载模板数据。文件不存在时为首次启动，解析失败时记录错误日志
 func (s *TemplateStore) load() {
 	data, err := os.ReadFile(s.path)
 	if err != nil {
@@ -70,7 +69,6 @@ func (s *TemplateStore) load() {
 	s.mu.Unlock()
 }
 
-// 持久化模板数据到 JSON 文件（原子写入）
 func (s *TemplateStore) save() error {
 	s.mu.RLock()
 	data, err := json.MarshalIndent(s.templates, "", "  ")
@@ -80,11 +78,6 @@ func (s *TemplateStore) save() error {
 	}
 	return configutil.AtomicWriteFile(s.path, data, 0644)
 }
-
-// --- YAML 解析中间结构体 ---
-// SessionTemplate 及 cradle 共享类型只有 json tag，没有 yaml tag。
-// yaml.v3 默认使用字段名小写（如 RestoreCommand → restorecommand），
-// 与 YAML 文件中的 snake_case 键名不匹配，因此需要中间结构体桥接。
 
 type yamlConfigFile struct {
 	Path    string `yaml:"path"`
@@ -129,7 +122,6 @@ type yamlTemplate struct {
 	SessionSchema      yamlSessionSchema `yaml:"session_schema"`
 }
 
-// 将 YAML 中间结构体转换为 SessionTemplate
 func (y *yamlTemplate) toSessionTemplate() *SessionTemplate {
 	files := make([]configutil.ConfigFile, len(y.Defaults.Files))
 	for i, f := range y.Defaults.Files {
@@ -161,7 +153,6 @@ func (y *yamlTemplate) toSessionTemplate() *SessionTemplate {
 	}
 }
 
-// loadBuiltinFromYAML 从 embed.FS 读取并解析单个 YAML 模板文件
 func loadBuiltinFromYAML(name string) (*SessionTemplate, error) {
 	data, err := builtinTemplatesFS.ReadFile("templates/" + name)
 	if err != nil {
@@ -174,8 +165,6 @@ func loadBuiltinFromYAML(name string) (*SessionTemplate, error) {
 	return yt.toSessionTemplate(), nil
 }
 
-// 注入内置模板（Claude Code、Codex、Bash Shell）。
-// 优先从 embed FS 中的 YAML 文件加载；加载失败时降级到硬编码模板（向后兼容）
 func (s *TemplateStore) ensureBuiltins() {
 	builtins, err := s.loadBuiltinsFromFS()
 	if err != nil {
@@ -194,7 +183,6 @@ func (s *TemplateStore) ensureBuiltins() {
 	}
 }
 
-// loadBuiltinsFromFS 从 embed FS 中依次加载所有内置模板 YAML 文件
 func (s *TemplateStore) loadBuiltinsFromFS() ([]SessionTemplate, error) {
 	names := []string{"claude.yaml", "codex.yaml", "bash.yaml"}
 	var builtins []SessionTemplate
@@ -208,7 +196,6 @@ func (s *TemplateStore) loadBuiltinsFromFS() ([]SessionTemplate, error) {
 	return builtins, nil
 }
 
-// hardcodedBuiltins 返回硬编码的内置模板（作为 embed FS 加载失败时的降级方案）
 func hardcodedBuiltins() []SessionTemplate {
 	return []SessionTemplate{
 		{
@@ -262,7 +249,7 @@ func hardcodedBuiltins() []SessionTemplate {
 	}
 }
 
-// List 列出所有模板
+// List 返回所有模板（内置 + 自定义）
 func (s *TemplateStore) List() []*SessionTemplate {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -273,14 +260,14 @@ func (s *TemplateStore) List() []*SessionTemplate {
 	return result
 }
 
-// Get 获取指定 ID 的模板
+// Get 按 ID 查找模板，不存在时返回 nil
 func (s *TemplateStore) Get(id string) *SessionTemplate {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.templates[id]
 }
 
-// Set 保存模板
+// Set 添加或更新模板并持久化到磁盘
 func (s *TemplateStore) Set(t *SessionTemplate) error {
 	s.mu.Lock()
 	s.templates[t.ID] = t
@@ -288,7 +275,7 @@ func (s *TemplateStore) Set(t *SessionTemplate) error {
 	return s.save()
 }
 
-// Delete 删除模板。内置模板静默返回 nil（不报错也不删除）
+// Delete 删除自定义模板，内置模板不会被删除
 func (s *TemplateStore) Delete(id string) error {
 	s.mu.Lock()
 	t, exists := s.templates[id]

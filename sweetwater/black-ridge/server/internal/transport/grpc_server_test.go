@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/charviki/sweetwater-black-ridge/internal/model"
+	
 	"github.com/charviki/sweetwater-black-ridge/internal/service"
 )
 
@@ -29,7 +29,7 @@ func TestErrToStatus_SessionNotFound(t *testing.T) {
 }
 
 func TestErrToStatus_ConfigConflictError(t *testing.T) {
-	conflicts := []model.ConfigConflict{
+	conflicts := []service.ConfigConflict{
 		{Path: "test.txt", CurrentHash: "md5:abc"},
 	}
 	confErr := &service.ConfigConflictError{Conflicts: conflicts}
@@ -59,7 +59,7 @@ func TestErrToStatus_GenericError(t *testing.T) {
 }
 
 func TestErrToStatus_ConfigConflict(t *testing.T) {
-	conflicts := []model.ConfigConflict{
+	conflicts := []service.ConfigConflict{
 		{Path: "CLAUDE.md", CurrentHash: "md5:xyz"},
 	}
 	confErr := &service.ConfigConflictError{Conflicts: conflicts}

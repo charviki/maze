@@ -7,7 +7,7 @@
 ## 核心原则
 
 - **管线编排** — 会话创建/恢复由 system/template/user 三层管线驱动，所有步骤按顺序原子执行
-- **接口隔离** — TmuxService 通过接口抽象，外部 Handler 不感知 tmux 命令细节
+- **接口隔离** — TmuxService、ConfigFileProvider、SessionStateRepository 通过接口抽象，transport 不直接依赖具体实现，外部 Handler 不感知底层细节
 - **安全默认** — 敏感步骤（env/file）执行前关闭 shell 回显，所有 API 端点经 Bearer Token 鉴权（gRPC interceptor）
 - **可观测性** — 心跳定期上报完整状态快照（Session 详情、内存、本地配置），配置文件使用乐观并发控制
 
@@ -34,8 +34,8 @@ Agent 采用 **`net/http` + grpc-gateway + gRPC** 的统一路由架构：
 | server/cmd/black-ridge/setup.go   | HTTP Server 装配：健康检查、访问日志、SPA fallback、WebSocket 终端路由                                            | [architecture.md](docs/architecture.md) |
 | server/internal/transport/        | gRPC Server 框架 + Session/Template/Config 协议适配 + WebSocket 终端                                              | —                                       |
 | server/internal/config/config.go  | 全局配置结构与校验（YAML + 反射式 env override）                                                                  | [architecture.md](docs/architecture.md) |
-| server/internal/service/          | Tmux 会话管理 + 心跳注册 + 自动保存 + 配置文件读写（乐观并发控制）                                               | [architecture.md](docs/architecture.md) |
-| server/internal/model/template.go | 模板存储与内置模板加载                                                                                            | [architecture.md](docs/architecture.md) |
+| server/internal/service/          | Tmux 会话管理 + 心跳注册 + 自动保存 + 配置文件读写（乐观并发控制）+ 业务模型（Session/SessionState/SessionTemplate）+ 模板持久化 + 状态持久化（SessionStateRepository） | [architecture.md](docs/architecture.md) |
+| server/internal/service/session_state_fs.go | SessionStateRepository 接口及文件系统实现                                                                         | [architecture.md](docs/architecture.md) |
 | server/internal/webstatic/        | `go:embed` 静态资源包，供 `http.FileServer` 提供 SPA 资源                                                         | [architecture.md](docs/architecture.md) |
 | web/src/api/client.ts              | Agent API 客户端（使用生成 SDK 的直连路径方法，*2 后缀）                                                         | —                                       |
 | Dockerfile + entrypoint.sh         | 多阶段构建 + 容器启动初始化                                                                                       | [architecture.md](docs/architecture.md) |

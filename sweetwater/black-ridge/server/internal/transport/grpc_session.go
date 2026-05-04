@@ -13,7 +13,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	pb "github.com/charviki/maze-cradle/api/gen/maze/v1"
-	"github.com/charviki/sweetwater-black-ridge/internal/model"
+	
 	"github.com/charviki/sweetwater-black-ridge/internal/service"
 )
 
@@ -47,7 +47,7 @@ func (s *Server) CreateSession(ctx context.Context, req *pb.CreateSessionRequest
 
 	// 从模板获取 restoreCommand，用于恢复时使用专用恢复命令
 	var restoreCommand string
-	var tpl *model.SessionTemplate
+	var tpl *service.SessionTemplate
 	if req.GetTemplateId() != "" {
 		tpl = s.templateStore.Get(req.GetTemplateId())
 		if tpl == nil {
@@ -56,9 +56,9 @@ func (s *Server) CreateSession(ctx context.Context, req *pb.CreateSessionRequest
 		restoreCommand = tpl.RestoreCommand
 	}
 
-	confs := make([]model.ConfigItem, len(req.GetSessionConfs()))
+	confs := make([]service.ConfigItem, len(req.GetSessionConfs()))
 	for i, c := range req.GetSessionConfs() {
-		confs[i] = model.ConfigItem{Type: c.GetType(), Key: c.GetKey(), Value: c.GetValue()}
+		confs[i] = service.ConfigItem{Type: c.GetType(), Key: c.GetKey(), Value: c.GetValue()}
 	}
 
 	// session_confs 校验：确保 env key 和 file path 在模板声明的范围内
@@ -177,7 +177,7 @@ func (s *Server) GetSessionConfig(ctx context.Context, req *pb.GetSessionConfigR
 		return nil, status.Error(codes.NotFound, "template not found")
 	}
 
-	files, err := service.NewConfigFileService().ReadProjectFiles(state.WorkingDir, tpl.SessionSchema.FileDefs)
+	files, err := s.configFiles.ReadProjectFiles(state.WorkingDir, tpl.SessionSchema.FileDefs)
 	if err != nil {
 		return nil, errToStatus(err)
 	}
@@ -185,7 +185,7 @@ func (s *Server) GetSessionConfig(ctx context.Context, req *pb.GetSessionConfigR
 		SessionId:  req.GetId(),
 		TemplateId: tpl.ID,
 		WorkingDir: state.WorkingDir,
-		Scope:      string(model.ConfigScopeProject),
+		Scope:      string(service.ConfigScopeProject),
 		Files:      configSnapshotsToProto(files),
 	}, nil
 }
@@ -207,7 +207,7 @@ func (s *Server) UpdateSessionConfig(ctx context.Context, req *pb.UpdateSessionC
 		return nil, status.Error(codes.NotFound, "template not found")
 	}
 
-	files, err := service.NewConfigFileService().SaveProjectFiles(
+	files, err := s.configFiles.SaveProjectFiles(
 		state.WorkingDir,
 		tpl.SessionSchema.FileDefs,
 		protoConfigUpdatesToModel(req.GetFiles()),
@@ -219,7 +219,7 @@ func (s *Server) UpdateSessionConfig(ctx context.Context, req *pb.UpdateSessionC
 		SessionId:  req.GetId(),
 		TemplateId: tpl.ID,
 		WorkingDir: state.WorkingDir,
-		Scope:      string(model.ConfigScopeProject),
+		Scope:      string(service.ConfigScopeProject),
 		Files:      configSnapshotsToProto(files),
 	}, nil
 }
@@ -303,8 +303,8 @@ func (s *Server) UpdateConfig(ctx context.Context, req *pb.UpdateConfigRequest) 
 	}, nil
 }
 
-// modelSessionToProto 将 model.Session 转换为 protobuf Session
-func modelSessionToProto(sess *model.Session) *pb.Session {
+// modelSessionToProto 将 service.Session 转换为 protobuf Session
+func modelSessionToProto(sess *service.Session) *pb.Session {
 	if sess == nil {
 		return nil
 	}
@@ -318,7 +318,7 @@ func modelSessionToProto(sess *model.Session) *pb.Session {
 	}
 }
 
-func configSnapshotsToProto(files []model.ConfigFileSnapshot) []*pb.ConfigFileSnapshot {
+func configSnapshotsToProto(files []service.ConfigFileSnapshot) []*pb.ConfigFileSnapshot {
 	pbFiles := make([]*pb.ConfigFileSnapshot, len(files))
 	for i, file := range files {
 		pbFiles[i] = &pb.ConfigFileSnapshot{
@@ -331,10 +331,10 @@ func configSnapshotsToProto(files []model.ConfigFileSnapshot) []*pb.ConfigFileSn
 	return pbFiles
 }
 
-func protoConfigUpdatesToModel(files []*pb.ConfigFileUpdate) []model.ConfigFileUpdate {
-	updates := make([]model.ConfigFileUpdate, len(files))
+func protoConfigUpdatesToModel(files []*pb.ConfigFileUpdate) []service.ConfigFileUpdate {
+	updates := make([]service.ConfigFileUpdate, len(files))
 	for i, file := range files {
-		updates[i] = model.ConfigFileUpdate{
+		updates[i] = service.ConfigFileUpdate{
 			Path:     file.GetPath(),
 			Content:  file.GetContent(),
 			BaseHash: file.GetBaseHash(),
@@ -372,7 +372,7 @@ func resolveWorkingDir(rawWorkingDir string, workspaceRoot string) (string, erro
 }
 
 // validateSessionConfs 校验 session 配置项：env key 和 file path 必须在模板声明范围内
-func validateSessionConfs(configs []model.ConfigItem, tpl *model.SessionTemplate) error {
+func validateSessionConfs(configs []service.ConfigItem, tpl *service.SessionTemplate) error {
 	if len(configs) == 0 {
 		return nil
 	}

@@ -41,7 +41,8 @@ func main() {
 		grpcListenAddr = ":" + grpcAddr[idx+1:]
 	}
 
-	grpcServer := transport.NewServer(tmuxService, localConfig, templateStore, cfg.Workspace.RootDir, logger)
+	configFileService := service.NewConfigFileService()
+	grpcServer := transport.NewServer(tmuxService, localConfig, templateStore, configFileService, cfg.Workspace.RootDir, logger)
 	interceptors := []grpc.UnaryServerInterceptor{
 		gatewayutil.UnaryAuthInterceptor(cfg.Server.AuthToken),
 	}

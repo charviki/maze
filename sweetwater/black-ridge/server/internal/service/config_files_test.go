@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/charviki/maze-cradle/configutil"
-	"github.com/charviki/sweetwater-black-ridge/internal/model"
+	
 )
 
 func TestConfigFileService_ReadGlobalFiles_MissingFileReturnsEmptySnapshot(t *testing.T) {
@@ -51,7 +51,7 @@ func TestConfigFileService_SaveProjectFiles_WritesFileAfterHashCheck(t *testing.
 		t.Fatalf("ReadProjectFiles 失败: %v", err)
 	}
 
-	updated, err := svc.SaveProjectFiles(workingDir, defs, []model.ConfigFileUpdate{
+	updated, err := svc.SaveProjectFiles(workingDir, defs, []ConfigFileUpdate{
 		{
 			Path:     ".claude/settings.json",
 			Content:  "{\n  \"theme\": \"dark\"\n}",
@@ -100,7 +100,7 @@ func TestConfigFileService_SaveProjectFiles_RejectsConflict(t *testing.T) {
 		t.Fatalf("模拟外部改写失败: %v", err)
 	}
 
-	_, err = svc.SaveProjectFiles(workingDir, defs, []model.ConfigFileUpdate{
+	_, err = svc.SaveProjectFiles(workingDir, defs, []ConfigFileUpdate{
 		{
 			Path:     ".claude/settings.json",
 			Content:  `{"version":3}`,
@@ -130,7 +130,7 @@ func TestConfigFileService_SaveGlobalFiles_RejectsUnknownPath(t *testing.T) {
 	svc := NewConfigFileService()
 	_, err := svc.SaveGlobalFiles([]configutil.ConfigFile{
 		{Path: "~/.claude/CLAUDE.md"},
-	}, []model.ConfigFileUpdate{
+	}, []ConfigFileUpdate{
 		{
 			Path:     "~/.claude/settings.json",
 			Content:  "{}",

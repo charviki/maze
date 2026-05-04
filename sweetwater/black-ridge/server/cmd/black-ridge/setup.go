@@ -16,7 +16,7 @@ import (
 	"github.com/charviki/maze-cradle/logutil"
 	cradlemw "github.com/charviki/maze-cradle/middleware"
 	"github.com/charviki/sweetwater-black-ridge/internal/config"
-	"github.com/charviki/sweetwater-black-ridge/internal/model"
+	
 	"github.com/charviki/sweetwater-black-ridge/internal/service"
 	"github.com/charviki/sweetwater-black-ridge/internal/transport"
 	"github.com/charviki/sweetwater-black-ridge/internal/webstatic"
@@ -28,8 +28,8 @@ const (
 	agentHTTPIdleTimeout  = 120 * time.Second
 )
 
-func newHTTPServer(cfg *config.Config, tmuxService service.TmuxService, logger logutil.Logger, gwmux *gwruntime.ServeMux) (*http.Server, *model.TemplateStore) {
-	templateStore := model.NewTemplateStore(path.Join(cfg.Workspace.StateDir, "templates.json"), logger)
+func newHTTPServer(cfg *config.Config, tmuxService service.TmuxService, logger logutil.Logger, gwmux *gwruntime.ServeMux) (*http.Server, *service.TemplateStore) {
+	templateStore := service.NewTemplateStore(path.Join(cfg.Workspace.StateDir, "templates.json"), logger)
 	terminalHandler := transport.NewTerminalHandler(tmuxService, cfg.Terminal.DefaultLines, logger, cfg.Server.AllowedOrigins)
 
 	apiHandler := chainHTTP(

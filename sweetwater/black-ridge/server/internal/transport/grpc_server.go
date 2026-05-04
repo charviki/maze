@@ -10,7 +10,7 @@ import (
 
 	pb "github.com/charviki/maze-cradle/api/gen/maze/v1"
 	"github.com/charviki/maze-cradle/logutil"
-	"github.com/charviki/sweetwater-black-ridge/internal/model"
+	
 	"github.com/charviki/sweetwater-black-ridge/internal/service"
 )
 
@@ -22,7 +22,8 @@ type Server struct {
 
 	tmuxService      service.TmuxService
 	localConfig      *service.LocalConfigStore
-	templateStore    *model.TemplateStore
+	templateStore    *service.TemplateStore
+	configFiles      service.ConfigFileProvider
 	workspaceRootDir string
 	logger           logutil.Logger
 
@@ -33,7 +34,8 @@ type Server struct {
 func NewServer(
 	tmuxService service.TmuxService,
 	localConfig *service.LocalConfigStore,
-	templateStore *model.TemplateStore,
+	templateStore *service.TemplateStore,
+	configFiles service.ConfigFileProvider,
 	workspaceRootDir string,
 	logger logutil.Logger,
 ) *Server {
@@ -41,6 +43,7 @@ func NewServer(
 		tmuxService:      tmuxService,
 		localConfig:      localConfig,
 		templateStore:    templateStore,
+		configFiles:      configFiles,
 		workspaceRootDir: workspaceRootDir,
 		logger:           logger,
 	}

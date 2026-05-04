@@ -10,7 +10,7 @@ import (
 
 	pb "github.com/charviki/maze-cradle/api/gen/maze/v1"
 	"github.com/charviki/maze-cradle/configutil"
-	"github.com/charviki/sweetwater-black-ridge/internal/model"
+	
 	"github.com/charviki/sweetwater-black-ridge/internal/service"
 )
 
@@ -96,13 +96,13 @@ func (s *Server) GetTemplateConfig(ctx context.Context, req *pb.GetTemplateConfi
 		return nil, status.Error(codes.NotFound, "template not found")
 	}
 
-	files, err := service.NewConfigFileService().ReadGlobalFiles(tpl.Defaults.Files)
+	files, err := s.configFiles.ReadGlobalFiles(tpl.Defaults.Files)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &pb.TemplateConfigView{
 		TemplateId: tpl.ID,
-		Scope:      string(model.ConfigScopeGlobal),
+		Scope:      string(service.ConfigScopeGlobal),
 		Files:      configSnapshotsToProto(files),
 	}, nil
 }
@@ -115,7 +115,7 @@ func (s *Server) UpdateTemplateConfig(ctx context.Context, req *pb.UpdateTemplat
 	}
 
 	updates := protoConfigUpdatesToModel(req.GetFiles())
-	files, err := service.NewConfigFileService().SaveGlobalFiles(existing.Defaults.Files, updates)
+	files, err := s.configFiles.SaveGlobalFiles(existing.Defaults.Files, updates)
 	if err != nil {
 		return nil, errToStatus(err)
 	}
@@ -125,12 +125,12 @@ func (s *Server) UpdateTemplateConfig(ctx context.Context, req *pb.UpdateTemplat
 	}
 	return &pb.TemplateConfigView{
 		TemplateId: updated.ID,
-		Scope:      string(model.ConfigScopeGlobal),
+		Scope:      string(service.ConfigScopeGlobal),
 		Files:      configSnapshotsToProto(files),
 	}, nil
 }
 
-func modelTemplateToProto(t *model.SessionTemplate) *pb.SessionTemplate {
+func modelTemplateToProto(t *service.SessionTemplate) *pb.SessionTemplate {
 	if t == nil {
 		return nil
 	}
@@ -148,11 +148,11 @@ func modelTemplateToProto(t *model.SessionTemplate) *pb.SessionTemplate {
 	}
 }
 
-func protoToModelTemplate(t *pb.SessionTemplate) model.SessionTemplate {
+func protoToModelTemplate(t *pb.SessionTemplate) service.SessionTemplate {
 	if t == nil {
-		return model.SessionTemplate{}
+		return service.SessionTemplate{}
 	}
-	return model.SessionTemplate{
+	return service.SessionTemplate{
 		ID:                 t.GetId(),
 		Name:               t.GetName(),
 		Command:            t.GetCommand(),
@@ -234,7 +234,7 @@ func protoToSessionSchema(schema *pb.SessionSchema) configutil.SessionSchema {
 	return configutil.SessionSchema{EnvDefs: envDefs, FileDefs: fileDefs}
 }
 
-func cloneTemplateWithGlobalContents(existing *model.SessionTemplate, updates []model.ConfigFileUpdate) *model.SessionTemplate {
+func cloneTemplateWithGlobalContents(existing *service.SessionTemplate, updates []service.ConfigFileUpdate) *service.SessionTemplate {
 	cloned := *existing
 	cloned.Defaults.Env = cloneStringMap(existing.Defaults.Env)
 	cloned.Defaults.Files = cloneConfigFiles(existing.Defaults.Files)

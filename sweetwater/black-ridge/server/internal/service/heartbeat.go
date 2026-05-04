@@ -18,7 +18,6 @@ import (
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/maze-cradle/protocol"
 	"github.com/charviki/sweetwater-black-ridge/internal/config"
-	"github.com/charviki/sweetwater-black-ridge/internal/model"
 )
 
 const (
@@ -177,7 +176,7 @@ func (s *HeartbeatService) collectSessionDetails() []protocol.SessionDetail {
 		return nil
 	}
 
-	savedStates := make(map[string]*model.SessionState)
+	savedStates := make(map[string]*SessionState)
 	if saved, err := s.tmuxService.GetSavedSessions(); err == nil {
 		for i := range saved {
 			savedStates[saved[i].SessionName] = &saved[i]

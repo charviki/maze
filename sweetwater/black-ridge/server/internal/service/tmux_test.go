@@ -7,16 +7,16 @@ import (
 	"testing"
 
 	"github.com/charviki/maze-cradle/logutil"
+	"github.com/charviki/maze-cradle/pipeline"
 
 	"github.com/charviki/sweetwater-black-ridge/internal/config"
-	"github.com/charviki/sweetwater-black-ridge/internal/model"
 )
 
 func newTestTmuxService() *tmuxServiceImpl {
 	return &tmuxServiceImpl{
 		socketPath:   "",
 		defaultShell: "/bin/bash",
-		stateDir:     "/tmp/test-session-state",
+		stateRepo:    newFileSessionStateRepository("/tmp/test-session-state"),
 		logger:       logutil.NewNop(),
 	}
 }
@@ -24,31 +24,31 @@ func newTestTmuxService() *tmuxServiceImpl {
 func TestBuildPipeline_WithWorkingDir(t *testing.T) {
 	svc := newTestTmuxService()
 
-	configs := []model.ConfigItem{
+	configs := []ConfigItem{
 		{Type: "env", Key: "FOO", Value: "bar"},
 		{Type: "file", Key: "/tmp/test.txt", Value: "hello"},
 	}
 
-	pipeline := svc.BuildPipeline("/home/agent/project", "claude", configs)
+	pl := svc.BuildPipeline("/home/agent/project", "claude", configs)
 
-	system := pipeline.SystemSteps()
+	system := pl.SystemSteps()
 	if len(system) < 3 {
 		t.Fatalf("system 层步骤数 = %d, 至少期望 3 (cd + env + file)", len(system))
 	}
 
 	// 第一个步骤应该是 cd
-	if system[0].Type != model.StepCD {
-		t.Errorf("system[0].Type = %q, 期望 %q", system[0].Type, model.StepCD)
+	if system[0].Type != pipeline.StepCD {
+		t.Errorf("system[0].Type = %q, 期望 %q", system[0].Type, pipeline.StepCD)
 	}
 	if system[0].Key != "/home/agent/project" {
 		t.Errorf("system[0].Key = %q, 期望 %q", system[0].Key, "/home/agent/project")
 	}
 
 	// 应包含 env 步骤
-	envSteps := pipeline.SystemSteps()
+	envSteps := pl.SystemSteps()
 	hasEnv := false
 	for _, s := range envSteps {
-		if s.Type == model.StepEnv && s.Key == "FOO" {
+		if s.Type == pipeline.StepEnv && s.Key == "FOO" {
 			hasEnv = true
 			break
 		}
@@ -60,7 +60,7 @@ func TestBuildPipeline_WithWorkingDir(t *testing.T) {
 	// 应包含 file 步骤
 	hasFile := false
 	for _, s := range envSteps {
-		if s.Type == model.StepFile && s.Key == "/tmp/test.txt" {
+		if s.Type == pipeline.StepFile && s.Key == "/tmp/test.txt" {
 			hasFile = true
 			break
 		}
@@ -70,67 +70,67 @@ func TestBuildPipeline_WithWorkingDir(t *testing.T) {
 	}
 
 	// template 层应有 command
-	template := pipeline.TemplateSteps()
-	if len(template) != 1 {
-		t.Fatalf("template 层步骤数 = %d, 期望 1", len(template))
+	tpl := pl.TemplateSteps()
+	if len(tpl) != 1 {
+		t.Fatalf("template 层步骤数 = %d, 期望 1", len(tpl))
 	}
-	if template[0].Value != "claude" {
-		t.Errorf("template[0].Value = %q, 期望 %q", template[0].Value, "claude")
+	if tpl[0].Value != "claude" {
+		t.Errorf("template[0].Value = %q, 期望 %q", tpl[0].Value, "claude")
 	}
-	if template[0].Phase != model.PhaseTemplate {
-		t.Errorf("template[0].Phase = %q, 期望 %q", template[0].Phase, model.PhaseTemplate)
+	if tpl[0].Phase != pipeline.PhaseTemplate {
+		t.Errorf("template[0].Phase = %q, 期望 %q", tpl[0].Phase, pipeline.PhaseTemplate)
 	}
 }
 
 func TestBuildPipeline_NoWorkingDir(t *testing.T) {
 	svc := newTestTmuxService()
-	pipeline := svc.BuildPipeline("", "bash", nil)
+	pl := svc.BuildPipeline("", "bash", nil)
 
 	// 无工作目录时不应有 cd 步骤
-	for _, s := range pipeline {
-		if s.Type == model.StepCD {
+	for _, s := range pl {
+		if s.Type == pipeline.StepCD {
 			t.Error("无工作目录时不应包含 cd 步骤")
 		}
 	}
 
 	// template 层应有 command
-	template := pipeline.TemplateSteps()
-	if len(template) != 1 || template[0].Value != "bash" {
+	tpl := pl.TemplateSteps()
+	if len(tpl) != 1 || tpl[0].Value != "bash" {
 		t.Error("期望包含 bash command 步骤")
 	}
 }
 
 func TestBuildPipeline_NoCommand(t *testing.T) {
 	svc := newTestTmuxService()
-	pipeline := svc.BuildPipeline("/home/agent", "", nil)
+	pl := svc.BuildPipeline("/home/agent", "", nil)
 
 	// 无命令时不应有 template 步骤
-	template := pipeline.TemplateSteps()
-	if len(template) != 0 {
-		t.Errorf("无命令时 template 层步骤数 = %d, 期望 0", len(template))
+	tpl := pl.TemplateSteps()
+	if len(tpl) != 0 {
+		t.Errorf("无命令时 template 层步骤数 = %d, 期望 0", len(tpl))
 	}
 
 	// 应有 cd 步骤
-	if len(pipeline.SystemSteps()) != 1 {
-		t.Errorf("只有工作目录时 system 步骤数 = %d, 期望 1", len(pipeline.SystemSteps()))
+	if len(pl.SystemSteps()) != 1 {
+		t.Errorf("只有工作目录时 system 步骤数 = %d, 期望 1", len(pl.SystemSteps()))
 	}
 }
 
 func TestBuildPipeline_OrderCorrectness(t *testing.T) {
 	svc := newTestTmuxService()
 
-	configs := []model.ConfigItem{
+	configs := []ConfigItem{
 		{Type: "env", Key: "A", Value: "1"},
 		{Type: "file", Key: "/tmp/f", Value: "content"},
 		{Type: "env", Key: "B", Value: "2"},
 	}
 
-	pipeline := svc.BuildPipeline("/home/agent", "claude", configs)
-	sorted := pipeline.Sorted()
+	pl := svc.BuildPipeline("/home/agent", "claude", configs)
+	sorted := pl.Sorted()
 
 	// 验证顺序: cd -> env -> env -> file -> command
-	expectedOrder := []model.PipelineStepType{
-		model.StepCD, model.StepEnv, model.StepEnv, model.StepFile, model.StepCommand,
+	expectedOrder := []pipeline.PipelineStepType{
+		pipeline.StepCD, pipeline.StepEnv, pipeline.StepEnv, pipeline.StepFile, pipeline.StepCommand,
 	}
 	if len(sorted) != len(expectedOrder) {
 		t.Fatalf("步骤数 = %d, 期望 %d", len(sorted), len(expectedOrder))
@@ -144,31 +144,31 @@ func TestBuildPipeline_OrderCorrectness(t *testing.T) {
 
 func TestBuildPipeline_Empty(t *testing.T) {
 	svc := newTestTmuxService()
-	pipeline := svc.BuildPipeline("", "", nil)
-	if len(pipeline) != 0 {
-		t.Errorf("空输入管线步骤数 = %d, 期望 0", len(pipeline))
+	pl := svc.BuildPipeline("", "", nil)
+	if len(pl) != 0 {
+		t.Errorf("空输入管线步骤数 = %d, 期望 0", len(pl))
 	}
 }
 
 func TestBuildPipeline_MultipleEnvsAndFiles(t *testing.T) {
 	svc := newTestTmuxService()
 
-	configs := []model.ConfigItem{
+	configs := []ConfigItem{
 		{Type: "env", Key: "K1", Value: "V1"},
 		{Type: "env", Key: "K2", Value: "V2"},
 		{Type: "file", Key: "/tmp/a.txt", Value: "aaa"},
 		{Type: "file", Key: "/tmp/b.txt", Value: "bbb"},
 	}
 
-	pipeline := svc.BuildPipeline("/home/agent", "bash", configs)
+	pl := svc.BuildPipeline("/home/agent", "bash", configs)
 
 	envCount := 0
 	fileCount := 0
-	for _, s := range pipeline.SystemSteps() {
-		if s.Type == model.StepEnv {
+	for _, s := range pl.SystemSteps() {
+		if s.Type == pipeline.StepEnv {
 			envCount++
 		}
-		if s.Type == model.StepFile {
+		if s.Type == pipeline.StepFile {
 			fileCount++
 		}
 	}
@@ -183,19 +183,19 @@ func TestBuildPipeline_MultipleEnvsAndFiles(t *testing.T) {
 func TestSavePipelineState_WritesFile(t *testing.T) {
 	dir := t.TempDir()
 	svc := &tmuxServiceImpl{
-		stateDir: dir,
-		logger:   logutil.NewNop(),
+		stateRepo: newFileSessionStateRepository(dir),
+		logger:    logutil.NewNop(),
 	}
 
-	pipeline := model.Pipeline{
-		{ID: "sys-cd", Type: model.StepCD, Phase: model.PhaseSystem, Order: 0, Key: "/home/agent"},
+	pl := pipeline.Pipeline{
+		{ID: "sys-cd", Type: pipeline.StepCD, Phase: pipeline.PhaseSystem, Order: 0, Key: "/home/agent"},
 	}
 
 	// 创建 tmux session 以便 CapturePane 和 GetSessionEnv 可以工作
 	// 由于没有真实 tmux，直接调用会失败，但 SavePipelineState 内部会忽略这些错误
 	err := svc.SavePipelineState(SavePipelineStateOptions{
 		SessionName:     "test-session",
-		Pipeline:        pipeline,
+		Pipeline:        pl,
 		RestoreStrategy: "auto",
 	})
 	if err != nil {
@@ -208,7 +208,7 @@ func TestSavePipelineState_WritesFile(t *testing.T) {
 		t.Fatalf("读取状态文件失败: %v", err)
 	}
 
-	var state model.SessionState
+	var state SessionState
 	if err := state.FromJSON(data); err != nil {
 		t.Fatalf("反序列化状态文件失败: %v", err)
 	}
@@ -229,7 +229,7 @@ func TestSavePipelineState_WritesFile(t *testing.T) {
 
 func TestDeleteSessionState(t *testing.T) {
 	dir := t.TempDir()
-	svc := &tmuxServiceImpl{stateDir: dir, logger: logutil.NewNop()}
+	svc := &tmuxServiceImpl{stateRepo: newFileSessionStateRepository(dir), logger: logutil.NewNop()}
 
 	// 先创建文件
 	filePath := filepath.Join(dir, "test.json")
@@ -247,7 +247,7 @@ func TestDeleteSessionState(t *testing.T) {
 
 func TestDeleteSessionState_NotExist(t *testing.T) {
 	dir := t.TempDir()
-	svc := &tmuxServiceImpl{stateDir: dir, logger: logutil.NewNop()}
+	svc := &tmuxServiceImpl{stateRepo: newFileSessionStateRepository(dir), logger: logutil.NewNop()}
 
 	// 删除不存在的文件不应报错
 	err := svc.DeleteSessionState("nonexistent")
@@ -263,8 +263,8 @@ func TestNewTmuxService_StateDir(t *testing.T) {
 		t.Fatal("NewTmuxService 返回 nil")
 	}
 	impl := svc.(*tmuxServiceImpl)
-	if impl.stateDir != "/tmp/test-state" {
-		t.Fatalf("stateDir = %q, want /tmp/test-state", impl.stateDir)
+	if impl.stateRepo == nil {
+		t.Fatal("stateRepo 不应为 nil")
 	}
 }
 

@@ -14,7 +14,7 @@ import (
 	pb "github.com/charviki/maze-cradle/api/gen/maze/v1"
 	"github.com/charviki/maze-cradle/configutil"
 	"github.com/charviki/maze-cradle/logutil"
-	"github.com/charviki/sweetwater-black-ridge/internal/model"
+	"github.com/charviki/maze-cradle/pipeline"
 	"github.com/charviki/sweetwater-black-ridge/internal/service"
 )
 
@@ -105,7 +105,7 @@ func TestValidateSessionConfs_Empty(t *testing.T) {
 }
 
 func TestValidateSessionConfs_NoTemplate(t *testing.T) {
-	configs := []model.ConfigItem{{Type: "env", Key: "FOO", Value: "bar"}}
+	configs := []service.ConfigItem{{Type: "env", Key: "FOO", Value: "bar"}}
 	err := validateSessionConfs(configs, nil)
 	if err == nil {
 		t.Fatal("有配置但无模板应返回错误")
@@ -113,12 +113,12 @@ func TestValidateSessionConfs_NoTemplate(t *testing.T) {
 }
 
 func TestValidateSessionConfs_ValidEnv(t *testing.T) {
-	tpl := &model.SessionTemplate{
+	tpl := &service.SessionTemplate{
 		SessionSchema: configutil.SessionSchema{
 			EnvDefs: []configutil.EnvDef{{Key: "API_KEY"}},
 		},
 	}
-	configs := []model.ConfigItem{{Type: "env", Key: "API_KEY", Value: "secret"}}
+	configs := []service.ConfigItem{{Type: "env", Key: "API_KEY", Value: "secret"}}
 	err := validateSessionConfs(configs, tpl)
 	if err != nil {
 		t.Fatalf("合法 env key 应通过: %v", err)
@@ -126,12 +126,12 @@ func TestValidateSessionConfs_ValidEnv(t *testing.T) {
 }
 
 func TestValidateSessionConfs_InvalidEnv(t *testing.T) {
-	tpl := &model.SessionTemplate{
+	tpl := &service.SessionTemplate{
 		SessionSchema: configutil.SessionSchema{
 			EnvDefs: []configutil.EnvDef{{Key: "API_KEY"}},
 		},
 	}
-	configs := []model.ConfigItem{{Type: "env", Key: "UNAUTHORIZED", Value: "val"}}
+	configs := []service.ConfigItem{{Type: "env", Key: "UNAUTHORIZED", Value: "val"}}
 	err := validateSessionConfs(configs, tpl)
 	if err == nil {
 		t.Fatal("未声明 env key 应被拒绝")
@@ -139,12 +139,12 @@ func TestValidateSessionConfs_InvalidEnv(t *testing.T) {
 }
 
 func TestValidateSessionConfs_ValidFile(t *testing.T) {
-	tpl := &model.SessionTemplate{
+	tpl := &service.SessionTemplate{
 		SessionSchema: configutil.SessionSchema{
 			FileDefs: []configutil.FileDef{{Path: "CLAUDE.md"}},
 		},
 	}
-	configs := []model.ConfigItem{{Type: "file", Key: "CLAUDE.md", Value: "# Instructions"}}
+	configs := []service.ConfigItem{{Type: "file", Key: "CLAUDE.md", Value: "# Instructions"}}
 	err := validateSessionConfs(configs, tpl)
 	if err != nil {
 		t.Fatalf("合法 file path 应通过: %v", err)
@@ -152,12 +152,12 @@ func TestValidateSessionConfs_ValidFile(t *testing.T) {
 }
 
 func TestValidateSessionConfs_InvalidFile(t *testing.T) {
-	tpl := &model.SessionTemplate{
+	tpl := &service.SessionTemplate{
 		SessionSchema: configutil.SessionSchema{
 			FileDefs: []configutil.FileDef{{Path: "CLAUDE.md"}},
 		},
 	}
-	configs := []model.ConfigItem{{Type: "file", Key: "/etc/passwd", Value: "hacked"}}
+	configs := []service.ConfigItem{{Type: "file", Key: "/etc/passwd", Value: "hacked"}}
 	err := validateSessionConfs(configs, tpl)
 	if err == nil {
 		t.Fatal("绝对路径文件应被拒绝")
@@ -165,8 +165,8 @@ func TestValidateSessionConfs_InvalidFile(t *testing.T) {
 }
 
 func TestValidateSessionConfs_UnsupportedType(t *testing.T) {
-	tpl := &model.SessionTemplate{}
-	configs := []model.ConfigItem{{Type: "unknown", Key: "K", Value: "V"}}
+	tpl := &service.SessionTemplate{}
+	configs := []service.ConfigItem{{Type: "unknown", Key: "K", Value: "V"}}
 	err := validateSessionConfs(configs, tpl)
 	if err == nil {
 		t.Fatal("未知类型应被拒绝")
@@ -174,12 +174,12 @@ func TestValidateSessionConfs_UnsupportedType(t *testing.T) {
 }
 
 func TestValidateSessionConfs_FilePathTraversal(t *testing.T) {
-	tpl := &model.SessionTemplate{
+	tpl := &service.SessionTemplate{
 		SessionSchema: configutil.SessionSchema{
 			FileDefs: []configutil.FileDef{{Path: "CLAUDE.md"}},
 		},
 	}
-	configs := []model.ConfigItem{{Type: "file", Key: "../secret", Value: "data"}}
+	configs := []service.ConfigItem{{Type: "file", Key: "../secret", Value: "data"}}
 	err := validateSessionConfs(configs, tpl)
 	if err == nil {
 		t.Fatal("路径遍历文件应被拒绝")
@@ -189,9 +189,9 @@ func TestValidateSessionConfs_FilePathTraversal(t *testing.T) {
 // --- gRPC 方法测试（使用 mock TmuxService）---
 
 type mockTmuxService struct {
-	sessions     []model.Session
-	sessionState *model.SessionState
-	created      *model.Session
+	sessions     []service.Session
+	sessionState *service.SessionState
+	created      *service.Session
 	killed       string
 	workspace    string
 	stateDeleted string
@@ -199,15 +199,15 @@ type mockTmuxService struct {
 	createErr    error
 }
 
-func (m *mockTmuxService) ListSessions() ([]model.Session, error) {
+func (m *mockTmuxService) ListSessions() ([]service.Session, error) {
 	return m.sessions, nil
 }
 
-func (m *mockTmuxService) CreateSession(opts service.CreateSessionOptions) (*model.Session, error) {
+func (m *mockTmuxService) CreateSession(opts service.CreateSessionOptions) (*service.Session, error) {
 	if m.createErr != nil {
 		return nil, m.createErr
 	}
-	m.created = &model.Session{ID: opts.Name, Name: opts.Name, Status: "running", CreatedAt: "2026-01-01T00:00:00Z"}
+	m.created = &service.Session{ID: opts.Name, Name: opts.Name, Status: "running", CreatedAt: "2026-01-01T00:00:00Z"}
 	return m.created, nil
 }
 
@@ -216,7 +216,7 @@ func (m *mockTmuxService) KillSession(name string) error {
 	return nil
 }
 
-func (m *mockTmuxService) GetSession(name string) (*model.Session, error) {
+func (m *mockTmuxService) GetSession(name string) (*service.Session, error) {
 	for _, s := range m.sessions {
 		if s.ID == name {
 			return &s, nil
@@ -249,11 +249,11 @@ func (m *mockTmuxService) GetSessionEnv(name string) (map[string]string, error) 
 	return map[string]string{"PATH": "/usr/bin"}, nil
 }
 
-func (m *mockTmuxService) ExecutePipeline(sessionName string, pipeline model.Pipeline) error {
+func (m *mockTmuxService) ExecutePipeline(sessionName string, pipeline pipeline.Pipeline) error {
 	return nil
 }
 
-func (m *mockTmuxService) BuildPipeline(workingDir, command string, configs []model.ConfigItem) model.Pipeline {
+func (m *mockTmuxService) BuildPipeline(workingDir, command string, configs []service.ConfigItem) pipeline.Pipeline {
 	return nil
 }
 
@@ -265,11 +265,11 @@ func (m *mockTmuxService) SaveAllPipelineStates() error {
 	return m.saveAllErr
 }
 
-func (m *mockTmuxService) GetSavedSessions() ([]model.SessionState, error) {
+func (m *mockTmuxService) GetSavedSessions() ([]service.SessionState, error) {
 	return nil, nil
 }
 
-func (m *mockTmuxService) GetSessionState(sessionName string) (*model.SessionState, error) {
+func (m *mockTmuxService) GetSessionState(sessionName string) (*service.SessionState, error) {
 	if m.sessionState != nil {
 		return m.sessionState, nil
 	}
@@ -292,7 +292,7 @@ func (m *mockTmuxService) DeleteSessionState(sessionName string) error {
 
 func newTestServer(t *testing.T, mock *mockTmuxService) *Server {
 	t.Helper()
-	templateStore := model.NewTemplateStore(
+	templateStore := service.NewTemplateStore(
 		filepath.Join(t.TempDir(), "templates.json"),
 		logutil.NewNop(),
 	)
@@ -300,6 +300,7 @@ func newTestServer(t *testing.T, mock *mockTmuxService) *Server {
 		mock,
 		service.NewLocalConfigStore(t.TempDir(), logutil.NewNop()),
 		templateStore,
+		service.NewConfigFileService(),
 		"/home/agent",
 		logutil.NewNop(),
 	)
@@ -307,7 +308,7 @@ func newTestServer(t *testing.T, mock *mockTmuxService) *Server {
 
 func TestListSessions(t *testing.T) {
 	mock := &mockTmuxService{
-		sessions: []model.Session{
+		sessions: []service.Session{
 			{ID: "s1", Name: "session-1", Status: "running"},
 		},
 	}
@@ -410,7 +411,7 @@ func TestCreateSession_TemplateNotFound(t *testing.T) {
 
 func TestGetSession_Found(t *testing.T) {
 	mock := &mockTmuxService{
-		sessions: []model.Session{
+		sessions: []service.Session{
 			{ID: "s1", Name: "session-1", Status: "running"},
 		},
 	}
@@ -426,7 +427,7 @@ func TestGetSession_Found(t *testing.T) {
 }
 
 func TestGetSession_NotFound(t *testing.T) {
-	mock := &mockTmuxService{sessions: []model.Session{}}
+	mock := &mockTmuxService{sessions: []service.Session{}}
 	srv := newTestServer(t, mock)
 
 	_, err := srv.GetSession(context.Background(), &pb.GetSessionRequest{Id: "missing"})

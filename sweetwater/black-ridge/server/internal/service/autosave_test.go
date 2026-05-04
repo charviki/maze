@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/charviki/maze-cradle/logutil"
-	"github.com/charviki/sweetwater-black-ridge/internal/model"
+	"github.com/charviki/maze-cradle/pipeline"
 )
 
 func TestGetSavedSessions_EmptyDir(t *testing.T) {
 	dir := t.TempDir()
-	svc := &tmuxServiceImpl{stateDir: dir, logger: logutil.NewNop()}
+	svc := &tmuxServiceImpl{stateRepo: newFileSessionStateRepository(dir), logger: logutil.NewNop()}
 
 	states, err := svc.GetSavedSessions()
 	if err != nil {
@@ -24,7 +24,7 @@ func TestGetSavedSessions_EmptyDir(t *testing.T) {
 }
 
 func TestGetSavedSessions_NonexistentDir(t *testing.T) {
-	svc := &tmuxServiceImpl{stateDir: "/tmp/nonexistent-dir-12345", logger: logutil.NewNop()}
+	svc := &tmuxServiceImpl{stateRepo: newFileSessionStateRepository("/tmp/nonexistent-dir-12345"), logger: logutil.NewNop()}
 
 	states, err := svc.GetSavedSessions()
 	if err != nil {
@@ -37,18 +37,18 @@ func TestGetSavedSessions_NonexistentDir(t *testing.T) {
 
 func TestGetSavedSessions_WithFiles(t *testing.T) {
 	dir := t.TempDir()
-	svc := &tmuxServiceImpl{stateDir: dir}
+	svc := &tmuxServiceImpl{stateRepo: newFileSessionStateRepository(dir)}
 
 	// 写入两个状态文件
-	state1 := model.SessionState{
+	state1 := SessionState{
 		SessionName:     "session-a",
-		Pipeline:        model.Pipeline{{ID: "sys-cd", Type: model.StepCD, Phase: model.PhaseSystem, Order: 0, Key: "/home/agent"}},
+		Pipeline:        pipeline.Pipeline{{ID: "sys-cd", Type: pipeline.StepCD, Phase: pipeline.PhaseSystem, Order: 0, Key: "/home/agent"}},
 		RestoreStrategy: "auto",
 		SavedAt:         time.Now().Format(time.RFC3339),
 	}
-	state2 := model.SessionState{
+	state2 := SessionState{
 		SessionName:     "session-b",
-		Pipeline:        model.Pipeline{{ID: "tpl-cmd", Type: model.StepCommand, Phase: model.PhaseTemplate, Order: 0, Value: "bash"}},
+		Pipeline:        pipeline.Pipeline{{ID: "tpl-cmd", Type: pipeline.StepCommand, Phase: pipeline.PhaseTemplate, Order: 0, Value: "bash"}},
 		RestoreStrategy: "manual",
 		SavedAt:         time.Now().Format(time.RFC3339),
 	}
@@ -81,13 +81,13 @@ func TestGetSavedSessions_WithFiles(t *testing.T) {
 
 func TestGetSavedSessions_IgnoresInvalidJSON(t *testing.T) {
 	dir := t.TempDir()
-	svc := &tmuxServiceImpl{stateDir: dir}
+	svc := &tmuxServiceImpl{stateRepo: newFileSessionStateRepository(dir)}
 
 	// 写入一个无效 JSON 文件
 	os.WriteFile(filepath.Join(dir, "bad.json"), []byte("not json"), 0644)
 
 	// 写入一个有效文件
-	state := model.SessionState{
+	state := SessionState{
 		SessionName:     "good-session",
 		RestoreStrategy: "auto",
 		SavedAt:         time.Now().Format(time.RFC3339),
@@ -109,16 +109,16 @@ func TestGetSavedSessions_IgnoresInvalidJSON(t *testing.T) {
 
 func TestSavePipelineState_FileContent(t *testing.T) {
 	dir := t.TempDir()
-	svc := &tmuxServiceImpl{stateDir: dir}
+	svc := &tmuxServiceImpl{stateRepo: newFileSessionStateRepository(dir)}
 
-	pipeline := model.Pipeline{
-		{ID: "sys-cd", Type: model.StepCD, Phase: model.PhaseSystem, Order: 0, Key: "/home/agent"},
-		{ID: "tpl-cmd", Type: model.StepCommand, Phase: model.PhaseTemplate, Order: 1, Value: "claude --dangerously-skip-permissions"},
+	pl := pipeline.Pipeline{
+		{ID: "sys-cd", Type: pipeline.StepCD, Phase: pipeline.PhaseSystem, Order: 0, Key: "/home/agent"},
+		{ID: "tpl-cmd", Type: pipeline.StepCommand, Phase: pipeline.PhaseTemplate, Order: 1, Value: "claude --dangerously-skip-permissions"},
 	}
 
 	err := svc.SavePipelineState(SavePipelineStateOptions{
 		SessionName:     "my-session",
-		Pipeline:        pipeline,
+		Pipeline:        pl,
 		RestoreStrategy: "auto",
 	})
 	if err != nil {
@@ -130,7 +130,7 @@ func TestSavePipelineState_FileContent(t *testing.T) {
 		t.Fatalf("读取状态文件失败: %v", err)
 	}
 
-	var state model.SessionState
+	var state SessionState
 	if err := state.FromJSON(data); err != nil {
 		t.Fatalf("反序列化失败: %v", err)
 	}

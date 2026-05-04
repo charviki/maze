@@ -1,12 +1,16 @@
-package model
+package service
 
-import "encoding/json"
+import (
+	"encoding/json"
 
-// SessionState Session 状态快照，用于持久化和恢复
+	"github.com/charviki/maze-cradle/pipeline"
+)
+
+// SessionState 记录一个会话的管线配置和环境快照，用于跨重启恢复
 type SessionState struct {
 	SessionName      string            `json:"session_name"`
-	Pipeline         Pipeline          `json:"pipeline"`
-	RestoreStrategy  string            `json:"restore_strategy"` // auto / manual
+	Pipeline         pipeline.Pipeline `json:"pipeline"`
+	RestoreStrategy  string            `json:"restore_strategy"`
 	RestoreCommand   string            `json:"restore_command,omitempty"`
 	WorkingDir       string            `json:"working_dir"`
 	TemplateID       string            `json:"template_id,omitempty"`
@@ -16,12 +20,12 @@ type SessionState struct {
 	SavedAt          string            `json:"saved_at"`
 }
 
-// ToJSON 将 SessionState 序列化为美化格式的 JSON 字节
+// ToJSON 将 SessionState 序列化为格式化 JSON
 func (s *SessionState) ToJSON() ([]byte, error) {
 	return json.MarshalIndent(s, "", "  ")
 }
 
-// FromJSON 从 JSON 字节反序列化 SessionState
+// FromJSON 从 JSON 数据反序列化填充 SessionState
 func (s *SessionState) FromJSON(data []byte) error {
 	return json.Unmarshal(data, s)
 }

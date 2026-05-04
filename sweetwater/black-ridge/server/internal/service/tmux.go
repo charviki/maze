@@ -13,10 +13,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/charviki/maze-cradle/configutil"
 	"github.com/charviki/maze-cradle/logutil"
+	"github.com/charviki/maze-cradle/pipeline"
 	"github.com/charviki/sweetwater-black-ridge/internal/config"
-	"github.com/charviki/sweetwater-black-ridge/internal/model"
 	"github.com/creack/pty/v2"
 )
 
@@ -45,7 +44,7 @@ type CreateSessionOptions struct {
 	Name            string
 	Command         string
 	WorkingDir      string
-	Configs         []model.ConfigItem
+	Configs         []ConfigItem
 	RestoreStrategy string
 	TemplateID      string
 	RestoreCommand  string
@@ -55,7 +54,7 @@ type CreateSessionOptions struct {
 // 与 CreateSessionOptions 同理，降低方法签名耦合。
 type SavePipelineStateOptions struct {
 	SessionName     string
-	Pipeline        model.Pipeline
+	Pipeline        pipeline.Pipeline
 	RestoreStrategy string
 	TemplateID      string
 	CLISessionID    string
@@ -64,9 +63,9 @@ type SavePipelineStateOptions struct {
 
 // SessionManager 管理 session 的完整生命周期（创建、查询、终止、恢复、销毁）
 type SessionManager interface {
-	ListSessions() ([]model.Session, error)
-	GetSession(name string) (*model.Session, error)
-	CreateSession(opts CreateSessionOptions) (*model.Session, error)
+	ListSessions() ([]Session, error)
+	GetSession(name string) (*Session, error)
+	CreateSession(opts CreateSessionOptions) (*Session, error)
 	KillSession(name string) error
 	RestoreSession(name string) error
 	DeleteSessionWorkspace(sessionName string, workspaceRoot string) error
@@ -75,8 +74,8 @@ type SessionManager interface {
 
 // PipelineExecutor 负责管线构建与执行
 type PipelineExecutor interface {
-	BuildPipeline(workingDir string, command string, configs []model.ConfigItem) model.Pipeline
-	ExecutePipeline(sessionName string, pipeline model.Pipeline) error
+	BuildPipeline(workingDir string, command string, configs []ConfigItem) pipeline.Pipeline
+	ExecutePipeline(sessionName string, pipeline pipeline.Pipeline) error
 }
 
 // TerminalController 控制终端的输入输出与尺寸
@@ -92,8 +91,8 @@ type TerminalController interface {
 type SessionStateStore interface {
 	SavePipelineState(opts SavePipelineStateOptions) error
 	SaveAllPipelineStates() error
-	GetSavedSessions() ([]model.SessionState, error)
-	GetSessionState(sessionName string) (*model.SessionState, error)
+	GetSavedSessions() ([]SessionState, error)
+	GetSessionState(sessionName string) (*SessionState, error)
 }
 
 // TmuxService 聚合所有子接口，作为外部依赖注入的唯一入口。
@@ -123,7 +122,7 @@ func (n *noopTrustBootstrapper) TrustDir(_ string) error { return nil }
 type tmuxServiceImpl struct {
 	socketPath        string
 	defaultShell      string
-	stateDir          string
+	stateRepo         SessionStateRepository
 	logger            logutil.Logger
 	trustBootstrapper TrustBootstrapper
 	saveMu            sync.Mutex
@@ -140,7 +139,7 @@ func NewTmuxService(cfg *config.TmuxConfig, stateDir string, logger logutil.Logg
 	return &tmuxServiceImpl{
 		socketPath:        cfg.SocketPath,
 		defaultShell:      cfg.DefaultShell,
-		stateDir:          stateDir,
+		stateRepo:         newFileSessionStateRepository(stateDir),
 		logger:            logger,
 		trustBootstrapper: tb,
 	}
@@ -170,16 +169,16 @@ func (s *tmuxServiceImpl) runTmux(args ...string) (string, error) {
 }
 
 // ListSessions 列出所有 tmux 会话。tmux server 未启动或无 session 时返回空列表而非报错
-func (s *tmuxServiceImpl) ListSessions() ([]model.Session, error) {
+func (s *tmuxServiceImpl) ListSessions() ([]Session, error) {
 	out, err := s.runTmux("list-sessions", "-F", "#{session_name}::#{session_created}::#{session_windows}")
 	if err != nil {
 		if strings.Contains(out, "no server running") || strings.Contains(out, "no sessions") || strings.Contains(strings.ToLower(out), "no such file or directory") {
-			return []model.Session{}, nil
+			return []Session{}, nil
 		}
 		return nil, fmt.Errorf("list sessions: %s", strings.TrimSpace(out))
 	}
 
-	var sessions []model.Session
+	var sessions []Session
 	lines := strings.Split(strings.TrimSpace(out), "\n")
 	for _, line := range lines {
 		if line == "" {
@@ -191,7 +190,7 @@ func (s *tmuxServiceImpl) ListSessions() ([]model.Session, error) {
 		}
 		createdUnix, _ := strconv.ParseInt(parts[1], 10, 64)
 		windowCount, _ := strconv.Atoi(parts[2])
-		sessions = append(sessions, model.Session{
+		sessions = append(sessions, Session{
 			ID:          parts[0],
 			Name:        parts[0],
 			Status:      "running",
@@ -206,16 +205,16 @@ func (s *tmuxServiceImpl) ListSessions() ([]model.Session, error) {
 // system 层: cd + env + file (由系统根据 session 配置自动生成)
 // template 层: command (模板定义的启动命令)
 // user 层: 无 (用户自定义命令由前端直接传入 pipeline)
-func (s *tmuxServiceImpl) BuildPipeline(workingDir string, command string, configs []model.ConfigItem) model.Pipeline {
-	var pipeline model.Pipeline
+func (s *tmuxServiceImpl) BuildPipeline(workingDir string, command string, configs []ConfigItem) pipeline.Pipeline {
+	var pl pipeline.Pipeline
 	order := 0
 
 	// system 层: cd 到工作目录
 	if workingDir != "" {
-		pipeline = append(pipeline, model.PipelineStep{
+		pl = append(pl, pipeline.PipelineStep{
 			ID:    "sys-cd",
-			Type:  model.StepCD,
-			Phase: model.PhaseSystem,
+			Type:  pipeline.StepCD,
+			Phase: pipeline.PhaseSystem,
 			Order: order,
 			Key:   workingDir,
 			Value: "",
@@ -226,10 +225,10 @@ func (s *tmuxServiceImpl) BuildPipeline(workingDir string, command string, confi
 	// system 层: 环境变量
 	for _, cfg := range configs {
 		if cfg.Type == "env" {
-			pipeline = append(pipeline, model.PipelineStep{
+			pl = append(pl, pipeline.PipelineStep{
 				ID:    "sys-env-" + cfg.Key,
-				Type:  model.StepEnv,
-				Phase: model.PhaseSystem,
+				Type:  pipeline.StepEnv,
+				Phase: pipeline.PhaseSystem,
 				Order: order,
 				Key:   cfg.Key,
 				Value: cfg.Value,
@@ -241,10 +240,10 @@ func (s *tmuxServiceImpl) BuildPipeline(workingDir string, command string, confi
 	// system 层: 配置文件
 	for _, cfg := range configs {
 		if cfg.Type == "file" {
-			pipeline = append(pipeline, model.PipelineStep{
+			pl = append(pl, pipeline.PipelineStep{
 				ID:    "sys-file-" + cfg.Key,
-				Type:  model.StepFile,
-				Phase: model.PhaseSystem,
+				Type:  pipeline.StepFile,
+				Phase: pipeline.PhaseSystem,
 				Order: order,
 				Key:   cfg.Key,
 				Value: cfg.Value,
@@ -255,28 +254,27 @@ func (s *tmuxServiceImpl) BuildPipeline(workingDir string, command string, confi
 
 	// template 层: 启动命令
 	if command != "" {
-		pipeline = append(pipeline, model.PipelineStep{
+		pl = append(pl, pipeline.PipelineStep{
 			ID:    "tpl-command",
-			Type:  model.StepCommand,
-			Phase: model.PhaseTemplate,
+			Type:  pipeline.StepCommand,
+			Phase: pipeline.PhaseTemplate,
 			Order: order,
 			Key:   "",
 			Value: command,
 		})
 	}
 
-	return pipeline
+	return pl
 }
 
 // ExecutePipeline 按 order 顺序执行管线步骤，每个步骤通过 tmux send-keys 注入。
 // env/file 步骤涉及敏感值，执行前关闭 shell 回显防止泄露到终端。
-func (s *tmuxServiceImpl) ExecutePipeline(sessionName string, pipeline model.Pipeline) error {
-	sorted := pipeline.Sorted()
+func (s *tmuxServiceImpl) ExecutePipeline(sessionName string, pipe pipeline.Pipeline) error {
+	sorted := pipe.Sorted()
 
-	// 检测是否包含敏感步骤（env/file），需要临时关闭回显
 	hasSensitiveSteps := false
 	for _, step := range sorted {
-		if step.Type == model.StepEnv || step.Type == model.StepFile {
+		if step.Type == pipeline.StepEnv || step.Type == pipeline.StepFile {
 			hasSensitiveSteps = true
 			break
 		}
@@ -294,21 +292,21 @@ func (s *tmuxServiceImpl) ExecutePipeline(sessionName string, pipeline model.Pip
 
 	for _, step := range sorted {
 		// 在第一个敏感步骤前关闭回显，防止 token 等敏感值泄露到终端
-		if !echoDisabled && hasSensitiveSteps && (step.Type == model.StepEnv || step.Type == model.StepFile) {
+		if !echoDisabled && hasSensitiveSteps && (step.Type == pipeline.StepEnv || step.Type == pipeline.StepFile) {
 			_ = s.SendKeys(sessionName, "stty -echo")
 			_ = s.waitForPrompt(sessionName)
 			echoDisabled = true
 		}
 
 		// command 步骤前恢复回显，用户需要看到命令输出
-		if echoDisabled && step.Type == model.StepCommand {
+		if echoDisabled && step.Type == pipeline.StepCommand {
 			_ = s.SendKeys(sessionName, "stty echo")
 			_ = s.waitForPrompt(sessionName)
 			echoDisabled = false
 		}
 
 		switch step.Type {
-		case model.StepCD:
+		case pipeline.StepCD:
 			dir := step.Key
 			if dir == "" {
 				dir = step.Value
@@ -320,7 +318,7 @@ func (s *tmuxServiceImpl) ExecutePipeline(sessionName string, pipeline model.Pip
 				return fmt.Errorf("pipeline cd wait: %w", err)
 			}
 
-		case model.StepEnv:
+		case pipeline.StepEnv:
 			if _, err := s.runTmux("set-environment", "-t", sessionName, step.Key, step.Value); err != nil {
 				return fmt.Errorf("pipeline env tmux set: %w", err)
 			}
@@ -332,7 +330,7 @@ func (s *tmuxServiceImpl) ExecutePipeline(sessionName string, pipeline model.Pip
 				return fmt.Errorf("pipeline env wait: %w", err)
 			}
 
-		case model.StepFile:
+		case pipeline.StepFile:
 			dir := filepath.Dir(step.Key)
 			if dir != "." && dir != "" {
 				expanded := s.expandPath(dir)
@@ -352,7 +350,7 @@ func (s *tmuxServiceImpl) ExecutePipeline(sessionName string, pipeline model.Pip
 				return fmt.Errorf("pipeline file write wait: %w", err)
 			}
 
-		case model.StepCommand:
+		case pipeline.StepCommand:
 			if err := s.SendKeys(sessionName, step.Value); err != nil {
 				return fmt.Errorf("pipeline command send: %w", err)
 			}
@@ -369,7 +367,7 @@ func (s *tmuxServiceImpl) ExecutePipeline(sessionName string, pipeline model.Pip
 // 4. 为 command 步骤中的 {session_id} 占位符填充预生成的 UUID
 // 5. ExecutePipeline 按顺序执行所有步骤
 // 6. SavePipelineState 保存管线状态到本地文件
-func (s *tmuxServiceImpl) CreateSession(opts CreateSessionOptions) (*model.Session, error) {
+func (s *tmuxServiceImpl) CreateSession(opts CreateSessionOptions) (*Session, error) {
 	name := opts.Name
 	command := opts.Command
 	workingDir := opts.WorkingDir
@@ -392,7 +390,7 @@ func (s *tmuxServiceImpl) CreateSession(opts CreateSessionOptions) (*model.Sessi
 		return nil, fmt.Errorf("wait for shell init: %w", err)
 	}
 
-	pipeline := s.BuildPipeline(workingDir, command, configs)
+	pl := s.BuildPipeline(workingDir, command, configs)
 
 	// 修改 ~/.claude.json 的 projects 字段，将工作目录标记为已信任
 	if workingDir != "" {
@@ -404,13 +402,13 @@ func (s *tmuxServiceImpl) CreateSession(opts CreateSessionOptions) (*model.Sessi
 	// 为 command 步骤中的 {session_id} 占位符生成并填充 UUID，
 	// 使 Claude CLI 启动时通过 --session-id 携带已知 ID，恢复时可用 --resume 引用同一 ID。
 	cliSessionID := generateUUID()
-	for i := range pipeline {
-		if pipeline[i].Type == model.StepCommand && strings.Contains(pipeline[i].Value, "{session_id}") {
-			pipeline[i].Value = strings.ReplaceAll(pipeline[i].Value, "{session_id}", cliSessionID)
+	for i := range pl {
+		if pl[i].Type == pipeline.StepCommand && strings.Contains(pl[i].Value, "{session_id}") {
+			pl[i].Value = strings.ReplaceAll(pl[i].Value, "{session_id}", cliSessionID)
 		}
 	}
 
-	if err := s.ExecutePipeline(name, pipeline); err != nil {
+	if err := s.ExecutePipeline(name, pl); err != nil {
 		// 管线执行失败，回滚：终止 session 并清理状态文件
 		_ = s.KillSession(name)
 		_ = s.DeleteSessionState(name)
@@ -423,7 +421,7 @@ func (s *tmuxServiceImpl) CreateSession(opts CreateSessionOptions) (*model.Sessi
 	}
 	if err := s.SavePipelineState(SavePipelineStateOptions{
 		SessionName:     name,
-		Pipeline:        pipeline,
+		Pipeline:        pl,
 		RestoreStrategy: restoreStrategy,
 		TemplateID:      templateID,
 		CLISessionID:    cliSessionID,
@@ -516,7 +514,7 @@ func (s *tmuxServiceImpl) KillSession(name string) error {
 }
 
 // GetSession 通过名称查找会话，不存在时返回 ErrSessionNotFound
-func (s *tmuxServiceImpl) GetSession(name string) (*model.Session, error) {
+func (s *tmuxServiceImpl) GetSession(name string) (*Session, error) {
 	sessions, err := s.ListSessions()
 	if err != nil {
 		return nil, err
@@ -637,60 +635,34 @@ func (s *tmuxServiceImpl) SavePipelineState(opts SavePipelineStateOptions) error
 	s.saveMu.Lock()
 	defer s.saveMu.Unlock()
 
-	return s.savePipelineStateLocked(opts.SessionName, opts.Pipeline, opts.RestoreStrategy, opts.TemplateID, opts.CLISessionID, opts.RestoreCommand)
-}
-
-// savePipelineStateLocked 在持有 saveMu 时写入单个 session 状态。
-// SaveAllPipelineStates 需要批量保存多个 session，若继续调用带锁的 SavePipelineState 会自锁卡死。
-func (s *tmuxServiceImpl) savePipelineStateLocked(sessionName string, pipeline model.Pipeline, restoreStrategy string, templateID string, cliSessionID string, restoreCommand string) error {
-
-	if err := os.MkdirAll(s.stateDir, 0750); err != nil {
-		return fmt.Errorf("create state dir: %w", err)
-	}
-
-	// 捕获环境变量快照（忽略错误，session 可能已退出）
-	envSnapshot, _ := s.GetSessionEnv(sessionName)
+	envSnapshot, _ := s.GetSessionEnv(opts.SessionName)
 	if envSnapshot == nil {
 		envSnapshot = make(map[string]string)
 	}
+	terminalSnapshot, _ := s.CapturePane(opts.SessionName, terminalSnapshotLines)
 
-	// 捕获终端快照（忽略错误）
-	terminalSnapshot, _ := s.CapturePane(sessionName, terminalSnapshotLines)
-
-	// 从 pipeline 的 cd 步骤中提取工作目录，恢复时需要正确 cd 到此目录
 	var workingDir string
-	for _, step := range pipeline {
-		if step.Type == model.StepCD {
+	for _, step := range opts.Pipeline {
+		if step.Type == pipeline.StepCD {
 			workingDir = step.Key
 			break
 		}
 	}
 
-	state := model.SessionState{
-		SessionName:      sessionName,
-		Pipeline:         pipeline,
-		RestoreStrategy:  restoreStrategy,
-		RestoreCommand:   restoreCommand,
+	state := &SessionState{
+		SessionName:      opts.SessionName,
+		Pipeline:         opts.Pipeline,
+		RestoreStrategy:  opts.RestoreStrategy,
+		RestoreCommand:   opts.RestoreCommand,
 		WorkingDir:       workingDir,
-		TemplateID:       templateID,
-		CLISessionID:     cliSessionID,
+		TemplateID:       opts.TemplateID,
+		CLISessionID:     opts.CLISessionID,
 		EnvSnapshot:      envSnapshot,
 		TerminalSnapshot: terminalSnapshot,
 		SavedAt:          time.Now().Format(time.RFC3339),
 	}
 
-	data, err := state.ToJSON()
-	if err != nil {
-		return fmt.Errorf("serialize state: %w", err)
-	}
-
-	filePath := filepath.Join(s.stateDir, sessionName+".json")
-	// 使用原子写入防止写入过程中崩溃导致状态文件损坏
-	if err := configutil.AtomicWriteFile(filePath, data, 0644); err != nil {
-		return fmt.Errorf("write state file: %w", err)
-	}
-
-	return nil
+	return s.stateRepo.Save(state)
 }
 
 // SaveAllPipelineStates 遍历所有活跃 session，批量保存管线状态
@@ -709,30 +681,25 @@ func (s *tmuxServiceImpl) SaveAllPipelineStates() error {
 	}
 
 	for _, sess := range sessions {
-		stateFile := filepath.Join(s.stateDir, sess.Name+".json")
-		var pipeline model.Pipeline
-		restoreStrategy := "auto"
-		var templateID string
-		var cliSessionID string
-		var restoreCommand string
-
-		if data, err := os.ReadFile(filepath.Clean(stateFile)); err == nil {
-			var existing model.SessionState
-			if err := existing.FromJSON(data); err == nil {
-				pipeline = existing.Pipeline
-				restoreStrategy = existing.RestoreStrategy
-				templateID = existing.TemplateID
-				cliSessionID = existing.CLISessionID
-				restoreCommand = existing.RestoreCommand
-			}
+		existing, err := s.stateRepo.Load(sess.Name)
+		if err != nil {
+			continue
 		}
-
-		if len(pipeline) == 0 {
+		if len(existing.Pipeline) == 0 {
 			continue
 		}
 
-		// 这里已经持有 saveMu，必须调用无锁版本，否则会递归加锁导致删除/保存接口一直阻塞。
-		if err := s.savePipelineStateLocked(sess.Name, pipeline, restoreStrategy, templateID, cliSessionID, restoreCommand); err != nil {
+		envSnapshot, _ := s.GetSessionEnv(sess.Name)
+		if envSnapshot == nil {
+			envSnapshot = make(map[string]string)
+		}
+		terminalSnapshot, _ := s.CapturePane(sess.Name, terminalSnapshotLines)
+
+		existing.EnvSnapshot = envSnapshot
+		existing.TerminalSnapshot = terminalSnapshot
+		existing.SavedAt = time.Now().Format(time.RFC3339)
+
+		if err := s.stateRepo.Save(existing); err != nil {
 			s.logger.Errorf("[tmux] save pipeline state for session %s failed: %v", sess.Name, err)
 		}
 	}
@@ -740,17 +707,13 @@ func (s *tmuxServiceImpl) SaveAllPipelineStates() error {
 	return nil
 }
 
-// GetSavedSessions 返回 /home/agent/.session-state/ 下所有已保存 session 的列表
-func (s *tmuxServiceImpl) GetSavedSessions() ([]model.SessionState, error) {
-	entries, err := os.ReadDir(s.stateDir)
+// GetSavedSessions 返回所有已保存 session 的列表
+func (s *tmuxServiceImpl) GetSavedSessions() ([]SessionState, error) {
+	states, err := s.stateRepo.List()
 	if err != nil {
-		if os.IsNotExist(err) {
-			return []model.SessionState{}, nil
-		}
-		return nil, fmt.Errorf("read state dir: %w", err)
+		return nil, err
 	}
 
-	// 获取当前活跃的 session 列表，用于标记状态
 	activeSessions, err := s.ListSessions()
 	if err != nil {
 		s.logger.Errorf("[tmux] list sessions for saved states check failed: %v", err)
@@ -760,31 +723,10 @@ func (s *tmuxServiceImpl) GetSavedSessions() ([]model.SessionState, error) {
 		activeSet[sess.Name] = true
 	}
 
-	var states []model.SessionState
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
-			continue
+	for i := range states {
+		if activeSet[states[i].SessionName] {
+			states[i].RestoreStrategy = "running"
 		}
-		// 跳过非 session state 文件（如 templates.json）
-		if entry.Name() == "templates.json" {
-			continue
-		}
-		data, err := os.ReadFile(filepath.Join(s.stateDir, entry.Name()))
-		if err != nil {
-			continue
-		}
-		var state model.SessionState
-		if err := state.FromJSON(data); err != nil {
-			continue
-		}
-		if state.SessionName == "" {
-			continue
-		}
-		// 如果 tmux session 仍然活跃，标记为 running
-		if activeSet[state.SessionName] {
-			state.RestoreStrategy = "running"
-		}
-		states = append(states, state)
 	}
 
 	return states, nil
@@ -794,15 +736,9 @@ func (s *tmuxServiceImpl) GetSavedSessions() ([]model.SessionState, error) {
 // 使用 ExecutePipeline 统一执行 env/file/cd 步骤（literal mode + waitForPrompt），
 // 单独处理 command 步骤以支持 {session_id} 替换。
 func (s *tmuxServiceImpl) RestoreSession(sessionName string) error {
-	stateFile := filepath.Join(s.stateDir, sessionName+".json")
-	data, err := os.ReadFile(filepath.Clean(stateFile))
+	state, err := s.stateRepo.Load(sessionName)
 	if err != nil {
 		return fmt.Errorf("read state file: %w", err)
-	}
-
-	var state model.SessionState
-	if err := state.FromJSON(data); err != nil {
-		return fmt.Errorf("parse state file: %w", err)
 	}
 
 	s.logger.Infof("[restore] restoring session: %s (strategy=%s, template=%s, cli_sid=%s)",
@@ -825,10 +761,10 @@ func (s *tmuxServiceImpl) RestoreSession(sessionName string) error {
 
 	// 优先使用模板定义的 RestoreCommand（含 --dangerously-skip-permissions 等恢复专用标志），
 	// 降级到 pipeline 中的 command 步骤（向后兼容旧状态文件）
-	var nonCommandSteps model.Pipeline
+	var nonCommandSteps pipeline.Pipeline
 	var pipelineCmd string
 	for _, step := range state.Pipeline {
-		if step.Type == model.StepCommand {
+		if step.Type == pipeline.StepCommand {
 			pipelineCmd = step.Value
 		} else {
 			nonCommandSteps = append(nonCommandSteps, step)
@@ -867,7 +803,7 @@ func (s *tmuxServiceImpl) RestoreSession(sessionName string) error {
 // DeleteSessionWorkspace 删除 session 实际使用的工作目录。
 // 目录来源以状态文件快照为准，避免仅靠 session 名猜目录导致误删。
 func (s *tmuxServiceImpl) DeleteSessionWorkspace(sessionName string, workspaceRoot string) error {
-	state, err := s.loadSessionState(sessionName)
+	state, err := s.stateRepo.Load(sessionName)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil
@@ -893,30 +829,12 @@ func (s *tmuxServiceImpl) DeleteSessionWorkspace(sessionName string, workspaceRo
 
 // DeleteSessionState 删除指定 session 的状态文件
 func (s *tmuxServiceImpl) DeleteSessionState(sessionName string) error {
-	stateFile := filepath.Join(s.stateDir, sessionName+".json")
-	if err := os.Remove(stateFile); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("delete state file: %w", err)
-	}
-	return nil
-}
-
-func (s *tmuxServiceImpl) loadSessionState(sessionName string) (*model.SessionState, error) {
-	stateFile := filepath.Join(s.stateDir, sessionName+".json")
-	data, err := os.ReadFile(filepath.Clean(stateFile))
-	if err != nil {
-		return nil, err
-	}
-
-	var state model.SessionState
-	if err := state.FromJSON(data); err != nil {
-		return nil, fmt.Errorf("parse state file: %w", err)
-	}
-	return &state, nil
+	return s.stateRepo.Delete(sessionName)
 }
 
 // GetSessionState 返回单个 session 的已保存状态快照，供配置查看接口定位工作目录与模板信息。
-func (s *tmuxServiceImpl) GetSessionState(sessionName string) (*model.SessionState, error) {
-	state, err := s.loadSessionState(sessionName)
+func (s *tmuxServiceImpl) GetSessionState(sessionName string) (*SessionState, error) {
+	state, err := s.stateRepo.Load(sessionName)
 	if err != nil {
 		return nil, fmt.Errorf("get session state %s: %w", sessionName, err)
 	}

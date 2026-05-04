@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/charviki/maze-cradle/configutil"
-	"github.com/charviki/sweetwater-black-ridge/internal/model"
 )
 
 const configConflictMessage = "配置已变更，请重新加载后再修改"
@@ -24,15 +23,25 @@ type configTarget struct {
 // ConfigConflictError 表示保存时命中了乐观并发冲突。
 // 冲突按单文件粒度返回，前端可直接提示用户重新加载真实文件后再编辑。
 type ConfigConflictError struct {
-	Conflicts []model.ConfigConflict
+	Conflicts []ConfigConflict
 }
 
 func (e *ConfigConflictError) Error() string {
 	return configConflictMessage
 }
 
-// ConfigFileService 负责固定路径配置文件的真实读写与 hash 冲突检测。
+// ConfigFileProvider 隔离固定路径配置文件的读写能力
+type ConfigFileProvider interface {
+	ReadGlobalFiles(defs []configutil.ConfigFile) ([]ConfigFileSnapshot, error)
+	SaveGlobalFiles(defs []configutil.ConfigFile, updates []ConfigFileUpdate) ([]ConfigFileSnapshot, error)
+	ReadProjectFiles(workingDir string, defs []configutil.FileDef) ([]ConfigFileSnapshot, error)
+	SaveProjectFiles(workingDir string, defs []configutil.FileDef, updates []ConfigFileUpdate) ([]ConfigFileSnapshot, error)
+}
+
+// ConfigFileService 实现 ConfigFileProvider，通过文件系统读写配置文件
 type ConfigFileService struct{}
+
+var _ ConfigFileProvider = (*ConfigFileService)(nil)
 
 // NewConfigFileService 创建 ConfigFileService
 func NewConfigFileService() *ConfigFileService {
@@ -40,7 +49,7 @@ func NewConfigFileService() *ConfigFileService {
 }
 
 // ReadGlobalFiles 读取模板声明的全局固定文件集合。
-func (s *ConfigFileService) ReadGlobalFiles(defs []configutil.ConfigFile) ([]model.ConfigFileSnapshot, error) {
+func (s *ConfigFileService) ReadGlobalFiles(defs []configutil.ConfigFile) ([]ConfigFileSnapshot, error) {
 	targets, _, err := buildGlobalTargets(defs)
 	if err != nil {
 		return nil, err
@@ -49,7 +58,7 @@ func (s *ConfigFileService) ReadGlobalFiles(defs []configutil.ConfigFile) ([]mod
 }
 
 // SaveGlobalFiles 直接写回真实全局文件，并在写入前校验 base_hash。
-func (s *ConfigFileService) SaveGlobalFiles(defs []configutil.ConfigFile, updates []model.ConfigFileUpdate) ([]model.ConfigFileSnapshot, error) {
+func (s *ConfigFileService) SaveGlobalFiles(defs []configutil.ConfigFile, updates []ConfigFileUpdate) ([]ConfigFileSnapshot, error) {
 	targets, targetMap, err := buildGlobalTargets(defs)
 	if err != nil {
 		return nil, err
@@ -61,7 +70,7 @@ func (s *ConfigFileService) SaveGlobalFiles(defs []configutil.ConfigFile, update
 }
 
 // ReadProjectFiles 读取 session 工作目录下的固定项目级文件集合。
-func (s *ConfigFileService) ReadProjectFiles(workingDir string, defs []configutil.FileDef) ([]model.ConfigFileSnapshot, error) {
+func (s *ConfigFileService) ReadProjectFiles(workingDir string, defs []configutil.FileDef) ([]ConfigFileSnapshot, error) {
 	targets, _, err := buildProjectTargets(workingDir, defs)
 	if err != nil {
 		return nil, err
@@ -70,7 +79,7 @@ func (s *ConfigFileService) ReadProjectFiles(workingDir string, defs []configuti
 }
 
 // SaveProjectFiles 直接写回 session 工作目录中的真实项目级文件。
-func (s *ConfigFileService) SaveProjectFiles(workingDir string, defs []configutil.FileDef, updates []model.ConfigFileUpdate) ([]model.ConfigFileSnapshot, error) {
+func (s *ConfigFileService) SaveProjectFiles(workingDir string, defs []configutil.FileDef, updates []ConfigFileUpdate) ([]ConfigFileSnapshot, error) {
 	targets, targetMap, err := buildProjectTargets(workingDir, defs)
 	if err != nil {
 		return nil, err
@@ -81,8 +90,8 @@ func (s *ConfigFileService) SaveProjectFiles(workingDir string, defs []configuti
 	return s.readTargets(targets)
 }
 
-func (s *ConfigFileService) readTargets(targets []configTarget) ([]model.ConfigFileSnapshot, error) {
-	files := make([]model.ConfigFileSnapshot, 0, len(targets))
+func (s *ConfigFileService) readTargets(targets []configTarget) ([]ConfigFileSnapshot, error) {
+	files := make([]ConfigFileSnapshot, 0, len(targets))
 	for _, target := range targets {
 		snapshot, err := readConfigSnapshot(target.displayPath, target.diskPath)
 		if err != nil {
@@ -93,13 +102,13 @@ func (s *ConfigFileService) readTargets(targets []configTarget) ([]model.ConfigF
 	return files, nil
 }
 
-func (s *ConfigFileService) validateAndWriteTargets(_ []configTarget, targetMap map[string]configTarget, updates []model.ConfigFileUpdate) error {
+func (s *ConfigFileService) validateAndWriteTargets(_ []configTarget, targetMap map[string]configTarget, updates []ConfigFileUpdate) error {
 	if len(updates) == 0 {
 		return nil
 	}
 
 	seen := make(map[string]struct{}, len(updates))
-	conflicts := make([]model.ConfigConflict, 0)
+	conflicts := make([]ConfigConflict, 0)
 
 	// 先统一做 hash 校验，再写入文件，避免半成功半失败把固定文件集合写成不一致状态。
 	for _, update := range updates {
@@ -117,7 +126,7 @@ func (s *ConfigFileService) validateAndWriteTargets(_ []configTarget, targetMap 
 			return err
 		}
 		if current.Hash != update.BaseHash {
-			conflicts = append(conflicts, model.ConfigConflict{
+			conflicts = append(conflicts, ConfigConflict{
 				Path:        update.Path,
 				CurrentHash: current.Hash,
 			})
@@ -204,22 +213,22 @@ func buildProjectTargets(workingDir string, defs []configutil.FileDef) ([]config
 	return targets, targetMap, nil
 }
 
-func readConfigSnapshot(displayPath string, diskPath string) (model.ConfigFileSnapshot, error) {
+func readConfigSnapshot(displayPath string, diskPath string) (ConfigFileSnapshot, error) {
 	data, err := os.ReadFile(filepath.Clean(diskPath))
 	if err != nil {
 		if os.IsNotExist(err) {
-			return model.ConfigFileSnapshot{
+			return ConfigFileSnapshot{
 				Path:    displayPath,
 				Content: "",
 				Exists:  false,
 				Hash:    contentHash(""),
 			}, nil
 		}
-		return model.ConfigFileSnapshot{}, fmt.Errorf("read config file %s: %w", displayPath, err)
+		return ConfigFileSnapshot{}, fmt.Errorf("read config file %s: %w", displayPath, err)
 	}
 
 	content := string(data)
-	return model.ConfigFileSnapshot{
+	return ConfigFileSnapshot{
 		Path:    displayPath,
 		Content: content,
 		Exists:  true,
