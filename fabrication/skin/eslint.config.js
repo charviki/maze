@@ -7,9 +7,10 @@ import prettier from 'eslint-config-prettier';
 import { defineConfig, globalIgnores } from 'eslint/config';
 
 export default defineConfig([
-  globalIgnores(['dist', 'src/api/gen', 'vitest.config.ts']),
+  globalIgnores(['dist', 'src/api/gen']),
   {
     files: ['**/*.{ts,tsx}'],
+    ignores: ['**/*.config.{ts,js}', '**/vitest.setup.ts'],
     extends: [
       js.configs.recommended,
       tseslint.configs.recommendedTypeChecked,
@@ -36,6 +37,20 @@ export default defineConfig([
         'error',
         { checksVoidReturn: { attributes: false } },
       ],
+    },
+  },
+  {
+    files: ['**/*.config.{ts,js}', '**/vitest.setup.ts'],
+    extends: [js.configs.recommended, prettier],
+    languageOptions: { globals: { ...globals.browser, ...globals.node } },
+  },
+  {
+    files: ['**/*.test.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
     },
   },
 ]);

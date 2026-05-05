@@ -1,4 +1,4 @@
-.PHONY: check-frontend format-js format-js-check
+.PHONY: check-frontend coverage-frontend format-js format-js-check
 
 check-frontend: ## 前端三道检查：tsc → eslint → vitest（每个模块按序执行，任何一步失败即中止）
 	@cd $(PROJECT_ROOT)/fabrication/skin && pnpm exec tsc --noEmit || exit 1 && pnpm exec eslint . || exit 1 && pnpm exec vitest run || exit 1
@@ -6,6 +6,12 @@ check-frontend: ## 前端三道检查：tsc → eslint → vitest（每个模块
 	@cd $(PROJECT_ROOT)/the-mesa/director-console && pnpm exec tsc -b --noEmit || exit 1 && pnpm exec eslint . || exit 1 && pnpm exec vitest run || exit 1
 	@cd $(PROJECT_ROOT)/sweetwater/black-ridge/web && pnpm exec tsc -b --noEmit || exit 1 && pnpm exec eslint . || exit 1 && pnpm exec vitest run || exit 1
 	@echo "\033[0;32m[check-frontend]\033[0m All frontend checks passed!"
+
+coverage-frontend: ## 生成前端覆盖率报告
+	@for m in $(FRONTEND_MODULES); do \
+		echo "\033[0;32m[coverage]\033[0m $$m"; \
+		cd $(PROJECT_ROOT)/$$m && pnpm exec vitest run --coverage || exit 1; \
+	done
 
 format-js: ## 格式化所有 TS/TSX/JSON/MD 文件
 	@echo "\033[0;32m[format-js]\033[0m Formatting with Prettier..."

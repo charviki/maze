@@ -1,13 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { http, HttpResponse, delay } from 'msw';
 import { createSdkConfiguration } from './sdk-config';
 import { Configuration } from './gen/runtime';
-
-const mockFetch = vi.fn();
-vi.stubGlobal('fetch', mockFetch);
-
-beforeEach(() => {
-  mockFetch.mockReset();
-});
+import { server } from '../test/mocks/server';
 
 describe('createSdkConfiguration', () => {
   it('should return a Configuration instance', () => {
@@ -21,25 +16,24 @@ describe('createSdkConfiguration', () => {
   });
 
   it('should inject custom fetchApi', async () => {
+    server.use(http.get('*/test', () => HttpResponse.json({ test: true })));
+
     const config = createSdkConfiguration('');
     expect(config.fetchApi).toBeDefined();
 
-    mockFetch.mockResolvedValueOnce(new Response(JSON.stringify({ test: true })));
     const result = await config.fetchApi!('/test');
     expect(result.ok).toBe(true);
-    expect(mockFetch).toHaveBeenCalled();
   });
 
   it('should abort request after timeout', async () => {
     vi.useFakeTimers();
 
-    mockFetch.mockImplementationOnce((_input: string, init?: RequestInit) => {
-      return new Promise((_resolve, reject) => {
-        init?.signal?.addEventListener('abort', () => {
-          reject(new DOMException('The operation was aborted', 'AbortError'));
-        });
-      });
-    });
+    server.use(
+      http.get('*/test', async () => {
+        await delay('infinite');
+        return HttpResponse.json({});
+      }),
+    );
 
     const config = createSdkConfiguration('');
     const promise = config.fetchApi!('/test');

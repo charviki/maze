@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import '@testing-library/jest-dom';
 import { TemplateManager, ToastProvider } from '@maze/fabrication';
 import type { IAgentApiClient, NormalizedTemplate } from '@maze/fabrication';
 
