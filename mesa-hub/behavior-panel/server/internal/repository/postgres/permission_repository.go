@@ -17,9 +17,9 @@ import (
 )
 
 var _ service.PermissionStore = (*PermissionRepository)(nil)
-var _ service.TxManager = (*PermissionRepository)(nil)
+var _ service.AuthTxManager = (*PermissionRepository)(nil)
 
-type txContextKey struct{}
+type authTxContextKey struct{}
 
 // PermissionRepository 是 PostgreSQL/sqlc 驱动的权限仓储实现。
 type PermissionRepository struct {
@@ -33,7 +33,7 @@ func NewPermissionRepository(pool *pgxpool.Pool) *PermissionRepository {
 
 // WithinTx 在 context 中透传事务执行器，避免 service 显式切换 tx store。
 func (r *PermissionRepository) WithinTx(ctx context.Context, fn func(ctx context.Context) error) error {
-	if existing := txFromContext(ctx); existing != nil {
+	if existing := authTxFromContext(ctx); existing != nil {
 		return fn(ctx)
 	}
 
@@ -43,7 +43,7 @@ func (r *PermissionRepository) WithinTx(ctx context.Context, fn func(ctx context
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
-	txCtx := context.WithValue(ctx, txContextKey{}, tx)
+	txCtx := context.WithValue(ctx, authTxContextKey{}, tx)
 	if err := fn(txCtx); err != nil {
 		return err
 	}
@@ -202,18 +202,18 @@ func (r *PermissionRepository) EnsureAdminBootstrap(ctx context.Context, subject
 }
 
 func (r *PermissionRepository) queries(ctx context.Context) *gen.Queries {
-	return gen.New(executorFromContext(ctx, r.pool))
+	return gen.New(authExecutorFromContext(ctx, r.pool))
 }
 
-func executorFromContext(ctx context.Context, pool *pgxpool.Pool) gen.DBTX {
-	if tx := txFromContext(ctx); tx != nil {
+func authExecutorFromContext(ctx context.Context, pool *pgxpool.Pool) gen.DBTX {
+	if tx := authTxFromContext(ctx); tx != nil {
 		return tx
 	}
 	return pool
 }
 
-func txFromContext(ctx context.Context) pgx.Tx {
-	tx, _ := ctx.Value(txContextKey{}).(pgx.Tx)
+func authTxFromContext(ctx context.Context) pgx.Tx {
+	tx, _ := ctx.Value(authTxContextKey{}).(pgx.Tx)
 	return tx
 }
 

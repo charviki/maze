@@ -4,11 +4,11 @@ import (
 	"context"
 )
 
-// TxManager 定义权限业务所需的事务边界能力。
+// AuthTxManager 定义权限业务所需的事务边界能力。
 //
 // 事务由 service 发起，具体存储实现通过 context 识别当前执行器，
 // 这样可以避免把 tx repository 显式传回业务层。
-type TxManager interface {
+type AuthTxManager interface {
 	WithinTx(ctx context.Context, fn func(ctx context.Context) error) error
 }
 

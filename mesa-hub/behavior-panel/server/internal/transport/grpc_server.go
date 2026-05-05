@@ -88,7 +88,10 @@ func (s *Server) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.Reg
 	}
 
 	protoReq := pbRegisterToProtocol(req)
-	node := s.registry.Register(protoReq)
+	node, err := s.registry.Register(ctx, protoReq)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "register node: %v", err)
+	}
 
 	// 恢复 session 是后台异步操作，不应阻塞注册响应，故使用独立 context
 	go s.restoreAgentSessions(req.GetName(), req.GetGrpcAddress()) //nolint:gosec
@@ -106,7 +109,10 @@ func (s *Server) Heartbeat(ctx context.Context, req *pb.HeartbeatRequest) (*pb.H
 	}
 
 	protoReq := pbHeartbeatToProtocol(req)
-	node := s.registry.Heartbeat(protoReq)
+	node, err := s.registry.Heartbeat(ctx, protoReq)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "update heartbeat: %v", err)
+	}
 	if node == nil {
 		return nil, status.Error(codes.NotFound, "node not found")
 	}

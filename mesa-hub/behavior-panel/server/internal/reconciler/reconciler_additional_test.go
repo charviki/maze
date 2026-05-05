@@ -13,7 +13,7 @@ func TestReconciler_RecoverOnStartup_RestoresHostToken(t *testing.T) {
 	rt.healthy["host-token"] = true
 
 	rec, specMgr := newTestReconciler(t, rt)
-	specMgr.Create(&protocol.HostSpec{
+	_, _ = specMgr.Create(context.Background(), &protocol.HostSpec{
 		Name:      "host-token",
 		Tools:     []string{"claude"},
 		Status:    protocol.HostStatusOnline,
@@ -22,7 +22,7 @@ func TestReconciler_RecoverOnStartup_RestoresHostToken(t *testing.T) {
 
 	rec.RecoverOnStartup(context.Background())
 
-	exists, matched := rec.registry.ValidateHostToken("host-token", "restored-token")
+	exists, matched, _ := rec.registry.ValidateHostToken(context.Background(), "host-token", "restored-token")
 	if !exists || !matched {
 		t.Fatalf("ValidateHostToken = (%v, %v), want (true, true)", exists, matched)
 	}
@@ -32,7 +32,7 @@ func TestReconciler_HealthCheck_FailedRetryIncrementsRetryCount(t *testing.T) {
 	rt := newMockReconcilerRuntime()
 
 	rec, specMgr := newTestReconciler(t, rt)
-	specMgr.Create(&protocol.HostSpec{
+	_, _ = specMgr.Create(context.Background(), &protocol.HostSpec{
 		Name:       "host-retry",
 		Tools:      []string{"claude"},
 		Status:     protocol.HostStatusFailed,
@@ -46,7 +46,7 @@ func TestReconciler_HealthCheck_FailedRetryIncrementsRetryCount(t *testing.T) {
 		t.Fatalf("deploy calls = %d, want 1", rt.deployCall)
 	}
 
-	got := specMgr.Get("host-retry")
+	got, _ := specMgr.Get(context.Background(), "host-retry")
 	if got == nil {
 		t.Fatal("HostSpec 不应丢失")
 	}

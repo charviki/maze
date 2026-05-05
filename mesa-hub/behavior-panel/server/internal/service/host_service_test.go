@@ -87,10 +87,11 @@ type auditLoggerRecorder struct {
 	entries []protocol.AuditLogEntry
 }
 
-func (r *auditLoggerRecorder) Log(entry protocol.AuditLogEntry) {
+func (r *auditLoggerRecorder) Log(_ context.Context, entry protocol.AuditLogEntry) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.entries = append(r.entries, entry)
+	return nil
 }
 
 func (r *auditLoggerRecorder) Entries() []protocol.AuditLogEntry {
@@ -102,9 +103,13 @@ func (r *auditLoggerRecorder) Entries() []protocol.AuditLogEntry {
 }
 
 type hostServiceNodeRegistryStub struct {
-	mu         sync.RWMutex
-	nodes      map[string]*service.Node
-	hostTokens map[string]string
+	mu                 sync.RWMutex
+	nodes              map[string]*service.Node
+	hostTokens         map[string]string
+	storeHostTokenErr  error
+	removeHostTokenErr error
+	getErr             error
+	deleteErr          error
 }
 
 func newHostServiceNodeRegistryStub() *hostServiceNodeRegistryStub {
@@ -114,29 +119,37 @@ func newHostServiceNodeRegistryStub() *hostServiceNodeRegistryStub {
 	}
 }
 
-func (s *hostServiceNodeRegistryStub) StoreHostToken(name, token string) {
+func (s *hostServiceNodeRegistryStub) StoreHostToken(_ context.Context, name, token string) error {
+	if s.storeHostTokenErr != nil {
+		return s.storeHostTokenErr
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.hostTokens[name] = token
+	return nil
 }
 
-func (s *hostServiceNodeRegistryStub) ValidateHostToken(name, token string) (bool, bool) {
+func (s *hostServiceNodeRegistryStub) ValidateHostToken(_ context.Context, name, token string) (bool, bool, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	expected, ok := s.hostTokens[name]
 	if !ok {
-		return false, false
+		return false, false, nil
 	}
-	return true, expected == token
+	return true, expected == token, nil
 }
 
-func (s *hostServiceNodeRegistryStub) RemoveHostToken(name string) {
+func (s *hostServiceNodeRegistryStub) RemoveHostToken(_ context.Context, name string) error {
+	if s.removeHostTokenErr != nil {
+		return s.removeHostTokenErr
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	delete(s.hostTokens, name)
+	return nil
 }
 
-func (s *hostServiceNodeRegistryStub) Register(req protocol.RegisterRequest) *service.Node {
+func (s *hostServiceNodeRegistryStub) Register(_ context.Context, req protocol.RegisterRequest) (*service.Node, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	node := &service.Node{
@@ -151,23 +164,23 @@ func (s *hostServiceNodeRegistryStub) Register(req protocol.RegisterRequest) *se
 		Metadata:      req.Metadata,
 	}
 	s.nodes[req.Name] = node
-	return node
+	return node, nil
 }
 
-func (s *hostServiceNodeRegistryStub) Heartbeat(req protocol.HeartbeatRequest) *service.Node {
+func (s *hostServiceNodeRegistryStub) Heartbeat(_ context.Context, req protocol.HeartbeatRequest) (*service.Node, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	node := s.nodes[req.Name]
 	if node == nil {
-		return nil
+		return nil, nil
 	}
 	node.LastHeartbeat = time.Now()
 	node.AgentStatus = req.Status
 	node.Status = service.NodeStatusOnline
-	return node
+	return node, nil
 }
 
-func (s *hostServiceNodeRegistryStub) List() []*service.Node {
+func (s *hostServiceNodeRegistryStub) List(_ context.Context) ([]*service.Node, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	out := make([]*service.Node, 0, len(s.nodes))
@@ -175,32 +188,38 @@ func (s *hostServiceNodeRegistryStub) List() []*service.Node {
 		out = append(out, node)
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
-	return out
+	return out, nil
 }
 
-func (s *hostServiceNodeRegistryStub) Get(name string) *service.Node {
+func (s *hostServiceNodeRegistryStub) Get(_ context.Context, name string) (*service.Node, error) {
+	if s.getErr != nil {
+		return nil, s.getErr
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.nodes[name]
+	return s.nodes[name], nil
 }
 
-func (s *hostServiceNodeRegistryStub) Delete(name string) bool {
+func (s *hostServiceNodeRegistryStub) Delete(_ context.Context, name string) (bool, error) {
+	if s.deleteErr != nil {
+		return false, s.deleteErr
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, ok := s.nodes[name]; !ok {
-		return false
+		return false, nil
 	}
 	delete(s.nodes, name)
-	return true
+	return true, nil
 }
 
-func (s *hostServiceNodeRegistryStub) GetNodeCount() int {
+func (s *hostServiceNodeRegistryStub) GetNodeCount(_ context.Context) (int, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return len(s.nodes)
+	return len(s.nodes), nil
 }
 
-func (s *hostServiceNodeRegistryStub) GetOnlineCount() int {
+func (s *hostServiceNodeRegistryStub) GetOnlineCount(_ context.Context) (int, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	count := 0
@@ -209,37 +228,48 @@ func (s *hostServiceNodeRegistryStub) GetOnlineCount() int {
 			count++
 		}
 	}
-	return count
+	return count, nil
 }
 
-func (s *hostServiceNodeRegistryStub) WaitSave() {}
-
 type hostSpecRepositoryStub struct {
-	mu    sync.RWMutex
-	specs map[string]*protocol.HostSpec
+	mu        sync.RWMutex
+	specs     map[string]*protocol.HostSpec
+	createErr error
+	getErr    error
+	listErr   error
+	deleteErr error
 }
 
 func newHostSpecRepositoryStub() *hostSpecRepositoryStub {
 	return &hostSpecRepositoryStub{specs: make(map[string]*protocol.HostSpec)}
 }
 
-func (s *hostSpecRepositoryStub) Create(spec *protocol.HostSpec) bool {
+func (s *hostSpecRepositoryStub) Create(_ context.Context, spec *protocol.HostSpec) (bool, error) {
+	if s.createErr != nil {
+		return false, s.createErr
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, ok := s.specs[spec.Name]; ok {
-		return false
+		return false, nil
 	}
 	s.specs[spec.Name] = spec
-	return true
+	return true, nil
 }
 
-func (s *hostSpecRepositoryStub) Get(name string) *protocol.HostSpec {
+func (s *hostSpecRepositoryStub) Get(_ context.Context, name string) (*protocol.HostSpec, error) {
+	if s.getErr != nil {
+		return nil, s.getErr
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.specs[name]
+	return s.specs[name], nil
 }
 
-func (s *hostSpecRepositoryStub) List() []*protocol.HostSpec {
+func (s *hostSpecRepositoryStub) List(_ context.Context) ([]*protocol.HostSpec, error) {
+	if s.listErr != nil {
+		return nil, s.listErr
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	out := make([]*protocol.HostSpec, 0, len(s.specs))
@@ -247,45 +277,109 @@ func (s *hostSpecRepositoryStub) List() []*protocol.HostSpec {
 		out = append(out, spec)
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
-	return out
+	return out, nil
 }
 
-func (s *hostSpecRepositoryStub) UpdateStatus(name, status, errMsg string) bool {
+func (s *hostSpecRepositoryStub) UpdateStatus(_ context.Context, name, status, errMsg string) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	spec := s.specs[name]
 	if spec == nil {
-		return false
+		return false, nil
 	}
 	spec.Status = status
 	spec.ErrorMsg = errMsg
 	spec.UpdatedAt = time.Now()
-	return true
+	return true, nil
 }
 
-func (s *hostSpecRepositoryStub) Delete(name string) bool {
+func (s *hostSpecRepositoryStub) Delete(_ context.Context, name string) (bool, error) {
+	if s.deleteErr != nil {
+		return false, s.deleteErr
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, ok := s.specs[name]; !ok {
-		return false
+		return false, nil
 	}
 	delete(s.specs, name)
-	return true
+	return true, nil
 }
 
-func (s *hostSpecRepositoryStub) IncrementRetry(name string) bool {
+func (s *hostSpecRepositoryStub) IncrementRetry(_ context.Context, name string) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	spec := s.specs[name]
 	if spec == nil {
-		return false
+		return false, nil
 	}
 	spec.RetryCount++
 	spec.UpdatedAt = time.Now()
-	return true
+	return true, nil
 }
 
-func (s *hostSpecRepositoryStub) WaitSave() {}
+type hostServiceTxManagerStub struct {
+	registry *hostServiceNodeRegistryStub
+	specRepo *hostSpecRepositoryStub
+}
+
+func (m *hostServiceTxManagerStub) WithinTx(ctx context.Context, fn func(context.Context) error) error {
+	specSnapshot := m.specRepo.snapshot()
+	nodeSnapshot, tokenSnapshot := m.registry.snapshot()
+	if err := fn(ctx); err != nil {
+		m.specRepo.restore(specSnapshot)
+		m.registry.restore(nodeSnapshot, tokenSnapshot)
+		return err
+	}
+	return nil
+}
+
+func (s *hostServiceNodeRegistryStub) snapshot() (map[string]*service.Node, map[string]string) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	nodes := make(map[string]*service.Node, len(s.nodes))
+	for name, node := range s.nodes {
+		if node == nil {
+			nodes[name] = nil
+			continue
+		}
+		cloned := *node
+		nodes[name] = &cloned
+	}
+	tokens := make(map[string]string, len(s.hostTokens))
+	for name, token := range s.hostTokens {
+		tokens[name] = token
+	}
+	return nodes, tokens
+}
+
+func (s *hostServiceNodeRegistryStub) restore(nodes map[string]*service.Node, tokens map[string]string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.nodes = nodes
+	s.hostTokens = tokens
+}
+
+func (s *hostSpecRepositoryStub) snapshot() map[string]*protocol.HostSpec {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	specs := make(map[string]*protocol.HostSpec, len(s.specs))
+	for name, spec := range s.specs {
+		if spec == nil {
+			specs[name] = nil
+			continue
+		}
+		cloned := *spec
+		specs[name] = &cloned
+	}
+	return specs
+}
+
+func (s *hostSpecRepositoryStub) restore(specs map[string]*protocol.HostSpec) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.specs = specs
+}
 
 func newHostServiceTestEnv(t *testing.T) (*service.HostService, *hostServiceNodeRegistryStub, *hostSpecRepositoryStub, *hostServiceRuntimeMock, *auditLoggerRecorder) {
 	t.Helper()
@@ -295,6 +389,7 @@ func newHostServiceTestEnv(t *testing.T) (*service.HostService, *hostServiceNode
 	hostSpecRepo := newHostSpecRepositoryStub()
 	rt := &hostServiceRuntimeMock{}
 	auditLog := &auditLoggerRecorder{}
+	txm := &hostServiceTxManagerStub{registry: registry, specRepo: hostSpecRepo}
 	cfg := &config.Config{
 		Server: config.ServerConfig{
 			ServerConfig: configutil.ServerConfig{AuthToken: "manager-token"},
@@ -302,7 +397,7 @@ func newHostServiceTestEnv(t *testing.T) (*service.HostService, *hostServiceNode
 		Docker: config.DockerConfig{AgentBaseImage: "maze-agent-base:latest"},
 	}
 	logDir := filepath.Join(tmpDir, "host-logs")
-	svc := service.NewHostService(registry, hostSpecRepo, rt, auditLog, cfg, logutil.NewNop(), logDir)
+	svc := service.NewHostService(registry, hostSpecRepo, txm, rt, auditLog, cfg, logutil.NewNop(), logDir)
 	return svc, registry, hostSpecRepo, rt, auditLog
 }
 
@@ -358,11 +453,11 @@ func TestHostService_CreateHost_PersistsSpecAndToken(t *testing.T) {
 	}
 
 	waitForCondition(t, time.Second, func() bool {
-		got := specMgr.Get("host-1")
+		got, _ := specMgr.Get(context.Background(), "host-1")
 		return got != nil && got.Status == protocol.HostStatusDeploying
 	})
 
-	saved := specMgr.Get("host-1")
+	saved, _ := specMgr.Get(context.Background(), "host-1")
 	if saved == nil {
 		t.Fatal("CreateHost 后应持久化 HostSpec")
 	}
@@ -370,7 +465,7 @@ func TestHostService_CreateHost_PersistsSpecAndToken(t *testing.T) {
 		t.Fatalf("DisplayName = %q, want %q", saved.DisplayName, "Host One")
 	}
 
-	exists, matched := registry.ValidateHostToken("host-1", spec.AuthToken)
+	exists, matched, _ := registry.ValidateHostToken(context.Background(), "host-1", spec.AuthToken)
 	if !exists || !matched {
 		t.Fatalf("host token 未正确预存: exists=%v matched=%v", exists, matched)
 	}
@@ -404,26 +499,45 @@ func TestHostService_CreateHost_RejectsUnknownTools(t *testing.T) {
 	}
 }
 
+func TestHostService_CreateHost_StoreTokenFailureRollsBackSpec(t *testing.T) {
+	svc, registry, specMgr, _, _ := newHostServiceTestEnv(t)
+	registry.storeHostTokenErr = errors.New("token store down")
+
+	_, err := svc.CreateHost(context.Background(), &protocol.CreateHostRequest{
+		Name:  "host-rollback",
+		Tools: []string{"claude"},
+	})
+	if err == nil {
+		t.Fatal("StoreHostToken 失败时应返回错误")
+	}
+	if !strings.Contains(err.Error(), "store host token") {
+		t.Fatalf("error = %q, want contains %q", err.Error(), "store host token")
+	}
+	if got, _ := specMgr.Get(context.Background(), "host-rollback"); got != nil {
+		t.Fatal("事务失败后不应残留 HostSpec")
+	}
+}
+
 func TestHostService_DeleteHost_RemovesStateAndWritesSuccessAudit(t *testing.T) {
 	svc, registry, specMgr, rt, auditLog := newHostServiceTestEnv(t)
 	spec := testHostSpec("host-delete-ok")
 
-	if !specMgr.Create(spec) {
+	if ok, _ := specMgr.Create(context.Background(), spec); !ok {
 		t.Fatal("预置 HostSpec 失败")
 	}
-	registry.StoreHostToken(spec.Name, spec.AuthToken)
-	registry.Register(protocol.RegisterRequest{Name: spec.Name, Address: "http://host-delete-ok"})
+	_ = registry.StoreHostToken(context.Background(), spec.Name, spec.AuthToken)
+	_, _ = registry.Register(context.Background(), protocol.RegisterRequest{Name: spec.Name, Address: "http://host-delete-ok"})
 
 	if err := svc.DeleteHost(context.Background(), spec.Name); err != nil {
 		t.Fatalf("DeleteHost 返回错误: %v", err)
 	}
-	if specMgr.Get(spec.Name) != nil {
+	if got, _ := specMgr.Get(context.Background(), spec.Name); got != nil {
 		t.Fatal("DeleteHost 成功后应删除 HostSpec")
 	}
-	if registry.Get(spec.Name) != nil {
+	if got, _ := registry.Get(context.Background(), spec.Name); got != nil {
 		t.Fatal("DeleteHost 成功后应删除节点注册信息")
 	}
-	exists, _ := registry.ValidateHostToken(spec.Name, spec.AuthToken)
+	exists, _, _ := registry.ValidateHostToken(context.Background(), spec.Name, spec.AuthToken)
 	if exists {
 		t.Fatal("DeleteHost 成功后应清理 host token")
 	}
@@ -445,11 +559,11 @@ func TestHostService_DeleteHost_RemoveFailureKeepsState(t *testing.T) {
 	spec := testHostSpec("host-delete-failed")
 	rt.removeErr = errors.New("runtime down")
 
-	if !specMgr.Create(spec) {
+	if ok, _ := specMgr.Create(context.Background(), spec); !ok {
 		t.Fatal("预置 HostSpec 失败")
 	}
-	registry.StoreHostToken(spec.Name, spec.AuthToken)
-	registry.Register(protocol.RegisterRequest{Name: spec.Name, Address: "http://host-delete-failed"})
+	_ = registry.StoreHostToken(context.Background(), spec.Name, spec.AuthToken)
+	_, _ = registry.Register(context.Background(), protocol.RegisterRequest{Name: spec.Name, Address: "http://host-delete-failed"})
 
 	err := svc.DeleteHost(context.Background(), spec.Name)
 	if err == nil {
@@ -459,13 +573,13 @@ func TestHostService_DeleteHost_RemoveFailureKeepsState(t *testing.T) {
 		t.Fatalf("error = %q, want contains %q", err.Error(), "remove host")
 	}
 
-	if specMgr.Get(spec.Name) == nil {
+	if got, _ := specMgr.Get(context.Background(), spec.Name); got == nil {
 		t.Fatal("删除失败时应保留 HostSpec，避免失去控制面记录")
 	}
-	if registry.Get(spec.Name) == nil {
+	if got, _ := registry.Get(context.Background(), spec.Name); got == nil {
 		t.Fatal("删除失败时应保留节点记录")
 	}
-	exists, matched := registry.ValidateHostToken(spec.Name, spec.AuthToken)
+	exists, matched, _ := registry.ValidateHostToken(context.Background(), spec.Name, spec.AuthToken)
 	if !exists || !matched {
 		t.Fatalf("删除失败时应保留 host token: exists=%v matched=%v", exists, matched)
 	}
@@ -479,10 +593,43 @@ func TestHostService_DeleteHost_RemoveFailureKeepsState(t *testing.T) {
 	}
 }
 
+func TestHostService_DeleteHost_PersistFailureRollsBackState(t *testing.T) {
+	svc, registry, specMgr, _, auditLog := newHostServiceTestEnv(t)
+	spec := testHostSpec("host-delete-rollback")
+	specMgr.deleteErr = errors.New("delete spec failed")
+
+	if ok, _ := specMgr.Create(context.Background(), spec); !ok {
+		t.Fatal("预置 HostSpec 失败")
+	}
+	_ = registry.StoreHostToken(context.Background(), spec.Name, spec.AuthToken)
+	_, _ = registry.Register(context.Background(), protocol.RegisterRequest{Name: spec.Name, Address: "http://host-delete-rollback"})
+
+	err := svc.DeleteHost(context.Background(), spec.Name)
+	if err == nil {
+		t.Fatal("持久化删除失败时应返回错误")
+	}
+	if !strings.Contains(err.Error(), "delete host spec") {
+		t.Fatalf("error = %q, want contains %q", err.Error(), "delete host spec")
+	}
+	if got, _ := specMgr.Get(context.Background(), spec.Name); got == nil {
+		t.Fatal("事务回滚后应保留 HostSpec")
+	}
+	if got, _ := registry.Get(context.Background(), spec.Name); got == nil {
+		t.Fatal("事务回滚后应恢复节点记录")
+	}
+	exists, matched, _ := registry.ValidateHostToken(context.Background(), spec.Name, spec.AuthToken)
+	if !exists || !matched {
+		t.Fatalf("事务回滚后应恢复 host token: exists=%v matched=%v", exists, matched)
+	}
+	if len(auditLog.Entries()) != 0 {
+		t.Fatal("持久化删除失败时不应写入成功审计")
+	}
+}
+
 func TestHostService_GetBuildLog_MissingFileReturnsEmpty(t *testing.T) {
 	svc, _, specMgr, _, _ := newHostServiceTestEnv(t)
 
-	if !specMgr.Create(testHostSpec("host-build-log")) {
+	if ok, _ := specMgr.Create(context.Background(), testHostSpec("host-build-log")); !ok {
 		t.Fatal("预置 HostSpec 失败")
 	}
 
@@ -499,7 +646,7 @@ func TestHostService_GetRuntimeLog_WrapsRuntimeError(t *testing.T) {
 	svc, _, specMgr, rt, _ := newHostServiceTestEnv(t)
 	rt.runtimeLogsErr = errors.New("logs unavailable")
 
-	if !specMgr.Create(testHostSpec("host-runtime-log")) {
+	if ok, _ := specMgr.Create(context.Background(), testHostSpec("host-runtime-log")); !ok {
 		t.Fatal("预置 HostSpec 失败")
 	}
 

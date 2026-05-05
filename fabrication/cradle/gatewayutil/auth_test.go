@@ -17,8 +17,8 @@ type mockHostTokenValidator struct {
 	matched bool
 }
 
-func (m *mockHostTokenValidator) ValidateHostToken(name, token string) (exists, matched bool) {
-	return m.exists, m.matched
+func (m *mockHostTokenValidator) ValidateHostToken(_ context.Context, name, token string) (exists, matched bool, err error) {
+	return m.exists, m.matched, nil
 }
 
 // callUnaryAuthInterceptor 封装 UnaryAuthInterceptor 的调用逻辑，减少测试样板代码

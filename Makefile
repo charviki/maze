@@ -25,6 +25,7 @@ ifeq ($(ENV),dev)
   HOST_DATA_DIR := $(HOME)/.maze-dev
   PORT_MANAGER := 7090
   PORT_WEB := 7080
+  PORT_POSTGRES := 5432
 else ifeq ($(ENV),test)
   K8S_NAMESPACE := maze-test
   K8S_OVERLAY := overlays/test
@@ -32,6 +33,7 @@ else ifeq ($(ENV),test)
   HOST_DATA_DIR := $(HOME)/.maze-test
   PORT_MANAGER := 9090
   PORT_WEB := 9080
+  PORT_POSTGRES := 5433
 else ifeq ($(ENV),prod)
   K8S_NAMESPACE := maze-prod
   K8S_OVERLAY := overlays/production
@@ -39,10 +41,11 @@ else ifeq ($(ENV),prod)
   HOST_DATA_DIR := $(HOME)/.maze-prod
   PORT_MANAGER := 8090
   PORT_WEB := 10800
+  PORT_POSTGRES := 5434
 endif
 
 # Export variables so docker compose can resolve ${VAR:-default} in YAML
-export PORT_WEB PORT_MANAGER HOST_DATA_DIR
+export PORT_WEB PORT_MANAGER PORT_POSTGRES HOST_DATA_DIR
 
 # ===== 镜像配置 =====
 MANAGER_IMAGE := maze-manager:latest
@@ -74,7 +77,7 @@ TEST_NAME ?=
         gen-proto gen-client gen-sdk gen \
         up down status \
         deploy undeploy \
-        proxy proxy-web proxy-manager \
+        proxy proxy-web proxy-manager proxy-db \
         update-manager update-web update-agent update-all \
         test-integration
 
@@ -325,14 +328,17 @@ ifeq ($(PLATFORM),docker)
 	@echo "\033[0;32m[INFO]\033[0m Docker mode: ports already exposed."
 	@echo "  Web:      http://localhost:$(PORT_WEB)"
 	@echo "  Manager:  http://localhost:$(PORT_MANAGER)/health"
+	@echo "  Postgres: postgresql://localhost:$(PORT_POSTGRES)"
 else ifeq ($(PLATFORM),kubernetes)
 	@echo "\033[0;32m[INFO]\033[0m Starting port-forward..."
 	@echo "  Web:      http://localhost:$(PORT_WEB)"
 	@echo "  Manager:  http://localhost:$(PORT_MANAGER)/health"
+	@echo "  Postgres: postgresql://localhost:$(PORT_POSTGRES)"
 	@bash -c '\
 		trap "kill 0" SIGINT SIGTERM; \
 		kubectl port-forward svc/web $(PORT_WEB):80 -n $(K8S_NAMESPACE) & \
 		kubectl port-forward svc/agent-manager $(PORT_MANAGER):8080 -n $(K8S_NAMESPACE) & \
+		kubectl port-forward svc/postgresql $(PORT_POSTGRES):5432 -n $(K8S_NAMESPACE) & \
 		wait'
 endif
 
@@ -351,6 +357,13 @@ ifeq ($(PLATFORM),kubernetes)
 		wait'
 else
 	@echo "Docker mode: http://localhost:$(PORT_MANAGER)/health"
+endif
+
+proxy-db: ## 只代理 PostgreSQL
+ifeq ($(PLATFORM),kubernetes)
+	kubectl port-forward svc/postgresql $(PORT_POSTGRES):5432 -n $(K8S_NAMESPACE)
+else
+	@echo "Docker mode: postgresql://localhost:$(PORT_POSTGRES)"
 endif
 
 # ============================================================

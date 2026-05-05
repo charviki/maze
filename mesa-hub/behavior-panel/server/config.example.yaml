@@ -27,10 +27,17 @@ kubernetes:
   volume_type: 'pvc'
   host_path_base: '~/.maze/kubernetes/agents'
 
-database:
+auth_database:
   host: '127.0.0.1'
   port: 5432
   name: 'maze_auth'
+  user: 'maze'
+  password: 'maze'
+
+host_database:
+  host: '127.0.0.1'
+  port: 5432
+  name: 'maze_host'
   user: 'maze'
   password: 'maze'
 

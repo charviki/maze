@@ -23,20 +23,27 @@ func (h *SessionProxyHandler) ProxyWebSocket(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	node := h.registry.Get(nodeName)
+	node, err := h.registry.Get(r.Context(), nodeName)
+	if err != nil {
+		h.logger.Errorf("[ws-proxy] get node %s failed: %v", nodeName, err)
+		httputil.Error(w, r, http.StatusInternalServerError, "load node failed")
+		return
+	}
 	if node == nil {
 		httputil.Error(w, r, http.StatusNotFound, "node not found")
 		return
 	}
 
-	h.auditLog.Log(protocol.AuditLogEntry{
+	if err := h.auditLog.Log(r.Context(), protocol.AuditLogEntry{
 		Operator:       auditOperator,
 		TargetNode:     nodeName,
 		Action:         "websocket_connect",
 		PayloadSummary: "session=" + sessionID,
 		Result:         "connecting",
 		StatusCode:     http.StatusSwitchingProtocols,
-	})
+	}); err != nil {
+		h.logger.Errorf("[ws-proxy] write audit log for %s failed: %v", nodeName, err)
+	}
 
 	// 使用配置化的 Origin 校验替代硬编码的"允许所有来源"，避免跨站 WebSocket 劫持
 	frontendConn, err := httputil.NewUpgrader(h.allowedOrigins).Upgrade(w, r, nil)

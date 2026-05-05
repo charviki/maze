@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/fs"
 	"strings"
 	"time"
@@ -21,7 +22,6 @@ import (
 	"github.com/charviki/maze-cradle/protocol"
 	"github.com/charviki/mesa-hub-behavior-panel/internal/agentclient"
 	"github.com/charviki/mesa-hub-behavior-panel/internal/config"
-	auditrepo "github.com/charviki/mesa-hub-behavior-panel/internal/repository/audit"
 	"github.com/charviki/mesa-hub-behavior-panel/internal/repository/postgres"
 	appservice "github.com/charviki/mesa-hub-behavior-panel/internal/service"
 	"github.com/charviki/mesa-hub-behavior-panel/internal/transport"
@@ -29,13 +29,13 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-// auditLoggerAdapter 将本地审计存储适配为 gateway interceptor 所需接口。
+// auditLoggerAdapter 适配 service.AuditLogWriter 到 gateway interceptor 所需接口。
 type auditLoggerAdapter struct {
-	inner *auditrepo.Logger
+	inner appservice.AuditLogWriter
 }
 
 func (a *auditLoggerAdapter) Log(entry gatewayutil.AuditEntry) {
-	a.inner.Log(protocol.AuditLogEntry{
+	_ = a.inner.Log(context.Background(), protocol.AuditLogEntry{
 		Operator:   entry.Operator,
 		TargetNode: entry.TargetNode,
 		Action:     entry.Action,
@@ -57,8 +57,14 @@ func main() {
 		grpcAddr = ":9090"
 	}
 
+	// 创建 host 数据库连接池（maze_host）
+	hostPool, err := newHostPoolWithRetry(context.Background(), cfg, logger)
+	if err != nil {
+		logger.Fatalf("connect host database: %v", err)
+	}
+
 	gwmux := gatewayutil.NewServeMux()
-	httpServer, resources := newHTTPServer(cfg, logger, gwmux)
+	httpServer, resources := newHTTPServer(cfg, logger, gwmux, hostPool)
 	defer cleanupResources(resources)
 
 	proxySvc := agentclient.NewProxy(resources.Registry, resources.ConnMgr)
@@ -149,8 +155,9 @@ func main() {
 	if len(cfg.AllowedOrigins()) == 0 {
 		logger.Warnf("[security] running in DEV mode: CORS and WebSocket allow all origins")
 	}
+	logger.Infof("[host] database=%s:%d/%s", cfg.HostDatabase.Host, cfg.HostDatabase.Port, cfg.HostDatabase.Name)
 	if cfg.Authz.Enabled {
-		logger.Infof("[authz] permission system enabled, database=%s:%d/%s", cfg.Database.Host, cfg.Database.Port, cfg.Database.Name)
+		logger.Infof("[authz] permission system enabled, database=%s:%d/%s", cfg.AuthDatabase.Host, cfg.AuthDatabase.Port, cfg.AuthDatabase.Name)
 	}
 
 	if err := manager.Run(context.Background()); err != nil {
@@ -164,10 +171,10 @@ func main() {
 // initAuthz 初始化权限系统：DB → 迁移 → bootstrap admin → Casbin enforcer → Store/Service/Handler → Interceptor。
 func initAuthz(cfg *config.Config, logger logutil.Logger) (*transport.PermissionServiceServer, grpc.UnaryServerInterceptor, func(), error) {
 	ctx := context.Background()
-	if cfg.Database.Host == "" {
+	if cfg.AuthDatabase.Host == "" {
 		return nil, nil, nil, errors.New("authz.enabled requires database.host")
 	}
-	logger.Infof("[authz] connecting to database %s:%d/%s", cfg.Database.Host, cfg.Database.Port, cfg.Database.Name)
+	logger.Infof("[authz] connecting to database %s:%d/%s", cfg.AuthDatabase.Host, cfg.AuthDatabase.Port, cfg.AuthDatabase.Name)
 
 	pool, err := newAuthzPoolWithRetry(ctx, cfg, logger)
 	if err != nil {
@@ -175,7 +182,7 @@ func initAuthz(cfg *config.Config, logger logutil.Logger) (*transport.Permission
 	}
 
 	// Goose 迁移
-	migrationsFS, fsErr := fs.Sub(postgres.MigrationsFS, "migrations")
+	migrationsFS, fsErr := fs.Sub(postgres.AuthMigrationsFS, "migrations")
 	if fsErr != nil {
 		pool.Close()
 		return nil, nil, nil, fsErr
@@ -300,13 +307,47 @@ func initAuthz(cfg *config.Config, logger logutil.Logger) (*transport.Permission
 	return permissionHandler, casbinInterceptor, cleanup, nil
 }
 
+func newHostPoolWithRetry(ctx context.Context, cfg *config.Config, logger logutil.Logger) (*pgxpool.Pool, error) {
+	poolCfg := cradleDB.PoolConfig{
+		Host:     cfg.HostDatabase.Host,
+		Port:     cfg.HostDatabase.Port,
+		Name:     cfg.HostDatabase.Name,
+		User:     cfg.HostDatabase.User,
+		Password: cfg.HostDatabase.Password,
+	}
+
+	const maxAttempts = 30
+	var lastErr error
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		pool, err := cradleDB.NewPool(ctx, poolCfg)
+		if err == nil {
+			if attempt > 1 {
+				logger.Infof("[host] database became ready after %d attempts", attempt)
+			}
+			return pool, nil
+		}
+		lastErr = err
+		if attempt == maxAttempts {
+			break
+		}
+
+		logger.Warnf("[host] database not ready (attempt %d/%d): %v", attempt, maxAttempts, err)
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(time.Second):
+		}
+	}
+	return nil, fmt.Errorf("host database not ready after %d attempts: %w", maxAttempts, lastErr)
+}
+
 func newAuthzPoolWithRetry(ctx context.Context, cfg *config.Config, logger logutil.Logger) (*pgxpool.Pool, error) {
 	poolCfg := cradleDB.PoolConfig{
-		Host:     cfg.Database.Host,
-		Port:     cfg.Database.Port,
-		Name:     cfg.Database.Name,
-		User:     cfg.Database.User,
-		Password: cfg.Database.Password,
+		Host:     cfg.AuthDatabase.Host,
+		Port:     cfg.AuthDatabase.Port,
+		Name:     cfg.AuthDatabase.Name,
+		User:     cfg.AuthDatabase.User,
+		Password: cfg.AuthDatabase.Password,
 	}
 
 	const maxAttempts = 30
@@ -350,8 +391,8 @@ func cleanupResources(resources *CleanupResources) {
 
 	resources.Reconciler.Stop()
 	resources.HostSvc.Stop()
-	resources.Registry.WaitSave()
-	resources.HostSpecRepo.WaitSave()
-	resources.AuditLog.Close()
 	resources.ConnMgr.CloseAll()
+	if resources.HostPool != nil {
+		resources.HostPool.Close()
+	}
 }

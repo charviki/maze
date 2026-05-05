@@ -1,6 +1,7 @@
 package audit
 
 import (
+	"context"
 	"sync"
 	"testing"
 
@@ -10,6 +11,7 @@ import (
 
 func TestLogger_ListConcurrentWithLog(t *testing.T) {
 	logger := NewLogger("", logutil.NewNop())
+	ctx := context.Background()
 
 	var wg sync.WaitGroup
 	for i := 0; i < 100; i++ {
@@ -17,7 +19,7 @@ func TestLogger_ListConcurrentWithLog(t *testing.T) {
 
 		go func(idx int) {
 			defer wg.Done()
-			logger.Log(protocol.AuditLogEntry{
+			_ = logger.Log(ctx, protocol.AuditLogEntry{
 				TargetNode: "agent",
 				Action:     "heartbeat",
 				StatusCode: 200 + idx,
@@ -26,15 +28,16 @@ func TestLogger_ListConcurrentWithLog(t *testing.T) {
 
 		go func() {
 			defer wg.Done()
-			_ = logger.List()
-			_, _ = logger.ListPage(1, 10)
-			_ = logger.Query("agent", "heartbeat")
+			_, _ = logger.List(ctx)
+			_, _, _ = logger.ListPage(ctx, 1, 10)
+			_, _ = logger.Query(ctx, "agent", "heartbeat")
 		}()
 	}
 
 	wg.Wait()
 
-	if got := len(logger.List()); got != 100 {
+	logs, _ := logger.List(ctx)
+	if got := len(logs); got != 100 {
 		t.Fatalf("期望最终有 100 条日志，实际=%d", got)
 	}
 }

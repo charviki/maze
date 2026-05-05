@@ -2,6 +2,7 @@ package audit
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
@@ -93,7 +94,7 @@ func generateAuditID() string {
 }
 
 // Log 记录一条审计日志，并在可用时追加写入 JSON Lines 文件。
-func (a *Logger) Log(entry protocol.AuditLogEntry) {
+func (a *Logger) Log(_ context.Context, entry protocol.AuditLogEntry) error {
 	if entry.Timestamp.IsZero() {
 		entry.Timestamp = time.Now()
 	}
@@ -117,20 +118,21 @@ func (a *Logger) Log(entry protocol.AuditLogEntry) {
 			}
 		}
 	}
+	return nil
 }
 
 // List 返回所有审计日志，按时间倒序排列。
-func (a *Logger) List() []protocol.AuditLogEntry {
+func (a *Logger) List(_ context.Context) ([]protocol.AuditLogEntry, error) {
 	a.mu.RLock()
 	result := make([]protocol.AuditLogEntry, len(a.logs))
 	copy(result, a.logs)
 	a.mu.RUnlock()
 	reverseEntries(result)
-	return result
+	return result, nil
 }
 
 // ListPage 返回分页审计日志，page 从 1 开始。
-func (a *Logger) ListPage(page, pageSize int) (logs []protocol.AuditLogEntry, total int) {
+func (a *Logger) ListPage(_ context.Context, page, pageSize int) (logs []protocol.AuditLogEntry, total int, err error) {
 	if pageSize <= 0 {
 		pageSize = defaultPageSize
 	}
@@ -145,7 +147,7 @@ func (a *Logger) ListPage(page, pageSize int) (logs []protocol.AuditLogEntry, to
 	end := start + pageSize
 	if start >= total {
 		a.mu.RUnlock()
-		return []protocol.AuditLogEntry{}, total
+		return []protocol.AuditLogEntry{}, total, nil
 	}
 	if end > total {
 		end = total
@@ -158,11 +160,11 @@ func (a *Logger) ListPage(page, pageSize int) (logs []protocol.AuditLogEntry, to
 	a.mu.RUnlock()
 
 	reverseEntries(result)
-	return result, total
+	return result, total, nil
 }
 
 // Query 按 target_node 或 action 过滤审计日志。
-func (a *Logger) Query(node, action string) []protocol.AuditLogEntry {
+func (a *Logger) Query(_ context.Context, node, action string) ([]protocol.AuditLogEntry, error) {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 
@@ -176,7 +178,7 @@ func (a *Logger) Query(node, action string) []protocol.AuditLogEntry {
 		}
 		result = append(result, entry)
 	}
-	return result
+	return result, nil
 }
 
 func reverseEntries(entries []protocol.AuditLogEntry) {

@@ -24,6 +24,7 @@ import (
 type HostService struct {
 	registry      NodeRegistry
 	hostSpecRepo  HostSpecRepository
+	txm           HostTxManager
 	runtime       runtime.HostRuntime
 	auditLog      AuditLogWriter
 	cfg           *config.Config
@@ -39,6 +40,7 @@ type HostService struct {
 func NewHostService(
 	registry NodeRegistry,
 	hostSpecRepo HostSpecRepository,
+	txm HostTxManager,
 	rt runtime.HostRuntime,
 	auditLog AuditLogWriter,
 	cfg *config.Config,
@@ -48,6 +50,7 @@ func NewHostService(
 	return &HostService{
 		registry:      registry,
 		hostSpecRepo:  hostSpecRepo,
+		txm:           txm,
 		runtime:       rt,
 		auditLog:      auditLog,
 		cfg:           cfg,
@@ -65,10 +68,6 @@ func (s *HostService) CreateHost(ctx context.Context, req *protocol.CreateHostRe
 	if len(req.Tools) == 0 {
 		return nil, errors.New("at least one tool is required")
 	}
-	if s.hostSpecRepo.Get(req.Name) != nil {
-		return nil, fmt.Errorf("host %q already exists", req.Name)
-	}
-
 	if unknown := hostbuilder.ValidateTools(req.Tools); len(unknown) > 0 {
 		return nil, fmt.Errorf("unknown tools: %s. available: %s",
 			strings.Join(unknown, ", "),
@@ -97,11 +96,21 @@ func (s *HostService) CreateHost(ctx context.Context, req *protocol.CreateHostRe
 		Status:      protocol.HostStatusPending,
 	}
 
-	if !s.hostSpecRepo.Create(spec) {
-		return nil, fmt.Errorf("host %q already exists", req.Name)
+	if err := s.txm.WithinTx(ctx, func(txCtx context.Context) error {
+		ok, err := s.hostSpecRepo.Create(txCtx, spec)
+		if err != nil {
+			return fmt.Errorf("create host spec %q: %w", req.Name, err)
+		}
+		if !ok {
+			return fmt.Errorf("host %q already exists", req.Name)
+		}
+		if err := s.registry.StoreHostToken(txCtx, req.Name, hostToken); err != nil {
+			return fmt.Errorf("store host token %q: %w", req.Name, err)
+		}
+		return nil
+	}); err != nil {
+		return nil, err
 	}
-
-	s.registry.StoreHostToken(req.Name, hostToken)
 
 	// 在启动 goroutine 之前先登记 WaitGroup 和 cancel，避免 Stop 与 Add/注册时序竞争导致漏等后台部署。
 	//nolint:gosec // async deployment: 用 WithCancel 包装的 Background，支持取消
@@ -126,10 +135,17 @@ func (s *HostService) CreateHost(ctx context.Context, req *protocol.CreateHostRe
 
 // ListHosts 返回所有 Host（含运行时合并状态）
 func (s *HostService) ListHosts(ctx context.Context) ([]*protocol.HostInfo, error) {
-	specs := s.hostSpecRepo.List()
+	specs, err := s.hostSpecRepo.List(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list host specs: %w", err)
+	}
 	infos := make([]*protocol.HostInfo, 0, len(specs))
 	for _, spec := range specs {
-		infos = append(infos, BuildHostInfo(spec, s.registry.Get(spec.Name)))
+		node, err := s.registry.Get(ctx, spec.Name)
+		if err != nil {
+			return nil, fmt.Errorf("get node %q: %w", spec.Name, err)
+		}
+		infos = append(infos, BuildHostInfo(spec, node))
 	}
 	return infos, nil
 }
@@ -139,7 +155,15 @@ func (s *HostService) GetHost(ctx context.Context, name string) (*protocol.HostI
 	if name == "" {
 		return nil, errors.New("name is required")
 	}
-	info := BuildHostInfo(s.hostSpecRepo.Get(name), s.registry.Get(name))
+	spec, err := s.hostSpecRepo.Get(ctx, name)
+	if err != nil {
+		return nil, fmt.Errorf("get host spec %q: %w", name, err)
+	}
+	node, err := s.registry.Get(ctx, name)
+	if err != nil {
+		return nil, fmt.Errorf("get node %q: %w", name, err)
+	}
+	info := BuildHostInfo(spec, node)
 	if info == nil {
 		return nil, fmt.Errorf("host %q not found", name)
 	}
@@ -153,8 +177,8 @@ func (s *HostService) DeleteHost(ctx context.Context, name string) error {
 	}
 
 	if err := s.runtime.RemoveHost(ctx, name); err != nil {
-		// 底层资源没删干净时必须保留控制面记录，避免把“残留资源”伪装成“删除成功”。
-		s.auditLog.Log(protocol.AuditLogEntry{
+		// 底层资源没删干净时必须保留控制面记录，避免把"残留资源"伪装成"删除成功"。
+		s.logAuditError(ctx, protocol.AuditLogEntry{
 			Operator:       "frontend",
 			Action:         "delete_host",
 			TargetNode:     name,
@@ -164,11 +188,30 @@ func (s *HostService) DeleteHost(ctx context.Context, name string) error {
 		return fmt.Errorf("remove host %q: %w", name, err)
 	}
 
-	s.registry.Delete(name)
-	s.registry.RemoveHostToken(name)
-	s.hostSpecRepo.Delete(name)
+	if err := s.txm.WithinTx(ctx, func(txCtx context.Context) error {
+		ok, err := s.registry.Delete(txCtx, name)
+		if err != nil {
+			return fmt.Errorf("delete node %q: %w", name, err)
+		}
+		if !ok {
+			return fmt.Errorf("host %q not found", name)
+		}
+		if err := s.registry.RemoveHostToken(txCtx, name); err != nil {
+			return fmt.Errorf("remove host token %q: %w", name, err)
+		}
+		ok, err = s.hostSpecRepo.Delete(txCtx, name)
+		if err != nil {
+			return fmt.Errorf("delete host spec %q: %w", name, err)
+		}
+		if !ok {
+			return fmt.Errorf("host %q not found", name)
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
 
-	s.auditLog.Log(protocol.AuditLogEntry{
+	s.logAuditError(ctx, protocol.AuditLogEntry{
 		Operator:       "frontend",
 		Action:         "delete_host",
 		TargetNode:     name,
@@ -186,7 +229,11 @@ func (s *HostService) GetBuildLog(ctx context.Context, name string) (string, err
 		return "", errors.New("name is required")
 	}
 
-	if s.hostSpecRepo.Get(name) == nil {
+	spec, err := s.hostSpecRepo.Get(ctx, name)
+	if err != nil {
+		return "", fmt.Errorf("get host spec %q: %w", name, err)
+	}
+	if spec == nil {
 		return "", fmt.Errorf("host %q not found", name)
 	}
 
@@ -208,7 +255,11 @@ func (s *HostService) GetRuntimeLog(ctx context.Context, name string) (string, e
 		return "", errors.New("name is required")
 	}
 
-	if s.hostSpecRepo.Get(name) == nil {
+	spec, err := s.hostSpecRepo.Get(ctx, name)
+	if err != nil {
+		return "", fmt.Errorf("get host spec %q: %w", name, err)
+	}
+	if spec == nil {
 		return "", fmt.Errorf("host %q not found", name)
 	}
 
@@ -227,20 +278,20 @@ func (s *HostService) ListTools(ctx context.Context) ([]protocol.ToolConfig, err
 
 // deployHostAsync 后台异步构建部署 Host
 func (s *HostService) deployHostAsync(ctx context.Context, spec *protocol.HostSpec) {
-	s.hostSpecRepo.UpdateStatus(spec.Name, protocol.HostStatusDeploying, "")
+	s.updateHostStatus(ctx, spec.Name, protocol.HostStatusDeploying, "")
 
 	if err := s.runtime.StopHost(ctx, spec.Name); err != nil {
 		s.logger.Warnf("[host] stop old container for %s: %v", spec.Name, err)
 	}
 
 	if err := os.MkdirAll(s.logDir, 0750); err != nil {
-		s.hostSpecRepo.UpdateStatus(spec.Name, protocol.HostStatusFailed, fmt.Sprintf("create log dir: %v", err))
+		s.updateHostStatus(ctx, spec.Name, protocol.HostStatusFailed, fmt.Sprintf("create log dir: %v", err))
 		return
 	}
 	logPath := filepath.Join(s.logDir, spec.Name+".log")
 	logFile, err := os.Create(filepath.Clean(logPath))
 	if err != nil {
-		s.hostSpecRepo.UpdateStatus(spec.Name, protocol.HostStatusFailed, fmt.Sprintf("create log file: %v", err))
+		s.updateHostStatus(ctx, spec.Name, protocol.HostStatusFailed, fmt.Sprintf("create log file: %v", err))
 		return
 	}
 	defer func() { _ = logFile.Close() }()
@@ -256,10 +307,10 @@ func (s *HostService) deployHostAsync(ctx context.Context, spec *protocol.HostSp
 
 	if deployErr != nil {
 		errMsg := fmt.Sprintf("deploy failed: %v", deployErr)
-		s.hostSpecRepo.UpdateStatus(spec.Name, protocol.HostStatusFailed, errMsg)
+		s.updateHostStatus(ctx, spec.Name, protocol.HostStatusFailed, errMsg)
 		_, _ = fmt.Fprintf(multiWriter, "[ERROR] %s\n", errMsg)
 
-		s.auditLog.Log(protocol.AuditLogEntry{
+		s.logAuditError(ctx, protocol.AuditLogEntry{
 			Operator:       "system",
 			Action:         "create_host",
 			TargetNode:     spec.Name,
@@ -271,7 +322,7 @@ func (s *HostService) deployHostAsync(ctx context.Context, spec *protocol.HostSp
 
 	_, _ = fmt.Fprintf(multiWriter, "[INFO] Host %s: deployment complete, waiting for agent registration\n", spec.Name)
 
-	s.auditLog.Log(protocol.AuditLogEntry{
+	s.logAuditError(ctx, protocol.AuditLogEntry{
 		Operator:       "system",
 		Action:         "create_host",
 		TargetNode:     spec.Name,
@@ -299,4 +350,21 @@ type writerFunc func(p []byte) (int, error)
 
 func (f writerFunc) Write(p []byte) (int, error) {
 	return f(p)
+}
+
+func (s *HostService) updateHostStatus(ctx context.Context, name, status, errMsg string) {
+	updated, err := s.hostSpecRepo.UpdateStatus(ctx, name, status, errMsg)
+	if err != nil {
+		s.logger.Errorf("[host] update status for %s -> %s failed: %v", name, status, err)
+		return
+	}
+	if !updated {
+		s.logger.Warnf("[host] update status for %s skipped: host spec not found", name)
+	}
+}
+
+func (s *HostService) logAuditError(ctx context.Context, entry protocol.AuditLogEntry) {
+	if err := s.auditLog.Log(ctx, entry); err != nil {
+		s.logger.Errorf("[host] write audit log action=%s target=%s failed: %v", entry.Action, entry.TargetNode, err)
+	}
 }

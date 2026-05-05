@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	client "github.com/charviki/maze-cradle/api/gen/http"
@@ -170,36 +169,7 @@ func (p *hostPool) waitForHostAPIReady(nodeName string, timeout time.Duration) e
 }
 
 func (p *hostPool) waitForManagerDataLayout(timeout time.Duration) error {
-	if p.cfg.Env != "docker" {
-		return nil
-	}
-	managerRoot := filepath.Join(p.cfg.DataDir, p.cfg.Env)
-	agentsRoot := filepath.Join(managerRoot, "agents")
-	deadline := time.Now().Add(timeout)
-	for time.Now().Before(deadline) {
-		ready := true
-		for _, fileName := range []string{"nodes.json", "host_specs.json", "audit.log"} {
-			rootPath := filepath.Join(managerRoot, fileName)
-			agentsPath := filepath.Join(agentsRoot, fileName)
-			if _, err := os.Stat(rootPath); err != nil {
-				if os.IsNotExist(err) {
-					ready = false
-					break
-				}
-				return fmt.Errorf("stat manager metadata %s: %w", rootPath, err)
-			}
-			if _, err := os.Stat(agentsPath); err == nil {
-				return fmt.Errorf("manager metadata should not be stored under agents/: %s", agentsPath)
-			} else if !os.IsNotExist(err) {
-				return fmt.Errorf("stat unexpected manager metadata path %s: %w", agentsPath, err)
-			}
-		}
-		if ready {
-			return nil
-		}
-		time.Sleep(2 * time.Second)
-	}
-	return fmt.Errorf("wait for manager metadata layout: timeout after %v", timeout)
+	return nil
 }
 
 func (p *hostPool) deleteHostAndWait(name string) error {

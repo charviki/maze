@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -75,26 +76,24 @@ func BuildHostInfo(spec *protocol.HostSpec, node *Node) *protocol.HostInfo {
 
 // NodeRegistry 定义 Host/Node 域对节点注册表的最小依赖。
 type NodeRegistry interface {
-	StoreHostToken(name, token string)
-	ValidateHostToken(name, token string) (exists bool, matched bool)
-	RemoveHostToken(name string)
-	Register(req protocol.RegisterRequest) *Node
-	Heartbeat(req protocol.HeartbeatRequest) *Node
-	List() []*Node
-	Get(name string) *Node
-	Delete(name string) bool
-	GetNodeCount() int
-	GetOnlineCount() int
-	WaitSave()
+	StoreHostToken(ctx context.Context, name, token string) error
+	ValidateHostToken(ctx context.Context, name, token string) (exists bool, matched bool, err error)
+	RemoveHostToken(ctx context.Context, name string) error
+	Register(ctx context.Context, req protocol.RegisterRequest) (*Node, error)
+	Heartbeat(ctx context.Context, req protocol.HeartbeatRequest) (*Node, error)
+	List(ctx context.Context) ([]*Node, error)
+	Get(ctx context.Context, name string) (*Node, error)
+	Delete(ctx context.Context, name string) (bool, error)
+	GetNodeCount(ctx context.Context) (int, error)
+	GetOnlineCount(ctx context.Context) (int, error)
 }
 
 // HostSpecRepository 定义 Host 规格的声明式持久化边界。
 type HostSpecRepository interface {
-	Create(spec *protocol.HostSpec) bool
-	Get(name string) *protocol.HostSpec
-	List() []*protocol.HostSpec
-	UpdateStatus(name, status, errMsg string) bool
-	Delete(name string) bool
-	IncrementRetry(name string) bool
-	WaitSave()
+	Create(ctx context.Context, spec *protocol.HostSpec) (bool, error)
+	Get(ctx context.Context, name string) (*protocol.HostSpec, error)
+	List(ctx context.Context) ([]*protocol.HostSpec, error)
+	UpdateStatus(ctx context.Context, name, status, errMsg string) (bool, error)
+	Delete(ctx context.Context, name string) (bool, error)
+	IncrementRetry(ctx context.Context, name string) (bool, error)
 }

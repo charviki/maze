@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/charviki/maze-cradle/protocol"
 )
@@ -13,14 +14,14 @@ type AuditService struct {
 
 // AuditLogWriter 定义审计日志写入边界。
 type AuditLogWriter interface {
-	Log(entry protocol.AuditLogEntry)
+	Log(ctx context.Context, entry protocol.AuditLogEntry) error
 }
 
 // AuditLogRepository 定义审计日志查询与写入边界。
 type AuditLogRepository interface {
 	AuditLogWriter
-	List() []protocol.AuditLogEntry
-	ListPage(page, pageSize int) (logs []protocol.AuditLogEntry, total int)
+	List(ctx context.Context) ([]protocol.AuditLogEntry, error)
+	ListPage(ctx context.Context, page, pageSize int) (logs []protocol.AuditLogEntry, total int, err error)
 }
 
 // NewAuditService 创建 AuditService
@@ -42,7 +43,10 @@ type AuditLogsResult struct {
 // 当 page<=0 时返回全部日志
 func (s *AuditService) GetAuditLogs(ctx context.Context, page, pageSize int) (*AuditLogsResult, error) {
 	if page <= 0 {
-		logs := s.auditLog.List()
+		logs, err := s.auditLog.List(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("list audit logs: %w", err)
+		}
 		return &AuditLogsResult{
 			Logs:     logs,
 			Total:    len(logs),
@@ -51,7 +55,10 @@ func (s *AuditService) GetAuditLogs(ctx context.Context, page, pageSize int) (*A
 		}, nil
 	}
 
-	logs, total := s.auditLog.ListPage(page, pageSize)
+	logs, total, err := s.auditLog.ListPage(ctx, page, pageSize)
+	if err != nil {
+		return nil, fmt.Errorf("list audit logs page: %w", err)
+	}
 	return &AuditLogsResult{
 		Logs:     logs,
 		Total:    total,

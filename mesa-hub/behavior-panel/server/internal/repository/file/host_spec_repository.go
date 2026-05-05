@@ -1,6 +1,7 @@
 package file
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"sort"
@@ -70,27 +71,27 @@ func (s *HostSpecRepository) save() error {
 }
 
 // Create 创建新的 HostSpec。
-func (s *HostSpecRepository) Create(spec *protocol.HostSpec) bool {
+func (s *HostSpecRepository) Create(_ context.Context, spec *protocol.HostSpec) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, ok := s.specs[spec.Name]; ok {
-		return false
+		return false, nil
 	}
 	// repository 内部保存独立副本，避免调用方在锁外继续修改传入对象。
 	s.specs[spec.Name] = cloneHostSpec(spec)
 	s.flusher.MarkDirty()
-	return true
+	return true, nil
 }
 
 // Get 返回指定 HostSpec。
-func (s *HostSpecRepository) Get(name string) *protocol.HostSpec {
+func (s *HostSpecRepository) Get(_ context.Context, name string) (*protocol.HostSpec, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return cloneHostSpec(s.specs[name])
+	return cloneHostSpec(s.specs[name]), nil
 }
 
 // List 返回所有 HostSpec，并保持按名称排序，保证 API 输出稳定。
-func (s *HostSpecRepository) List() []*protocol.HostSpec {
+func (s *HostSpecRepository) List(_ context.Context) ([]*protocol.HostSpec, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -101,50 +102,50 @@ func (s *HostSpecRepository) List() []*protocol.HostSpec {
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].Name < result[j].Name
 	})
-	return result
+	return result, nil
 }
 
 // UpdateStatus 更新 HostSpec 的状态和错误信息。
-func (s *HostSpecRepository) UpdateStatus(name, status, errMsg string) bool {
+func (s *HostSpecRepository) UpdateStatus(_ context.Context, name, status, errMsg string) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	spec, ok := s.specs[name]
 	if !ok {
-		return false
+		return false, nil
 	}
 	spec.Status = status
 	spec.ErrorMsg = errMsg
 	spec.UpdatedAt = time.Now()
 	s.flusher.MarkDirty()
-	return true
+	return true, nil
 }
 
 // Delete 删除指定 HostSpec。
-func (s *HostSpecRepository) Delete(name string) bool {
+func (s *HostSpecRepository) Delete(_ context.Context, name string) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, ok := s.specs[name]; !ok {
-		return false
+		return false, nil
 	}
 	delete(s.specs, name)
 	s.flusher.MarkDirty()
-	return true
+	return true, nil
 }
 
 // IncrementRetry 递增指定 Host 的重试计数。
-func (s *HostSpecRepository) IncrementRetry(name string) bool {
+func (s *HostSpecRepository) IncrementRetry(_ context.Context, name string) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	spec, ok := s.specs[name]
 	if !ok {
-		return false
+		return false, nil
 	}
 	spec.RetryCount++
 	spec.UpdatedAt = time.Now()
 	s.flusher.MarkDirty()
-	return true
+	return true, nil
 }
 
 // WaitSave 停止后台刷盘并执行最终持久化。

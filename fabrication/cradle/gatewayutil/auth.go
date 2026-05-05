@@ -12,9 +12,9 @@ import (
 )
 
 // HostTokenValidator 定义 Host 专属令牌校验接口。
-// 与 model.NodeRegistry.ValidateHostToken 签名一致，Manager 可直接注入而无需适配器。
+// 与 service.NodeRegistry.ValidateHostToken 签名一致，Manager 可直接注入而无需适配器。
 type HostTokenValidator interface {
-	ValidateHostToken(name, token string) (exists, matched bool)
+	ValidateHostToken(ctx context.Context, name, token string) (exists, matched bool, err error)
 }
 
 // UnaryAuthInterceptor 返回 gRPC UnaryServerInterceptor，对非 Agent 注册/心跳路径执行全局 Bearer Token 校验。
@@ -80,7 +80,7 @@ func UnaryHostTokenInterceptor(globalToken string, registry HostTokenValidator) 
 		}
 
 		// 分层校验：先检查 Host 专属令牌，再回退全局令牌
-		exists, matched := registry.ValidateHostToken(agentName, token)
+		exists, matched, _ := registry.ValidateHostToken(ctx, agentName, token)
 		if exists {
 			// Host 有预存令牌，必须精确匹配
 			if !matched {

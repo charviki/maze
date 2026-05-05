@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"context"
 	"testing"
 
 	"github.com/charviki/maze-cradle/logutil"
@@ -11,28 +12,29 @@ import (
 type testNodeRegistry struct{}
 type testAuditLogWriter struct{}
 
-func (r *testNodeRegistry) StoreHostToken(name, token string)                 {}
-func (r *testNodeRegistry) ValidateHostToken(name, token string) (bool, bool) { return true, true }
-func (r *testNodeRegistry) RemoveHostToken(name string)                       {}
-func (r *testNodeRegistry) Register(req protocol.RegisterRequest) *service.Node {
-	return &service.Node{Name: req.Name}
+func (r *testNodeRegistry) StoreHostToken(_ context.Context, name, token string) error { return nil }
+func (r *testNodeRegistry) ValidateHostToken(_ context.Context, name, token string) (bool, bool, error) {
+	return true, true, nil
 }
-func (r *testNodeRegistry) Heartbeat(req protocol.HeartbeatRequest) *service.Node {
-	return &service.Node{Name: req.Name}
+func (r *testNodeRegistry) RemoveHostToken(_ context.Context, name string) error { return nil }
+func (r *testNodeRegistry) Register(_ context.Context, req protocol.RegisterRequest) (*service.Node, error) {
+	return &service.Node{Name: req.Name}, nil
 }
-func (r *testNodeRegistry) List() []*service.Node { return nil }
-func (r *testNodeRegistry) Get(name string) *service.Node {
+func (r *testNodeRegistry) Heartbeat(_ context.Context, req protocol.HeartbeatRequest) (*service.Node, error) {
+	return &service.Node{Name: req.Name}, nil
+}
+func (r *testNodeRegistry) List(_ context.Context) ([]*service.Node, error) { return nil, nil }
+func (r *testNodeRegistry) Get(_ context.Context, name string) (*service.Node, error) {
 	if name == "" {
-		return nil
+		return nil, nil
 	}
-	return &service.Node{Name: name}
+	return &service.Node{Name: name}, nil
 }
-func (r *testNodeRegistry) Delete(name string) bool { return true }
-func (r *testNodeRegistry) GetNodeCount() int       { return 0 }
-func (r *testNodeRegistry) GetOnlineCount() int     { return 0 }
-func (r *testNodeRegistry) WaitSave()               {}
+func (r *testNodeRegistry) Delete(_ context.Context, name string) (bool, error) { return true, nil }
+func (r *testNodeRegistry) GetNodeCount(_ context.Context) (int, error)         { return 0, nil }
+func (r *testNodeRegistry) GetOnlineCount(_ context.Context) (int, error)       { return 0, nil }
 
-func (w *testAuditLogWriter) Log(entry protocol.AuditLogEntry) {}
+func (w *testAuditLogWriter) Log(_ context.Context, entry protocol.AuditLogEntry) error { return nil }
 
 func TestNewSessionProxyHandler(t *testing.T) {
 	h := NewSessionProxyHandler(

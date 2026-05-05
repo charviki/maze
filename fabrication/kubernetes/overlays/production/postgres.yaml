@@ -10,6 +10,20 @@ spec:
     requests:
       storage: 10Gi
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-db
+  namespace: maze-prod
+data:
+  init-db.sh: |
+    #!/bin/bash
+    set -e
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+      SELECT 'CREATE DATABASE maze_host'
+      WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'maze_host')\gexec
+    EOSQL
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -46,6 +60,9 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
+            - name: init-db
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
           readinessProbe:
             exec:
               command:
@@ -66,6 +83,10 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: postgresql-data
+        - name: init-db
+          configMap:
+            name: postgres-init-db
+            defaultMode: 0755
 ---
 apiVersion: v1
 kind: Service

@@ -15,7 +15,7 @@ type PolicyReloader func() error
 // PermissionService 处理权限申请闭环。
 type PermissionService struct {
 	store        PermissionStore
-	txm          TxManager
+	txm          AuthTxManager
 	reloadPolicy PolicyReloader
 }
 
@@ -51,7 +51,7 @@ type ListPermissionApplicationsInput struct {
 }
 
 // NewPermissionService 创建 PermissionService。
-func NewPermissionService(store PermissionStore, txm TxManager, reload PolicyReloader) *PermissionService {
+func NewPermissionService(store PermissionStore, txm AuthTxManager, reload PolicyReloader) *PermissionService {
 	return &PermissionService{store: store, txm: txm, reloadPolicy: reload}
 }
 
@@ -181,7 +181,7 @@ func (s *PermissionService) ReviewPermissionApplication(ctx context.Context, inp
 					return err
 				}
 
-				// grant 与 Casbin rule 复用同一个事务上下文；任一步失败都会由 TxManager 统一回滚，避免孤儿规则残留。
+				// grant 与 Casbin rule 复用同一个事务上下文；任一步失败都会由 AuthTxManager 统一回滚，避免孤儿规则残留。
 				ruleID, err := s.store.InsertCasbinRule(ctx, CasbinRule{
 					Ptype: "p",
 					V0:    updated.SubjectKey,

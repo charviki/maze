@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,44 +15,46 @@ type wsTestNodeRegistry struct {
 	nodes map[string]*service.Node
 }
 
-func (r *wsTestNodeRegistry) StoreHostToken(name, token string)                 {}
-func (r *wsTestNodeRegistry) ValidateHostToken(name, token string) (bool, bool) { return true, true }
-func (r *wsTestNodeRegistry) RemoveHostToken(name string)                       {}
-func (r *wsTestNodeRegistry) Register(req protocol.RegisterRequest) *service.Node {
-	return &service.Node{Name: req.Name}
+func (r *wsTestNodeRegistry) StoreHostToken(_ context.Context, name, token string) error { return nil }
+func (r *wsTestNodeRegistry) ValidateHostToken(_ context.Context, name, token string) (bool, bool, error) {
+	return true, true, nil
 }
-func (r *wsTestNodeRegistry) Heartbeat(req protocol.HeartbeatRequest) *service.Node {
-	return &service.Node{Name: req.Name}
+func (r *wsTestNodeRegistry) RemoveHostToken(_ context.Context, name string) error { return nil }
+func (r *wsTestNodeRegistry) Register(_ context.Context, req protocol.RegisterRequest) (*service.Node, error) {
+	return &service.Node{Name: req.Name}, nil
 }
-func (r *wsTestNodeRegistry) List() []*service.Node {
+func (r *wsTestNodeRegistry) Heartbeat(_ context.Context, req protocol.HeartbeatRequest) (*service.Node, error) {
+	return &service.Node{Name: req.Name}, nil
+}
+func (r *wsTestNodeRegistry) List(_ context.Context) ([]*service.Node, error) {
 	result := make([]*service.Node, 0, len(r.nodes))
 	for _, n := range r.nodes {
 		result = append(result, n)
 	}
-	return result
+	return result, nil
 }
-func (r *wsTestNodeRegistry) Get(name string) *service.Node {
+func (r *wsTestNodeRegistry) Get(_ context.Context, name string) (*service.Node, error) {
 	if r.nodes == nil {
-		return nil
+		return nil, nil
 	}
-	return r.nodes[name]
+	return r.nodes[name], nil
 }
-func (r *wsTestNodeRegistry) Delete(name string) bool { return true }
-func (r *wsTestNodeRegistry) GetNodeCount() int {
+func (r *wsTestNodeRegistry) Delete(_ context.Context, name string) (bool, error) { return true, nil }
+func (r *wsTestNodeRegistry) GetNodeCount(_ context.Context) (int, error) {
 	if r.nodes == nil {
-		return 0
+		return 0, nil
 	}
-	return len(r.nodes)
+	return len(r.nodes), nil
 }
-func (r *wsTestNodeRegistry) GetOnlineCount() int { return 0 }
-func (r *wsTestNodeRegistry) WaitSave()           {}
+func (r *wsTestNodeRegistry) GetOnlineCount(_ context.Context) (int, error) { return 0, nil }
 
 type wsTestAuditLog struct {
 	entries []protocol.AuditLogEntry
 }
 
-func (a *wsTestAuditLog) Log(entry protocol.AuditLogEntry) {
+func (a *wsTestAuditLog) Log(_ context.Context, entry protocol.AuditLogEntry) error {
 	a.entries = append(a.entries, entry)
+	return nil
 }
 
 func newWSTestHandler(t *testing.T) *SessionProxyHandler {

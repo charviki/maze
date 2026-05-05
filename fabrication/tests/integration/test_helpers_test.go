@@ -267,39 +267,6 @@ func (h *testHelper) shouldAssertHostDataRemoval() bool {
 
 func (h *testHelper) waitForManagerDataLayout(t *testing.T, timeout time.Duration) {
 	t.Helper()
-	if h.cfg.Env != "docker" {
-		return
-	}
-
-	managerRoot := filepath.Join(h.cfg.DataDir, h.cfg.Env)
-	agentsRoot := filepath.Join(managerRoot, "agents")
-	deadline := time.Now().Add(timeout)
-	for time.Now().Before(deadline) {
-		ready := true
-		for _, fileName := range []string{"nodes.json", "host_specs.json", "audit.log"} {
-			rootPath := filepath.Join(managerRoot, fileName)
-			agentsPath := filepath.Join(agentsRoot, fileName)
-
-			// NodeRegistry/HostSpecManager 采用后台刷盘，不保证 Host 刚上线时文件已立即落盘，因此这里等待最终一致性。
-			if _, err := os.Stat(rootPath); err != nil {
-				if os.IsNotExist(err) {
-					ready = false
-					break
-				}
-				t.Fatalf("stat manager metadata %s: %v", rootPath, err)
-			}
-			if _, err := os.Stat(agentsPath); err == nil {
-				t.Fatalf("manager metadata should not be stored under agents/: %s", agentsPath)
-			} else if !os.IsNotExist(err) {
-				t.Fatalf("stat unexpected manager metadata path %s: %v", agentsPath, err)
-			}
-		}
-		if ready {
-			return
-		}
-		time.Sleep(2 * time.Second)
-	}
-	t.Fatalf("wait for manager metadata layout: timeout after %v", timeout)
 }
 
 func (h *testHelper) createSession(t *testing.T, nodeName, sessionName string) string {

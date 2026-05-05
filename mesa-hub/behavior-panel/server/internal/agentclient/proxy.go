@@ -27,7 +27,7 @@ func NewProxy(registry service.NodeRegistry, connMgr *ConnectionManager) *Proxy 
 // getSessionClient 获取指定节点的 SessionService client。
 // 通过连接池复用长连接，是为了避免高频会话操作反复建连。
 func (p *Proxy) getSessionClient(ctx context.Context, nodeName string) (pb.SessionServiceClient, error) {
-	addr, err := p.getNodeAddr(nodeName)
+	addr, err := p.getNodeAddr(ctx, nodeName)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func (p *Proxy) getSessionClient(ctx context.Context, nodeName string) (pb.Sessi
 
 // getTemplateClient 获取指定节点的 TemplateService client。
 func (p *Proxy) getTemplateClient(ctx context.Context, nodeName string) (pb.TemplateServiceClient, error) {
-	addr, err := p.getNodeAddr(nodeName)
+	addr, err := p.getNodeAddr(ctx, nodeName)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func (p *Proxy) getTemplateClient(ctx context.Context, nodeName string) (pb.Temp
 
 // getConfigClient 获取指定节点的 ConfigService client。
 func (p *Proxy) getConfigClient(ctx context.Context, nodeName string) (pb.ConfigServiceClient, error) {
-	addr, err := p.getNodeAddr(nodeName)
+	addr, err := p.getNodeAddr(ctx, nodeName)
 	if err != nil {
 		return nil, err
 	}
@@ -64,8 +64,11 @@ func (p *Proxy) getConfigClient(ctx context.Context, nodeName string) (pb.Config
 	return pb.NewConfigServiceClient(conn), nil
 }
 
-func (p *Proxy) getNodeAddr(nodeName string) (string, error) {
-	node := p.registry.Get(nodeName)
+func (p *Proxy) getNodeAddr(ctx context.Context, nodeName string) (string, error) {
+	node, err := p.registry.Get(ctx, nodeName)
+	if err != nil {
+		return "", fmt.Errorf("get node %q: %w", nodeName, err)
+	}
 	if node == nil {
 		return "", fmt.Errorf("node %q not found", nodeName)
 	}

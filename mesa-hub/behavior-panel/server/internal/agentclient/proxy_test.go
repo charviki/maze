@@ -24,15 +24,15 @@ func TestProxyGetNodeAddrErrors(t *testing.T) {
 	registry := newTestNodeRegistry(t)
 	proxy := NewProxy(registry, nil)
 
-	if _, err := proxy.getNodeAddr("missing"); err == nil {
+	if _, err := proxy.getNodeAddr(context.Background(), "missing"); err == nil {
 		t.Fatal("缺失节点应返回错误")
 	}
 
-	registry.Register(protocol.RegisterRequest{
+	registry.Register(context.Background(), protocol.RegisterRequest{
 		Name:    "node-1",
 		Address: "http://node-1:8080",
 	})
-	if _, err := proxy.getNodeAddr("node-1"); err == nil {
+	if _, err := proxy.getNodeAddr(context.Background(), "node-1"); err == nil {
 		t.Fatal("缺少 gRPC 地址应返回错误")
 	}
 }
@@ -42,7 +42,7 @@ func TestProxyGetNodeAddrReturnsGrpcAddress(t *testing.T) {
 	registerTestNode(registry, "node-1:9090")
 
 	proxy := NewProxy(registry, nil)
-	addr, err := proxy.getNodeAddr("node-1")
+	addr, err := proxy.getNodeAddr(context.Background(), "node-1")
 	if err != nil {
 		t.Fatalf("getNodeAddr 返回错误: %v", err)
 	}
@@ -381,7 +381,7 @@ func newTestNodeRegistry(t *testing.T) *filerepo.NodeRegistry {
 }
 
 func registerTestNode(registry *filerepo.NodeRegistry, grpcAddr string) {
-	registry.Register(protocol.RegisterRequest{
+	registry.Register(context.Background(), protocol.RegisterRequest{
 		Name:        "node-1",
 		Address:     "http://node-1:8080",
 		GrpcAddress: grpcAddr,

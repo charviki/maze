@@ -1,6 +1,7 @@
 package file
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -31,12 +32,12 @@ func TestHostSpecRepository_CreateAndGet(t *testing.T) {
 	s := newTestHostSpecRepository(t)
 
 	spec := sampleSpec("host-1")
-	ok := s.Create(spec)
+	ok, _ := s.Create(context.Background(), spec)
 	if !ok {
 		t.Fatal("期望 Create 返回 true")
 	}
 
-	got := s.Get("host-1")
+	got, _ := s.Get(context.Background(), "host-1")
 	if got == nil {
 		t.Fatal("期望 Get 返回非 nil")
 	}
@@ -51,8 +52,8 @@ func TestHostSpecRepository_CreateAndGet(t *testing.T) {
 func TestHostSpecRepository_CreateDuplicate(t *testing.T) {
 	s := newTestHostSpecRepository(t)
 
-	s.Create(sampleSpec("host-1"))
-	ok := s.Create(sampleSpec("host-1"))
+	_, _ = s.Create(context.Background(), sampleSpec("host-1"))
+	ok, _ := s.Create(context.Background(), sampleSpec("host-1"))
 	if ok {
 		t.Error("期望重复 Create 返回 false")
 	}
@@ -60,18 +61,19 @@ func TestHostSpecRepository_CreateDuplicate(t *testing.T) {
 
 func TestHostSpecRepository_GetNotFound(t *testing.T) {
 	s := newTestHostSpecRepository(t)
-	if s.Get("nonexistent") != nil {
+	got, _ := s.Get(context.Background(), "nonexistent")
+	if got != nil {
 		t.Error("期望 Get 不存在的名称返回 nil")
 	}
 }
 
 func TestHostSpecRepository_List(t *testing.T) {
 	s := newTestHostSpecRepository(t)
-	s.Create(sampleSpec("host-b"))
-	s.Create(sampleSpec("host-a"))
-	s.Create(sampleSpec("host-c"))
+	_, _ = s.Create(context.Background(), sampleSpec("host-b"))
+	_, _ = s.Create(context.Background(), sampleSpec("host-a"))
+	_, _ = s.Create(context.Background(), sampleSpec("host-c"))
 
-	list := s.List()
+	list, _ := s.List(context.Background())
 	if len(list) != 3 {
 		t.Fatalf("期望 List 返回 3 个, 实际=%d", len(list))
 	}
@@ -86,13 +88,13 @@ func TestHostSpecRepository_List(t *testing.T) {
 
 func TestHostSpecRepository_UpdateStatus(t *testing.T) {
 	s := newTestHostSpecRepository(t)
-	s.Create(sampleSpec("host-1"))
+	_, _ = s.Create(context.Background(), sampleSpec("host-1"))
 
-	ok := s.UpdateStatus("host-1", protocol.HostStatusDeploying, "")
+	ok, _ := s.UpdateStatus(context.Background(), "host-1", protocol.HostStatusDeploying, "")
 	if !ok {
 		t.Fatal("期望 UpdateStatus 返回 true")
 	}
-	got := s.Get("host-1")
+	got, _ := s.Get(context.Background(), "host-1")
 	if got.Status != protocol.HostStatusDeploying {
 		t.Errorf("期望 Status=deploying, 实际=%s", got.Status)
 	}
@@ -100,10 +102,10 @@ func TestHostSpecRepository_UpdateStatus(t *testing.T) {
 
 func TestHostSpecRepository_UpdateStatusWithErrMsg(t *testing.T) {
 	s := newTestHostSpecRepository(t)
-	s.Create(sampleSpec("host-1"))
+	_, _ = s.Create(context.Background(), sampleSpec("host-1"))
 
-	s.UpdateStatus("host-1", protocol.HostStatusFailed, "docker build failed: exit code 1")
-	got := s.Get("host-1")
+	_, _ = s.UpdateStatus(context.Background(), "host-1", protocol.HostStatusFailed, "docker build failed: exit code 1")
+	got, _ := s.Get(context.Background(), "host-1")
 	if got.Status != protocol.HostStatusFailed {
 		t.Errorf("期望 Status=failed, 实际=%s", got.Status)
 	}
@@ -114,7 +116,7 @@ func TestHostSpecRepository_UpdateStatusWithErrMsg(t *testing.T) {
 
 func TestHostSpecRepository_UpdateStatusNotFound(t *testing.T) {
 	s := newTestHostSpecRepository(t)
-	ok := s.UpdateStatus("nonexistent", protocol.HostStatusDeploying, "")
+	ok, _ := s.UpdateStatus(context.Background(), "nonexistent", protocol.HostStatusDeploying, "")
 	if ok {
 		t.Error("期望更新不存在的 HostSpec 返回 false")
 	}
@@ -122,20 +124,21 @@ func TestHostSpecRepository_UpdateStatusNotFound(t *testing.T) {
 
 func TestHostSpecRepository_Delete(t *testing.T) {
 	s := newTestHostSpecRepository(t)
-	s.Create(sampleSpec("host-1"))
+	_, _ = s.Create(context.Background(), sampleSpec("host-1"))
 
-	ok := s.Delete("host-1")
+	ok, _ := s.Delete(context.Background(), "host-1")
 	if !ok {
 		t.Error("期望 Delete 返回 true")
 	}
-	if s.Get("host-1") != nil {
+	got, _ := s.Get(context.Background(), "host-1")
+	if got != nil {
 		t.Error("期望删除后 Get 返回 nil")
 	}
 }
 
 func TestHostSpecRepository_DeleteNotFound(t *testing.T) {
 	s := newTestHostSpecRepository(t)
-	ok := s.Delete("nonexistent")
+	ok, _ := s.Delete(context.Background(), "nonexistent")
 	if ok {
 		t.Error("期望删除不存在的 HostSpec 返回 false")
 	}
@@ -143,11 +146,11 @@ func TestHostSpecRepository_DeleteNotFound(t *testing.T) {
 
 func TestHostSpecRepository_IncrementRetry(t *testing.T) {
 	s := newTestHostSpecRepository(t)
-	s.Create(sampleSpec("host-1"))
+	_, _ = s.Create(context.Background(), sampleSpec("host-1"))
 
-	s.IncrementRetry("host-1")
-	s.IncrementRetry("host-1")
-	got := s.Get("host-1")
+	_, _ = s.IncrementRetry(context.Background(), "host-1")
+	_, _ = s.IncrementRetry(context.Background(), "host-1")
+	got, _ := s.Get(context.Background(), "host-1")
 	if got.RetryCount != 2 {
 		t.Errorf("期望 RetryCount=2, 实际=%d", got.RetryCount)
 	}
@@ -155,7 +158,7 @@ func TestHostSpecRepository_IncrementRetry(t *testing.T) {
 
 func TestHostSpecRepository_IncrementRetryNotFound(t *testing.T) {
 	s := newTestHostSpecRepository(t)
-	ok := s.IncrementRetry("nonexistent")
+	ok, _ := s.IncrementRetry(context.Background(), "nonexistent")
 	if ok {
 		t.Error("期望递增不存在的 HostSpec 返回 false")
 	}
@@ -168,8 +171,8 @@ func TestHostSpecRepository_PersistAndRecover(t *testing.T) {
 	s1 := NewHostSpecRepository(filePath, logutil.NewNop())
 	spec := sampleSpec("host-persist")
 	spec.DisplayName = "Persist Test"
-	s1.Create(spec)
-	s1.UpdateStatus("host-persist", protocol.HostStatusDeploying, "")
+	_, _ = s1.Create(context.Background(), spec)
+	_, _ = s1.UpdateStatus(context.Background(), "host-persist", protocol.HostStatusDeploying, "")
 
 	s1.WaitSave()
 
@@ -178,7 +181,7 @@ func TestHostSpecRepository_PersistAndRecover(t *testing.T) {
 	}
 
 	s2 := NewHostSpecRepository(filePath, logutil.NewNop())
-	got := s2.Get("host-persist")
+	got, _ := s2.Get(context.Background(), "host-persist")
 	if got == nil {
 		t.Fatal("期望恢复 host-persist，但为 nil")
 	}
@@ -195,14 +198,14 @@ func TestHostSpecRepository_CreateClonesInput(t *testing.T) {
 	s := newTestHostSpecRepository(t)
 	spec := sampleSpec("host-clone")
 
-	if !s.Create(spec) {
+	if ok, _ := s.Create(context.Background(), spec); !ok {
 		t.Fatal("期望 Create 返回 true")
 	}
 
 	spec.Tools[0] = "tampered"
 	spec.Status = protocol.HostStatusFailed
 
-	got := s.Get("host-clone")
+	got, _ := s.Get(context.Background(), "host-clone")
 	if got.Tools[0] != "claude" {
 		t.Fatalf("期望存储副本保留原始 Tools，实际=%v", got.Tools)
 	}
@@ -213,13 +216,13 @@ func TestHostSpecRepository_CreateClonesInput(t *testing.T) {
 
 func TestHostSpecRepository_GetReturnsDetachedCopy(t *testing.T) {
 	s := newTestHostSpecRepository(t)
-	s.Create(sampleSpec("host-copy"))
+	_, _ = s.Create(context.Background(), sampleSpec("host-copy"))
 
-	got := s.Get("host-copy")
+	got, _ := s.Get(context.Background(), "host-copy")
 	got.Tools[0] = "tampered"
 	got.Status = protocol.HostStatusFailed
 
-	again := s.Get("host-copy")
+	again, _ := s.Get(context.Background(), "host-copy")
 	if again.Tools[0] != "claude" {
 		t.Fatalf("期望 Get 返回独立副本，实际=%v", again.Tools)
 	}
@@ -230,13 +233,13 @@ func TestHostSpecRepository_GetReturnsDetachedCopy(t *testing.T) {
 
 func TestHostSpecRepository_ListReturnsDetachedCopies(t *testing.T) {
 	s := newTestHostSpecRepository(t)
-	s.Create(sampleSpec("host-list"))
+	_, _ = s.Create(context.Background(), sampleSpec("host-list"))
 
-	list := s.List()
+	list, _ := s.List(context.Background())
 	list[0].Tools[0] = "tampered"
 	list[0].Status = protocol.HostStatusFailed
 
-	again := s.Get("host-list")
+	again, _ := s.Get(context.Background(), "host-list")
 	if again.Tools[0] != "claude" {
 		t.Fatalf("期望 List 返回独立副本，实际=%v", again.Tools)
 	}

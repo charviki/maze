@@ -7,23 +7,24 @@ import (
 	"github.com/charviki/maze-cradle/configutil"
 )
 
-// Config 全局配置结构体，含 Server、Workspace、Docker、Runtime、Kubernetes、Database、Casbin 维度
+// Config 全局配置结构体，含 Server、Workspace、Docker、Runtime、Kubernetes、AuthDatabase、HostDatabase、Casbin 维度
 type Config struct {
-	Server     ServerConfig     `yaml:"server"`
-	Workspace  WorkspaceConfig  `yaml:"workspace"`
-	Docker     DockerConfig     `yaml:"docker"`
-	Runtime    RuntimeConfig    `yaml:"runtime"`
-	Kubernetes KubernetesConfig `yaml:"kubernetes"`
-	Database   DatabaseConfig   `yaml:"database"`
-	Casbin     CasbinConfig     `yaml:"casbin"`
-	Authz      AuthzConfig      `yaml:"authz"`
+	Server       ServerConfig     `yaml:"server"`
+	Workspace    WorkspaceConfig  `yaml:"workspace"`
+	Docker       DockerConfig     `yaml:"docker"`
+	Runtime      RuntimeConfig    `yaml:"runtime"`
+	Kubernetes   KubernetesConfig `yaml:"kubernetes"`
+	AuthDatabase DatabaseConfig   `yaml:"auth_database"`
+	HostDatabase DatabaseConfig   `yaml:"host_database"`
+	Casbin       CasbinConfig     `yaml:"casbin"`
+	Authz        AuthzConfig      `yaml:"authz"`
 }
 
-// DatabaseConfig PostgreSQL 权限数据库配置
+// DatabaseConfig PostgreSQL 数据库连接配置
 type DatabaseConfig struct {
 	Host     string `yaml:"host"`
-	Port     int    `yaml:"port"`     // 默认 5432
-	Name     string `yaml:"name"`     // 默认 maze_auth
+	Port     int    `yaml:"port"`
+	Name     string `yaml:"name"`
 	User     string `yaml:"user"`
 	Password string `yaml:"password"`
 }
@@ -206,12 +207,29 @@ func validate(cfg *Config) {
 	}
 	cfg.Kubernetes.HostPathBase = configutil.ExpandHomePath(cfg.Kubernetes.HostPathBase)
 
-	// Database 默认值
-	if cfg.Database.Port == 0 {
-		cfg.Database.Port = 5432
+	// AuthDatabase 默认值
+	if cfg.AuthDatabase.Port == 0 {
+		cfg.AuthDatabase.Port = 5432
 	}
-	if cfg.Database.Name == "" {
-		cfg.Database.Name = "maze_auth"
+	if cfg.AuthDatabase.Name == "" {
+		cfg.AuthDatabase.Name = "maze_auth"
+	}
+
+	// HostDatabase 默认值：继承 AuthDatabase 的 host/port/user/password
+	if cfg.HostDatabase.Host == "" {
+		cfg.HostDatabase.Host = cfg.AuthDatabase.Host
+	}
+	if cfg.HostDatabase.Port == 0 {
+		cfg.HostDatabase.Port = cfg.AuthDatabase.Port
+	}
+	if cfg.HostDatabase.Name == "" {
+		cfg.HostDatabase.Name = "maze_host"
+	}
+	if cfg.HostDatabase.User == "" {
+		cfg.HostDatabase.User = cfg.AuthDatabase.User
+	}
+	if cfg.HostDatabase.Password == "" {
+		cfg.HostDatabase.Password = cfg.AuthDatabase.Password
 	}
 
 	// Authz 默认值

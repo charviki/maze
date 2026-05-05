@@ -11,25 +11,26 @@ type mockAuditLogRepo struct {
 	entries []protocol.AuditLogEntry
 }
 
-func (m *mockAuditLogRepo) Log(entry protocol.AuditLogEntry) {
+func (m *mockAuditLogRepo) Log(_ context.Context, entry protocol.AuditLogEntry) error {
 	m.entries = append(m.entries, entry)
+	return nil
 }
 
-func (m *mockAuditLogRepo) List() []protocol.AuditLogEntry {
-	return m.entries
+func (m *mockAuditLogRepo) List(_ context.Context) ([]protocol.AuditLogEntry, error) {
+	return m.entries, nil
 }
 
-func (m *mockAuditLogRepo) ListPage(page, pageSize int) ([]protocol.AuditLogEntry, int) {
+func (m *mockAuditLogRepo) ListPage(_ context.Context, page, pageSize int) ([]protocol.AuditLogEntry, int, error) {
 	total := len(m.entries)
 	start := (page - 1) * pageSize
 	if start >= total {
-		return nil, total
+		return nil, total, nil
 	}
 	end := start + pageSize
 	if end > total {
 		end = total
 	}
-	return m.entries[start:end], total
+	return m.entries[start:end], total, nil
 }
 
 func newMockAuditLogRepo() *mockAuditLogRepo {
@@ -46,7 +47,7 @@ func TestNewAuditService(t *testing.T) {
 func TestAuditService_GetAuditLogs_All(t *testing.T) {
 	repo := newMockAuditLogRepo()
 	for i := 0; i < 5; i++ {
-		repo.Log(protocol.AuditLogEntry{Action: "test"})
+		_ = repo.Log(context.Background(), protocol.AuditLogEntry{Action: "test"})
 	}
 	svc := NewAuditService(repo)
 
@@ -64,7 +65,7 @@ func TestAuditService_GetAuditLogs_All(t *testing.T) {
 
 func TestAuditService_GetAuditLogs_NegativePage(t *testing.T) {
 	repo := newMockAuditLogRepo()
-	repo.Log(protocol.AuditLogEntry{Action: "test"})
+	_ = repo.Log(context.Background(), protocol.AuditLogEntry{Action: "test"})
 	svc := NewAuditService(repo)
 
 	result, err := svc.GetAuditLogs(context.Background(), -1, 10)
@@ -79,7 +80,7 @@ func TestAuditService_GetAuditLogs_NegativePage(t *testing.T) {
 func TestAuditService_GetAuditLogs_Pagination(t *testing.T) {
 	repo := newMockAuditLogRepo()
 	for i := 0; i < 25; i++ {
-		repo.Log(protocol.AuditLogEntry{Action: "test"})
+		_ = repo.Log(context.Background(), protocol.AuditLogEntry{Action: "test"})
 	}
 	svc := NewAuditService(repo)
 
@@ -101,7 +102,7 @@ func TestAuditService_GetAuditLogs_Pagination(t *testing.T) {
 func TestAuditService_GetAuditLogs_PageBeyondRange(t *testing.T) {
 	repo := newMockAuditLogRepo()
 	for i := 0; i < 5; i++ {
-		repo.Log(protocol.AuditLogEntry{Action: "test"})
+		_ = repo.Log(context.Background(), protocol.AuditLogEntry{Action: "test"})
 	}
 	svc := NewAuditService(repo)
 
@@ -119,10 +120,11 @@ func TestAuditService_GetAuditLogs_PageBeyondRange(t *testing.T) {
 
 func TestAuditService_AuditLogWriter_Log(t *testing.T) {
 	repo := newMockAuditLogRepo()
-	repo.Log(protocol.AuditLogEntry{Action: "create", TargetNode: "node-1"})
-	repo.Log(protocol.AuditLogEntry{Action: "delete", TargetNode: "node-2"})
+	_ = repo.Log(context.Background(), protocol.AuditLogEntry{Action: "create", TargetNode: "node-1"})
+	_ = repo.Log(context.Background(), protocol.AuditLogEntry{Action: "delete", TargetNode: "node-2"})
 
-	if len(repo.List()) != 2 {
-		t.Errorf("expected 2 entries, got %d", len(repo.List()))
+	entries, _ := repo.List(context.Background())
+	if len(entries) != 2 {
+		t.Errorf("expected 2 entries, got %d", len(entries))
 	}
 }

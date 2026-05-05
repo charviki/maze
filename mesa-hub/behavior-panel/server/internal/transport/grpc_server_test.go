@@ -79,7 +79,15 @@ func (m *transportRuntimeMock) IsHealthy(ctx context.Context, name string) (bool
 
 type transportAuditLoggerStub struct{}
 
-func (transportAuditLoggerStub) Log(entry protocol.AuditLogEntry) {}
+func (transportAuditLoggerStub) Log(_ context.Context, entry protocol.AuditLogEntry) error {
+	return nil
+}
+
+type transportHostTxManagerStub struct{}
+
+func (transportHostTxManagerStub) WithinTx(ctx context.Context, fn func(context.Context) error) error {
+	return fn(ctx)
+}
 
 type headerCapturingTransportStream struct {
 	method string
@@ -116,7 +124,7 @@ func newServerTestEnv(t *testing.T) (*Server, *filerepo.NodeRegistry, *filerepo.
 		},
 		Docker: config.DockerConfig{AgentBaseImage: "maze-agent-base:latest"},
 	}
-	hostSvc := service.NewHostService(registry, specMgr, rt, transportAuditLoggerStub{}, cfg, logutil.NewNop(), filepath.Join(tmpDir, "logs"))
+	hostSvc := service.NewHostService(registry, specMgr, transportHostTxManagerStub{}, rt, transportAuditLoggerStub{}, cfg, logutil.NewNop(), filepath.Join(tmpDir, "logs"))
 	nodeSvc := service.NewNodeService(registry, logutil.NewNop())
 	auditSvc := service.NewAuditService(auditrepo.NewLogger("", logutil.NewNop()))
 	server := NewServer(hostSvc, nodeSvc, auditSvc, nil, registry, "manager-token", logutil.NewNop())
@@ -163,7 +171,7 @@ func TestServer_Register_StoresMappedNodeState(t *testing.T) {
 		t.Fatalf("Register response = %#v, want node-1/online", resp)
 	}
 
-	node := registry.Get("node-1")
+	node, _ := registry.Get(context.Background(), "node-1")
 	if node == nil {
 		t.Fatal("Register 后应写入 NodeRegistry")
 	}
@@ -224,10 +232,10 @@ func TestServer_CreateHost_SetsAcceptedHeader(t *testing.T) {
 	if resp.GetResources().GetMemoryLimit() != "4Gi" {
 		t.Fatalf("MemoryLimit = %q, want %q", resp.GetResources().GetMemoryLimit(), "4Gi")
 	}
-	if specMgr.Get("host-1") == nil {
+	if got, _ := specMgr.Get(context.Background(), "host-1"); got == nil {
 		t.Fatal("CreateHost 后应创建 HostSpec")
 	}
-	exists, matched := registry.ValidateHostToken("host-1", resp.GetAuthToken())
+	exists, matched, _ := registry.ValidateHostToken(context.Background(), "host-1", resp.GetAuthToken())
 	if !exists || !matched {
 		t.Fatalf("host token 未正确预存: exists=%v matched=%v", exists, matched)
 	}

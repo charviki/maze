@@ -25,8 +25,8 @@ spec:
             - /bin/sh
             - -c
             - |
-              until nc -z "$AGENT_MANAGER_DATABASE_HOST" "$AGENT_MANAGER_DATABASE_PORT"; do
-                echo "waiting for database ${AGENT_MANAGER_DATABASE_HOST}:${AGENT_MANAGER_DATABASE_PORT}"
+              until nc -z "$AGENT_MANAGER_AUTH_DATABASE_HOST" "$AGENT_MANAGER_AUTH_DATABASE_PORT"; do
+                echo "waiting for database ${AGENT_MANAGER_AUTH_DATABASE_HOST}:${AGENT_MANAGER_AUTH_DATABASE_PORT}"
                 sleep 1
               done
       containers:
@@ -47,12 +47,22 @@ spec:
                 secretKeyRef:
                   name: manager-secret
                   key: AUTH_TOKEN
-            - name: AGENT_MANAGER_DATABASE_USER
+            - name: AGENT_MANAGER_AUTH_DATABASE_USER
               valueFrom:
                 secretKeyRef:
                   name: manager-secret
                   key: DATABASE_USER
-            - name: AGENT_MANAGER_DATABASE_PASSWORD
+            - name: AGENT_MANAGER_AUTH_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: manager-secret
+                  key: DATABASE_PASSWORD
+            - name: AGENT_MANAGER_HOST_DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: manager-secret
+                  key: DATABASE_USER
+            - name: AGENT_MANAGER_HOST_DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: manager-secret

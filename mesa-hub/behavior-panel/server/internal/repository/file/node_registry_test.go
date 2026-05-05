@@ -1,6 +1,7 @@
 package file
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -23,7 +24,7 @@ func newTestRegistry(t *testing.T) *NodeRegistry {
 func TestNodeRegistry_Register(t *testing.T) {
 	reg := newTestRegistry(t)
 
-	node := reg.Register(protocol.RegisterRequest{
+	node, _ := reg.Register(context.Background(), protocol.RegisterRequest{
 		Name:         "agent-1",
 		Address:      "http://192.168.1.10:9090",
 		ExternalAddr: "http://10.0.0.1:9090",
@@ -50,7 +51,7 @@ func TestNodeRegistry_Register(t *testing.T) {
 
 	reg.WaitSave()
 
-	nodes := reg.List()
+	nodes, _ := reg.List(context.Background())
 	if len(nodes) != 1 {
 		t.Fatalf("期望 List 返回 1 个节点, 实际=%d", len(nodes))
 	}
@@ -58,7 +59,7 @@ func TestNodeRegistry_Register(t *testing.T) {
 		t.Errorf("期望 List[0].Name=agent-1, 实际=%s", nodes[0].Name)
 	}
 
-	got := reg.Get("agent-1")
+	got, _ := reg.Get(context.Background(), "agent-1")
 	if got == nil {
 		t.Fatal("期望 Get 返回非 nil")
 	}
@@ -70,11 +71,11 @@ func TestNodeRegistry_Register(t *testing.T) {
 func TestNodeRegistry_RegisterOverwrite(t *testing.T) {
 	reg := newTestRegistry(t)
 
-	reg.Register(protocol.RegisterRequest{
+	reg.Register(context.Background(), protocol.RegisterRequest{
 		Name:    "agent-1",
 		Address: "http://192.168.1.10:9090",
 	})
-	reg.Register(protocol.RegisterRequest{
+	reg.Register(context.Background(), protocol.RegisterRequest{
 		Name:    "agent-1",
 		Address: "http://192.168.1.20:9090",
 	})
@@ -82,7 +83,7 @@ func TestNodeRegistry_RegisterOverwrite(t *testing.T) {
 	reg.WaitSave()
 
 	// 第二次注册应覆盖第一次的地址
-	nodes := reg.List()
+	nodes, _ := reg.List(context.Background())
 	if len(nodes) != 1 {
 		t.Fatalf("期望 1 个节点, 实际=%d", len(nodes))
 	}
@@ -96,7 +97,7 @@ func TestNodeRegistry_RegisterWithCapabilities(t *testing.T) {
 	reg := newTestRegistry(t)
 
 	startedAt := time.Now().Add(-5 * time.Minute)
-	node := reg.Register(protocol.RegisterRequest{
+	node, _ := reg.Register(context.Background(), protocol.RegisterRequest{
 		Name:         "agent-full",
 		Address:      "http://192.168.1.10:9090",
 		ExternalAddr: "http://10.0.0.1:9090",
@@ -168,7 +169,7 @@ func TestNodeRegistry_RegisterWithCapabilities(t *testing.T) {
 func TestNodeRegistry_RegisterOverwriteCapabilities(t *testing.T) {
 	reg := newTestRegistry(t)
 
-	reg.Register(protocol.RegisterRequest{
+	reg.Register(context.Background(), protocol.RegisterRequest{
 		Name:    "agent-overwrite",
 		Address: "http://192.168.1.10:9090",
 		Capabilities: protocol.AgentCapabilities{
@@ -178,7 +179,7 @@ func TestNodeRegistry_RegisterOverwriteCapabilities(t *testing.T) {
 		Metadata: protocol.AgentMetadata{Version: "v1.0.0", Hostname: "host-old"},
 	})
 
-	node := reg.Register(protocol.RegisterRequest{
+	node, _ := reg.Register(context.Background(), protocol.RegisterRequest{
 		Name:    "agent-overwrite",
 		Address: "http://192.168.1.20:9090",
 		Capabilities: protocol.AgentCapabilities{
@@ -200,7 +201,7 @@ func TestNodeRegistry_RegisterOverwriteCapabilities(t *testing.T) {
 		t.Errorf("期望 Version=v2.0.0, 实际=%s", node.Metadata.Version)
 	}
 
-	nodes := reg.List()
+	nodes, _ := reg.List(context.Background())
 	if len(nodes) != 1 {
 		t.Fatalf("期望 1 个节点, 实际=%d", len(nodes))
 	}
@@ -209,12 +210,12 @@ func TestNodeRegistry_RegisterOverwriteCapabilities(t *testing.T) {
 func TestNodeRegistry_Heartbeat(t *testing.T) {
 	reg := newTestRegistry(t)
 
-	reg.Register(protocol.RegisterRequest{
+	reg.Register(context.Background(), protocol.RegisterRequest{
 		Name:    "agent-1",
 		Address: "http://192.168.1.10:9090",
 	})
 
-	node := reg.Heartbeat(protocol.HeartbeatRequest{
+	node, _ := reg.Heartbeat(context.Background(), protocol.HeartbeatRequest{
 		Name: "agent-1",
 		Status: protocol.AgentStatus{
 			SessionDetails: []protocol.SessionDetail{
@@ -239,7 +240,7 @@ func TestNodeRegistry_Heartbeat(t *testing.T) {
 func TestNodeRegistry_HeartbeatNotFound(t *testing.T) {
 	reg := newTestRegistry(t)
 
-	node := reg.Heartbeat(protocol.HeartbeatRequest{
+	node, _ := reg.Heartbeat(context.Background(), protocol.HeartbeatRequest{
 		Name:   "non-existent",
 		Status: protocol.AgentStatus{},
 	})
@@ -252,7 +253,7 @@ func TestNodeRegistry_HeartbeatNotFound(t *testing.T) {
 func TestNodeRegistry_HeartbeatWithStatus(t *testing.T) {
 	reg := newTestRegistry(t)
 
-	reg.Register(protocol.RegisterRequest{
+	reg.Register(context.Background(), protocol.RegisterRequest{
 		Name:    "agent-hb",
 		Address: "http://192.168.1.10:9090",
 		Capabilities: protocol.AgentCapabilities{
@@ -265,7 +266,7 @@ func TestNodeRegistry_HeartbeatWithStatus(t *testing.T) {
 		},
 	})
 
-	node := reg.Heartbeat(protocol.HeartbeatRequest{
+	node, _ := reg.Heartbeat(context.Background(), protocol.HeartbeatRequest{
 		Name: "agent-hb",
 		Status: protocol.AgentStatus{
 			CPUUsage:      78.3,
@@ -307,21 +308,21 @@ func TestNodeRegistry_HeartbeatWithStatus(t *testing.T) {
 func TestNodeRegistry_Delete(t *testing.T) {
 	reg := newTestRegistry(t)
 
-	reg.Register(protocol.RegisterRequest{
+	reg.Register(context.Background(), protocol.RegisterRequest{
 		Name:    "agent-1",
 		Address: "http://192.168.1.10:9090",
 	})
 
-	ok := reg.Delete("agent-1")
+	ok, _ := reg.Delete(context.Background(), "agent-1")
 	if !ok {
 		t.Error("期望 Delete 已存在节点返回 true")
 	}
 
-	nodes := reg.List()
+	nodes, _ := reg.List(context.Background())
 	if len(nodes) != 0 {
 		t.Errorf("期望删除后 List 为空, 实际=%d 个节点", len(nodes))
 	}
-	if reg.Get("agent-1") != nil {
+	if got, _ := reg.Get(context.Background(), "agent-1"); got != nil {
 		t.Error("期望删除后 Get 返回 nil")
 	}
 
@@ -331,7 +332,7 @@ func TestNodeRegistry_Delete(t *testing.T) {
 func TestNodeRegistry_DeleteNotFound(t *testing.T) {
 	reg := newTestRegistry(t)
 
-	ok := reg.Delete("non-existent")
+	ok, _ := reg.Delete(context.Background(), "non-existent")
 	if ok {
 		t.Error("期望删除不存在的节点返回 false")
 	}
@@ -340,7 +341,7 @@ func TestNodeRegistry_DeleteNotFound(t *testing.T) {
 func TestNodeRegistry_List_OfflineStatus(t *testing.T) {
 	reg := newTestRegistry(t)
 
-	reg.Register(protocol.RegisterRequest{
+	reg.Register(context.Background(), protocol.RegisterRequest{
 		Name:    "agent-1",
 		Address: "http://192.168.1.10:9090",
 	})
@@ -353,7 +354,7 @@ func TestNodeRegistry_List_OfflineStatus(t *testing.T) {
 	node.LastHeartbeat = time.Now().Add(-31 * time.Second)
 	reg.mu.Unlock()
 
-	nodes := reg.List()
+	nodes, _ := reg.List(context.Background())
 	if len(nodes) != 1 {
 		t.Fatalf("期望 1 个节点, 实际=%d", len(nodes))
 	}
@@ -365,7 +366,7 @@ func TestNodeRegistry_List_OfflineStatus(t *testing.T) {
 func TestNodeRegistry_Get_OfflineStatus(t *testing.T) {
 	reg := newTestRegistry(t)
 
-	reg.Register(protocol.RegisterRequest{
+	reg.Register(context.Background(), protocol.RegisterRequest{
 		Name:    "agent-1",
 		Address: "http://192.168.1.10:9090",
 	})
@@ -378,7 +379,7 @@ func TestNodeRegistry_Get_OfflineStatus(t *testing.T) {
 	node.LastHeartbeat = time.Now().Add(-31 * time.Second)
 	reg.mu.Unlock()
 
-	got := reg.Get("agent-1")
+	got, _ := reg.Get(context.Background(), "agent-1")
 	if got == nil {
 		t.Fatal("期望 Get 返回非 nil")
 	}
@@ -398,7 +399,7 @@ func TestNodeRegistry_ConcurrentAccess(t *testing.T) {
 
 		go func() {
 			defer wg.Done()
-			reg.Register(protocol.RegisterRequest{
+			reg.Register(context.Background(), protocol.RegisterRequest{
 				Name:    "agent-concurrent",
 				Address: "http://10.0.0.1:9090",
 			})
@@ -406,17 +407,17 @@ func TestNodeRegistry_ConcurrentAccess(t *testing.T) {
 
 		go func() {
 			defer wg.Done()
-			reg.List()
+			reg.List(context.Background())
 		}()
 
 		go func() {
 			defer wg.Done()
-			reg.Get("agent-concurrent")
+			reg.Get(context.Background(), "agent-concurrent")
 		}()
 
 		go func(idx int) {
 			defer wg.Done()
-			reg.Heartbeat(protocol.HeartbeatRequest{
+			reg.Heartbeat(context.Background(), protocol.HeartbeatRequest{
 				Name: "agent-concurrent",
 				Status: protocol.AgentStatus{
 					SessionDetails: make([]protocol.SessionDetail, idx),
@@ -429,7 +430,7 @@ func TestNodeRegistry_ConcurrentAccess(t *testing.T) {
 
 	reg.WaitSave()
 
-	node := reg.Get("agent-concurrent")
+	node, _ := reg.Get(context.Background(), "agent-concurrent")
 	if node == nil {
 		t.Fatal("期望并发操作后节点仍存在")
 	}
@@ -445,11 +446,11 @@ func TestNodeRegistry_PersistAndRecover(t *testing.T) {
 
 	// 第一个 Registry：注册节点
 	reg1 := NewNodeRegistry(filePath, logutil.NewNop())
-	reg1.Register(protocol.RegisterRequest{
+	reg1.Register(context.Background(), protocol.RegisterRequest{
 		Name:    "agent-persist",
 		Address: "http://192.168.1.10:9090",
 	})
-	reg1.Register(protocol.RegisterRequest{
+	reg1.Register(context.Background(), protocol.RegisterRequest{
 		Name:    "agent-persist-2",
 		Address: "http://192.168.1.20:9090",
 	})
@@ -464,12 +465,12 @@ func TestNodeRegistry_PersistAndRecover(t *testing.T) {
 
 	// 第二个 Registry：从同一文件加载，模拟 Manager 重启
 	reg2 := NewNodeRegistry(filePath, logutil.NewNop())
-	nodes := reg2.List()
+	nodes, _ := reg2.List(context.Background())
 	if len(nodes) != 2 {
 		t.Fatalf("期望恢复 2 个节点, 实际=%d", len(nodes))
 	}
 
-	got := reg2.Get("agent-persist")
+	got, _ := reg2.Get(context.Background(), "agent-persist")
 	if got == nil {
 		t.Fatal("期望恢复 agent-persist 节点，但为 nil")
 	}
@@ -477,7 +478,7 @@ func TestNodeRegistry_PersistAndRecover(t *testing.T) {
 		t.Errorf("期望 Address=http://192.168.1.10:9090, 实际=%s", got.Address)
 	}
 
-	got2 := reg2.Get("agent-persist-2")
+	got2, _ := reg2.Get(context.Background(), "agent-persist-2")
 	if got2 == nil {
 		t.Fatal("期望恢复 agent-persist-2 节点，但为 nil")
 	}
@@ -498,20 +499,20 @@ func TestNodeRegistry_CorruptedFile(t *testing.T) {
 
 	// 加载损坏文件不应 panic，以空注册表开始
 	reg := NewNodeRegistry(filePath, logutil.NewNop())
-	nodes := reg.List()
+	nodes, _ := reg.List(context.Background())
 	if len(nodes) != 0 {
 		t.Errorf("期望损坏文件后以空注册表开始, 实际=%d 个节点", len(nodes))
 	}
 
 	// 应该可以正常注册新节点
-	reg.Register(protocol.RegisterRequest{
+	reg.Register(context.Background(), protocol.RegisterRequest{
 		Name:    "agent-after-corrupt",
 		Address: "http://10.0.0.1:9090",
 	})
 
 	reg.WaitSave()
 
-	got := reg.Get("agent-after-corrupt")
+	got, _ := reg.Get(context.Background(), "agent-after-corrupt")
 	if got == nil {
 		t.Fatal("期望损坏文件恢复后可正常注册新节点")
 	}
@@ -523,20 +524,20 @@ func TestNodeRegistry_DeletePersistence(t *testing.T) {
 	filePath := filepath.Join(tmpDir, "nodes.json")
 
 	reg1 := NewNodeRegistry(filePath, logutil.NewNop())
-	reg1.Register(protocol.RegisterRequest{Name: "agent-del", Address: "http://10.0.0.1:9090"})
-	reg1.Register(protocol.RegisterRequest{Name: "agent-keep", Address: "http://10.0.0.2:9090"})
+	reg1.Register(context.Background(), protocol.RegisterRequest{Name: "agent-del", Address: "http://10.0.0.1:9090"})
+	reg1.Register(context.Background(), protocol.RegisterRequest{Name: "agent-keep", Address: "http://10.0.0.2:9090"})
 
-	reg1.Delete("agent-del")
+	reg1.Delete(context.Background(), "agent-del")
 
 	// 同步刷盘确保删除操作持久化
 	reg1.WaitSave()
 
 	// 从文件重新加载，验证 agent-del 已被删除
 	reg2 := NewNodeRegistry(filePath, logutil.NewNop())
-	if reg2.Get("agent-del") != nil {
+	if got, _ := reg2.Get(context.Background(), "agent-del"); got != nil {
 		t.Error("期望 agent-del 已被持久化删除")
 	}
-	if reg2.Get("agent-keep") == nil {
+	if got, _ := reg2.Get(context.Background(), "agent-keep"); got == nil {
 		t.Error("期望 agent-keep 仍存在")
 	}
 	reg2.WaitSave()
@@ -548,7 +549,7 @@ func TestNodeRegistry_FileContents(t *testing.T) {
 	filePath := filepath.Join(tmpDir, "nodes.json")
 
 	reg := NewNodeRegistry(filePath, logutil.NewNop())
-	reg.Register(protocol.RegisterRequest{
+	reg.Register(context.Background(), protocol.RegisterRequest{
 		Name:    "agent-fmt",
 		Address: "http://10.0.0.1:9090",
 	})
@@ -582,7 +583,7 @@ func TestNodeRegistry_RegisterPersistWithCapabilities(t *testing.T) {
 	startedAt := time.Now().Add(-10 * time.Minute)
 
 	reg1 := NewNodeRegistry(filePath, logutil.NewNop())
-	reg1.Register(protocol.RegisterRequest{
+	reg1.Register(context.Background(), protocol.RegisterRequest{
 		Name:         "agent-persist-enh",
 		Address:      "http://192.168.1.10:9090",
 		ExternalAddr: "http://10.0.0.1:9090",
@@ -606,7 +607,7 @@ func TestNodeRegistry_RegisterPersistWithCapabilities(t *testing.T) {
 	reg1.WaitSave()
 
 	reg2 := NewNodeRegistry(filePath, logutil.NewNop())
-	got := reg2.Get("agent-persist-enh")
+	got, _ := reg2.Get(context.Background(), "agent-persist-enh")
 	if got == nil {
 		t.Fatal("期望恢复 agent-persist-enh 节点，但为 nil")
 	}
@@ -631,7 +632,7 @@ func TestNodeRegistry_RegisterPersistWithCapabilities(t *testing.T) {
 func TestNodeRegistry_FormatNodeSummary(t *testing.T) {
 	reg := newTestRegistry(t)
 
-	node := reg.Register(protocol.RegisterRequest{
+	node, _ := reg.Register(context.Background(), protocol.RegisterRequest{
 		Name:    "agent-summary",
 		Address: "http://192.168.1.10:9090",
 		Status: protocol.AgentStatus{
@@ -668,12 +669,12 @@ func TestNodeRegistry_RegisterClonesInput(t *testing.T) {
 		},
 	}
 
-	reg.Register(req)
+	_, _ = reg.Register(context.Background(), req)
 	req.Capabilities.SupportedTemplates[0] = "tampered"
 	req.Status.SessionDetails[0].ID = "tampered"
 	req.Status.LocalConfig.Env["FOO"] = "mutated"
 
-	got := reg.Get("agent-clone")
+	got, _ := reg.Get(context.Background(), "agent-clone")
 	if got.Capabilities.SupportedTemplates[0] != "claude" {
 		t.Fatalf("期望注册时克隆输入切片，实际=%v", got.Capabilities.SupportedTemplates)
 	}
@@ -687,7 +688,7 @@ func TestNodeRegistry_RegisterClonesInput(t *testing.T) {
 
 func TestNodeRegistry_GetAndListReturnDetachedCopies(t *testing.T) {
 	reg := newTestRegistry(t)
-	reg.Register(protocol.RegisterRequest{
+	reg.Register(context.Background(), protocol.RegisterRequest{
 		Name:    "agent-copy",
 		Address: "http://127.0.0.1:9090",
 		Capabilities: protocol.AgentCapabilities{
@@ -701,15 +702,15 @@ func TestNodeRegistry_GetAndListReturnDetachedCopies(t *testing.T) {
 		},
 	})
 
-	got := reg.Get("agent-copy")
+	got, _ := reg.Get(context.Background(), "agent-copy")
 	got.Capabilities.SupportedTemplates[0] = "tampered"
 	got.AgentStatus.SessionDetails[0].ID = "tampered"
 	got.AgentStatus.LocalConfig.Env["FOO"] = "mutated"
 
-	list := reg.List()
+	list, _ := reg.List(context.Background())
 	list[0].Status = service.NodeStatusOffline
 
-	again := reg.Get("agent-copy")
+	again, _ := reg.Get(context.Background(), "agent-copy")
 	if again.Capabilities.SupportedTemplates[0] != "claude" {
 		t.Fatalf("期望 Get 返回独立副本，实际=%v", again.Capabilities.SupportedTemplates)
 	}

@@ -56,7 +56,11 @@ func NewReconciler(
 
 // RecoverOnStartup 启动时对比 host_specs 与实际运行状态，自动补齐缺失的 Host。
 func (r *Reconciler) RecoverOnStartup(ctx context.Context) {
-	specs := r.hostSpecRepo.List()
+	specs, err := r.hostSpecRepo.List(ctx)
+	if err != nil {
+		r.logger.Errorf("[reconciler] list host specs on startup failed: %v", err)
+		return
+	}
 	if len(specs) == 0 {
 		r.logger.Infof("[reconciler] no host specs to recover")
 		return
@@ -64,8 +68,11 @@ func (r *Reconciler) RecoverOnStartup(ctx context.Context) {
 
 	r.logger.Infof("[reconciler] starting recovery for %d host specs", len(specs))
 	for _, spec := range specs {
-		// 恢复令牌到内存（Manager 重启后令牌丢失，需要从 HostSpec 恢复）
-		r.registry.StoreHostToken(spec.Name, spec.AuthToken)
+		// 恢复令牌（Manager 重启后令牌丢失，需要从 HostSpec 恢复）
+		if err := r.registry.StoreHostToken(ctx, spec.Name, spec.AuthToken); err != nil {
+			r.logger.Errorf("[reconciler] restore host token for %s failed: %v", spec.Name, err)
+			continue
+		}
 		r.recoverOne(ctx, spec)
 	}
 	r.logger.Infof("[reconciler] recovery complete")
@@ -74,17 +81,14 @@ func (r *Reconciler) RecoverOnStartup(ctx context.Context) {
 func (r *Reconciler) recoverOne(ctx context.Context, spec *protocol.HostSpec) {
 	switch spec.Status {
 	case protocol.HostStatusPending, protocol.HostStatusDeploying:
-		// 检查运行时是否有对应容器/Pod
 		healthy, err := r.runtime.IsHealthy(ctx, spec.Name)
 		if err != nil {
 			r.logger.Warnf("[reconciler] check health for %s failed: %v", spec.Name, err)
 		}
 		if healthy {
-			// 容器/Pod 存在且健康，等待 Agent 注册
 			r.logger.Infof("[reconciler] host %s already running, waiting for agent registration", spec.Name)
 			return
 		}
-		// 不存在，重新部署
 		r.logger.Infof("[reconciler] host %s not running, redeploying", spec.Name)
 		r.redeploy(ctx, spec)
 
@@ -94,7 +98,6 @@ func (r *Reconciler) recoverOne(ctx context.Context, spec *protocol.HostSpec) {
 			r.logger.Warnf("[reconciler] check health for %s failed: %v", spec.Name, err)
 		}
 		if healthy {
-			// 等待心跳恢复
 			r.logger.Infof("[reconciler] host %s runtime exists, waiting for heartbeat", spec.Name)
 			return
 		}
@@ -104,8 +107,21 @@ func (r *Reconciler) recoverOne(ctx context.Context, spec *protocol.HostSpec) {
 	case protocol.HostStatusFailed:
 		if spec.RetryCount < maxRetryCount {
 			r.logger.Infof("[reconciler] host %s failed (retry %d/%d), retrying", spec.Name, spec.RetryCount, maxRetryCount)
-			r.hostSpecRepo.IncrementRetry(spec.Name)
-			r.redeploy(ctx, r.hostSpecRepo.Get(spec.Name))
+			ok, err := r.hostSpecRepo.IncrementRetry(ctx, spec.Name)
+			if err != nil {
+				r.logger.Errorf("[reconciler] increment retry for %s failed: %v", spec.Name, err)
+				return
+			}
+			if !ok {
+				r.logger.Warnf("[reconciler] increment retry skipped for %s: host spec not found", spec.Name)
+				return
+			}
+			spec, err = r.hostSpecRepo.Get(ctx, spec.Name)
+			if err != nil {
+				r.logger.Errorf("[reconciler] reload host spec %s after retry increment failed: %v", spec.Name, err)
+				return
+			}
+			r.redeploy(ctx, spec)
 		} else {
 			r.logger.Infof("[reconciler] host %s failed (retry %d/%d), skipping", spec.Name, spec.RetryCount, maxRetryCount)
 		}
@@ -137,7 +153,11 @@ func (r *Reconciler) Stop() {
 }
 
 func (r *Reconciler) runHealthCheck(ctx context.Context) {
-	specs := r.hostSpecRepo.List()
+	specs, err := r.hostSpecRepo.List(ctx)
+	if err != nil {
+		r.logger.Errorf("[health-check] list host specs failed: %v", err)
+		return
+	}
 	for _, spec := range specs {
 		r.checkOne(ctx, spec)
 	}
@@ -150,7 +170,6 @@ func (r *Reconciler) checkOne(ctx context.Context, spec *protocol.HostSpec) {
 		if time.Since(spec.UpdatedAt) < deployingGracePeriod {
 			return
 		}
-		// 超过保护期仍未上线，检查运行时健康
 		healthy, err := r.runtime.IsHealthy(ctx, spec.Name)
 		if err != nil {
 			r.logger.Warnf("[health-check] check %s failed: %v", spec.Name, err)
@@ -175,15 +194,28 @@ func (r *Reconciler) checkOne(ctx context.Context, spec *protocol.HostSpec) {
 	case protocol.HostStatusFailed:
 		if spec.RetryCount < maxRetryCount {
 			r.logger.Infof("[health-check] host %s failed (retry %d/%d), retrying", spec.Name, spec.RetryCount, maxRetryCount)
-			r.hostSpecRepo.IncrementRetry(spec.Name)
-			r.redeploy(ctx, r.hostSpecRepo.Get(spec.Name))
+			ok, err := r.hostSpecRepo.IncrementRetry(ctx, spec.Name)
+			if err != nil {
+				r.logger.Errorf("[health-check] increment retry for %s failed: %v", spec.Name, err)
+				return
+			}
+			if !ok {
+				r.logger.Warnf("[health-check] increment retry skipped for %s: host spec not found", spec.Name)
+				return
+			}
+			spec, err = r.hostSpecRepo.Get(ctx, spec.Name)
+			if err != nil {
+				r.logger.Errorf("[health-check] reload host spec %s after retry increment failed: %v", spec.Name, err)
+				return
+			}
+			r.redeploy(ctx, spec)
 		}
 
 	case protocol.HostStatusPending:
 		// pending 超过 5 分钟视为后台任务丢失
 		if time.Since(spec.CreatedAt) > pendingTimeout {
 			r.logger.Infof("[health-check] host %s pending timeout, marking as failed", spec.Name)
-			r.hostSpecRepo.UpdateStatus(spec.Name, protocol.HostStatusFailed, "pending timeout: background task may be lost")
+			r.updateHostStatus(ctx, spec.Name, protocol.HostStatusFailed, "pending timeout: background task may be lost")
 		}
 	}
 }
@@ -195,14 +227,17 @@ func (r *Reconciler) redeploy(ctx context.Context, spec *protocol.HostSpec) {
 	}
 
 	// 确保令牌已预存（Manager 重启后令牌只在内存中，需要恢复）
-	r.registry.StoreHostToken(spec.Name, spec.AuthToken)
+	if err := r.registry.StoreHostToken(ctx, spec.Name, spec.AuthToken); err != nil {
+		r.logger.Errorf("[reconciler] store host token for %s failed: %v", spec.Name, err)
+		return
+	}
 
 	// 清理旧容器/Pod（忽略不存在的错误）
 	if err := r.runtime.StopHost(ctx, spec.Name); err != nil {
 		r.logger.Warnf("[reconciler] cleanup old runtime for %s failed: %v", spec.Name, err)
 	}
 
-	r.hostSpecRepo.UpdateStatus(spec.Name, protocol.HostStatusDeploying, "")
+	r.updateHostStatus(ctx, spec.Name, protocol.HostStatusDeploying, "")
 
 	if err := os.MkdirAll(r.logDir, 0750); err == nil {
 		logPath := filepath.Join(r.logDir, spec.Name+".log")
@@ -216,10 +251,21 @@ func (r *Reconciler) redeploy(ctx context.Context, spec *protocol.HostSpec) {
 	_, deployErr := service.BuildAndDeploy(ctx, r.runtime, spec, r.cfg)
 	if deployErr != nil {
 		errMsg := fmt.Sprintf("redeploy failed: %v", deployErr)
-		r.hostSpecRepo.UpdateStatus(spec.Name, protocol.HostStatusFailed, errMsg)
+		r.updateHostStatus(ctx, spec.Name, protocol.HostStatusFailed, errMsg)
 		r.logger.Errorf("[reconciler] %s: %s", spec.Name, errMsg)
 		return
 	}
 
 	r.logger.Infof("[reconciler] host %s redeployed successfully", spec.Name)
+}
+
+func (r *Reconciler) updateHostStatus(ctx context.Context, name, status, errMsg string) {
+	updated, err := r.hostSpecRepo.UpdateStatus(ctx, name, status, errMsg)
+	if err != nil {
+		r.logger.Errorf("[reconciler] update status for %s -> %s failed: %v", name, status, err)
+		return
+	}
+	if !updated {
+		r.logger.Warnf("[reconciler] update status for %s skipped: host spec not found", name)
+	}
 }

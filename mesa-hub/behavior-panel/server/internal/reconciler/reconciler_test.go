@@ -82,8 +82,8 @@ func TestReconciler_RecoverAllHealthy(t *testing.T) {
 	rt.healthy["host-2"] = true
 
 	rec, specMgr := newTestReconciler(t, rt)
-	specMgr.Create(&protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusOnline, AuthToken: "t1"})
-	specMgr.Create(&protocol.HostSpec{Name: "host-2", Tools: []string{"go"}, Status: protocol.HostStatusDeploying, AuthToken: "t2"})
+	specMgr.Create(context.Background(), &protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusOnline, AuthToken: "t1"})
+	specMgr.Create(context.Background(), &protocol.HostSpec{Name: "host-2", Tools: []string{"go"}, Status: protocol.HostStatusDeploying, AuthToken: "t2"})
 
 	rec.RecoverOnStartup(context.Background())
 
@@ -98,7 +98,7 @@ func TestReconciler_RecoverMissingRuntime(t *testing.T) {
 	// host-1 不健康
 
 	rec, specMgr := newTestReconciler(t, rt)
-	specMgr.Create(&protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusOnline, AuthToken: "t1"})
+	specMgr.Create(context.Background(), &protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusOnline, AuthToken: "t1"})
 
 	rec.RecoverOnStartup(context.Background())
 
@@ -108,7 +108,7 @@ func TestReconciler_RecoverMissingRuntime(t *testing.T) {
 	}
 
 	// 状态应为 deploying
-	spec := specMgr.Get("host-1")
+	spec, _ := specMgr.Get(context.Background(), "host-1")
 	if spec.Status != protocol.HostStatusDeploying {
 		t.Errorf("期望 Status=deploying, 实际=%s", spec.Status)
 	}
@@ -119,7 +119,7 @@ func TestReconciler_RecoverK8sDeploymentExists(t *testing.T) {
 	rt.healthy["host-1"] = true // K8s Deployment 存在
 
 	rec, specMgr := newTestReconciler(t, rt)
-	specMgr.Create(&protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusOnline, AuthToken: "t1"})
+	specMgr.Create(context.Background(), &protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusOnline, AuthToken: "t1"})
 
 	rec.RecoverOnStartup(context.Background())
 
@@ -133,7 +133,7 @@ func TestReconciler_RecoverFailedWithRetry(t *testing.T) {
 	rt := newMockReconcilerRuntime()
 
 	rec, specMgr := newTestReconciler(t, rt)
-	specMgr.Create(&protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusFailed, RetryCount: 1, AuthToken: "t1"})
+	specMgr.Create(context.Background(), &protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusFailed, RetryCount: 1, AuthToken: "t1"})
 
 	rec.RecoverOnStartup(context.Background())
 
@@ -147,7 +147,7 @@ func TestReconciler_RecoverFailedMaxRetry(t *testing.T) {
 	rt := newMockReconcilerRuntime()
 
 	rec, specMgr := newTestReconciler(t, rt)
-	specMgr.Create(&protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusFailed, RetryCount: 3, AuthToken: "t1"})
+	specMgr.Create(context.Background(), &protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusFailed, RetryCount: 3, AuthToken: "t1"})
 
 	rec.RecoverOnStartup(context.Background())
 
@@ -165,7 +165,7 @@ func TestReconciler_HealthCheck_DeployingGracePeriod(t *testing.T) {
 
 	rec, specMgr := newTestReconciler(t, rt)
 	// deploying 且 UpdatedAt 在 1 分钟前（保护窗口内）
-	specMgr.Create(&protocol.HostSpec{
+	_, _ = specMgr.Create(context.Background(), &protocol.HostSpec{
 		Name:      "host-1",
 		Tools:     []string{"claude"},
 		Status:    protocol.HostStatusDeploying,
@@ -187,7 +187,7 @@ func TestReconciler_HealthCheck_DeployingGracePeriodExpired(t *testing.T) {
 
 	rec, specMgr := newTestReconciler(t, rt)
 	// deploying 且 UpdatedAt 在 6 分钟前（超过保护窗口）
-	specMgr.Create(&protocol.HostSpec{
+	_, _ = specMgr.Create(context.Background(), &protocol.HostSpec{
 		Name:      "host-1",
 		Tools:     []string{"claude"},
 		Status:    protocol.HostStatusDeploying,
@@ -208,7 +208,7 @@ func TestReconciler_HealthCheck_CrashRebuild(t *testing.T) {
 	rt.healthy["host-1"] = false // 容器崩溃
 
 	rec, specMgr := newTestReconciler(t, rt)
-	specMgr.Create(&protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusOnline, AuthToken: "t1"})
+	specMgr.Create(context.Background(), &protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusOnline, AuthToken: "t1"})
 
 	rec.runHealthCheck(context.Background())
 
@@ -230,12 +230,12 @@ func TestReconciler_HealthCheck_PendingTimeout(t *testing.T) {
 		CreatedAt: time.Now().Add(-6 * time.Minute),
 		UpdatedAt: time.Now().Add(-6 * time.Minute),
 	}
-	specMgr.Create(spec)
+	specMgr.Create(context.Background(), spec)
 
 	rec.runHealthCheck(context.Background())
 
 	// 应被标记为 failed
-	got := specMgr.Get("host-1")
+	got, _ := specMgr.Get(context.Background(), "host-1")
 	if got.Status != protocol.HostStatusFailed {
 		t.Errorf("期望 Status=failed, 实际=%s", got.Status)
 	}
@@ -253,12 +253,12 @@ func TestReconciler_HealthCheck_PendingNotTimeout(t *testing.T) {
 		CreatedAt: time.Now().Add(-3 * time.Minute),
 		UpdatedAt: time.Now().Add(-3 * time.Minute),
 	}
-	specMgr.Create(spec)
+	specMgr.Create(context.Background(), spec)
 
 	rec.runHealthCheck(context.Background())
 
 	// 不应改变状态
-	got := specMgr.Get("host-1")
+	got, _ := specMgr.Get(context.Background(), "host-1")
 	if got.Status != protocol.HostStatusPending {
 		t.Errorf("期望 Status=pending, 实际=%s", got.Status)
 	}
@@ -268,7 +268,7 @@ func TestReconciler_HealthCheck_FailedRetry(t *testing.T) {
 	rt := newMockReconcilerRuntime()
 
 	rec, specMgr := newTestReconciler(t, rt)
-	specMgr.Create(&protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusFailed, RetryCount: 0, AuthToken: "t1"})
+	specMgr.Create(context.Background(), &protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusFailed, RetryCount: 0, AuthToken: "t1"})
 
 	rec.runHealthCheck(context.Background())
 
@@ -282,13 +282,13 @@ func TestReconciler_HealthCheck_DeployFailed(t *testing.T) {
 	rt.deployErr = errors.New("build error")
 
 	rec, specMgr := newTestReconciler(t, rt)
-	specMgr.Create(&protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusOnline, AuthToken: "t1"})
+	specMgr.Create(context.Background(), &protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, Status: protocol.HostStatusOnline, AuthToken: "t1"})
 	rt.healthy["host-1"] = false
 
 	rec.runHealthCheck(context.Background())
 
 	// 部署失败，状态应为 failed
-	got := specMgr.Get("host-1")
+	got, _ := specMgr.Get(context.Background(), "host-1")
 	if got.Status != protocol.HostStatusFailed {
 		t.Errorf("期望 Status=failed, 实际=%s", got.Status)
 	}
