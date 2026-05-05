@@ -75,7 +75,7 @@ function AppContent() {
       setAvailableTools([]);
       showToast('error', '工具列表获取失败');
     }
-  }, []);
+  }, [showToast]);
 
   const handleCreateHost = useCallback(async (data: CreateHostRequest): Promise<HostSpec> => {
     const res = await controllerApi.createHost(data);
