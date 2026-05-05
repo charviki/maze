@@ -19,6 +19,16 @@ import (
 
 const defaultGRPCListenAddr = ":9090"
 
+func grpcListenAddrFor(grpcAddr string) string {
+	if grpcAddr == "" {
+		return defaultGRPCListenAddr
+	}
+	if idx := strings.LastIndex(grpcAddr, ":"); idx >= 0 {
+		return ":" + grpcAddr[idx+1:]
+	}
+	return grpcAddr
+}
+
 func main() {
 	logger := logutil.New("agent")
 
@@ -33,13 +43,7 @@ func main() {
 	httpServer, templateStore := newHTTPServer(cfg, tmuxService, logger, gwmux)
 
 	grpcAddr := cfg.Server.GRPCAddr
-	if grpcAddr == "" {
-		grpcAddr = defaultGRPCListenAddr
-	}
-	grpcListenAddr := grpcAddr
-	if idx := strings.LastIndex(grpcAddr, ":"); idx >= 0 {
-		grpcListenAddr = ":" + grpcAddr[idx+1:]
-	}
+	grpcListenAddr := grpcListenAddrFor(grpcAddr)
 
 	configFileService := service.NewConfigFileService()
 	grpcServer := transport.NewServer(tmuxService, localConfig, templateStore, configFileService, cfg.Workspace.RootDir, logger)

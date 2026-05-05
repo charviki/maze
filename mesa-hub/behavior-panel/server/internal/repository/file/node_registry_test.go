@@ -48,8 +48,7 @@ func TestNodeRegistry_Register(t *testing.T) {
 		t.Error("LastHeartbeat 不应为零值")
 	}
 
-	// 等待异步 save 完成
-	time.Sleep(100 * time.Millisecond)
+	reg.WaitSave()
 
 	nodes := reg.List()
 	if len(nodes) != 1 {
@@ -80,7 +79,7 @@ func TestNodeRegistry_RegisterOverwrite(t *testing.T) {
 		Address: "http://192.168.1.20:9090",
 	})
 
-	time.Sleep(100 * time.Millisecond)
+	reg.WaitSave()
 
 	// 第二次注册应覆盖第一次的地址
 	nodes := reg.List()
@@ -189,7 +188,7 @@ func TestNodeRegistry_RegisterOverwriteCapabilities(t *testing.T) {
 		Metadata: protocol.AgentMetadata{Version: "v2.0.0", Hostname: "host-new"},
 	})
 
-	time.Sleep(100 * time.Millisecond)
+	reg.WaitSave()
 
 	if node.Address != "http://192.168.1.20:9090" {
 		t.Errorf("期望 Address=http://192.168.1.20:9090, 实际=%s", node.Address)
@@ -215,9 +214,6 @@ func TestNodeRegistry_Heartbeat(t *testing.T) {
 		Address: "http://192.168.1.10:9090",
 	})
 
-	// 等待异步 save 完成，避免临时目录清理竞争
-	time.Sleep(100 * time.Millisecond)
-
 	node := reg.Heartbeat(protocol.HeartbeatRequest{
 		Name: "agent-1",
 		Status: protocol.AgentStatus{
@@ -236,6 +232,8 @@ func TestNodeRegistry_Heartbeat(t *testing.T) {
 	if node.Status != "online" {
 		t.Errorf("期望 Status=online, 实际=%s", node.Status)
 	}
+
+	reg.WaitSave()
 }
 
 func TestNodeRegistry_HeartbeatNotFound(t *testing.T) {
@@ -266,8 +264,6 @@ func TestNodeRegistry_HeartbeatWithStatus(t *testing.T) {
 			MemoryUsageMB:  512.0,
 		},
 	})
-
-	time.Sleep(100 * time.Millisecond)
 
 	node := reg.Heartbeat(protocol.HeartbeatRequest{
 		Name: "agent-hb",
@@ -305,7 +301,7 @@ func TestNodeRegistry_HeartbeatWithStatus(t *testing.T) {
 		t.Errorf("期望 Status=online, 实际=%s", node.Status)
 	}
 
-	time.Sleep(100 * time.Millisecond)
+	reg.WaitSave()
 }
 
 func TestNodeRegistry_Delete(t *testing.T) {
@@ -316,14 +312,10 @@ func TestNodeRegistry_Delete(t *testing.T) {
 		Address: "http://192.168.1.10:9090",
 	})
 
-	time.Sleep(100 * time.Millisecond)
-
 	ok := reg.Delete("agent-1")
 	if !ok {
 		t.Error("期望 Delete 已存在节点返回 true")
 	}
-
-	time.Sleep(100 * time.Millisecond)
 
 	nodes := reg.List()
 	if len(nodes) != 0 {
@@ -332,6 +324,8 @@ func TestNodeRegistry_Delete(t *testing.T) {
 	if reg.Get("agent-1") != nil {
 		t.Error("期望删除后 Get 返回 nil")
 	}
+
+	reg.WaitSave()
 }
 
 func TestNodeRegistry_DeleteNotFound(t *testing.T) {
@@ -351,8 +345,7 @@ func TestNodeRegistry_List_OfflineStatus(t *testing.T) {
 		Address: "http://192.168.1.10:9090",
 	})
 
-	// 等待异步 save 完成，避免临时目录清理竞争
-	time.Sleep(100 * time.Millisecond)
+	reg.WaitSave()
 
 	// 手动将 LastHeartbeat 设为 31 秒前，超过 30 秒离线阈值
 	reg.mu.Lock()
@@ -377,8 +370,7 @@ func TestNodeRegistry_Get_OfflineStatus(t *testing.T) {
 		Address: "http://192.168.1.10:9090",
 	})
 
-	// 等待异步 save 完成，避免临时目录清理竞争
-	time.Sleep(100 * time.Millisecond)
+	reg.WaitSave()
 
 	// 手动将 LastHeartbeat 设为 31 秒前，超过 30 秒离线阈值
 	reg.mu.Lock()
@@ -649,7 +641,7 @@ func TestNodeRegistry_FormatNodeSummary(t *testing.T) {
 		},
 	})
 
-	time.Sleep(100 * time.Millisecond)
+	reg.WaitSave()
 
 	summary := service.FormatNodeSummary(node)
 	expected := "agent-summary (http://192.168.1.10:9090) sessions=5 cpu=67.8% mem=2048MB status=online"

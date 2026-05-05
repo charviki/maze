@@ -16,7 +16,7 @@ import (
 	"github.com/charviki/maze-cradle/logutil"
 	cradlemw "github.com/charviki/maze-cradle/middleware"
 	"github.com/charviki/sweetwater-black-ridge/internal/config"
-	
+
 	"github.com/charviki/sweetwater-black-ridge/internal/service"
 	"github.com/charviki/sweetwater-black-ridge/internal/transport"
 	"github.com/charviki/sweetwater-black-ridge/internal/webstatic"
@@ -27,6 +27,8 @@ const (
 	agentHTTPWriteTimeout = 30 * time.Second
 	agentHTTPIdleTimeout  = 120 * time.Second
 )
+
+var staticFiles fs.FS = webstatic.Files
 
 func newHTTPServer(cfg *config.Config, tmuxService service.TmuxService, logger logutil.Logger, gwmux *gwruntime.ServeMux) (*http.Server, *service.TemplateStore) {
 	templateStore := service.NewTemplateStore(path.Join(cfg.Workspace.StateDir, "templates.json"), logger)
@@ -156,7 +158,9 @@ func serveSPA(logger logutil.Logger, w http.ResponseWriter, r *http.Request) {
 	// 这样可以保留 Content-Type/缓存等标准行为，而不是手写整套静态资源响应。
 	if _, err := fs.Stat(subFS, trimmedPath); err != nil {
 		r = r.Clone(r.Context())
-		r.URL.Path = "/index.html"
+		// FileServer 会对 /index.html 做规范化重定向，回退到根路径可以直接返回 index 内容，
+		// 避免前端深链路被 301 到 / 而丢失原始路由语义。
+		r.URL.Path = "/"
 	} else {
 		r = r.Clone(r.Context())
 		r.URL.Path = "/" + trimmedPath
@@ -166,8 +170,8 @@ func serveSPA(logger logutil.Logger, w http.ResponseWriter, r *http.Request) {
 }
 
 func getStaticFS() (fs.FS, error) {
-	if _, statErr := webstatic.Files.Open("web-dist"); statErr != nil {
+	if _, statErr := staticFiles.Open("web-dist"); statErr != nil {
 		return nil, statErr
 	}
-	return fs.Sub(webstatic.Files, "web-dist")
+	return fs.Sub(staticFiles, "web-dist")
 }

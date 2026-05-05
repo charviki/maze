@@ -5,6 +5,12 @@ MODULES = \
 	mesa-hub/behavior-panel/server \
 	sweetwater/black-ridge/server
 
+COVERAGE_MODULES = \
+	fabrication/cradle \
+	fabrication/tests/integration \
+	mesa-hub/behavior-panel/server \
+	sweetwater/black-ridge/server
+
 # ===== 环境配置 =====
 # PLATFORM: docker 或 kubernetes（部署平台选择，所有命令共用）
 PLATFORM ?= kubernetes
@@ -64,7 +70,7 @@ TEST_NAME ?=
 
 .PHONY: help \
         build build-manager build-web build-agent build-deps \
-        vet test check check-frontend \
+        vet test coverage check check-frontend \
         gen-proto gen-client gen-sdk gen \
         up down status \
         deploy undeploy \
@@ -176,6 +182,15 @@ test: ## 运行所有 Go 单元测试
 		cd $$m && go test ./... -count=1 || exit 1; \
 		cd $(PROJECT_ROOT); \
 	done
+
+coverage: ## 生成 Go 覆盖率报告（对每个模块运行 go test -coverprofile）
+	@echo "\033[0;32m[coverage]\033[0m Generating coverage reports..."
+	@for m in $(COVERAGE_MODULES); do \
+		echo "\033[0;32m[coverage]\033[0m $$m"; \
+		cd $$m && go test -coverprofile=coverage.out ./... && go tool cover -func=coverage.out | tail -1 || exit 1; \
+		cd $(PROJECT_ROOT); \
+	done
+	@echo "\033[0;32m[coverage]\033[0m Coverage reports generated."
 
 check: build-go lint test ## 编译 + golangci-lint + 单元测试（Go 交付铁律）
 	@echo "\033[0;32m[check]\033[0m All Go checks passed!"

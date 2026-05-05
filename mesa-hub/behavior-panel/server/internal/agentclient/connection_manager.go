@@ -26,6 +26,7 @@ type ConnectionManager struct {
 	logger    logutil.Logger
 	authToken string
 	idleTTL   time.Duration
+	closeOnce sync.Once
 	stopCh    chan struct{}
 }
 
@@ -104,7 +105,9 @@ func (m *ConnectionManager) Remove(addr string) {
 
 // CloseAll 关闭所有连接并停止后台清理协程，供优雅关闭时统一释放资源。
 func (m *ConnectionManager) CloseAll() {
-	close(m.stopCh)
+	m.closeOnce.Do(func() {
+		close(m.stopCh)
+	})
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	for addr, entry := range m.conns {

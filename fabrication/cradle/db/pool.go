@@ -7,6 +7,17 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+var (
+	parsePoolConfig = pgxpool.ParseConfig
+	newPoolWithConfig = pgxpool.NewWithConfig
+	pingPool = func(ctx context.Context, pool *pgxpool.Pool) error {
+		return pool.Ping(ctx)
+	}
+	closePool = func(pool *pgxpool.Pool) {
+		pool.Close()
+	}
+)
+
 // PoolConfig 包含 PostgreSQL 连接池配置。
 type PoolConfig struct {
 	Host     string
@@ -28,18 +39,18 @@ func (c PoolConfig) ConnString() string {
 
 // NewPool 创建 PostgreSQL 连接池。
 func NewPool(ctx context.Context, cfg PoolConfig) (*pgxpool.Pool, error) {
-	poolCfg, err := pgxpool.ParseConfig(cfg.ConnString())
+	poolCfg, err := parsePoolConfig(cfg.ConnString())
 	if err != nil {
 		return nil, fmt.Errorf("parse db config: %w", err)
 	}
 
-	pool, err := pgxpool.NewWithConfig(ctx, poolCfg)
+	pool, err := newPoolWithConfig(ctx, poolCfg)
 	if err != nil {
 		return nil, fmt.Errorf("create db pool: %w", err)
 	}
 
-	if err := pool.Ping(ctx); err != nil {
-		pool.Close()
+	if err := pingPool(ctx, pool); err != nil {
+		closePool(pool)
 		return nil, fmt.Errorf("ping db: %w", err)
 	}
 
