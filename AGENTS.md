@@ -38,6 +38,12 @@ The Maze — AI Agent 管理平台。The Mesa 控制面域负责代理网关 + H
 
 详见 [docs/architecture.md](docs/architecture.md)（模块拓扑图 + 请求路由 + Host 生命周期 + Session 代理流）
 
+## 工程规范
+
+- [docs/go-module-guide.md](docs/go-module-guide.md) — Go 模块根目录、分层边界、依赖方向与接入根工作区规范
+- [docs/makefile-guide.md](docs/makefile-guide.md) — Makefile 命令归属、共享变量、帮助信息与破坏性命令规范
+- [docs/postgresql-guide.md](docs/postgresql-guide.md) — PostgreSQL ownership、migration、repository 分层、事务与部署规范
+
 ## 文档维护
 
 - 新增/修改任何 AGENTS.md → 必须遵循 [docs/AGENTS-SPEC.md](docs/AGENTS-SPEC.md)（禁止添加文件表格、禁止搬运函数签名）
