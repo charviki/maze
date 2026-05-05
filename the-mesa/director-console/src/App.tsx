@@ -39,7 +39,7 @@ function AppContent() {
     if (window.innerWidth < 768) {
       setSidebarOpen(false);
     }
-  }, [showToast]);
+  }, []);
 
   const handleNodesChange = useCallback((nodes: Host[]) => {
     setRadarNodes(
