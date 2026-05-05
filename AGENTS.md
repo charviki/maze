@@ -1,6 +1,6 @@
 # AGENTS.md
 
-The Maze — AI Agent 管理平台。Manager (behavior-panel) 代理网关 + Host 编排引擎，统一管控 Agent 节点 (black-ridge)。声明式 HostSpec 持久化 + Reconciler 自动化管理。
+The Maze — AI Agent 管理平台。The Mesa 控制面域负责代理网关 + Host 编排引擎，统一管控 Agent 节点 (`black-ridge`)。声明式 HostSpec 持久化 + Reconciler 自动化管理。
 
 ## 核心原则
 
@@ -24,8 +24,10 @@ The Maze — AI Agent 管理平台。Manager (behavior-panel) 代理网关 + Hos
 
 | 模块                | 目录                             | 详细文档                                                 |
 | ----------------- | ------------------------------ | ---------------------------------------------------- |
-| Portal            | mesa-hub/portal/               | [AGENTS.md](mesa-hub/portal/AGENTS.md)               |
-| Behavior Panel    | mesa-hub/behavior-panel/       | [AGENTS.md](mesa-hub/behavior-panel/AGENTS.md)       |
+| The Mesa          | the-mesa/                      | [AGENTS.md](the-mesa/AGENTS.md)                      |
+| Arrival Gate      | the-mesa/arrival-gate/         | [AGENTS.md](the-mesa/arrival-gate/AGENTS.md)         |
+| Director Core     | the-mesa/director-core/        | [AGENTS.md](the-mesa/AGENTS.md)                      |
+| Director Console  | the-mesa/director-console/     | [AGENTS.md](the-mesa/director-console/AGENTS.md)     |
 | Cradle            | fabrication/cradle/            | [AGENTS.md](fabrication/cradle/AGENTS.md)            |
 | Black Ridge       | sweetwater/black-ridge/        | [AGENTS.md](sweetwater/black-ridge/AGENTS.md)        |
 | Skin              | fabrication/skin/              | [AGENTS.md](fabrication/skin/AGENTS.md)              |
@@ -42,4 +44,3 @@ The Maze — AI Agent 管理平台。Manager (behavior-panel) 代理网关 + Hos
 - 架构设计变更 → 更新 docs/architecture.md
 - 模块对外接口变更 → 更新对应模块 AGENTS.md 的依赖关系
 - 文档中禁止复制代码中的类型签名、函数签名、API 端点清单
-

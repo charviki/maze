@@ -5,10 +5,10 @@ namespace: maze-prod
 
 resources:
   - namespace.yaml
-  - manager-rbac.yaml
-  - manager-secret.yaml
-  - manager-service.yaml
-  - manager-pvc.yaml
+  - director-core-rbac.yaml
+  - director-core-secret.yaml
+  - director-core-service.yaml
+  - director-core-pvc.yaml
   - web-configmap.yaml
   - web-deployment.yaml
   - web-service.yaml

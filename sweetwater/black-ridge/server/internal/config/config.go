@@ -46,11 +46,11 @@ type TerminalConfig struct {
 	DefaultLines int `yaml:"default_lines"`
 }
 
-// ControllerConfig Agent Manager 控制器连接配置，用于心跳注册和上报
+// ControllerConfig Director Core 控制器连接配置，用于心跳注册和上报
 type ControllerConfig struct {
-	// Addr Manager HTTP 地址（用于兼容/回退），格式: http://host:port
+	// Addr Director Core HTTP 地址（用于兼容/回退），格式: http://host:port
 	Addr string `yaml:"addr"`
-	// GRPCAddr Manager gRPC 地址（用于心跳注册/上报），格式: host:port。
+	// GRPCAddr Director Core gRPC 地址（用于心跳注册/上报），格式: host:port。
 	// 若为空，heartbeat 启动时从 Addr 推导（取 host + :9090）。
 	GRPCAddr          string `yaml:"grpc_addr"`
 	Enabled           bool   `yaml:"enabled"`

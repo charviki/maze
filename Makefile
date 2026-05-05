@@ -2,13 +2,13 @@ PROJECT_ROOT := $(shell pwd)
 
 MODULES = \
 	fabrication/cradle \
-	mesa-hub/behavior-panel/server \
+	the-mesa/director-core \
 	sweetwater/black-ridge/server
 
 COVERAGE_MODULES = \
 	fabrication/cradle \
 	fabrication/tests/integration \
-	mesa-hub/behavior-panel/server \
+	the-mesa/director-core \
 	sweetwater/black-ridge/server
 
 # ===== 环境配置 =====
@@ -23,7 +23,7 @@ ifeq ($(ENV),dev)
   K8S_OVERLAY := overlays/dev
   COMPOSE_PROJECT := maze-dev
   HOST_DATA_DIR := $(HOME)/.maze-dev
-  PORT_MANAGER := 7090
+  PORT_DIRECTOR_CORE := 7090
   PORT_WEB := 7080
   PORT_POSTGRES := 5432
 else ifeq ($(ENV),test)
@@ -31,7 +31,7 @@ else ifeq ($(ENV),test)
   K8S_OVERLAY := overlays/test
   COMPOSE_PROJECT := maze-test
   HOST_DATA_DIR := $(HOME)/.maze-test
-  PORT_MANAGER := 9090
+  PORT_DIRECTOR_CORE := 9090
   PORT_WEB := 9080
   PORT_POSTGRES := 5433
 else ifeq ($(ENV),prod)
@@ -39,25 +39,25 @@ else ifeq ($(ENV),prod)
   K8S_OVERLAY := overlays/production
   COMPOSE_PROJECT := maze-prod
   HOST_DATA_DIR := $(HOME)/.maze-prod
-  PORT_MANAGER := 8090
+  PORT_DIRECTOR_CORE := 8090
   PORT_WEB := 10800
   PORT_POSTGRES := 5434
 endif
 
 # Export variables so docker compose can resolve ${VAR:-default} in YAML
-export PORT_WEB PORT_MANAGER PORT_POSTGRES HOST_DATA_DIR
+export PORT_WEB PORT_DIRECTOR_CORE PORT_POSTGRES HOST_DATA_DIR
 
 # ===== 镜像配置 =====
-MANAGER_IMAGE := maze-manager:latest
+DIRECTOR_CORE_IMAGE := maze-director-core:latest
 WEB_IMAGE := maze-web:latest
 AGENT_IMAGE := maze-agent:latest
-MANAGER_DOCKERFILE := $(PROJECT_ROOT)/mesa-hub/behavior-panel/Dockerfile
-WEB_DOCKERFILE := $(PROJECT_ROOT)/mesa-hub/behavior-panel/Dockerfile.web
+DIRECTOR_CORE_DOCKERFILE := $(PROJECT_ROOT)/the-mesa/director-core/Dockerfile
+WEB_DOCKERFILE := $(PROJECT_ROOT)/the-mesa/Dockerfile.web
 AGENT_DOCKERFILE := $(PROJECT_ROOT)/sweetwater/black-ridge/Dockerfile
 MOLDS_DIR := $(PROJECT_ROOT)/fabrication/molds
 
 # Docker Compose 文件
-COMPOSE_FILE := $(PROJECT_ROOT)/mesa-hub/behavior-panel/docker-compose.yml
+COMPOSE_FILE := $(PROJECT_ROOT)/the-mesa/docker-compose.yml
 COMPOSE_TEST_FILE := $(PROJECT_ROOT)/fabrication/tests/integration/docker-compose.test.yml
 
 # K8s overlay 目录（由 K8S_OVERLAY 派生）
@@ -72,13 +72,13 @@ TEST_NAME ?=
 # ============================================================
 
 .PHONY: help \
-        build build-manager build-web build-agent build-deps \
+        build build-director-core build-web build-agent build-deps \
         vet test coverage check check-frontend \
         gen-proto gen-client gen-sdk gen \
         up down status \
         deploy undeploy \
-        proxy proxy-web proxy-manager proxy-db \
-        update-manager update-web update-agent update-all \
+        proxy proxy-web proxy-director-core proxy-db \
+        update-director-core update-web update-agent update-all \
         test-integration
 
 help: ## 显示帮助信息
@@ -200,12 +200,14 @@ check: build-go lint test ## 编译 + golangci-lint + 单元测试（Go 交付�
 
 # ===== 前端检查 =====
 
-FRONTEND_MODULES := fabrication/skin mesa-hub/behavior-panel/web sweetwater/black-ridge/web
+FRONTEND_MODULES := fabrication/skin the-mesa/arrival-gate the-mesa/director-console sweetwater/black-ridge/web
 
 check-frontend: ## 前端三道检查：tsc → eslint → vitest（每个模块按序执行，任何一步失败即中止）
 	@cd fabrication/skin && npx tsc --noEmit || exit 1 && npx eslint . || exit 1 && npx vitest run || exit 1; \
 	cd $(PROJECT_ROOT)
-	@cd mesa-hub/behavior-panel/web && npx tsc -b --noEmit || exit 1 && npx eslint . || exit 1 && npx vitest run || exit 1; \
+	@cd the-mesa/arrival-gate && npx tsc -b --noEmit || exit 1 && npx eslint . || exit 1 && npx vitest run || exit 1; \
+	cd $(PROJECT_ROOT)
+	@cd the-mesa/director-console && npx tsc -b --noEmit || exit 1 && npx eslint . || exit 1 && npx vitest run || exit 1; \
 	cd $(PROJECT_ROOT)
 	@cd sweetwater/black-ridge/web && npx tsc -b --noEmit || exit 1 && npx eslint . || exit 1 && npx vitest run || exit 1; \
 	cd $(PROJECT_ROOT)
@@ -223,11 +225,11 @@ format-js-check: ## 检查 TS 格式（CI 用）
 #  Docker 镜像构建
 # ============================================================
 
-build: build-deps build-manager build-web build-agent ## 构建全部 Docker 镜像
+build: build-deps build-director-core build-web build-agent ## 构建全部 Docker 镜像
 
-build-manager: ## 构建 Manager 镜像
-	@echo "\033[0;32m[INFO]\033[0m Building Manager image..."
-	docker build -f $(MANAGER_DOCKERFILE) -t $(MANAGER_IMAGE) $(PROJECT_ROOT)
+build-director-core: ## 构建 Director Core 镜像
+	@echo "\033[0;32m[INFO]\033[0m Building Director Core image..."
+	docker build -f $(DIRECTOR_CORE_DOCKERFILE) -t $(DIRECTOR_CORE_IMAGE) $(PROJECT_ROOT)
 
 build-web: ## 构建 Web Nginx 镜像
 	@echo "\033[0;32m[INFO]\033[0m Building Web Nginx image..."
@@ -258,14 +260,14 @@ ifeq ($(PLATFORM),docker)
 	@echo ""
 	@echo "\033[0;32m[INFO]\033[0m Maze is running on Docker Compose!"
 	@echo "  Web:      http://localhost:$(PORT_WEB)"
-	@echo "  Manager:  http://localhost:$(PORT_MANAGER)/health"
+	@echo "  Director Core:  http://localhost:$(PORT_DIRECTOR_CORE)/health"
 else ifeq ($(PLATFORM),kubernetes)
 	# K8s 正常部署路径：
 	# 1. 直接渲染仓库中的静态 overlay
 	# 2. 仅等待当前 overlay 中实际存在的 deployment，再等待 Pod ready
 	# 3. 全部就绪后提示精确的代理命令，避免默认 ENV=dev 误导
 	#
-	# 注意：这里和集成测试一样采用严格失败策略，避免 manager 在数据库还未就绪时过早启动。
+	# 注意：这里和集成测试一样采用严格失败策略，避免 Director Core 在数据库还未就绪时过早启动。
 	@echo "\033[0;32m[INFO]\033[0m Deploying to Kubernetes ($(ENV))..."
 	@mkdir -p $(HOST_DATA_DIR)/docker/agents
 	@if [ "$(ENV)" = "dev" ]; then \
@@ -282,8 +284,8 @@ else ifeq ($(PLATFORM),kubernetes)
 	else \
 		echo "\033[0;32m[INFO]\033[0m Skip PostgreSQL rollout wait: deployment/postgresql not managed by overlay $(K8S_OVERLAY)."; \
 	fi
-	@kubectl rollout status deployment/agent-manager -n $(K8S_NAMESPACE) --timeout=180s || \
-		(echo "\033[1;33m[WARN]\033[0m agent-manager rollout timed out." && kubectl get pods -n $(K8S_NAMESPACE) && exit 1)
+	@kubectl rollout status deployment/director-core -n $(K8S_NAMESPACE) --timeout=180s || \
+		(echo "\033[1;33m[WARN]\033[0m director-core rollout timed out." && kubectl get pods -n $(K8S_NAMESPACE) && exit 1)
 	@kubectl rollout status deployment/web -n $(K8S_NAMESPACE) --timeout=180s || \
 		(echo "\033[1;33m[WARN]\033[0m web rollout timed out." && kubectl get pods -n $(K8S_NAMESPACE) && exit 1)
 	@echo "\033[0;32m[INFO]\033[0m Waiting for pods to be ready..."
@@ -327,17 +329,17 @@ proxy: ## 启动 port-forward（K8s）或直接访问（Docker 已暴露端口�
 ifeq ($(PLATFORM),docker)
 	@echo "\033[0;32m[INFO]\033[0m Docker mode: ports already exposed."
 	@echo "  Web:      http://localhost:$(PORT_WEB)"
-	@echo "  Manager:  http://localhost:$(PORT_MANAGER)/health"
+	@echo "  Director Core:  http://localhost:$(PORT_DIRECTOR_CORE)/health"
 	@echo "  Postgres: postgresql://localhost:$(PORT_POSTGRES)"
 else ifeq ($(PLATFORM),kubernetes)
 	@echo "\033[0;32m[INFO]\033[0m Starting port-forward..."
 	@echo "  Web:      http://localhost:$(PORT_WEB)"
-	@echo "  Manager:  http://localhost:$(PORT_MANAGER)/health"
+	@echo "  Director Core:  http://localhost:$(PORT_DIRECTOR_CORE)/health"
 	@echo "  Postgres: postgresql://localhost:$(PORT_POSTGRES)"
 	@bash -c '\
 		trap "kill 0" SIGINT SIGTERM; \
 		kubectl port-forward svc/web $(PORT_WEB):80 -n $(K8S_NAMESPACE) & \
-		kubectl port-forward svc/agent-manager $(PORT_MANAGER):8080 -n $(K8S_NAMESPACE) & \
+		kubectl port-forward svc/director-core $(PORT_DIRECTOR_CORE):8080 -n $(K8S_NAMESPACE) & \
 		kubectl port-forward svc/postgresql $(PORT_POSTGRES):5432 -n $(K8S_NAMESPACE) & \
 		wait'
 endif
@@ -349,14 +351,14 @@ else
 	@echo "Docker mode: http://localhost:$(PORT_WEB)"
 endif
 
-proxy-manager: ## 只代理 Manager API
+proxy-director-core: ## 只代理 Director Core API
 ifeq ($(PLATFORM),kubernetes)
 	@bash -c '\
 		trap "kill 0" SIGINT SIGTERM; \
-		kubectl port-forward svc/agent-manager $(PORT_MANAGER):8080 -n $(K8S_NAMESPACE) & \
+		kubectl port-forward svc/director-core $(PORT_DIRECTOR_CORE):8080 -n $(K8S_NAMESPACE) & \
 		wait'
 else
-	@echo "Docker mode: http://localhost:$(PORT_MANAGER)/health"
+	@echo "Docker mode: http://localhost:$(PORT_DIRECTOR_CORE)/health"
 endif
 
 proxy-db: ## 只代理 PostgreSQL
@@ -370,12 +372,12 @@ endif
 #  滚动更新（K8s）/ 重启（Docker）
 # ============================================================
 
-update-manager: build-manager ## 重建 Manager 镜像 + 重启
+update-director-core: build-director-core ## 重建 Director Core 镜像 + 重启
 ifeq ($(PLATFORM),docker)
-	docker compose -f $(COMPOSE_FILE) -p $(COMPOSE_PROJECT) up -d agent-manager
+	docker compose -f $(COMPOSE_FILE) -p $(COMPOSE_PROJECT) up -d director-core
 else ifeq ($(PLATFORM),kubernetes)
-	kubectl rollout restart deployment/agent-manager -n $(K8S_NAMESPACE)
-	kubectl rollout status deployment/agent-manager -n $(K8S_NAMESPACE) --timeout=120s
+	kubectl rollout restart deployment/director-core -n $(K8S_NAMESPACE)
+	kubectl rollout status deployment/director-core -n $(K8S_NAMESPACE) --timeout=120s
 endif
 
 update-web: build-web ## 重建 Web 镜像 + 重启
@@ -389,13 +391,13 @@ endif
 update-agent: build-agent ## 重建 Agent 基础镜像
 	@echo "\033[0;32m[INFO]\033[0m Agent base image updated. New Hosts will use the updated image."
 
-update-all: build-manager build-web build-agent ## 全部更新：重建所有镜像 + 重启
+update-all: build-director-core build-web build-agent ## 全部更新：重建所有镜像 + 重启
 ifeq ($(PLATFORM),docker)
 	docker compose -f $(COMPOSE_FILE) -p $(COMPOSE_PROJECT) up -d
 else ifeq ($(PLATFORM),kubernetes)
-	kubectl rollout restart deployment/agent-manager -n $(K8S_NAMESPACE)
+	kubectl rollout restart deployment/director-core -n $(K8S_NAMESPACE)
 	kubectl rollout restart deployment/web -n $(K8S_NAMESPACE)
-	kubectl rollout status deployment/agent-manager -n $(K8S_NAMESPACE) --timeout=120s
+	kubectl rollout status deployment/director-core -n $(K8S_NAMESPACE) --timeout=120s
 	kubectl rollout status deployment/web -n $(K8S_NAMESPACE) --timeout=120s
 endif
 	@echo "\033[0;32m[INFO]\033[0m All services updated."
@@ -409,7 +411,7 @@ test-integration: override K8S_NAMESPACE := maze-test
 test-integration: override K8S_OVERLAY := overlays/test
 test-integration: override COMPOSE_PROJECT := maze-test
 test-integration: override HOST_DATA_DIR := $(HOME)/.maze-test
-test-integration: override PORT_MANAGER := 9090
+test-integration: override PORT_DIRECTOR_CORE := 9090
 test-integration: override PORT_WEB := 9080
 test-integration: override K8S_OVERLAY_DIR := $(PROJECT_ROOT)/fabrication/kubernetes/overlays/test
 
@@ -440,24 +442,24 @@ ifeq ($(PLATFORM),docker)
 		docker compose -f $(COMPOSE_TEST_FILE) -p $(COMPOSE_PROJECT) up -d --build; \
 		ELAPSED2=$$(($$(date +%s) - $$START2)); \
 		echo -e "$$TIME Test environment started in $${ELAPSED2}s"; \
-		echo -e "$$INFO [3/4] Waiting for Manager to be ready..."; \
+		echo -e "$$INFO [3/4] Waiting for Director Core to be ready..."; \
 		START3=$$(date +%s); \
-		MANAGER_READY=0; \
+		DIRECTOR_CORE_READY=0; \
 		for i in $$(seq 1 60); do \
-			if curl -sf http://localhost:$(PORT_MANAGER)/health > /dev/null 2>&1; then \
-				MANAGER_READY=1; \
+			if curl -sf http://localhost:$(PORT_DIRECTOR_CORE)/health > /dev/null 2>&1; then \
+				DIRECTOR_CORE_READY=1; \
 				break; \
 			fi; \
 			echo "  waiting... ($$i/60)"; sleep 2; \
 		done; \
-		if [ "$$MANAGER_READY" != "1" ]; then \
-			echo -e "$$ERROR Manager did not become ready within 120s."; \
+		if [ "$$DIRECTOR_CORE_READY" != "1" ]; then \
+			echo -e "$$ERROR Director Core did not become ready within 120s."; \
 			docker compose -f $(COMPOSE_TEST_FILE) -p $(COMPOSE_PROJECT) ps; \
-			docker compose -f $(COMPOSE_TEST_FILE) -p $(COMPOSE_PROJECT) logs --tail=200 agent-manager postgres; \
+			docker compose -f $(COMPOSE_TEST_FILE) -p $(COMPOSE_PROJECT) logs --tail=200 director-core postgres; \
 			exit 1; \
 		fi; \
 		ELAPSED3=$$(($$(date +%s) - $$START3)); \
-		echo -e "$$TIME Manager ready in $${ELAPSED3}s"; \
+		echo -e "$$TIME Director Core ready in $${ELAPSED3}s"; \
 		TOTAL_SETUP=$$(($$(date +%s) - $$START)); \
 		echo -e "$$INFO [4/4] Running integration tests (env=docker)..."; \
 		echo -e "$$TIME Total setup time: $${TOTAL_SETUP}s"; \
@@ -478,7 +480,7 @@ ifeq ($(PLATFORM),docker)
 			MAZE_TEST_ENV=$(PLATFORM) \
 			MAZE_TEST_DATA_DIR=$(HOST_DATA_DIR) \
 			MAZE_TEST_AGENT_STORAGE_BACKEND=bind \
-			MAZE_TEST_MANAGER_URL=http://localhost:$(PORT_MANAGER) \
+			MAZE_TEST_DIRECTOR_CORE_URL=http://localhost:$(PORT_DIRECTOR_CORE) \
 			MAZE_TEST_AUTH_TOKEN=test-integration-token \
 			MAZE_TEST_ENABLE_HOST_POOL="$$TEST_HOST_POOL" \
 			MAZE_TEST_POOL_CLAUDE_SIZE="$$TEST_POOL_CLAUDE_SIZE" \
@@ -490,7 +492,7 @@ ifeq ($(PLATFORM),docker)
 			MAZE_TEST_ENV=$(PLATFORM) \
 			MAZE_TEST_DATA_DIR=$(HOST_DATA_DIR) \
 			MAZE_TEST_AGENT_STORAGE_BACKEND=bind \
-			MAZE_TEST_MANAGER_URL=http://localhost:$(PORT_MANAGER) \
+			MAZE_TEST_DIRECTOR_CORE_URL=http://localhost:$(PORT_DIRECTOR_CORE) \
 			MAZE_TEST_AUTH_TOKEN=test-integration-token \
 			MAZE_TEST_ENABLE_HOST_POOL="$$TEST_HOST_POOL" \
 			MAZE_TEST_POOL_CLAUDE_SIZE="$$TEST_POOL_CLAUDE_SIZE" \
@@ -507,7 +509,7 @@ else ifeq ($(PLATFORM),kubernetes)
 	# 2. 重建隔离 namespace，确保每次测试从干净环境启动
 	# 3. 直接渲染静态 test overlay
 	# 4. 先等待 deployment rollout，再等待 Pod ready，最后再启动 port-forward
-	# 5. 通过本地 manager 端口执行集成测试，失败后统一清理 namespace 和 port-forward 进程
+	# 5. 通过本地 Director Core 端口执行集成测试，失败后统一清理 namespace 和 port-forward 进程
 	@bash -c '\
 		set -o pipefail; \
 		INFO="\033[0;32m[INFO]\033[0m"; \
@@ -516,7 +518,7 @@ else ifeq ($(PLATFORM),kubernetes)
 		NS="$(K8S_NAMESPACE)"; \
 		PF_PIDS=""; \
 		DEPLOYED=false; \
-		lsof -ti:$(PORT_MANAGER) | xargs kill -9 2>/dev/null; \
+		lsof -ti:$(PORT_DIRECTOR_CORE) | xargs kill -9 2>/dev/null; \
 		cleanup() { \
 			echo -e "$$INFO Cleaning up test environment..."; \
 			if [ -n "$$PF_PIDS" ]; then \
@@ -531,7 +533,7 @@ else ifeq ($(PLATFORM),kubernetes)
 		trap cleanup EXIT INT TERM; \
 		echo -e "$$INFO [1/5] Building local images for Kubernetes test env..."; \
 		docker build -f $(AGENT_DOCKERFILE) -t $(AGENT_IMAGE) $(PROJECT_ROOT); \
-		docker build -f $(MANAGER_DOCKERFILE) -t $(MANAGER_IMAGE) $(PROJECT_ROOT); \
+		docker build -f $(DIRECTOR_CORE_DOCKERFILE) -t $(DIRECTOR_CORE_IMAGE) $(PROJECT_ROOT); \
 		echo -e "$$INFO [2/5] Recreating test namespace $$NS..."; \
 		kubectl delete namespace $$NS --ignore-not-found=true --wait=true 2>/dev/null || true; \
 		kubectl create namespace $$NS --dry-run=client -o yaml | kubectl apply -f -; \
@@ -550,17 +552,17 @@ else ifeq ($(PLATFORM),kubernetes)
 		else \
 			echo -e "$$INFO Skip PostgreSQL rollout wait: deployment/postgresql not managed by overlay."; \
 		fi; \
-		kubectl rollout status deployment/agent-manager -n $$NS --timeout=180s || \
-			(echo -e "$$WARN agent-manager rollout timed out." && kubectl get pods -n $$NS && exit 1); \
+		kubectl rollout status deployment/director-core -n $$NS --timeout=180s || \
+			(echo -e "$$WARN director-core rollout timed out." && kubectl get pods -n $$NS && exit 1); \
 		echo -e "$$INFO Waiting for pods to be ready..."; \
 		kubectl wait --for=condition=ready pods -l app --timeout=180s -n $$NS 2>/dev/null || \
 			(echo -e "$$WARN Timeout or partial readiness." && kubectl get pods -n $$NS && exit 1); \
 		echo -e "$$INFO [4/5] Starting port-forward..."; \
-		kubectl port-forward svc/agent-manager $(PORT_MANAGER):8080 -n $$NS 2>&1 | grep -v "^Handling" & \
+		kubectl port-forward svc/director-core $(PORT_DIRECTOR_CORE):8080 -n $$NS 2>&1 | grep -v "^Handling" & \
 		PF_PID1=$$!; \
 		PF_PIDS="$$PF_PID1"; \
 		for i in $$(seq 1 30); do \
-			if curl -sf http://localhost:$(PORT_MANAGER)/health > /dev/null 2>&1; then \
+			if curl -sf http://localhost:$(PORT_DIRECTOR_CORE)/health > /dev/null 2>&1; then \
 				break; \
 			fi; \
 			if ! kill -0 $$PF_PID1 2>/dev/null; then \
@@ -569,11 +571,11 @@ else ifeq ($(PLATFORM),kubernetes)
 			fi; \
 			sleep 2; \
 		done; \
-		if ! curl -sf http://localhost:$(PORT_MANAGER)/health > /dev/null 2>&1; then \
+		if ! curl -sf http://localhost:$(PORT_DIRECTOR_CORE)/health > /dev/null 2>&1; then \
 			echo -e "$$ERROR port-forward not ready after 60s."; \
 			exit 1; \
 		fi; \
-		echo -e "$$INFO Port-forward active: manager=$(PORT_MANAGER)"; \
+		echo -e "$$INFO Port-forward active: director-core=$(PORT_DIRECTOR_CORE)"; \
 		echo -e "$$INFO [5/5] Running tests..."; \
 		TEST_HOST_POOL="$${MAZE_TEST_ENABLE_HOST_POOL:-$(if $(TEST_NAME),0,1)}"; \
 		TEST_STREAM="$${MAZE_TEST_STREAM_EVENTS:-1}"; \
@@ -592,7 +594,7 @@ else ifeq ($(PLATFORM),kubernetes)
 			MAZE_TEST_ENV=$(PLATFORM) \
 			MAZE_TEST_DATA_DIR=$(HOST_DATA_DIR) \
 			MAZE_TEST_AGENT_STORAGE_BACKEND=hostpath \
-			MAZE_TEST_MANAGER_URL=http://localhost:$(PORT_MANAGER) \
+			MAZE_TEST_DIRECTOR_CORE_URL=http://localhost:$(PORT_DIRECTOR_CORE) \
 			MAZE_TEST_AUTH_TOKEN=test-integration-token \
 			MAZE_TEST_NAMESPACE=$(K8S_NAMESPACE) \
 			MAZE_TEST_ENABLE_HOST_POOL="$$TEST_HOST_POOL" \
@@ -605,7 +607,7 @@ else ifeq ($(PLATFORM),kubernetes)
 			MAZE_TEST_ENV=$(PLATFORM) \
 			MAZE_TEST_DATA_DIR=$(HOST_DATA_DIR) \
 			MAZE_TEST_AGENT_STORAGE_BACKEND=hostpath \
-			MAZE_TEST_MANAGER_URL=http://localhost:$(PORT_MANAGER) \
+			MAZE_TEST_DIRECTOR_CORE_URL=http://localhost:$(PORT_DIRECTOR_CORE) \
 			MAZE_TEST_AUTH_TOKEN=test-integration-token \
 			MAZE_TEST_NAMESPACE=$(K8S_NAMESPACE) \
 			MAZE_TEST_ENABLE_HOST_POOL="$$TEST_HOST_POOL" \

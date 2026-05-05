@@ -8,7 +8,7 @@ import (
 	"github.com/charviki/maze-integration-tests/kit"
 )
 
-// TestHostDisasterRecovery 验证 Manager 重启后全量恢复所有 Host
+// TestHostDisasterRecovery 验证 Director Core 重启后全量恢复所有 Host
 func TestHostDisasterRecovery(t *testing.T) {
 	cfg := kit.LoadTestConfig()
 	if cfg.Env != "kubernetes" {
@@ -30,7 +30,7 @@ func TestHostDisasterRecovery(t *testing.T) {
 	t.Log("[step] PASS: both hosts online")
 }
 
-// TestHostReconcileOnRestart 验证 Manager 重启后 Reconciler 自动恢复 Host
+// TestHostReconcileOnRestart 验证 Director Core 重启后 Reconciler 自动恢复 Host
 func TestHostReconcileOnRestart(t *testing.T) {
 	cfg := kit.LoadTestConfig()
 	if cfg.Env != "kubernetes" {

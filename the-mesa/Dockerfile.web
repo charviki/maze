@@ -1,0 +1,63 @@
+FROM public.ecr.aws/docker/library/node:22-bookworm-slim AS arrival-gate-builder
+
+WORKDIR /app
+
+RUN npm install -g pnpm
+
+# 拆分 COPY — 复制所有 workspace package.json（pnpm 需要完整 workspace 声明）
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY fabrication/skin/package.json fabrication/skin/package.json
+COPY the-mesa/director-console/package.json the-mesa/director-console/package.json
+COPY the-mesa/arrival-gate/package.json the-mesa/arrival-gate/package.json
+COPY sweetwater/black-ridge/web/package.json sweetwater/black-ridge/web/package.json
+
+RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
+    pnpm install
+
+# 复制 Arrival Gate + fabrication 源码
+COPY fabrication/skin/ fabrication/skin/
+COPY the-mesa/arrival-gate/ the-mesa/arrival-gate/
+
+RUN cd the-mesa/arrival-gate && pnpm run build
+
+# ===== Director Console builder =====
+FROM public.ecr.aws/docker/library/node:22-bookworm-slim AS web-builder
+
+WORKDIR /app
+
+RUN npm install -g pnpm
+
+# 同样复制所有 workspace package.json
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY fabrication/skin/package.json fabrication/skin/package.json
+COPY the-mesa/director-console/package.json the-mesa/director-console/package.json
+COPY the-mesa/arrival-gate/package.json the-mesa/arrival-gate/package.json
+COPY sweetwater/black-ridge/web/package.json sweetwater/black-ridge/web/package.json
+
+RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
+    pnpm install
+
+# 复制 Director Console + fabrication 源码
+COPY fabrication/skin/ fabrication/skin/
+COPY the-mesa/director-console/ the-mesa/director-console/
+
+WORKDIR /app/the-mesa/director-console
+RUN pnpm run build
+
+# ===== nginx =====
+FROM public.ecr.aws/docker/library/nginx:alpine
+
+# nginx:alpine 官方镜像内置 envsubst 模板机制，
+# /etc/nginx/templates/ 下的 .template 文件会在启动时自动替换环境变量并输出到 /etc/nginx/conf.d/
+COPY the-mesa/nginx.conf /etc/nginx/templates/default.conf.template
+
+# Arrival Gate 静态文件 → 首页
+COPY --from=arrival-gate-builder /app/the-mesa/arrival-gate/web-dist /usr/share/nginx/html/arrival-gate
+
+# Director Console 静态文件 → /director-console/
+COPY --from=web-builder /app/the-mesa/director-console/web-dist /usr/share/nginx/html/director-console
+
+ENV DIRECTOR_CORE_UPSTREAM="director-core:8080"
+ENV WS_TIMEOUT="3600s"
+
+EXPOSE 80

@@ -23,7 +23,7 @@ Protobuf IDL 定义在 api/proto/，由 buf 生成 Go 类型/gRPC stub/gateway h
 ## 依赖
 
 - 依赖: Go 1.26 + yaml.v3 + gRPC + protobuf + grpc-gateway + buf
-- 被依赖: [behavior-panel](../../mesa-hub/behavior-panel/AGENTS.md), [black-ridge](../../sweetwater/black-ridge/AGENTS.md)
+- 被依赖: [the-mesa](../../the-mesa/AGENTS.md), [black-ridge](../../sweetwater/black-ridge/AGENTS.md)
 
 ## 详细文档
 

@@ -1,5 +1,5 @@
 packages:
   - 'fabrication/skin'
-  - 'mesa-hub/behavior-panel/web'
-  - 'mesa-hub/portal/web'
+  - 'the-mesa/director-console'
+  - 'the-mesa/arrival-gate'
   - 'sweetwater/black-ridge/web'

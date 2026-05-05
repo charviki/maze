@@ -23,7 +23,7 @@
 ## 依赖
 
 - 依赖: React, @xterm/xterm, @radix-ui/*, tailwindcss
-- 被依赖: [portal](../../mesa-hub/portal/AGENTS.md), [behavior-panel](../../mesa-hub/behavior-panel/AGENTS.md), [black-ridge](../../sweetwater/black-ridge/AGENTS.md)
+- 被依赖: [arrival-gate](../../the-mesa/arrival-gate/AGENTS.md), [the-mesa](../../the-mesa/AGENTS.md), [black-ridge](../../sweetwater/black-ridge/AGENTS.md)
 
 ## 详细文档
 

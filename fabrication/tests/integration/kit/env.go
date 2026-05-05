@@ -38,8 +38,8 @@ func (e *TestEnv) Teardown() error {
 	return nil
 }
 
-// WaitForManager 轮询 Manager 健康接口，直到超时或服务就绪。
-func (e *TestEnv) WaitForManager(timeout time.Duration) error {
+// WaitForDirectorCore 轮询 Director Core 健康接口，直到超时或服务就绪。
+func (e *TestEnv) WaitForDirectorCore(timeout time.Duration) error {
 	apiClient := NewTestAPIClient(e.cfg)
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
@@ -49,5 +49,5 @@ func (e *TestEnv) WaitForManager(timeout time.Duration) error {
 		}
 		time.Sleep(2 * time.Second)
 	}
-	return fmt.Errorf("manager not available at %s after %v", e.cfg.ManagerURL, timeout)
+	return fmt.Errorf("director-core not available at %s after %v", e.cfg.DirectorCoreURL, timeout)
 }

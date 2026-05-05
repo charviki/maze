@@ -5,8 +5,8 @@ namespace: maze-test
 
 resources:
   - ../../base
-  - manager-configmap.yaml
-  - manager-deployment.yaml
+  - director-core-configmap.yaml
+  - director-core-deployment.yaml
   - postgres.yaml
 
 patches:
@@ -57,10 +57,10 @@ patches:
         name: web
   - target:
       kind: PersistentVolumeClaim
-      name: manager-data
+      name: director-core-data
     patch: |
       $patch: delete
       apiVersion: v1
       kind: PersistentVolumeClaim
       metadata:
-        name: manager-data
+        name: director-core-data

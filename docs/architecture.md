@@ -4,9 +4,9 @@
 
 ```mermaid
 graph TD
-    subgraph "Mesa Hub (控制面)"
-        Portal["Portal<br/>统一入口门户<br/>React + Vite"]
-        BP["Behavior Panel<br/>代理网关 + Host 编排引擎<br/>Go + React"]
+    subgraph "The Mesa (控制面)"
+        ArrivalGate["Arrival Gate<br/>统一入口门户<br/>React + Vite"]
+        MesaControl["Director Core / Director Console<br/>代理网关 + Host 编排引擎<br/>Go + React"]
     end
 
     subgraph "Sweetwater (运行时)"
@@ -19,15 +19,15 @@ graph TD
         IT["Integration Tests<br/>跨模块集成测试<br/>Go testing"]
     end
 
-    Portal -->|消费组件| Skin
-    BP -->|import Go 库| Cradle
-    BP -->|消费组件| Skin
+    ArrivalGate -->|消费组件| Skin
+    MesaControl -->|import Go 库| Cradle
+    MesaControl -->|消费组件| Skin
     BR -->|import Go 库| Cradle
     BR -->|消费组件| Skin
-    IT -->|测试| BP
+    IT -->|测试| MesaControl
     IT -->|测试| BR
 
-    BP -.->|gRPC 代理| BR
+    MesaControl -.->|gRPC 代理| BR
 ```
 
 ---
@@ -36,17 +36,17 @@ graph TD
 
 ```mermaid
 graph LR
-    Browser["浏览器<br/>Portal / BP 前端"] -->|HTTP/WS| Nginx["Nginx<br/>路由分发"]
-    Nginx -->|"/portal/"| Portal
-    Nginx -->|"/behavior-panel/"| BP_FE["BP 前端 SPA"]
-    Nginx -->|"/api/*"| BP_BE["BP 后端<br/>net/http + grpc-gateway + gRPC"]
+    Browser["浏览器<br/>Arrival Gate / Director Console 前端"] -->|HTTP/WS| Nginx["Nginx<br/>路由分发"]
+    Nginx -->|"/arrival-gate/"| ArrivalGate
+    Nginx -->|"/director-console/"| DirectorConsole["Director Console SPA"]
+    Nginx -->|"/api/*"| DirectorCore["Director Core<br/>net/http + grpc-gateway + gRPC"]
 
-    BP_BE -->|"gRPC 进程内"| BP_Logic["BP 业务逻辑<br/>Host/Node/权限/审计"]
-    BP_BE -->|"gRPC 出站"| BR_BE["Black Ridge 后端<br/>net/http + grpc-gateway + gRPC"]
+    DirectorCore -->|"gRPC 进程内"| DirectorCoreLogic["Director Core 业务逻辑<br/>Host/Node/权限/审计"]
+    DirectorCore -->|"gRPC 出站"| BR_BE["Black Ridge 后端<br/>net/http + grpc-gateway + gRPC"]
 
     BR_BE -->|tmux| CLI["AI CLI<br/>Claude Code / Codex / Bash"]
 
-    BP_Logic -->|"声明式编排"| Runtime["Docker / K8s<br/>Host 容器运行时"]
+    DirectorCoreLogic -->|"声明式编排"| Runtime["Docker / K8s<br/>Host 容器运行时"]
 ```
 
 ---
@@ -56,7 +56,7 @@ graph LR
 ```mermaid
 sequenceDiagram
     actor User
-    participant BP as Behavior Panel
+    participant BP as Director Core
     participant Runtime as Docker/K8s
     participant BR as Black Ridge
     participant RC as Reconciler
@@ -90,7 +90,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     actor User
-    participant BP as Behavior Panel<br/>(代理网关)
+    participant BP as Director Core<br/>(代理网关)
     participant BR as Black Ridge<br/>(Agent 节点)
     participant TM as tmux
     participant CLI as AI CLI
@@ -118,8 +118,8 @@ sequenceDiagram
 
 | 模块 | 职责 |
 |------|------|
-| Portal | 统一入口门户，西部世界主题 Landing → 主界面 |
-| Behavior Panel | 代理网关 + Host 编排引擎，管控 Agent 节点全生命周期 |
+| Arrival Gate | 统一入口门户，西部世界主题 Landing → 主界面 |
+| Director Core / Director Console | 代理网关 + Host 编排引擎，管控 Agent 节点全生命周期 |
 | Black Ridge | Agent 运行时，tmux + Pipeline 管理 AI CLI 会话 |
 | Cradle | Go 共享库，Proto IDL 驱动，提供 HTTP/Config/Auth/Pipeline |
 | Skin | Westworld 主题 React 组件库，视觉特效 + Agent 业务组件 |
@@ -130,7 +130,7 @@ sequenceDiagram
 
 | 依赖 | 用途 |
 |------|------|
-| PostgreSQL | Behavior Panel 权限系统持久化 |
+| PostgreSQL | Director Core 权限系统持久化 |
 | Docker | Host 容器运行时 + 镜像构建 |
 | Kubernetes | 生产环境容器编排（可选） |
 | tmux | Black Ridge Agent 节点的终端会话管理 |

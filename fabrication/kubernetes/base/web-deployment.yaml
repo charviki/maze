@@ -20,11 +20,11 @@ spec:
           ports:
             - containerPort: 80
           env:
-            - name: MANAGER_UPSTREAM
+            - name: DIRECTOR_CORE_UPSTREAM
               valueFrom:
                 configMapKeyRef:
                   name: web-nginx-config
-                  key: MANAGER_UPSTREAM
+                  key: DIRECTOR_CORE_UPSTREAM
             - name: WS_TIMEOUT
               valueFrom:
                 configMapKeyRef:

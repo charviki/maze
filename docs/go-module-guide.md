@@ -5,7 +5,7 @@
 当前仓库的 Go 代码按“**模块独立 + 根目录统一编排**”组织：
 
 - `fabrication/cradle/`：Go 共享库
-- `mesa-hub/behavior-panel/server/`：Behavior Panel 的 Go 模块
+- `the-mesa/director-core/`：The Mesa 控制核心的 Go 模块
 - `sweetwater/black-ridge/server/`：Black Ridge 的 Go 模块
 - `fabrication/tests/integration/`：跨模块集成测试模块
 
@@ -13,9 +13,9 @@
 
 ## 目录约定
 
-- 新的 Go 服务模块，保持 `xxx/server/` 为 Go 模块根目录
-- 入口放在 `server/cmd/<service>/`
-- 业务代码放在 `server/internal/`
+- 新的 Go 服务模块，默认保持 `xxx/server/` 为 Go 模块根目录；像 `the-mesa/director-core/` 这类已独立收拢的模块可直接以模块顶层作为 Go 模块根
+- 入口放在 `<module>/cmd/<service>/` 或 `server/cmd/<service>/`
+- 业务代码放在 `<module>/internal/` 或 `server/internal/`
 - 运行时清单放模块外层目录：
   - Dockerfile
   - `docker-compose.yml`
@@ -100,12 +100,12 @@
 
 ## 创建步骤
 
-1. 在目标模块目录创建 `server/go.mod`
+1. 在目标模块目录创建 `server/go.mod`；如果模块直接以顶层作为根，则创建 `<module>/go.mod`
 2. 按现有模式建立目录：
-   - `server/cmd/<service>/`
-   - `server/internal/service/`
-   - `server/internal/transport/`
-   - `server/internal/repository/`
+   - `server/cmd/<service>/` 或 `cmd/<service>/`
+   - `server/internal/service/` 或 `internal/service/`
+   - `server/internal/transport/` 或 `internal/transport/`
+   - `server/internal/repository/` 或 `internal/repository/`
 3. 其余实现目录按模块需要补充，不强制统一命名
 4. 先确定业务模型 owner，再落 transport / repository 转换
 5. 配置优先复用 `cradle/configutil`、日志优先复用 `cradle/logutil`

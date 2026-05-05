@@ -22,8 +22,8 @@ func TestMain(m *testing.M) {
 	suite.cfg = kit.LoadTestConfig()
 
 	env := kit.NewTestEnv(suite.cfg)
-	if err := env.WaitForManager(15 * time.Second); err != nil {
-		fmt.Fprintf(os.Stderr, "manager not ready: %v\n", err)
+	if err := env.WaitForDirectorCore(15 * time.Second); err != nil {
+		fmt.Fprintf(os.Stderr, "director-core not ready: %v\n", err)
 		os.Exit(1)
 	}
 

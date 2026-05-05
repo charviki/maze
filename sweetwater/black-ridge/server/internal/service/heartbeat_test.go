@@ -6,42 +6,42 @@ import (
 	"github.com/charviki/sweetwater-black-ridge/internal/config"
 )
 
-func TestResolveManagerGRPCAddr_ExplicitGRPCAddr(t *testing.T) {
+func TestResolveDirectorCoreGRPCAddr_ExplicitGRPCAddr(t *testing.T) {
 	cfg := config.ControllerConfig{
 		Addr:     "http://myhost:8080",
 		GRPCAddr: "myhost:50051",
 	}
-	got := resolveManagerGRPCAddr(cfg)
+	got := resolveDirectorCoreGRPCAddr(cfg)
 	if got != "myhost:50051" {
-		t.Errorf("resolveManagerGRPCAddr = %q, want %q", got, "myhost:50051")
+		t.Errorf("resolveDirectorCoreGRPCAddr = %q, want %q", got, "myhost:50051")
 	}
 }
 
-func TestResolveManagerGRPCAddr_DeriveFromHTTPAddrWithScheme(t *testing.T) {
+func TestResolveDirectorCoreGRPCAddr_DeriveFromHTTPAddrWithScheme(t *testing.T) {
 	cfg := config.ControllerConfig{
 		Addr: "http://myhost:8080",
 	}
-	got := resolveManagerGRPCAddr(cfg)
+	got := resolveDirectorCoreGRPCAddr(cfg)
 	if got != "myhost:9090" {
-		t.Errorf("resolveManagerGRPCAddr = %q, want %q", got, "myhost:9090")
+		t.Errorf("resolveDirectorCoreGRPCAddr = %q, want %q", got, "myhost:9090")
 	}
 }
 
-func TestResolveManagerGRPCAddr_DeriveFromHTTPAddrWithoutScheme(t *testing.T) {
+func TestResolveDirectorCoreGRPCAddr_DeriveFromHTTPAddrWithoutScheme(t *testing.T) {
 	cfg := config.ControllerConfig{
 		Addr: "myhost:8080",
 	}
-	got := resolveManagerGRPCAddr(cfg)
+	got := resolveDirectorCoreGRPCAddr(cfg)
 	if got != "myhost:9090" {
-		t.Errorf("resolveManagerGRPCAddr = %q, want %q", got, "myhost:9090")
+		t.Errorf("resolveDirectorCoreGRPCAddr = %q, want %q", got, "myhost:9090")
 	}
 }
 
-func TestResolveManagerGRPCAddr_EmptyAddr(t *testing.T) {
+func TestResolveDirectorCoreGRPCAddr_EmptyAddr(t *testing.T) {
 	cfg := config.ControllerConfig{}
-	got := resolveManagerGRPCAddr(cfg)
+	got := resolveDirectorCoreGRPCAddr(cfg)
 	if got != "" {
-		t.Errorf("resolveManagerGRPCAddr = %q, want empty string", got)
+		t.Errorf("resolveDirectorCoreGRPCAddr = %q, want empty string", got)
 	}
 }
 

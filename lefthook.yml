@@ -24,7 +24,7 @@ pre-commit:
         for f in $STAGED; do
           case "$f" in
             fabrication/cradle/*) MODULES="$MODULES fabrication/cradle" ;;
-            mesa-hub/behavior-panel/server/*) MODULES="$MODULES mesa-hub/behavior-panel/server" ;;
+            the-mesa/director-core/*) MODULES="$MODULES the-mesa/director-core" ;;
             sweetwater/black-ridge/server/*) MODULES="$MODULES sweetwater/black-ridge/server" ;;
             fabrication/tests/integration/*) MODULES="$MODULES fabrication/tests/integration" ;;
           esac
@@ -41,7 +41,7 @@ pre-commit:
       run: |
         STAGED=$(git diff --name-only --cached --diff-filter=ACMR -- '*.ts' '*.tsx' | head -50)
         if [ -z "$STAGED" ]; then exit 0; fi
-        WEB_PROJECTS="mesa-hub/portal/web mesa-hub/behavior-panel/web sweetwater/black-ridge/web fabrication/skin"
+        WEB_PROJECTS="the-mesa/arrival-gate the-mesa/director-console sweetwater/black-ridge/web fabrication/skin"
         for proj in $WEB_PROJECTS; do
           FILES=""
           for f in $STAGED; do

@@ -46,7 +46,7 @@ func newTestHelper(t *testing.T) *testHelper {
 	defer cancel()
 	_, _, err := apiClient.HostServiceAPI.HostServiceListHosts(ctx).Execute()
 	if err != nil {
-		t.Fatalf("Manager API not available at %s: %v", cfg.ManagerURL, err)
+		t.Fatalf("Director Core API not available at %s: %v", cfg.DirectorCoreURL, err)
 	}
 
 	return &testHelper{apiClient: apiClient, cfg: cfg}
@@ -138,7 +138,7 @@ func (h *testHelper) createHostAndWait(t *testing.T, name string, tools []string
 
 	h.waitForHostStatus(t, name, "online", 3*time.Minute)
 	h.waitForHostAPIReady(t, name, 30*time.Second)
-	h.waitForManagerDataLayout(t, 45*time.Second)
+	h.waitForDirectorCoreDataLayout(t, 45*time.Second)
 }
 
 func (h *testHelper) waitForHostStatus(t *testing.T, name, targetStatus string, timeout time.Duration) {
@@ -265,7 +265,7 @@ func (h *testHelper) shouldAssertHostDataRemoval() bool {
 	}
 }
 
-func (h *testHelper) waitForManagerDataLayout(t *testing.T, timeout time.Duration) {
+func (h *testHelper) waitForDirectorCoreDataLayout(t *testing.T, timeout time.Duration) {
 	t.Helper()
 }
 

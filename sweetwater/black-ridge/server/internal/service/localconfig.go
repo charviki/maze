@@ -12,7 +12,7 @@ import (
 )
 
 // LocalConfigStore Agent 本地记忆配置管理器。
-// 维护 Agent 自身的工作目录和环境变量配置，替代原来由 Manager 端管理的 NodeConfigStore。
+// 维护 Agent 自身的工作目录和环境变量配置，替代原来由 Director Core 端管理的 NodeConfigStore。
 // 配置持久化到 ~/.maze/config.json，Agent 重启后自动恢复。
 type LocalConfigStore struct {
 	mu            sync.RWMutex

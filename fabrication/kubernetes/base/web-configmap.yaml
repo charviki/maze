@@ -15,7 +15,7 @@ data:
         index index.html;
 
         location /api/ {
-            proxy_pass http://${MANAGER_UPSTREAM};
+            proxy_pass http://${DIRECTOR_CORE_UPSTREAM};
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -34,27 +34,27 @@ data:
         }
 
         location /health {
-            proxy_pass http://${MANAGER_UPSTREAM};
+            proxy_pass http://${DIRECTOR_CORE_UPSTREAM};
             proxy_set_header Host $host;
         }
 
-        # Behavior Panel SPA
-        location /behavior-panel/ {
-            alias /usr/share/nginx/html/behavior-panel/;
-            try_files $uri $uri/ /behavior-panel/index.html;
+        # Director Console SPA
+        location /director-console/ {
+            alias /usr/share/nginx/html/director-console/;
+            try_files $uri $uri/ /director-console/index.html;
         }
 
-        # Portal 作为首页
-        location /portal/ {
-            alias /usr/share/nginx/html/portal/;
-            try_files $uri $uri/ /portal/index.html;
+        # Arrival Gate 作为首页
+        location /arrival-gate/ {
+            alias /usr/share/nginx/html/arrival-gate/;
+            try_files $uri $uri/ /arrival-gate/index.html;
         }
 
-        # 根路径重定向到 Portal
+        # 根路径重定向到 Arrival Gate
         location = / {
-            rewrite ^ /portal/ redirect;
+            rewrite ^ /arrival-gate/ redirect;
         }
     }
   # 环境变量默认值
-  MANAGER_UPSTREAM: 'agent-manager.maze-prod.svc.cluster.local:8080'
+  DIRECTOR_CORE_UPSTREAM: 'director-core.maze-prod.svc.cluster.local:8080'
   WS_TIMEOUT: '3600s'

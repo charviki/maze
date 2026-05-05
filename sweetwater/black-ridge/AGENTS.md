@@ -2,7 +2,7 @@
 
 ## 职责
 
-Agent 运行时节点，通过 tmux 管理 AI CLI（Claude Code/Codex）会话生命周期，提供终端交互、Pipeline 编排、状态持久化，向 Manager 注册和上报心跳。
+Agent 运行时节点，通过 tmux 管理 AI CLI（Claude Code/Codex）会话生命周期，提供终端交互、Pipeline 编排、状态持久化，向 Director Core 注册和上报心跳。
 
 ## 项目结构
 
@@ -23,7 +23,7 @@ Go 后端入口在 server/cmd/black-ridge/，业务逻辑分 service/（Tmux 会
 ## 依赖
 
 - 依赖: [cradle](../../fabrication/cradle/AGENTS.md), [@maze/fabrication](../../fabrication/skin/AGENTS.md)
-- 被依赖: [behavior-panel](../../mesa-hub/behavior-panel/AGENTS.md)
+- 被依赖: [the-mesa](../../the-mesa/AGENTS.md)
 
 ## 详细文档
 

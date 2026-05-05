@@ -1,0 +1,27 @@
+FROM public.ecr.aws/docker/library/node:22-bookworm-slim AS builder
+
+WORKDIR /app
+
+RUN npm install -g pnpm
+
+# 拆分 COPY — 复制所有 workspace package.json（pnpm 需要完整 workspace 声明）
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY fabrication/skin/package.json fabrication/skin/package.json
+COPY the-mesa/director-console/package.json the-mesa/director-console/package.json
+COPY the-mesa/arrival-gate/package.json the-mesa/arrival-gate/package.json
+COPY sweetwater/black-ridge/web/package.json sweetwater/black-ridge/web/package.json
+
+RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
+    pnpm install
+
+# 复制 Arrival Gate + fabrication 源码（其他 workspace 包不需要源码）
+COPY fabrication/skin/ fabrication/skin/
+COPY the-mesa/arrival-gate/ the-mesa/arrival-gate/
+
+RUN cd the-mesa/arrival-gate && pnpm run build
+
+FROM public.ecr.aws/docker/library/nginx:alpine
+
+COPY --from=builder /app/the-mesa/arrival-gate/web-dist /usr/share/nginx/html/arrival-gate
+
+EXPOSE 80

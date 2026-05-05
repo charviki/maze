@@ -2,19 +2,19 @@
 
 > *"Have you ever questioned the nature of your codebase?"*
 
-The Maze 是一个基于 Westworld 概念构建的 **多 Agent 自主协作 Coding 平台**。不同的 AI Agent（Claude Code、Codex 等）化身"接待员"（Host），在 Sweetwater 小镇中通过共享记忆理解需求、协作编码。Mesa-Hub 是后台控制中心，监控一切。
+The Maze 是一个基于 Westworld 概念构建的 **多 Agent 自主协作 Coding 平台**。不同的 AI Agent（Claude Code、Codex 等）化身"接待员"（Host），在 Sweetwater 小镇中通过共享记忆理解需求、协作编码。The Mesa 是后台控制中心，监控一切。
 
 项目持续构建中。完整愿景请查看 [ROADMAP.md](ROADMAP.md)。
 
 ## 已实现模块
 
-### Behavior Panel — 控制中心
+### The Mesa — 控制面域
 
-Agent Manager（Go gRPC 后端 + React 前端）。通过 gRPC + grpc-gateway 管理 Agent 节点的注册、心跳，通过声明式 HostSpec + Reconciler 编排 Host 的完整生命周期，代理前端到 Agent 的所有 HTTP 和 WebSocket 请求，记录审计日志。详见 [AGENTS.md](mesa-hub/behavior-panel/AGENTS.md)。
+The Mesa 汇总 Director Core（Go 控制核心）、Director Console（React 控制台前端）和 Arrival Gate（统一入口前端）。Director Core 通过 gRPC + grpc-gateway 管理 Agent 节点的注册、心跳，通过声明式 HostSpec + Reconciler 编排 Host 的完整生命周期，代理前端到 Agent 的所有 HTTP 和 WebSocket 请求，记录审计日志。详见 [AGENTS.md](the-mesa/AGENTS.md)。
 
-### Portal — 入口门户
+### Arrival Gate — 入口门户
 
-统一入口门户，两阶段体验（Landing 含登录 → 主界面），西部世界主题的交互式迷宫 + 模块卡片导航。详见 [AGENTS.md](mesa-hub/portal/AGENTS.md)。
+统一入口门户，两阶段体验（Landing 含登录 → 主界面），西部世界主题的交互式迷宫 + 模块卡片导航。详见 [AGENTS.md](the-mesa/arrival-gate/AGENTS.md)。
 
 ### Cradle — Go 共享库
 
@@ -57,21 +57,21 @@ make build-web
 # 修改 proto 后重新生成代码
 make gen
 
-# 启动 behavior-panel 后端
-cd mesa-hub/behavior-panel/server && go run ./cmd/behavior-panel
+# 启动 Director Core 后端
+cd the-mesa/director-core && go run ./cmd/director-core
 
-# 启动 Portal 前端开发服务器 (port 3002)
-pnpm --filter @maze/portal-web dev
+# 启动 Arrival Gate 前端开发服务器 (port 3002)
+pnpm --filter @maze/arrival-gate dev
 
-# 启动 Behavior Panel 前端开发服务器 (port 3001)
-pnpm --filter @maze/behavior-panel-web dev
+# 启动 Director Console 前端开发服务器 (port 3000)
+pnpm --filter @maze/director-console dev
 ```
 
 ### Docker 部署
 
 ```bash
-# 完整部署（Nginx + Manager + Portal）
-cd mesa-hub/behavior-panel && docker-compose up --build
+# 完整部署（Nginx + The Mesa Web + Director Core）
+cd the-mesa && docker compose up --build
 ```
 
 ## 技术栈
@@ -98,9 +98,10 @@ Maze/
 │   ├── architecture.md                #   总体架构（含 Mermaid 拓扑图 + 数据流）
 │   └── AGENTS-SPEC.md                 #   AGENTS.md 编写规范
 │
-├── mesa-hub/                          # 后台控制中心
-│   ├── behavior-panel/                #   ✅ 行为控制台（Agent Manager）
-│   └── portal/                        #   ✅ 入口门户
+├── the-mesa/                          # 控制面域
+│   ├── director-core/                 #   ✅ 控制核心（Director Core）
+│   ├── director-console/              #   ✅ 控制台前端
+│   └── arrival-gate/                  #   ✅ 入口门户
 │
 ├── sweetwater/                        # Agent 运行时环境
 │   └── black-ridge/                   #   ✅ Agent 节点
@@ -116,6 +117,6 @@ Maze/
 
 ## 开发指南
 
-本项目使用 pnpm workspace 管理 Monorepo。`fabrication/skin` 是共享组件库，被 `behavior-panel/web` 和 `black-ridge/web` 通过 `workspace:*` 引用。
+本项目使用 pnpm workspace 管理 Monorepo。`fabrication/skin` 是共享组件库，被 `the-mesa/director-console`、`the-mesa/arrival-gate` 和 `black-ridge/web` 通过 `workspace:*` 引用。
 
 修改 `fabrication/skin` 后需重新 build（`pnpm --filter @maze/fabrication build`），消费方才会生效。修改 proto 文件后执行 `make gen` 重新生成 Go 类型和 HTTP client。

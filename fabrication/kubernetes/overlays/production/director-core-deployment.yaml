@@ -1,0 +1,112 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: director-core
+  namespace: maze-prod
+spec:
+  selector:
+    matchLabels:
+      app: director-core
+  template:
+    metadata:
+      labels:
+        app: director-core
+    spec:
+      serviceAccountName: maze-director-core
+      initContainers:
+        - name: wait-for-database
+          # 仅 TCP 端口可连还不够，必须等 PostgreSQL 真正接受认证连接后再启动 Director Core。
+          image: postgres:17-alpine
+          envFrom:
+            - configMapRef:
+                name: director-core-config
+          env:
+            - name: DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: director-core-secret
+                  key: DATABASE_USER
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: director-core-secret
+                  key: DATABASE_PASSWORD
+          command:
+            - /bin/sh
+            - -c
+            - |
+              export PGPASSWORD="$DATABASE_PASSWORD"
+              until pg_isready -h "$DIRECTOR_CORE_AUTH_DATABASE_HOST" -p "$DIRECTOR_CORE_AUTH_DATABASE_PORT" -U "$DATABASE_USER" -d "$DIRECTOR_CORE_AUTH_DATABASE_NAME"; do
+                echo "waiting for database ${DIRECTOR_CORE_AUTH_DATABASE_HOST}:${DIRECTOR_CORE_AUTH_DATABASE_PORT}/${DIRECTOR_CORE_AUTH_DATABASE_NAME}"
+                sleep 1
+              done
+      containers:
+        - name: director-core
+          image: maze-director-core:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+            - containerPort: 9090
+          envFrom:
+            - configMapRef:
+                name: director-core-config
+            - secretRef:
+                name: director-core-secret
+          env:
+            - name: DIRECTOR_CORE_SERVER_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: director-core-secret
+                  key: AUTH_TOKEN
+            - name: DIRECTOR_CORE_AUTH_DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: director-core-secret
+                  key: DATABASE_USER
+            - name: DIRECTOR_CORE_AUTH_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: director-core-secret
+                  key: DATABASE_PASSWORD
+            - name: DIRECTOR_CORE_HOST_DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: director-core-secret
+                  key: DATABASE_USER
+            - name: DIRECTOR_CORE_HOST_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: director-core-secret
+                  key: DATABASE_PASSWORD
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: docker-socket
+              mountPath: /var/run/docker.sock
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            limits:
+              cpu: '1'
+              memory: 512Mi
+            requests:
+              cpu: '0.5'
+              memory: 256Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: director-core-data
+        - name: docker-socket
+          hostPath:
+            path: /var/run/docker.sock
+            type: Socket

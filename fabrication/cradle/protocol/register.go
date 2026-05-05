@@ -2,7 +2,7 @@ package protocol
 
 import "time"
 
-// AgentCapabilities 声明 Agent 支持的能力，用于 Manager 调度决策
+// AgentCapabilities 声明 Agent 支持的能力，用于 Director Core 调度决策
 type AgentCapabilities struct {
 	// SupportedTemplates 该 Agent 支持的模板 ID 列表（如 "claude", "bash"）
 	SupportedTemplates []string `json:"supported_templates"`
@@ -58,15 +58,15 @@ type LocalAgentConfig struct {
 	Env map[string]string `json:"env"`
 }
 
-// RegisterRequest Agent 向 Manager 发送的增强版注册请求
+// RegisterRequest Agent 向 Director Core 发送的增强版注册请求
 type RegisterRequest struct {
 	// Name Agent 节点唯一标识（全局唯一）
 	Name string `json:"name"`
-	// Address Agent 内部监听地址（Manager 用于回调 Agent API）
+	// Address Agent 内部监听地址（Director Core 用于回调 Agent API）
 	Address string `json:"address"`
 	// ExternalAddr Agent 的外部可访问地址（前端可能需要）
 	ExternalAddr string `json:"external_addr"`
-	// GrpcAddress Agent gRPC 监听地址（Manager 用于 gRPC 回调）
+	// GrpcAddress Agent gRPC 监听地址（Director Core 用于 gRPC 回调）
 	GrpcAddress string `json:"grpc_address"`
 	// Capabilities Agent 能力声明
 	Capabilities AgentCapabilities `json:"capabilities"`
@@ -76,7 +76,7 @@ type RegisterRequest struct {
 	Metadata AgentMetadata `json:"metadata"`
 }
 
-// HeartbeatRequest Agent 向 Manager 发送的增强版心跳请求
+// HeartbeatRequest Agent 向 Director Core 发送的增强版心跳请求
 type HeartbeatRequest struct {
 	// Name Agent 节点唯一标识
 	Name string `json:"name"`

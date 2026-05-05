@@ -25,7 +25,7 @@ const BOOT_LINES_MESA: string[] = [
   '  [OK] NARRATIVE ENGINE',
   '  [OK] MOTOR FUNCTIONS',
   'LOADING HOST PROFILES...',
-  '  [OK] BEHAVIORAL MATRIX',
+  '  [OK] DIRECTIVE MATRIX',
   '  [OK] SPEECH SYNTHESIS',
   'ESTABLISHING MESA LINK...',
   'LINK ESTABLISHED.',
@@ -48,17 +48,17 @@ type BootPhase = 'wake' | 'brand' | 'diag' | 'cognitive' | 'awaken' | 'done';
 
 interface BootSequenceProps {
   onComplete: () => void;
-  division?: 'mesa-hub' | 'sweetwater';
+  division?: 'the-mesa' | 'sweetwater';
 }
 
-export function BootSequence({ onComplete, division = 'mesa-hub' }: BootSequenceProps) {
+export function BootSequence({ onComplete, division = 'the-mesa' }: BootSequenceProps) {
   const [phase, setPhase] = useState<BootPhase>('wake');
   const [visibleLines, setVisibleLines] = useState<string[]>([]);
   const [showOnline, setShowOnline] = useState(false);
   const { settings } = useAnimationSettings();
 
   const bootLines = division === 'sweetwater' ? BOOT_LINES_SWEETWATER : BOOT_LINES_MESA;
-  const divisionLabel = division === 'sweetwater' ? 'SWEETWATER' : 'MESA-HUB';
+  const divisionLabel = division === 'sweetwater' ? 'SWEETWATER' : 'THE MESA';
   const buildTimestamp = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
 
   const [prefersReducedMotion] = useState(() =>

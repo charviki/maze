@@ -33,7 +33,7 @@ const (
 
 var supportedTemplates = []string{"claude", "bash"}
 
-// HeartbeatService 心跳服务，通过 gRPC 向 Manager 注册并定期上报存活状态。
+// HeartbeatService 心跳服务，通过 gRPC 向 Director Core 注册并定期上报存活状态。
 type HeartbeatService struct {
 	cfg          *config.Config
 	tmuxService  TmuxService
@@ -46,14 +46,14 @@ type HeartbeatService struct {
 	currentDelay time.Duration
 }
 
-// NewHeartbeatService 创建 HeartbeatService，建立到 Manager 的 gRPC 连接
+// NewHeartbeatService 创建 HeartbeatService，建立到 Director Core 的 gRPC 连接
 func NewHeartbeatService(cfg *config.Config, tmuxService TmuxService, localConfig *LocalConfigStore, logger logutil.Logger) (*HeartbeatService, error) {
-	managerAddr := resolveManagerGRPCAddr(cfg.Controller)
-	conn, err := grpc.NewClient(managerAddr,
+	directorCoreAddr := resolveDirectorCoreGRPCAddr(cfg.Controller)
+	conn, err := grpc.NewClient(directorCoreAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("connect to manager %s: %w", managerAddr, err)
+		return nil, fmt.Errorf("connect to director-core %s: %w", directorCoreAddr, err)
 	}
 
 	return &HeartbeatService{
@@ -67,9 +67,9 @@ func NewHeartbeatService(cfg *config.Config, tmuxService TmuxService, localConfi
 	}, nil
 }
 
-// resolveManagerGRPCAddr 解析 Manager gRPC 地址：优先使用显式配置的 GRPCAddr，
+// resolveDirectorCoreGRPCAddr 解析 Director Core gRPC 地址：优先使用显式配置的 GRPCAddr，
 // 否则从 Controller.Addr（HTTP 地址）中提取 host 部分 + 默认 gRPC 端口 9090。
-func resolveManagerGRPCAddr(ctrl config.ControllerConfig) string {
+func resolveDirectorCoreGRPCAddr(ctrl config.ControllerConfig) string {
 	if ctrl.GRPCAddr != "" {
 		return ctrl.GRPCAddr
 	}
@@ -204,7 +204,7 @@ func (s *HeartbeatService) collectSessionDetails() []protocol.SessionDetail {
 	return details
 }
 
-// register 通过 gRPC 向 Manager 发送注册请求
+// register 通过 gRPC 向 Director Core 发送注册请求
 func (s *HeartbeatService) register(name, addr, externalAddr string) error {
 	registerAddr := s.cfg.Server.AdvertisedAddr
 	if registerAddr == "" {
@@ -250,7 +250,7 @@ func (s *HeartbeatService) register(name, addr, externalAddr string) error {
 	return nil
 }
 
-// heartbeat 通过 gRPC 向 Manager 发送心跳
+// heartbeat 通过 gRPC 向 Director Core 发送心跳
 func (s *HeartbeatService) heartbeat(name string) error {
 	status := s.collectStatus()
 

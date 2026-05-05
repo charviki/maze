@@ -35,34 +35,52 @@ spec:
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: manager-secret
+                  name: director-core-secret
                   key: DATABASE_USER
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: manager-secret
+                  name: director-core-secret
                   key: DATABASE_PASSWORD
           volumeMounts:
+            # test 环境使用 hostPath 保留数据库数据，避免探针重启后丢表。
+            - name: data
+              mountPath: /var/lib/postgresql/data
             - name: init-db
               mountPath: /docker-entrypoint-initdb.d
               readOnly: true
+          startupProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+            periodSeconds: 2
+            timeoutSeconds: 3
+            failureThreshold: 30
           readinessProbe:
             exec:
               command:
                 - /bin/sh
                 - -c
                 - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
-            initialDelaySeconds: 5
             periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 6
           livenessProbe:
             exec:
               command:
                 - /bin/sh
                 - -c
                 - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
-            initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
       volumes:
+        - name: data
+          hostPath:
+            path: /tmp/maze-test/postgresql/data
+            type: DirectoryOrCreate
         - name: init-db
           configMap:
             name: postgres-init-db

@@ -11,7 +11,7 @@ import (
 
 // TestConfig 集成测试运行参数，从环境变量加载。
 type TestConfig struct {
-	ManagerURL          string
+	DirectorCoreURL     string
 	Env                 string
 	Namespace           string
 	DataDir             string
@@ -26,7 +26,7 @@ type TestConfig struct {
 // LoadTestConfig 从环境变量加载集成测试配置。
 func LoadTestConfig() *TestConfig {
 	cfg := &TestConfig{
-		ManagerURL:          getEnv("MAZE_TEST_MANAGER_URL", "http://localhost:9090"),
+		DirectorCoreURL:     getEnv("MAZE_TEST_DIRECTOR_CORE_URL", "http://localhost:9090"),
 		Env:                 getEnv("MAZE_TEST_ENV", "docker"),
 		Namespace:           getEnv("MAZE_TEST_NAMESPACE", "maze-test"),
 		DataDir:             getEnv("MAZE_TEST_DATA_DIR", os.Getenv("HOME")+"/.maze-test"),
@@ -82,12 +82,12 @@ func getEnvInt(key string, fallback int) int {
 	return parsed
 }
 
-// NewTestAPIClient 创建指向 Manager HTTP 端口的 OpenAPI 生成 client。
+// NewTestAPIClient 创建指向 Director Core HTTP 端口的 OpenAPI 生成 client。
 // 服务端 grpc-gateway 已返回标准 proto JSON，与 OpenAPI spec 完全一致，无需额外解包。
 func NewTestAPIClient(cfg *TestConfig) *client.APIClient {
 	config := client.NewConfiguration()
 	config.Servers = client.ServerConfigurations{
-		{URL: cfg.ManagerURL},
+		{URL: cfg.DirectorCoreURL},
 	}
 	config.HTTPClient = &http.Client{Timeout: 30 * time.Second}
 	if cfg.AuthToken != "" {

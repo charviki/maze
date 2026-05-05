@@ -4,7 +4,7 @@
   "private": true,
   "description": "The Maze - Westworld themed autonomous agent workspace",
   "scripts": {
-    "dev:mesa-hub": "pnpm --filter @maze/mesa-hub-web dev",
+    "dev:director-console": "pnpm --filter @maze/director-console dev",
     "dev:black-ridge": "pnpm --filter @maze/black-ridge-web dev",
     "build:all": "pnpm -r build",
     "format": "prettier --write .",

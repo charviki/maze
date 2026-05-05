@@ -39,7 +39,7 @@ type HostDeploySpec struct {
 	Tools []string `json:"tools"`
 	// Resources 资源限制（可选）
 	Resources ResourceLimits `json:"resources,omitempty"`
-	// AuthToken Host 专属令牌，用于 Agent 向 Manager 注册/心跳
+	// AuthToken Host 专属令牌，用于 Agent 向 Director Core 注册/心跳
 	AuthToken string `json:"-"`
 	// ServerAuthToken 全局 auth token，用于 Agent 自身 API 鉴权
 	ServerAuthToken string `json:"-"`
@@ -75,7 +75,7 @@ type CreateHostResponse struct {
 	WorkloadName string `json:"workload_name,omitempty"`
 }
 
-// HostStatus 枚举：Manager 管理的 Host 部署生命周期状态
+// HostStatus 枚举：Director Core 管理的 Host 部署生命周期状态
 const (
 	HostStatusPending   = "pending"   // 规格已持久化，等待构建
 	HostStatusDeploying = "deploying" // 构建部署中或已部署等待上线

@@ -34,8 +34,8 @@ jobs:
       - name: Test
         run: make test
 
-  typescript-check:
-    name: TypeScript ESLint + Format
+  frontend-check:
+    name: Frontend Check + Format
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -55,21 +55,8 @@ jobs:
       - name: Generate TypeScript SDK
         run: make gen-sdk
 
-      - name: ESLint — portal/web
-        run: npx eslint src/
-        working-directory: mesa-hub/portal/web
-
-      - name: ESLint — behavior-panel/web
-        run: npx eslint src/
-        working-directory: mesa-hub/behavior-panel/web
-
-      - name: ESLint — black-ridge/web
-        run: npx eslint src/
-        working-directory: sweetwater/black-ridge/web
-
-      - name: ESLint — fabrication/skin
-        run: npx eslint src/
-        working-directory: fabrication/skin
+      - name: Frontend checks
+        run: make check-frontend
 
       - name: Format check
-        run: pnpm run format:check
+        run: make format-js-check

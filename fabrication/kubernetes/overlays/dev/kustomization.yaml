@@ -5,8 +5,8 @@ namespace: maze-dev
 
 resources:
   - ../../base
-  - manager-configmap.yaml
-  - manager-deployment.yaml
+  - director-core-configmap.yaml
+  - director-core-deployment.yaml
   - postgres.yaml
 
 patches:
@@ -28,13 +28,13 @@ patches:
       metadata:
         name: web-nginx-config
       data:
-        MANAGER_UPSTREAM: "agent-manager.maze-dev.svc.cluster.local:8080"
+        DIRECTOR_CORE_UPSTREAM: "director-core.maze-dev.svc.cluster.local:8080"
   - target:
       kind: PersistentVolumeClaim
-      name: manager-data
+      name: director-core-data
     patch: |
       $patch: delete
       apiVersion: v1
       kind: PersistentVolumeClaim
       metadata:
-        name: manager-data
+        name: director-core-data

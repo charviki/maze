@@ -14,13 +14,13 @@ services:
       timeout: 5s
       retries: 12
 
-  agent-manager:
+  director-core:
     build:
       context: ../../..
-      dockerfile: mesa-hub/behavior-panel/Dockerfile
-    container_name: maze-test-manager
+      dockerfile: the-mesa/director-core/Dockerfile
+    container_name: maze-test-director-core
     ports:
-      - '${PORT_MANAGER:-9090}:8080'
+      - '${PORT_DIRECTOR_CORE:-9090}:8080'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${HOST_DATA_DIR:-${HOME}/.maze-test}/docker:/data
@@ -28,23 +28,23 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      AGENT_MANAGER_SERVER_AUTH_TOKEN: test-integration-token
-      AGENT_MANAGER_ALLOW_PRIVATE_NETWORKS: 'true'
-      AGENT_MANAGER_DOCKER_NETWORK: '${COMPOSE_PROJECT_NAME:-maze-test}_default'
-      AGENT_MANAGER_WORKSPACE_BASE_DIR: /data
-      AGENT_MANAGER_WORKSPACE_MOUNT_DIR: /data
-      AGENT_MANAGER_DOCKER_AGENT_BASE_IMAGE: maze-agent:latest
-      AGENT_MANAGER_DOCKER_AGENT_DATA_DIR: ${HOST_DATA_DIR:-${HOME}/.maze-test}/docker/agents
-      AGENT_MANAGER_AUTH_DATABASE_HOST: postgres
-      AGENT_MANAGER_AUTH_DATABASE_PORT: '5432'
-      AGENT_MANAGER_AUTH_DATABASE_NAME: maze_auth
-      AGENT_MANAGER_AUTH_DATABASE_USER: maze
-      AGENT_MANAGER_AUTH_DATABASE_PASSWORD: maze
-      AGENT_MANAGER_HOST_DATABASE_HOST: postgres
-      AGENT_MANAGER_HOST_DATABASE_PORT: '5432'
-      AGENT_MANAGER_HOST_DATABASE_NAME: maze_host
-      AGENT_MANAGER_HOST_DATABASE_USER: maze
-      AGENT_MANAGER_HOST_DATABASE_PASSWORD: maze
-      AGENT_MANAGER_AUTHZ_ENABLED: 'true'
-      AGENT_MANAGER_AUTHZ_ADMIN_SUBJECT_KEY: user:admin
-      AGENT_MANAGER_AUTHZ_ADMIN_DISPLAY_NAME: admin
+      DIRECTOR_CORE_SERVER_AUTH_TOKEN: test-integration-token
+      DIRECTOR_CORE_ALLOW_PRIVATE_NETWORKS: 'true'
+      DIRECTOR_CORE_DOCKER_NETWORK: '${COMPOSE_PROJECT_NAME:-maze-test}_default'
+      DIRECTOR_CORE_WORKSPACE_BASE_DIR: /data
+      DIRECTOR_CORE_WORKSPACE_MOUNT_DIR: /data
+      DIRECTOR_CORE_DOCKER_AGENT_BASE_IMAGE: maze-agent:latest
+      DIRECTOR_CORE_DOCKER_AGENT_DATA_DIR: ${HOST_DATA_DIR:-${HOME}/.maze-test}/docker/agents
+      DIRECTOR_CORE_AUTH_DATABASE_HOST: postgres
+      DIRECTOR_CORE_AUTH_DATABASE_PORT: '5432'
+      DIRECTOR_CORE_AUTH_DATABASE_NAME: maze_auth
+      DIRECTOR_CORE_AUTH_DATABASE_USER: maze
+      DIRECTOR_CORE_AUTH_DATABASE_PASSWORD: maze
+      DIRECTOR_CORE_HOST_DATABASE_HOST: postgres
+      DIRECTOR_CORE_HOST_DATABASE_PORT: '5432'
+      DIRECTOR_CORE_HOST_DATABASE_NAME: maze_host
+      DIRECTOR_CORE_HOST_DATABASE_USER: maze
+      DIRECTOR_CORE_HOST_DATABASE_PASSWORD: maze
+      DIRECTOR_CORE_AUTHZ_ENABLED: 'true'
+      DIRECTOR_CORE_AUTHZ_ADMIN_SUBJECT_KEY: user:admin
+      DIRECTOR_CORE_AUTHZ_ADMIN_DISPLAY_NAME: admin

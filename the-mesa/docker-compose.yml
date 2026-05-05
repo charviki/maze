@@ -1,0 +1,65 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: director-core-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-maze_auth}
+      POSTGRES_USER: ${POSTGRES_USER:-maze}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-maze}
+    ports:
+      - '${PORT_POSTGRES:-5432}:5432'
+    volumes:
+      - director-core-postgres-data:/var/lib/postgresql/data
+      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-maze} -d ${POSTGRES_DB:-maze_auth}']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  web:
+    build:
+      context: ..
+      dockerfile: the-mesa/Dockerfile.web
+    ports:
+      - '${PORT_WEB:-10800}:80'
+    depends_on:
+      - director-core
+
+  director-core:
+    build:
+      context: ..
+      dockerfile: the-mesa/director-core/Dockerfile
+    ports:
+      - '${PORT_DIRECTOR_CORE:-8090}:8080'
+    container_name: director-core
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DIRECTOR_CORE_SERVER_AUTH_TOKEN: '${MAZE_AUTH_TOKEN:-}'
+      DIRECTOR_CORE_ALLOW_PRIVATE_NETWORKS: 'true'
+      DIRECTOR_CORE_DOCKER_NETWORK: '${COMPOSE_PROJECT_NAME:-the-mesa}_default'
+      DIRECTOR_CORE_WORKSPACE_BASE_DIR: '/data'
+      DIRECTOR_CORE_WORKSPACE_MOUNT_DIR: '/data'
+      DIRECTOR_CORE_DOCKER_AGENT_BASE_IMAGE: '${AGENT_BASE_IMAGE:-maze-agent:latest}'
+      DIRECTOR_CORE_DOCKER_AGENT_DATA_DIR: '${HOST_DATA_DIR:-~/.maze-prod}/docker/agents'
+      DIRECTOR_CORE_AUTH_DATABASE_HOST: 'postgres'
+      DIRECTOR_CORE_AUTH_DATABASE_PORT: '5432'
+      DIRECTOR_CORE_AUTH_DATABASE_NAME: '${POSTGRES_DB:-maze_auth}'
+      DIRECTOR_CORE_AUTH_DATABASE_USER: '${POSTGRES_USER:-maze}'
+      DIRECTOR_CORE_AUTH_DATABASE_PASSWORD: '${POSTGRES_PASSWORD:-maze}'
+      DIRECTOR_CORE_HOST_DATABASE_HOST: 'postgres'
+      DIRECTOR_CORE_HOST_DATABASE_PORT: '5432'
+      DIRECTOR_CORE_HOST_DATABASE_NAME: 'maze_host'
+      DIRECTOR_CORE_HOST_DATABASE_USER: '${POSTGRES_USER:-maze}'
+      DIRECTOR_CORE_HOST_DATABASE_PASSWORD: '${POSTGRES_PASSWORD:-maze}'
+      DIRECTOR_CORE_AUTHZ_ENABLED: '${AUTHZ_ENABLED:-true}'
+      DIRECTOR_CORE_AUTHZ_ADMIN_SUBJECT_KEY: '${AUTHZ_ADMIN_SUBJECT_KEY:-user:admin}'
+      DIRECTOR_CORE_AUTHZ_ADMIN_DISPLAY_NAME: '${AUTHZ_ADMIN_DISPLAY_NAME:-admin}'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${HOST_DATA_DIR:-~/.maze-prod}/docker:/data
+
+volumes:
+  director-core-postgres-data:
