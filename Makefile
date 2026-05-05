@@ -203,13 +203,13 @@ check: build-go lint test ## 编译 + golangci-lint + 单元测试（Go 交付�
 FRONTEND_MODULES := fabrication/skin the-mesa/arrival-gate the-mesa/director-console sweetwater/black-ridge/web
 
 check-frontend: ## 前端三道检查：tsc → eslint → vitest（每个模块按序执行，任何一步失败即中止）
-	@cd fabrication/skin && npx tsc --noEmit || exit 1 && npx eslint . || exit 1 && npx vitest run || exit 1; \
+	@cd fabrication/skin && pnpm exec tsc --noEmit || exit 1 && pnpm exec eslint . || exit 1 && pnpm exec vitest run || exit 1; \
 	cd $(PROJECT_ROOT)
-	@cd the-mesa/arrival-gate && npx tsc -b --noEmit || exit 1 && npx eslint . || exit 1 && npx vitest run || exit 1; \
+	@cd the-mesa/arrival-gate && pnpm exec tsc -b --noEmit || exit 1 && pnpm exec eslint . || exit 1 && pnpm exec vitest run || exit 1; \
 	cd $(PROJECT_ROOT)
-	@cd the-mesa/director-console && npx tsc -b --noEmit || exit 1 && npx eslint . || exit 1 && npx vitest run || exit 1; \
+	@cd the-mesa/director-console && pnpm exec tsc -b --noEmit || exit 1 && pnpm exec eslint . || exit 1 && pnpm exec vitest run || exit 1; \
 	cd $(PROJECT_ROOT)
-	@cd sweetwater/black-ridge/web && npx tsc -b --noEmit || exit 1 && npx eslint . || exit 1 && npx vitest run || exit 1; \
+	@cd sweetwater/black-ridge/web && pnpm exec tsc -b --noEmit || exit 1 && pnpm exec eslint . || exit 1 && pnpm exec vitest run || exit 1; \
 	cd $(PROJECT_ROOT)
 	@echo "\033[0;32m[check-frontend]\033[0m All frontend checks passed!"
 
