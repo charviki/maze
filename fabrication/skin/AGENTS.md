@@ -1,36 +1,32 @@
-# Skin AGENTS.md
+# Skin
 
 ## 职责
 
-如同剧中的制造部负责 Host 的外观定制，Skin 是西部世界主题的 React 组件库。提供视觉特效组件、基础 UI 组件、Agent 业务组件及工具函数，所有面向使用者的界面都由这里"制造"出来。
+西部世界主题 React 组件库，提供视觉特效组件、基础 UI 组件、Agent 业务组件及工具函数。
+
+## 项目结构
+
+组件在 src/components/（分 ui/ 视觉特效 + agent/ Agent 业务），API 接口在 src/api.ts（ISessionApi/ITemplateApi/IConfigApi/ILocalConfigApi 子接口），工具函数在 src/utils/ + src/hooks/，自动生成的 TypeScript SDK 在 src/api/gen/。
 
 ## 核心原则
 
-- **主题一致性** — 所有组件必须遵循西部世界科幻视觉风格（切角面板、解密动画、CRT 扫描线等）
-- **特效可控** — 动画特效通过 AnimationSettings Context 全局管控，尊重用户 `prefers-reduced-motion` 系统设置
-- **API 抽象** — Agent 业务组件仅依赖 `ISessionApi`/`ITemplateApi`/`IConfigApi`/`ILocalConfigApi` 子接口，不绑定具体传输层实现
-- **敏感数据保护** — 涉及环境变量和文件内容展示时，必须使用 `maskEnvValue` / `maskFileContent` 脱敏
+- **主题一致性** — 所有组件遵循西部世界科幻视觉风格（切角面板、解密动画、CRT 扫描线）
+- **特效可控** — 动画特效通过 AnimationSettings Context 全局管控，尊重 prefers-reduced-motion
+- **API 抽象** — Agent 业务组件仅依赖子接口，不绑定具体传输层
+- **敏感数据保护** — 环境变量和文件内容展示时必须使用脱敏工具
 
-## 依赖关系
+## 命令
 
-- 依赖: React, @xterm/xterm (+addon-fit/addon-attach/addon-webgl), @radix-ui/react-dialog, @radix-ui/react-select, @radix-ui/react-slot, class-variance-authority, clsx, tailwind-merge, lucide-react, tailwindcss
-- 被依赖: [behavior-panel/web](../../mesa-hub/behavior-panel/AGENTS.md), [black-ridge/web](../../sweetwater/black-ridge/AGENTS.md)（消费组件和 IAgentApiClient）
+- `pnpm --filter @maze/fabrication build` — 构建
+- `pnpm --filter @maze/fabrication typecheck` — 类型检查
 
-## 关键文件
+## 依赖
 
-| 路径                               | 职责                                                                                              | 文档同步                            |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| src/index.ts                       | 模块入口，统一导出所有组件、工具函数和类型                                                        | 本文件                              |
-| src/types.ts + src/api.ts          | 前端特有类型 + ISessionApi/ITemplateApi/IConfigApi/ILocalConfigApi 子接口                          | 本文件                              |
-| src/api/gen/                       | openapi-generator 自动生成的 TypeScript SDK（API 类 + 模型类型）                                  | —                                  |
-| src/api/sdk-config.ts              | SDK Configuration 工厂函数，注入自定义 fetch                                                       | —                                  |
-| src/api/normalize.ts               | 模板规范化共享函数                                                                                  | —                                  |
-| src/api/helpers.ts                 | SDK 响应解包辅助函数                                                                                | —                                  |
-| src/utils/ + src/hooks/            | 工具函数（cn/脱敏/请求工厂）+ 轮询 Hook                                                           | 本文件                              |
-| src/components/                    | 视觉特效 + 基础 UI 组件 + Agent 业务组件（共 26 个文件）                                          | [components.md](docs/components.md) |
+- 依赖: React, @xterm/xterm, @radix-ui/*, tailwindcss
+- 被依赖: [portal](../../mesa-hub/portal/AGENTS.md), [behavior-panel](../../mesa-hub/behavior-panel/AGENTS.md), [black-ridge](../../sweetwater/black-ridge/AGENTS.md)
 
 ## 详细文档
 
-| 文档                                     | 内容                                      |
-| ---------------------------------------- | ----------------------------------------- |
-| [docs/components.md](docs/components.md) | 组件清单 + 工具函数 + Hook + 接口使用方式 |
+| 文档 | 内容 |
+|------|------|
+| [docs/components.md](docs/components.md) | 组件分类总览 + 使用方式 |
