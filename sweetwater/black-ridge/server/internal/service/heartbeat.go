@@ -18,6 +18,7 @@ import (
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/maze-cradle/protocol"
 	"github.com/charviki/sweetwater-black-ridge/internal/config"
+	"github.com/charviki/sweetwater-black-ridge/internal/service/provider"
 )
 
 const (
@@ -31,13 +32,14 @@ const (
 	backoffMultiplier = 2
 )
 
-var supportedTemplates = []string{"claude", "bash"}
+var defaultSupportedTemplates = []string{"claude", "bash"}
 
-// HeartbeatService 心跳服务，通过 gRPC 向 Director Core 注册并定期上报存活状态。
+// HeartbeatService 通过 gRPC 向 Director Core 注册并定期上报存活状态。
 type HeartbeatService struct {
 	cfg          *config.Config
 	tmuxService  TmuxService
 	localConfig  *LocalConfigStore
+	registry     *provider.Registry
 	grpcConn     *grpc.ClientConn
 	agentClient  pb.AgentServiceClient
 	registered   bool
@@ -46,8 +48,8 @@ type HeartbeatService struct {
 	currentDelay time.Duration
 }
 
-// NewHeartbeatService 创建 HeartbeatService，建立到 Director Core 的 gRPC 连接
-func NewHeartbeatService(cfg *config.Config, tmuxService TmuxService, localConfig *LocalConfigStore, logger logutil.Logger) (*HeartbeatService, error) {
+// NewHeartbeatService 创建 HeartbeatService，建立到 Director Core 的 gRPC 连接。
+func NewHeartbeatService(cfg *config.Config, tmuxService TmuxService, localConfig *LocalConfigStore, registry *provider.Registry, logger logutil.Logger) (*HeartbeatService, error) {
 	directorCoreAddr := resolveDirectorCoreGRPCAddr(cfg.Controller)
 	conn, err := grpc.NewClient(directorCoreAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -60,6 +62,7 @@ func NewHeartbeatService(cfg *config.Config, tmuxService TmuxService, localConfi
 		cfg:         cfg,
 		tmuxService: tmuxService,
 		localConfig: localConfig,
+		registry:    registry,
 		grpcConn:    conn,
 		agentClient: pb.NewAgentServiceClient(conn),
 		logger:      logger,
@@ -225,7 +228,7 @@ func (s *HeartbeatService) register(name, addr, externalAddr string) error {
 		ExternalAddr: externalAddr,
 		GrpcAddress:  grpcAddr,
 		Capabilities: &pb.AgentCapabilities{
-			SupportedTemplates: supportedTemplates,
+			SupportedTemplates: s.getSupportedTemplates(),
 			MaxSessions:        int32(MaxSessions),
 			Tools:              []string{"tmux", "filesystem"},
 		},
@@ -272,7 +275,13 @@ func (s *HeartbeatService) heartbeat(name string) error {
 	return nil
 }
 
-// withAuth 创建带认证 metadata 的 context
+func (s *HeartbeatService) getSupportedTemplates() []string {
+	if s.registry == nil {
+		return defaultSupportedTemplates
+	}
+	return s.registry.ListAvailable()
+}
+
 func (s *HeartbeatService) withAuth(ctx context.Context) context.Context {
 	if s.cfg.Controller.AuthToken != "" {
 		md := metadata.Pairs("authorization", "Bearer "+s.cfg.Controller.AuthToken)

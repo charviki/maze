@@ -18,6 +18,7 @@ type SessionState struct {
 	EnvSnapshot      map[string]string `json:"env_snapshot"`
 	TerminalSnapshot string            `json:"terminal_snapshot"`
 	SavedAt          string            `json:"saved_at"`
+	TransportMeta    map[string]string `json:"transport_meta,omitempty"`
 }
 
 // ToJSON 将 SessionState 序列化为格式化 JSON

@@ -14,6 +14,7 @@ import (
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/sweetwater-black-ridge/internal/config"
 	"github.com/charviki/sweetwater-black-ridge/internal/service"
+	"github.com/charviki/sweetwater-black-ridge/internal/service/provider"
 	"github.com/charviki/sweetwater-black-ridge/internal/transport"
 )
 
@@ -37,7 +38,14 @@ func main() {
 		logger.Fatalf("load config: %v", err)
 	}
 
-	tmuxService := service.NewTmuxService(&cfg.Tmux, cfg.Workspace.StateDir, logger, &service.ClaudeTrustBootstrapper{})
+	registry := provider.NewRegistry()
+	registry.Register(&provider.ClaudeProvider{})
+	registry.Register(&provider.CodexProvider{})
+	registry.Register(&provider.BashProvider{})
+
+	provider.RunEntrypointTasks(logger, registry, provider.ResolveHomeDir())
+
+	tmuxService := service.NewTmuxService(&cfg.Tmux, cfg.Workspace.StateDir, logger, registry)
 	localConfig := service.NewLocalConfigStore(cfg.Workspace.RootDir, logger)
 	gwmux := gatewayutil.NewServeMux()
 	httpServer, templateStore := newHTTPServer(cfg, tmuxService, logger, gwmux)
@@ -65,7 +73,7 @@ func main() {
 		logger.Fatalf("register config service to gateway: %v", err)
 	}
 
-	heartbeatService, err := service.NewHeartbeatService(cfg, tmuxService, localConfig, logger)
+	heartbeatService, err := service.NewHeartbeatService(cfg, tmuxService, localConfig, registry, logger)
 	if err != nil {
 		logger.Fatalf("create heartbeat service: %v", err)
 	}

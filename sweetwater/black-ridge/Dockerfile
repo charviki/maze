@@ -1,3 +1,6 @@
+# 全局 ARG：CLI Provider 选择（必须在第一个 FROM 之前声明，供 FROM with-${CLI_PROVIDER} 使用）
+ARG CLI_PROVIDER=claude
+
 # 阶段 1：构建前端资产
 FROM public.ecr.aws/docker/library/node:22-bookworm-slim AS frontend-builder
 
@@ -45,8 +48,8 @@ RUN sed -i 's|../../../fabrication/cradle|./fabrication/cradle|g' go.mod
 RUN --mount=type=cache,id=go-pkg-mod,target=/go/pkg/mod \
     CGO_ENABLED=0 go build -tags embed -o /bin/agent ./cmd/black-ridge
 
-# 阶段 3：运行时镜像
-FROM public.ecr.aws/docker/library/node:22-bookworm-slim
+# 阶段 3：基础运行时（公共依赖层）
+FROM public.ecr.aws/docker/library/node:22-bookworm-slim AS base
 
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
@@ -61,13 +64,23 @@ RUN sed -i 's|deb.debian.org|mirrors.tuna.tsinghua.edu.cn|g' /etc/apt/sources.li
     jq \
     && rm -rf /var/lib/apt/lists/*
 
+# 阶段 3a：CLI Provider 层（静态 stage 名，避免 COPY --from 不支持 ARG 展开）
+FROM base AS with-claude
 COPY --from=maze-deps-claude:latest /opt/claude /opt/claude
 ENV PATH="/opt/claude/bin:${PATH}"
 
-RUN useradd -m -s /bin/bash agent
+FROM base AS with-codex
+COPY --from=maze-deps-codex:latest /opt/codex /opt/codex
+ENV PATH="/opt/codex/bin:${PATH}"
 
-RUN mkdir -p /home/agent/.claude && \
-    echo '{"hasCompletedOnboarding":true,"firstStartTime":"","opusProMigrationComplete":true,"sonnet1m45MigrationComplete":true,"migrationVersion":11}' > /home/agent/.claude.json
+FROM base AS with-bash
+# bash 无需额外 CLI 依赖
+
+# 阶段 4：运行时镜像
+# 默认使用 claude，可通过 docker build --build-arg CLI_PROVIDER=codex 切换
+FROM with-${CLI_PROVIDER} AS runtime
+
+RUN useradd -m -s /bin/bash agent
 
 COPY --from=backend-builder /bin/agent /usr/local/bin/agent
 COPY sweetwater/black-ridge/config.example.yaml /usr/local/bin/config.yaml

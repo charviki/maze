@@ -12,6 +12,7 @@ import (
 	"github.com/charviki/maze-cradle/pipeline"
 
 	"github.com/charviki/sweetwater-black-ridge/internal/config"
+	"github.com/charviki/sweetwater-black-ridge/internal/service/provider"
 )
 
 func newTestTmuxService() *tmuxServiceImpl {
@@ -260,7 +261,7 @@ func TestDeleteSessionState_NotExist(t *testing.T) {
 
 func TestNewTmuxService_StateDir(t *testing.T) {
 	cfg := &config.TmuxConfig{}
-	svc := NewTmuxService(cfg, "/tmp/test-state", logutil.NewNop())
+	svc := NewTmuxService(cfg, "/tmp/test-state", logutil.NewNop(), provider.NewRegistry())
 	if svc == nil {
 		t.Fatal("NewTmuxService 返回 nil")
 	}

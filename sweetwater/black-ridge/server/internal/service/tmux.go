@@ -16,6 +16,7 @@ import (
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/maze-cradle/pipeline"
 	"github.com/charviki/sweetwater-black-ridge/internal/config"
+	"github.com/charviki/sweetwater-black-ridge/internal/service/provider"
 	"github.com/creack/pty/v2"
 )
 
@@ -28,7 +29,6 @@ var ErrDuplicateSession = errors.New("duplicate session")
 // ErrWorkspaceRootProtected 表示命中了基础工作目录根保护，不能删除整个根目录
 var ErrWorkspaceRootProtected = errors.New("workspace root is protected")
 
-// generateUUID 生成符合 RFC 4122 v4 的 UUID 字符串，用于 Claude CLI 的 --session-id 参数
 func generateUUID() string {
 	b := make([]byte, 16)
 	_, _ = rand.Read(b)
@@ -106,42 +106,24 @@ type TmuxService interface {
 	GetSessionEnv(name string) (map[string]string, error)
 }
 
-// TrustBootstrapper 为外部 CLI 工具注入工作目录信任的接口。
-// 具体实现由外部注入，TmuxService 不感知特定 CLI 的配置格式。
-type TrustBootstrapper interface {
-	TrustDir(workingDir string) error
-}
-
-// noopTrustBootstrapper 空实现，不做任何信任操作
-type noopTrustBootstrapper struct{}
-
-// TrustDir noop 实现（无操作）
-func (n *noopTrustBootstrapper) TrustDir(_ string) error { return nil }
-
-// tmuxServiceImpl TmuxService 的实现类，未导出，外部只能通过接口使用
 type tmuxServiceImpl struct {
-	socketPath        string
-	defaultShell      string
-	stateRepo         SessionStateRepository
-	logger            logutil.Logger
-	trustBootstrapper TrustBootstrapper
-	saveMu            sync.Mutex
+	socketPath   string
+	defaultShell string
+	stateRepo    SessionStateRepository
+	logger       logutil.Logger
+	registry     *provider.Registry
+	saveMu       sync.Mutex
 }
 
-// NewTmuxService 根据 TmuxConfig 创建 TmuxService 实例。
-// stateDir 为 session 状态文件存储目录，由调用方从配置注入。
-// bootstrapper 为可选参数，为 nil 时使用空实现（不执行任何信任操作）。
-func NewTmuxService(cfg *config.TmuxConfig, stateDir string, logger logutil.Logger, bootstrapper ...TrustBootstrapper) TmuxService {
-	var tb TrustBootstrapper = &noopTrustBootstrapper{}
-	if len(bootstrapper) > 0 && bootstrapper[0] != nil {
-		tb = bootstrapper[0]
-	}
+// NewTmuxService 创建 TmuxService 实例。
+// registry 用于按模板 ID 查找对应的 CLI Provider 并调用其 Bootstrap 钩子。
+func NewTmuxService(cfg *config.TmuxConfig, stateDir string, logger logutil.Logger, registry *provider.Registry) TmuxService {
 	return &tmuxServiceImpl{
-		socketPath:        cfg.SocketPath,
-		defaultShell:      cfg.DefaultShell,
-		stateRepo:         newFileSessionStateRepository(stateDir),
-		logger:            logger,
-		trustBootstrapper: tb,
+		socketPath:   cfg.SocketPath,
+		defaultShell: cfg.DefaultShell,
+		stateRepo:    newFileSessionStateRepository(stateDir),
+		logger:       logger,
+		registry:     registry,
 	}
 }
 
@@ -392,15 +374,15 @@ func (s *tmuxServiceImpl) CreateSession(opts CreateSessionOptions) (*Session, er
 
 	pl := s.BuildPipeline(workingDir, command, configs)
 
-	// 修改 ~/.claude.json 的 projects 字段，将工作目录标记为已信任
-	if workingDir != "" {
-		if err := s.trustBootstrapper.TrustDir(workingDir); err != nil {
-			s.logger.Warnf("[tmux] trust dir %s failed: %v", workingDir, err)
+	if workingDir != "" && s.registry != nil {
+		if p := s.registry.Get(templateID); p != nil {
+			_ = provider.RunTask(s.logger, p.BootstrapTask(), provider.TaskContext{
+				HomeDir:    provider.ResolveHomeDir(),
+				WorkingDir: workingDir,
+			})
 		}
 	}
 
-	// 为 command 步骤中的 {session_id} 占位符生成并填充 UUID，
-	// 使 Claude CLI 启动时通过 --session-id 携带已知 ID，恢复时可用 --resume 引用同一 ID。
 	cliSessionID := generateUUID()
 	for i := range pl {
 		if pl[i].Type == pipeline.StepCommand && strings.Contains(pl[i].Value, "{session_id}") {
@@ -484,12 +466,7 @@ func (s *tmuxServiceImpl) waitForPrompt(name string) error {
 // expandPath 将 ~/ 开头的路径展开为用户主目录的绝对路径
 func (s *tmuxServiceImpl) expandPath(p string) string {
 	if strings.HasPrefix(p, "~/") {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			s.logger.Warnf("[tmux] get user home dir failed: %v, using /root as fallback", err)
-			home = "/root"
-		}
-		return filepath.Join(home, p[2:])
+		return filepath.Join(provider.ResolveHomeDir(), p[2:])
 	}
 	return p
 }
