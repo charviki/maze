@@ -2,14 +2,72 @@ package transport
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/charviki/maze-cradle/httputil"
+	"github.com/charviki/maze-cradle/logutil"
+	cradlemw "github.com/charviki/maze-cradle/middleware"
 
+	"{{.ModulePath}}/internal/config"
 	"{{.ModulePath}}/internal/service"
 )
 
-func NewHealthHandler(healthService *service.HealthService) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		httputil.Success(w, r, map[string]string{"status": healthService.Status()})
-	})
+const (
+	httpReadTimeout  = 10 * time.Second
+	httpWriteTimeout = 30 * time.Second
+	httpIdleTimeout  = 120 * time.Second
+)
+
+type HTTPServerParams struct {
+	Config        *config.Config
+	HealthService *service.HealthService
+	Logger        logutil.Logger
+}
+
+func NewHTTPServer(params HTTPServerParams) *http.Server {
+	mux := http.NewServeMux()
+	mux.Handle("GET /health", NewHealthHandler(params.HealthService))
+
+	handler := chainHTTP(
+		mux,
+		accessLogMiddleware(params.Logger),
+		corsMiddleware(params.Config.Server.Origins()),
+		cradlemw.Auth(params.Config.Server.AuthToken),
+	)
+
+	return &http.Server{
+		Addr:         params.Config.Server.ListenAddr,
+		Handler:      handler,
+		ReadTimeout:  httpReadTimeout,
+		WriteTimeout: httpWriteTimeout,
+		IdleTimeout:  httpIdleTimeout,
+	}
+}
+
+func corsMiddleware(origins []string) func(http.Handler) http.Handler {
+	if len(origins) == 0 {
+		return cradlemw.CORS()
+	}
+	return cradlemw.CORSWithOrigins(origins)
+}
+
+func chainHTTP(handler http.Handler, middlewares ...func(http.Handler) http.Handler) http.Handler {
+	wrapped := handler
+	for i := len(middlewares) - 1; i >= 0; i-- {
+		wrapped = middlewares[i](wrapped)
+	}
+	return wrapped
+}
+
+func accessLogMiddleware(logger logutil.Logger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			recorder := httputil.NewStatusRecorder(w)
+			startedAt := time.Now()
+			next.ServeHTTP(recorder, r)
+			if logger != nil {
+				logger.Infof("[http] %s %s status=%d duration=%s", r.Method, r.URL.Path, recorder.Status(), time.Since(startedAt))
+			}
+		})
+	}
 }

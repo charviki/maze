@@ -25,11 +25,9 @@ import (
 	"github.com/charviki/maze/the-mesa/director-core/internal/repository/postgres"
 	appservice "github.com/charviki/maze/the-mesa/director-core/internal/service"
 	"github.com/charviki/maze/the-mesa/director-core/internal/transport"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 )
 
-// auditLoggerAdapter 适配 service.AuditLogWriter 到 gateway interceptor 所需接口。
 type auditLoggerAdapter struct {
 	inner appservice.AuditLogWriter
 }
@@ -57,7 +55,6 @@ func main() {
 		grpcAddr = ":9090"
 	}
 
-	// 创建 host 数据库连接池（maze_host）
 	hostPool, err := newHostPoolWithRetry(context.Background(), cfg, logger)
 	if err != nil {
 		logger.Fatalf("connect host database: %v", err)
@@ -69,13 +66,12 @@ func main() {
 
 	proxySvc := agentclient.NewProxy(resources.Registry, resources.ConnMgr)
 
-	// 构建 gRPC interceptor chain：认证 → 分层令牌 → [Casbin 权限] → 审计
+	// 构建 gRPC interceptor chain
 	interceptors := []grpc.UnaryServerInterceptor{
 		gatewayutil.UnaryAuthInterceptor(cfg.Server.AuthToken),
 		gatewayutil.UnaryHostTokenInterceptor(cfg.Server.AuthToken, resources.Registry),
 	}
 
-	// 权限系统显式启用，启动失败直接暴露。
 	var permissionHandler *transport.PermissionServiceServer
 	var janitorCleanup func()
 	if cfg.Authz.Enabled {
@@ -88,7 +84,6 @@ func main() {
 		interceptors = append(interceptors, casbinInterceptor)
 	}
 
-	// 审计 interceptor 始终追加在最后
 	interceptors = append(interceptors,
 		gatewayutil.UnaryAuditInterceptor(&auditLoggerAdapter{inner: resources.AuditLog}),
 	)
@@ -111,34 +106,15 @@ func main() {
 
 	managedGRPC := grpcutil.NewManagedGRPCServer(grpcAddr, grpcCore, logger)
 
+	// gateway 注册下沉到 transport 层
 	ctx := context.Background()
-	grpcEndpoint := localGRPCEndpoint(grpcAddr)
-	dialOpts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	if err := pb.RegisterHostServiceHandlerFromEndpoint(ctx, gwmux, grpcEndpoint, dialOpts); err != nil {
-		logger.Fatalf("register HostService gateway: %v", err)
-	}
-	if err := pb.RegisterNodeServiceHandlerFromEndpoint(ctx, gwmux, grpcEndpoint, dialOpts); err != nil {
-		logger.Fatalf("register NodeService gateway: %v", err)
-	}
-	if err := pb.RegisterAuditServiceHandlerFromEndpoint(ctx, gwmux, grpcEndpoint, dialOpts); err != nil {
-		logger.Fatalf("register AuditService gateway: %v", err)
-	}
-	if err := pb.RegisterSessionServiceHandlerFromEndpoint(ctx, gwmux, grpcEndpoint, dialOpts); err != nil {
-		logger.Fatalf("register SessionService gateway: %v", err)
-	}
-	if err := pb.RegisterTemplateServiceHandlerFromEndpoint(ctx, gwmux, grpcEndpoint, dialOpts); err != nil {
-		logger.Fatalf("register TemplateService gateway: %v", err)
-	}
-	if err := pb.RegisterConfigServiceHandlerFromEndpoint(ctx, gwmux, grpcEndpoint, dialOpts); err != nil {
-		logger.Fatalf("register ConfigService gateway: %v", err)
-	}
-	if err := pb.RegisterAgentServiceHandlerFromEndpoint(ctx, gwmux, grpcEndpoint, dialOpts); err != nil {
-		logger.Fatalf("register AgentService gateway: %v", err)
-	}
-	if permissionHandler != nil {
-		if err := pb.RegisterPermissionServiceHandlerFromEndpoint(ctx, gwmux, grpcEndpoint, dialOpts); err != nil {
-			logger.Fatalf("register PermissionService gateway: %v", err)
-		}
+	if err := transport.RegisterGatewayHandlers(ctx, transport.GatewayRegistrationParams{
+		GWMux:       gwmux,
+		GRPCAddr:    grpcAddr,
+		GRPCServer:  grpcCore,
+		PermHandler: permissionHandler,
+	}); err != nil {
+		logger.Fatalf("register gateway handlers: %v", err)
 	}
 
 	manager := &lifecycle.Manager{
@@ -168,7 +144,7 @@ func main() {
 	}
 }
 
-// initAuthz 初始化权限系统：DB → 迁移 → bootstrap admin → Casbin enforcer → Store/Service/Handler → Interceptor。
+// initAuthz 初始化权限系统。
 func initAuthz(cfg *config.Config, logger logutil.Logger) (*transport.PermissionServiceServer, grpc.UnaryServerInterceptor, func(), error) {
 	ctx := context.Background()
 	if cfg.AuthDatabase.Host == "" {
@@ -181,7 +157,6 @@ func initAuthz(cfg *config.Config, logger logutil.Logger) (*transport.Permission
 		return nil, nil, nil, err
 	}
 
-	// Goose 迁移
 	migrationsFS, fsErr := fs.Sub(postgres.AuthMigrationsFS, "migrations")
 	if fsErr != nil {
 		pool.Close()
@@ -199,7 +174,6 @@ func initAuthz(cfg *config.Config, logger logutil.Logger) (*transport.Permission
 		return nil, nil, nil, err
 	}
 
-	// Casbin enforcer with DB adapter
 	loadFn := func() ([][]string, error) {
 		rules, err := permRepo.ListAllCasbinRules(ctx)
 		if err != nil {
@@ -365,8 +339,6 @@ func newAuthzPoolWithRetry(ctx context.Context, cfg *config.Config, logger logut
 			break
 		}
 
-		// K8s 和测试环境下 PostgreSQL readiness 与应用启动可能存在轻微竞态，这里做有界重试，
-		// 避免数据库刚启动完成前 Director Core 因 fail-closed 过早退出。
 		logger.Warnf("[authz] database not ready (attempt %d/%d): %v", attempt, maxAttempts, err)
 		select {
 		case <-ctx.Done():
@@ -375,24 +347,4 @@ func newAuthzPoolWithRetry(ctx context.Context, cfg *config.Config, logger logut
 		}
 	}
 	return nil, lastErr
-}
-
-func localGRPCEndpoint(addr string) string {
-	if strings.HasPrefix(addr, ":") {
-		return "127.0.0.1" + addr
-	}
-	return addr
-}
-
-func cleanupResources(resources *CleanupResources) {
-	if resources == nil {
-		return
-	}
-
-	resources.Reconciler.Stop()
-	resources.HostSvc.Stop()
-	resources.ConnMgr.CloseAll()
-	if resources.HostPool != nil {
-		resources.HostPool.Close()
-	}
 }

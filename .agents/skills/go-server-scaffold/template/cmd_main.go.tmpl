@@ -25,7 +25,11 @@ func main() {
 	}
 
 	healthService := service.NewHealthService()
-	httpServer := newHTTPServer(cfg, healthService, logger)
+	httpServer := transport.NewHTTPServer(transport.HTTPServerParams{
+		Config:        cfg,
+		HealthService: healthService,
+		Logger:        logger,
+	})
 
 	grpcCore := grpc.NewServer()
 	transport.RegisterHealthGRPC(grpcCore, healthService)

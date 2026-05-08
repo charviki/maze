@@ -21,6 +21,7 @@ TEMPLATE_MAP: dict[str, str] = {
     "config.go.tmpl": "internal/config/config.go",
     "health_service.go.tmpl": "internal/service/health_service.go",
     "grpc_server.go.tmpl": "internal/transport/grpc_server.go",
+    "health_handler.go.tmpl": "internal/transport/health_handler.go",
     "http_health.go.tmpl": "internal/transport/http_health.go",
 }
 

@@ -38,13 +38,28 @@
 
 ### `transport`
 
-- `transport` 只负责协议适配：
+- `transport` 负责协议适配和 HTTP 入口编排：
   - 解析请求
   - 调用 `service`
   - 做 proto / HTTP / gRPC 模型转换
   - 做错误码映射
+  - HTTP/gRPC 的路由注册、gateway 组装、协议级 middleware 顺序
+  - 创建 `http.Handler` / `http.Server`
 - `transport` 不拥有业务模型，不直接依赖具体 repository 实现
-- 新增接口时，必须明确“transport 输入模型”到“service 输入模型”的转换点
+- 新增接口时，必须明确"transport 输入模型"到"service 输入模型"的转换点
+- 如果某个模块需要 SPA fallback、WebSocket route、callback path 或特殊 HTTP 放行，它们都应在 transport 内完成
+
+### `cmd`
+
+- `cmd` 只负责装配和启动：
+  - 读取配置
+  - 创建数据库 / runtime / service / logger / lifecycle manager
+  - 调 transport 的 HTTP 入口构造函数
+  - 启动 `http.Server` / `grpc.Server`
+- `cmd` 不应直接拼装 `http.ServeMux`、`chainHTTP`、协议级 middleware
+- `cmd` 不应直接注册具体业务路由
+- `cmd` 不应决定协议级 middleware 顺序
+- `cmd` 不应把 gateway 注册散落在 `main.go`
 
 ### `repository`
 

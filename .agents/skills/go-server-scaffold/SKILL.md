@@ -15,6 +15,7 @@ description: "Scaffolds a new Go server module from templates via a render scrip
 默认遵循以下约束：
 
 - 使用 `cmd/` + `internal/` 标准目录结构
+- `cmd` 只负责装配和启动；HTTP/gRPC 路由、middleware、监听细节都下沉到 `internal/transport`
 - 使用 `net/http` + `http.ServeMux`
 - 使用 gRPC 官方健康检查服务作为最小示例
 - 使用 `cradle/lifecycle` 统一管理 HTTP + gRPC 生命周期
@@ -32,15 +33,25 @@ description: "Scaffolds a new Go server module from templates via a render scrip
 
 模板文件平铺于 `template/` 目录，渲染脚本通过 `TEMPLATE_MAP` 显式声明每个模板的输出路径：
 
-| 模板文件 | 输出路径 |
-|---|---|
-| `go.mod.tmpl` | `go.mod` |
-| `cmd_main.go.tmpl` | `cmd/<ServiceName>/main.go` |
-| `cmd_setup.go.tmpl` | `cmd/<ServiceName>/setup.go` |
-| `config.go.tmpl` | `internal/config/config.go` |
-| `health_service.go.tmpl` | `internal/service/health_service.go` |
-| `grpc_server.go.tmpl` | `internal/transport/grpc_server.go` |
-| `http_health.go.tmpl` | `internal/transport/http_health.go` |
+| 模板文件 | 输出路径 | 职责 |
+|---|---|---|
+| `go.mod.tmpl` | `go.mod` | Go 模块定义 |
+| `cmd_main.go.tmpl` | `cmd/<ServiceName>/main.go` | 入口：配置加载、依赖注入、生命周期管理 |
+| `cmd_setup.go.tmpl` | `cmd/<ServiceName>/setup.go` | cmd 层辅助函数（按需扩展） |
+| `config.go.tmpl` | `internal/config/config.go` | 配置结构体与环境变量映射 |
+| `health_service.go.tmpl` | `internal/service/health_service.go` | 健康检查业务逻辑 |
+| `grpc_server.go.tmpl` | `internal/transport/grpc_server.go` | gRPC 协议适配 |
+| `health_handler.go.tmpl` | `internal/transport/health_handler.go` | HTTP 健康检查 handler |
+| `http_health.go.tmpl` | `internal/transport/http_health.go` | HTTP server 构造、路由注册、middleware 编排 |
+
+## 分层边界
+
+- `cmd`：配置加载 → 依赖注入 → 调 transport 构造函数 → 生命周期管理
+- `internal/transport`：路由注册、middleware 顺序、HTTP server 构造、gRPC 注册
+- `internal/service`：业务逻辑
+- `internal/config`：配置模型
+
+**cmd 不应直接拼装 `http.ServeMux`、`chainHTTP`、协议级 middleware。**
 
 ## 执行方式
 
