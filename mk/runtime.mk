@@ -90,7 +90,8 @@ else ifeq ($(PLATFORM),kubernetes)
 			'  restartPolicy: Never' \
 			'  containers:' \
 			'    - name: cleaner' \
-			'      image: alpine:3.20' \
+			'      image: public.ecr.aws/docker/library/alpine:3.20' \
+			'      imagePullPolicy: IfNotPresent' \
 			'      command:' \
 			'        - /bin/sh' \
 			'        - -c' \
@@ -105,10 +106,14 @@ else ifeq ($(PLATFORM),kubernetes)
 			'      hostPath:' \
 			'        path: $(POSTGRES_HOSTPATH)' \
 			'        type: DirectoryOrCreate' | kubectl apply -f - >/dev/null; \
-		kubectl wait --for=condition=Ready pod/postgres-hostpath-cleaner --timeout=120s -n $(K8S_NAMESPACE) >/dev/null; \
-		kubectl wait --for=jsonpath='{.status.phase}'=Succeeded pod/postgres-hostpath-cleaner --timeout=120s -n $(K8S_NAMESPACE) >/dev/null; \
-		kubectl delete pod/postgres-hostpath-cleaner -n $(K8S_NAMESPACE) --ignore-not-found=true >/dev/null; \
-		echo "\033[0;31m[WARN]\033[0m Cleared PostgreSQL hostPath data at $(POSTGRES_HOSTPATH)."; \
+		echo "\033[0;33m[INFO]\033[0m Waiting for hostPath cleaner to complete..."; \
+		kubectl wait --for=jsonpath='{.status.phase}'=Succeeded pod/postgres-hostpath-cleaner --timeout=180s -n $(K8S_NAMESPACE) >/dev/null 2>&1 && CLEANER_RC=0 || CLEANER_RC=$$?; \
+		if [ "$$CLEANER_RC" = "0" ]; then \
+			echo "\033[0;31m[WARN]\033[0m Cleared PostgreSQL hostPath data at $(POSTGRES_HOSTPATH)."; \
+		else \
+			echo "\033[0;33m[WARN]\033[0m Cleaner pod did not succeed (rc=$$CLEANER_RC); skipping hostPath cleanup."; \
+		fi; \
+		kubectl delete pod/postgres-hostpath-cleaner -n $(K8S_NAMESPACE) --ignore-not-found=true --force --grace-period=0 >/dev/null 2>&1 || true; \
 	fi
 	@kubectl delete namespace $(K8S_NAMESPACE) --ignore-not-found=true
 	@echo "\033[0;31m[WARN]\033[0m Namespace $(K8S_NAMESPACE) deleted; PostgreSQL data destroyed."
