@@ -2,9 +2,11 @@ package gatewayutil
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	mazev1 "github.com/charviki/maze-cradle/api/gen/maze/v1"
+	"github.com/charviki/maze-cradle/auth"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -17,55 +19,64 @@ type HostTokenValidator interface {
 	ValidateHostToken(ctx context.Context, name, token string) (exists, matched bool, err error)
 }
 
-// UnaryAuthInterceptor 返回 gRPC UnaryServerInterceptor，对非 Agent 注册/心跳路径执行全局 Bearer Token 校验。
-// globalToken 为空时放行所有请求（开发模式），非空时要求请求携带匹配的 Bearer token。
+// UnaryAuthInterceptor 返回 gRPC UnaryServerInterceptor，对非 Agent 注册/心跳路径执行 JWT 校验。
+// jwtSecret 为空时拒绝所有请求（配置错误），非空时验证 Bearer token 中的 JWT 签名和有效期，
+// 并将 claims.Subject 注入到 context 的 auth.UserInfo 中。
 // Agent 注册/心跳路径由 UnaryHostTokenInterceptor 单独处理，此处跳过。
-func UnaryAuthInterceptor(globalToken string) grpc.UnaryServerInterceptor {
+func UnaryAuthInterceptor(jwtSecret string) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
-		req interface{},
+		req any,
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
-	) (interface{}, error) {
-		// Agent 注册/心跳路径跳过，由分层令牌 interceptor 处理
+	) (any, error) {
 		if isAgentServiceMethod(info.FullMethod) {
 			return handler(ctx, req)
 		}
 
-		// 开发模式：全局令牌为空时放行所有请求
-		if globalToken == "" {
+		if isAuthServiceMethod(info.FullMethod) {
 			return handler(ctx, req)
+		}
+
+		// 空 secret 视为配置错误，直接拒绝请求
+		if jwtSecret == "" {
+			return nil, status.Error(codes.Unauthenticated, "server misconfiguration: jwt secret not configured")
 		}
 
 		token, err := extractBearerToken(ctx)
 		if err != nil {
 			return nil, err
 		}
-		if token != globalToken {
-			return nil, status.Error(codes.Unauthenticated, "unauthorized: invalid or missing authorization header")
+
+		claims, err := auth.ValidateAccessToken(jwtSecret, auth.DefaultIssuer, token)
+		if err != nil {
+			if errors.Is(err, auth.ErrTokenExpired) {
+				return nil, auth.ExpiredTokenError("unauthorized: token expired")
+			}
+			return nil, auth.InvalidTokenError("unauthorized: invalid authorization header")
 		}
 
+		ctx = auth.WithUserInfo(ctx, &auth.UserInfo{SubjectKey: claims.Subject})
 		return handler(ctx, req)
 	}
 }
 
 // UnaryHostTokenInterceptor 返回 gRPC UnaryServerInterceptor，仅拦截 Agent 注册/心跳路径，
-// 执行分层令牌校验：优先检查 Host 专属令牌，不匹配再回退到全局令牌。
-func UnaryHostTokenInterceptor(globalToken string, registry HostTokenValidator) grpc.UnaryServerInterceptor {
+// 执行分层令牌校验：优先检查 Host 专属令牌，不匹配再回退到 jwtSecret 对应的 JWT 校验。
+func UnaryHostTokenInterceptor(jwtSecret string, registry HostTokenValidator) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
-		req interface{},
+		req any,
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
-	) (interface{}, error) {
-		// 仅拦截 Agent 注册/心跳路径，其他路径直接放行
+	) (any, error) {
 		if !isAgentServiceMethod(info.FullMethod) {
 			return handler(ctx, req)
 		}
 
-		// 开发模式：全局令牌为空时放行
-		if globalToken == "" {
-			return handler(ctx, req)
+		// 空 secret 视为配置错误，直接拒绝请求
+		if jwtSecret == "" {
+			return nil, status.Error(codes.Unauthenticated, "server misconfiguration: jwt secret not configured")
 		}
 
 		token, err := extractBearerToken(ctx)
@@ -73,24 +84,24 @@ func UnaryHostTokenInterceptor(globalToken string, registry HostTokenValidator) 
 			return nil, err
 		}
 
-		// 从请求中提取 agent name（Register 和 Heartbeat 请求都有 Name 字段）
 		agentName := extractAgentName(req)
 		if agentName == "" {
 			return nil, status.Error(codes.InvalidArgument, "agent name is required")
 		}
 
-		// 分层校验：先检查 Host 专属令牌，再回退全局令牌
-		exists, matched, _ := registry.ValidateHostToken(ctx, agentName, token)
+		exists, matched, err := registry.ValidateHostToken(ctx, agentName, token)
+		if err != nil {
+			return nil, status.Error(codes.Unavailable, "service unavailable: host token validation failed")
+		}
 		if exists {
-			// Host 有预存令牌，必须精确匹配
 			if !matched {
 				return nil, status.Error(codes.Unauthenticated, "unauthorized: invalid host token")
 			}
 			return handler(ctx, req)
 		}
 
-		// 无预存令牌的 Host 走全局 auth 校验
-		if token != globalToken {
+		// 无预存令牌的 Host 走 JWT 校验
+		if _, jwtErr := auth.ValidateAccessToken(jwtSecret, auth.DefaultIssuer, token); jwtErr != nil {
 			return nil, status.Error(codes.Unauthenticated, "unauthorized: invalid authorization header")
 		}
 
@@ -103,18 +114,17 @@ func UnaryHostTokenInterceptor(globalToken string, registry HostTokenValidator) 
 func extractBearerToken(ctx context.Context) (string, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return "", status.Error(codes.Unauthenticated, "unauthorized: missing metadata")
+		return "", auth.MissingTokenError("unauthorized: missing authorization header")
 	}
 
 	values := md.Get("authorization")
 	if len(values) == 0 {
-		return "", status.Error(codes.Unauthenticated, "unauthorized: missing authorization header")
+		return "", auth.MissingTokenError("unauthorized: missing authorization header")
 	}
 
 	token := strings.TrimPrefix(values[0], "Bearer ")
-	// TrimPrefix 不匹配时原样返回，说明不是 Bearer 格式
 	if token == values[0] {
-		return "", status.Error(codes.Unauthenticated, "unauthorized: invalid authorization scheme")
+		return "", auth.InvalidTokenError("unauthorized: invalid authorization scheme")
 	}
 
 	return token, nil
@@ -123,13 +133,20 @@ func extractBearerToken(ctx context.Context) (string, error) {
 // isAgentServiceMethod 判断是否是 AgentService 的 RPC 方法（注册/心跳），
 // 这些路径由 UnaryHostTokenInterceptor 单独处理。
 func isAgentServiceMethod(method string) bool {
-	return method == "/maze.v1.AgentService/Register" ||
-		method == "/maze.v1.AgentService/Heartbeat"
+	return method == mazev1.AgentService_Register_FullMethodName ||
+		method == mazev1.AgentService_Heartbeat_FullMethodName
+}
+
+// isAuthServiceMethod 判断是否是 AuthService 的免鉴权方法（Login/Refresh 不需要 JWT）。
+// Logout 需要认证但不在此列表中，走正常 JWT 校验。
+func isAuthServiceMethod(method string) bool {
+	return method == mazev1.AuthService_Login_FullMethodName ||
+		method == mazev1.AuthService_Refresh_FullMethodName
 }
 
 // extractAgentName 从 gRPC 请求中提取 agent name，
 // 支持 RegisterRequest 和 HeartbeatRequest 两种类型。
-func extractAgentName(req interface{}) string {
+func extractAgentName(req any) string {
 	switch r := req.(type) {
 	case *mazev1.RegisterRequest:
 		return r.GetName()

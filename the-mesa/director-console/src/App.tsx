@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { NodeList } from './components/NodeList';
+import { AuthGuard } from './components/AuthGuard';
 import { createAgentApi } from './api/agent';
 import { controllerApi } from './api/controller';
 import {
@@ -268,11 +269,13 @@ function AppContent() {
 function App() {
   return (
     <ErrorBoundary>
-      <AnimationSettingsProvider>
-        <ToastProvider>
-          <AppContent />
-        </ToastProvider>
-      </AnimationSettingsProvider>
+      <AuthGuard>
+        <AnimationSettingsProvider>
+          <ToastProvider>
+            <AppContent />
+          </ToastProvider>
+        </AnimationSettingsProvider>
+      </AuthGuard>
     </ErrorBoundary>
   );
 }

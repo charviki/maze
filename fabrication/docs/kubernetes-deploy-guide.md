@@ -248,13 +248,14 @@ fabrication/kubernetes/
 
 ## 部署前必做
 
-### 1. 填入 Auth Token
+### 1. 填入 JWT Secret 与管理员密码
 
 编辑 `base/director-core-secret.yaml`：
 
 ```yaml
 stringData:
-  AUTH_TOKEN: 'your-secret-token-here'
+  DIRECTOR_CORE_JWT_SECRET: 'your-jwt-secret-here'
+  DIRECTOR_CORE_DEFAULT_ADMIN_PASSWORD: 'your-admin-password-here'
 ```
 
 ### 2. 镜像来源与运行时参数

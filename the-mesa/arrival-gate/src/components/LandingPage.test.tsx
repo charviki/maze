@@ -92,7 +92,7 @@ describe('LandingPage', () => {
       expect(inputs.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('shows error on invalid credentials', () => {
+    it('shows error on invalid credentials', async () => {
       goToLogin();
       const inputs = screen.getAllByRole('textbox');
       // First text input is ACCESS ID
@@ -102,7 +102,7 @@ describe('LandingPage', () => {
       fireEvent.change(passwordInput, { target: { value: 'wrong' } });
       fireEvent.click(screen.getByText('AUTHENTICATE'));
 
-      expect(screen.getByText(/ACCESS DENIED/)).toBeInTheDocument();
+      expect(await screen.findByText(/ACCESS DENIED/)).toBeInTheDocument();
     });
 
     it('calls onEnter on valid credentials', async () => {

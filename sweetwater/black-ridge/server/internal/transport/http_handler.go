@@ -30,7 +30,7 @@ type HTTPHandlerParams struct {
 	Logger         logutil.Logger
 	GWMux          *gwruntime.ServeMux
 	StaticFiles    fs.FS
-	AuthToken      string
+	JWTSecret      string
 	AllowedOrigins []string
 }
 
@@ -63,9 +63,8 @@ func NewHTTPHandler(params HTTPHandlerParams) (http.Handler, *service.TemplateSt
 		http.HandlerFunc(terminalHandler.HandleWs),
 		accessLogMiddleware(params.Logger),
 		corsMiddleware(params.AllowedOrigins),
-		cradlemw.Auth(params.AuthToken),
+		cradlemw.Auth(params.JWTSecret),
 	)
-
 	mux := http.NewServeMux()
 	mux.Handle("GET /health", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")

@@ -54,13 +54,13 @@ func TestServerConfig_IsDevMode(t *testing.T) {
 		authToken string
 		want      bool
 	}{
-		{name: "empty token", authToken: "", want: true},
+		{name: "empty token", authToken: "", want: false},
 		{name: "has token", authToken: "secret", want: false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := ServerConfig{AuthToken: tt.authToken}
+			cfg := ServerConfig{JWTSecret: tt.authToken}
 			if cfg.IsDevMode() != tt.want {
 				t.Errorf("IsDevMode = %v, want %v", cfg.IsDevMode(), tt.want)
 			}

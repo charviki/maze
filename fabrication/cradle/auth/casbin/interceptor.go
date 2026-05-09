@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	mazev1 "github.com/charviki/maze-cradle/api/gen/maze/v1"
 	"github.com/charviki/maze-cradle/auth"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -24,8 +25,7 @@ func NewUnaryInterceptor(
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		ra, ok := resourceMap[info.FullMethod]
 		if !ok {
-			// Agent 注册/心跳只做认证，不进入授权模型。
-			if info.FullMethod == "/maze.v1.AgentService/Register" || info.FullMethod == "/maze.v1.AgentService/Heartbeat" {
+			if isSkippedMethod(info.FullMethod) {
 				return handler(ctx, req)
 			}
 			return nil, status.Errorf(codes.Internal, "authz resource mapping missing for %s", info.FullMethod)
@@ -59,4 +59,16 @@ func ResourceActionForMethod(resourceMap map[string]ResourceAction, fullMethod s
 		return ResourceAction{}, fmt.Errorf("resource mapping missing for %s", fullMethod)
 	}
 	return ra, nil
+}
+
+// isSkippedMethod 标记 session 生命周期接口和 Agent 建连接口，这些请求不参与资源授权判定。
+// 其中 Logout 仍需先经过认证层，只是不会进入 Casbin 的资源映射检查。
+func isSkippedMethod(method string) bool {
+	switch method {
+	case mazev1.AgentService_Register_FullMethodName, mazev1.AgentService_Heartbeat_FullMethodName,
+		mazev1.AuthService_Login_FullMethodName, mazev1.AuthService_Refresh_FullMethodName,
+		mazev1.AuthService_Logout_FullMethodName:
+		return true
+	}
+	return false
 }

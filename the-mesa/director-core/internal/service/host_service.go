@@ -13,10 +13,12 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/charviki/maze-cradle/auth"
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/maze-cradle/protocol"
 	"github.com/charviki/maze/the-mesa/director-core/internal/config"
 	hostbuilder "github.com/charviki/maze/the-mesa/director-core/internal/hostbuilder"
+	"github.com/charviki/maze/the-mesa/director-core/internal/repository"
 	"github.com/charviki/maze/the-mesa/director-core/internal/runtime"
 )
 
@@ -27,6 +29,8 @@ type HostService struct {
 	txm           HostTxManager
 	runtime       runtime.HostRuntime
 	auditLog      AuditLogWriter
+	credOnce      sync.Once
+	credentials   repository.CredentialStore
 	cfg           *config.Config
 	logger        logutil.Logger
 	logDir        string
@@ -43,6 +47,7 @@ func NewHostService(
 	txm HostTxManager,
 	rt runtime.HostRuntime,
 	auditLog AuditLogWriter,
+	credentials repository.CredentialStore,
 	cfg *config.Config,
 	logger logutil.Logger,
 	logDir string,
@@ -53,11 +58,20 @@ func NewHostService(
 		txm:           txm,
 		runtime:       rt,
 		auditLog:      auditLog,
+		credentials:   credentials,
 		cfg:           cfg,
 		logger:        logger,
 		logDir:        logDir,
 		deployCancels: make(map[uint64]context.CancelFunc),
 	}
+}
+
+// SetCredentialStore 延迟注入 CredentialStore，用于 Auth 子系统晚于 HostService 初始化的场景。
+// 必须在服务就绪（接受请求）前调用，且只能调用一次；sync.Once 确保 happens-before 语义。
+func (s *HostService) SetCredentialStore(store repository.CredentialStore) {
+	s.credOnce.Do(func() {
+		s.credentials = store
+	})
 }
 
 // CreateHost 校验 → 持久化 HostSpec → 后台异步构建部署
@@ -111,6 +125,8 @@ func (s *HostService) CreateHost(ctx context.Context, req *protocol.CreateHostRe
 	}); err != nil {
 		return nil, err
 	}
+
+	s.storeHostCredential(ctx, req.Name, hostToken)
 
 	// 在启动 goroutine 之前先登记 WaitGroup 和 cancel，避免 Stop 与 Add/注册时序竞争导致漏等后台部署。
 	//nolint:gosec // async deployment: 用 WithCancel 包装的 Background，支持取消
@@ -210,6 +226,8 @@ func (s *HostService) DeleteHost(ctx context.Context, name string) error {
 	}); err != nil {
 		return err
 	}
+
+	s.revokeHostCredential(ctx, name)
 
 	s.logAuditError(ctx, protocol.AuditLogEntry{
 		Operator:       "frontend",
@@ -366,5 +384,28 @@ func (s *HostService) updateHostStatus(ctx context.Context, name, status, errMsg
 func (s *HostService) logAuditError(ctx context.Context, entry protocol.AuditLogEntry) {
 	if err := s.auditLog.Log(ctx, entry); err != nil {
 		s.logger.Errorf("[host] write audit log action=%s target=%s failed: %v", entry.Action, entry.TargetNode, err)
+	}
+}
+
+func (s *HostService) storeHostCredential(ctx context.Context, name, token string) {
+	if s.credentials == nil {
+		return
+	}
+	if err := s.credentials.StoreCredential(ctx, &repository.Credential{
+		Type:       repository.CredentialTypeHostToken,
+		TokenHash:  auth.HashToken(token),
+		SubjectKey: "host:" + name,
+		Status:     repository.CredentialStatusActive,
+	}); err != nil {
+		s.logger.Errorf("[host] store credential for %q in unified store failed: %v", name, err)
+	}
+}
+
+func (s *HostService) revokeHostCredential(ctx context.Context, name string) {
+	if s.credentials == nil {
+		return
+	}
+	if err := s.credentials.RevokeAllBySubject(ctx, "host:"+name); err != nil {
+		s.logger.Errorf("[host] revoke credential for %q in unified store failed: %v", name, err)
 	}
 }

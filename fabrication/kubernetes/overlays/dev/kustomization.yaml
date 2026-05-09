@@ -38,3 +38,17 @@ patches:
       kind: PersistentVolumeClaim
       metadata:
         name: director-core-data
+  - target:
+      kind: Secret
+      name: director-core-secret
+    patch: |
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: director-core-secret
+      stringData:
+        DIRECTOR_CORE_JWT_SECRET: 'dev-jwt-secret-change-me'
+        DIRECTOR_CORE_JWT_DEFAULT_ADMIN_PASSWORD: 'admin'
+        DIRECTOR_CORE_KUBERNETES_AGENT_JWT_SECRET: 'dev-jwt-secret-change-me'
+        DATABASE_USER: 'maze'
+        DATABASE_PASSWORD: 'maze'

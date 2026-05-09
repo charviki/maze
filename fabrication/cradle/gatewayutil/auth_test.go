@@ -2,28 +2,32 @@ package gatewayutil
 
 import (
 	"context"
+	"errors"
 	"testing"
+	"time"
 
 	mazev1 "github.com/charviki/maze-cradle/api/gen/maze/v1"
+	"github.com/charviki/maze-cradle/auth"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
-// mockHostTokenValidator 是 HostTokenValidator 的测试替身
+const testGRPJWTSecret = "test-grpc-jwt-secret"
+
 type mockHostTokenValidator struct {
 	exists  bool
 	matched bool
+	err     error
 }
 
 func (m *mockHostTokenValidator) ValidateHostToken(_ context.Context, name, token string) (exists, matched bool, err error) {
-	return m.exists, m.matched, nil
+	return m.exists, m.matched, m.err
 }
 
-// callUnaryAuthInterceptor 封装 UnaryAuthInterceptor 的调用逻辑，减少测试样板代码
-func callUnaryAuthInterceptor(globalToken, authHeader, method string) (interface{}, error) {
-	interceptor := UnaryAuthInterceptor(globalToken)
+func callUnaryAuthInterceptor(jwtSecret, authHeader, method string) (any, error) {
+	interceptor := UnaryAuthInterceptor(jwtSecret)
 	ctx := context.Background()
 	if authHeader != "" {
 		ctx = metadata.NewIncomingContext(ctx, metadata.Pairs("authorization", authHeader))
@@ -31,61 +35,115 @@ func callUnaryAuthInterceptor(globalToken, authHeader, method string) (interface
 	return interceptor(ctx, nil, &grpc.UnaryServerInfo{FullMethod: method}, successHandler)
 }
 
-// successHandler 是一个模拟的 downstream handler，总是返回 "ok"
-func successHandler(_ context.Context, _ interface{}) (interface{}, error) {
+func successHandler(_ context.Context, _ any) (any, error) {
 	return "ok", nil
 }
 
-func TestUnaryAuthInterceptor_EmptyToken(t *testing.T) {
-	// 全局令牌为空 → 开发模式，所有请求放行
-	resp, err := callUnaryAuthInterceptor("", "Bearer wrong", "/maze.v1.NodeService/ListNode")
+func generateTestToken(secret, subject string, ttl time.Duration) string {
+	token, err := auth.GenerateAccessToken(secret, auth.DefaultIssuer, subject, ttl)
 	if err != nil {
-		t.Fatalf("空 token 模式应放行，但返回错误: %v", err)
+		panic(err)
 	}
-	if resp != "ok" {
-		t.Errorf("resp = %v, 期望 %q", resp, "ok")
-	}
+	return token
 }
 
-func TestUnaryAuthInterceptor_ValidToken(t *testing.T) {
-	resp, err := callUnaryAuthInterceptor("secret", "Bearer secret", "/maze.v1.NodeService/ListNode")
-	if err != nil {
-		t.Fatalf("正确 token 应放行，但返回错误: %v", err)
-	}
-	if resp != "ok" {
-		t.Errorf("resp = %v, 期望 %q", resp, "ok")
-	}
-}
-
-func TestUnaryAuthInterceptor_InvalidToken(t *testing.T) {
-	_, err := callUnaryAuthInterceptor("secret", "Bearer wrong", "/maze.v1.NodeService/ListNode")
+func TestUnaryAuthInterceptor_EmptySecret(t *testing.T) {
+	_, err := callUnaryAuthInterceptor("", "Bearer anything", "/maze.v1.NodeService/ListNode")
 	if err == nil {
-		t.Fatal("错误 token 应被拒绝，但放行了")
+		t.Fatal("空 secret 应拒绝请求，但放行了")
 	}
-	assertGRPCStatus(t, err, codes.Unauthenticated, "unauthorized: invalid or missing authorization header")
+	assertGRPCStatus(t, err, codes.Unauthenticated, "server misconfiguration: jwt secret not configured")
+}
+
+func TestUnaryAuthInterceptor_ValidJWT(t *testing.T) {
+	token := generateTestToken(testGRPJWTSecret, "user:alice", 15*time.Minute)
+	resp, err := callUnaryAuthInterceptor(testGRPJWTSecret, "Bearer "+token, "/maze.v1.NodeService/ListNode")
+	if err != nil {
+		t.Fatalf("有效 JWT 应放行，但返回错误: %v", err)
+	}
+	if resp != "ok" {
+		t.Errorf("resp = %v, 期望 %q", resp, "ok")
+	}
+}
+
+func TestUnaryAuthInterceptor_ExpiredJWT(t *testing.T) {
+	token := generateTestToken(testGRPJWTSecret, "user:alice", -1*time.Second)
+	_, err := callUnaryAuthInterceptor(testGRPJWTSecret, "Bearer "+token, "/maze.v1.NodeService/ListNode")
+	if err == nil {
+		t.Fatal("过期 JWT 应被拒绝，但放行了")
+	}
+	assertGRPCStatus(t, err, codes.Unauthenticated, "unauthorized: token expired")
+	assertErrorReason(t, err, auth.ErrorReasonTokenExpired)
+}
+
+func TestUnaryAuthInterceptor_InvalidJWT(t *testing.T) {
+	_, err := callUnaryAuthInterceptor(testGRPJWTSecret, "Bearer invalid.jwt.token", "/maze.v1.NodeService/ListNode")
+	if err == nil {
+		t.Fatal("无效 JWT 应被拒绝，但放行了")
+	}
+	assertGRPCStatus(t, err, codes.Unauthenticated, "unauthorized: invalid authorization header")
+	assertErrorReason(t, err, auth.ErrorReasonTokenInvalid)
+}
+
+func TestUnaryAuthInterceptor_WrongSecret(t *testing.T) {
+	token := generateTestToken("wrong-secret", "user:alice", 15*time.Minute)
+	_, err := callUnaryAuthInterceptor(testGRPJWTSecret, "Bearer "+token, "/maze.v1.NodeService/ListNode")
+	if err == nil {
+		t.Fatal("错误密钥签名的 JWT 应被拒绝，但放行了")
+	}
+	assertGRPCStatus(t, err, codes.Unauthenticated, "unauthorized: invalid authorization header")
+	assertErrorReason(t, err, auth.ErrorReasonTokenInvalid)
 }
 
 func TestUnaryAuthInterceptor_MissingHeader(t *testing.T) {
-	// 传入空 authHeader 不设置 metadata → extractBearerToken 先遇到 missing metadata 错误
-	_, err := callUnaryAuthInterceptor("secret", "", "/maze.v1.NodeService/ListNode")
+	_, err := callUnaryAuthInterceptor(testGRPJWTSecret, "", "/maze.v1.NodeService/ListNode")
 	if err == nil {
 		t.Fatal("无 Authorization header 应被拒绝，但放行了")
 	}
-	assertGRPCStatus(t, err, codes.Unauthenticated, "unauthorized: missing metadata")
+	assertGRPCStatus(t, err, codes.Unauthenticated, "unauthorized: missing authorization header")
+	assertErrorReason(t, err, auth.ErrorReasonTokenMissing)
 }
 
 func TestUnaryAuthInterceptor_InvalidScheme(t *testing.T) {
-	// 非Bearer格式（如 Basic xxx）应被拒绝
-	_, err := callUnaryAuthInterceptor("secret", "Basic abc123", "/maze.v1.NodeService/ListNode")
+	_, err := callUnaryAuthInterceptor(testGRPJWTSecret, "Basic abc123", "/maze.v1.NodeService/ListNode")
 	if err == nil {
 		t.Fatal("非 Bearer scheme 应被拒绝，但放行了")
 	}
 	assertGRPCStatus(t, err, codes.Unauthenticated, "unauthorized: invalid authorization scheme")
+	assertErrorReason(t, err, auth.ErrorReasonTokenInvalid)
+}
+
+func TestUnaryAuthInterceptor_AnonymousAuthMethods(t *testing.T) {
+	tests := []struct {
+		name   string
+		method string
+	}{
+		{name: "Login 匿名放行", method: mazev1.AuthService_Login_FullMethodName},
+		{name: "Refresh 匿名放行", method: mazev1.AuthService_Refresh_FullMethodName},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, err := callUnaryAuthInterceptor(testGRPJWTSecret, "", tt.method)
+			if err != nil {
+				t.Fatalf("匿名 auth 方法应放行，但返回错误: %v", err)
+			}
+			if resp != "ok" {
+				t.Errorf("resp = %v, 期望 %q", resp, "ok")
+			}
+		})
+	}
+}
+
+func TestUnaryAuthInterceptor_LogoutRequiresJWT(t *testing.T) {
+	_, err := callUnaryAuthInterceptor(testGRPJWTSecret, "", mazev1.AuthService_Logout_FullMethodName)
+	if err == nil {
+		t.Fatal("Logout 缺少 JWT 应被拒绝，但放行了")
+	}
+	assertGRPCStatus(t, err, codes.Unauthenticated, "unauthorized: missing authorization header")
+	assertErrorReason(t, err, auth.ErrorReasonTokenMissing)
 }
 
 func TestUnaryAuthInterceptor_AgentServiceSkipped(t *testing.T) {
-	// AgentService/Register 和 Heartbeat 路径应由 HostTokenInterceptor 处理，AuthInterceptor 直接跳过
-	// 即使 token 不匹配也应放行
 	tests := []struct {
 		name   string
 		method string
@@ -95,7 +153,7 @@ func TestUnaryAuthInterceptor_AgentServiceSkipped(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resp, err := callUnaryAuthInterceptor("secret", "Bearer wrong", tt.method)
+			resp, err := callUnaryAuthInterceptor(testGRPJWTSecret, "Bearer invalid", tt.method)
 			if err != nil {
 				t.Fatalf("AgentService 路径应跳过 auth，但返回错误: %v", err)
 			}
@@ -106,10 +164,27 @@ func TestUnaryAuthInterceptor_AgentServiceSkipped(t *testing.T) {
 	}
 }
 
+func TestUnaryAuthInterceptor_InjectsUserInfo(t *testing.T) {
+	token := generateTestToken(testGRPJWTSecret, "user:bob", 15*time.Minute)
+	interceptor := UnaryAuthInterceptor(testGRPJWTSecret)
+	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+token))
+
+	var gotSubject string
+	_, _ = interceptor(ctx, nil, &grpc.UnaryServerInfo{FullMethod: "/maze.v1.NodeService/ListNode"}, func(ctx context.Context, _ any) (any, error) {
+		if user := auth.GetUserInfo(ctx); user != nil {
+			gotSubject = user.SubjectKey
+		}
+		return "ok", nil
+	})
+
+	if gotSubject != "user:bob" {
+		t.Errorf("subject = %q, 期望 %q", gotSubject, "user:bob")
+	}
+}
+
 func TestUnaryHostTokenInterceptor_HostTokenMatched(t *testing.T) {
-	// Host 有预存令牌且匹配 → 通过
 	validator := &mockHostTokenValidator{exists: true, matched: true}
-	interceptor := UnaryHostTokenInterceptor("global-secret", validator)
+	interceptor := UnaryHostTokenInterceptor(testGRPJWTSecret, validator)
 
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "Bearer host-token"))
 	req := &mazev1.RegisterRequest{Name: "agent-1"}
@@ -124,9 +199,8 @@ func TestUnaryHostTokenInterceptor_HostTokenMatched(t *testing.T) {
 }
 
 func TestUnaryHostTokenInterceptor_HostTokenMismatched(t *testing.T) {
-	// Host 有预存令牌但不匹配 → 拒绝
 	validator := &mockHostTokenValidator{exists: true, matched: false}
-	interceptor := UnaryHostTokenInterceptor("global-secret", validator)
+	interceptor := UnaryHostTokenInterceptor(testGRPJWTSecret, validator)
 
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "Bearer wrong-token"))
 	req := &mazev1.RegisterRequest{Name: "agent-1"}
@@ -138,42 +212,40 @@ func TestUnaryHostTokenInterceptor_HostTokenMismatched(t *testing.T) {
 	assertGRPCStatus(t, err, codes.Unauthenticated, "unauthorized: invalid host token")
 }
 
-func TestUnaryHostTokenInterceptor_FallbackGlobal(t *testing.T) {
-	// Host 无预存令牌 → 回退到全局令牌校验
+func TestUnaryHostTokenInterceptor_FallbackJWT(t *testing.T) {
 	validator := &mockHostTokenValidator{exists: false, matched: false}
-	interceptor := UnaryHostTokenInterceptor("global-secret", validator)
+	interceptor := UnaryHostTokenInterceptor(testGRPJWTSecret, validator)
 
-	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "Bearer global-secret"))
+	token := generateTestToken(testGRPJWTSecret, "user:admin", 15*time.Minute)
+	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+token))
 	req := &mazev1.HeartbeatRequest{Name: "agent-1"}
 
 	resp, err := interceptor(ctx, req, &grpc.UnaryServerInfo{FullMethod: "/maze.v1.AgentService/Heartbeat"}, successHandler)
 	if err != nil {
-		t.Fatalf("全局令牌匹配应放行，但返回错误: %v", err)
+		t.Fatalf("JWT 匹配应放行，但返回错误: %v", err)
 	}
 	if resp != "ok" {
 		t.Errorf("resp = %v, 期望 %q", resp, "ok")
 	}
 }
 
-func TestUnaryHostTokenInterceptor_FallbackGlobalFailed(t *testing.T) {
-	// Host 无预存令牌，全局令牌也不匹配 → 拒绝
+func TestUnaryHostTokenInterceptor_FallbackJWTFailed(t *testing.T) {
 	validator := &mockHostTokenValidator{exists: false, matched: false}
-	interceptor := UnaryHostTokenInterceptor("global-secret", validator)
+	interceptor := UnaryHostTokenInterceptor(testGRPJWTSecret, validator)
 
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "Bearer wrong"))
 	req := &mazev1.RegisterRequest{Name: "agent-1"}
 
 	_, err := interceptor(ctx, req, &grpc.UnaryServerInfo{FullMethod: "/maze.v1.AgentService/Register"}, successHandler)
 	if err == nil {
-		t.Fatal("全局令牌不匹配应被拒绝，但放行了")
+		t.Fatal("无效 JWT 应被拒绝，但放行了")
 	}
 	assertGRPCStatus(t, err, codes.Unauthenticated, "unauthorized: invalid authorization header")
 }
 
 func TestUnaryHostTokenInterceptor_NonAgentMethod(t *testing.T) {
-	// 非 AgentService 路径应直接放行，不走 Host 令牌校验
 	validator := &mockHostTokenValidator{exists: false, matched: false}
-	interceptor := UnaryHostTokenInterceptor("global-secret", validator)
+	interceptor := UnaryHostTokenInterceptor(testGRPJWTSecret, validator)
 
 	resp, err := interceptor(
 		context.Background(),
@@ -190,12 +262,10 @@ func TestUnaryHostTokenInterceptor_NonAgentMethod(t *testing.T) {
 }
 
 func TestUnaryHostTokenInterceptor_EmptyAgentName(t *testing.T) {
-	// AgentService 路径但 agent name 为空 → InvalidArgument 错误
 	validator := &mockHostTokenValidator{exists: false, matched: false}
-	interceptor := UnaryHostTokenInterceptor("global-secret", validator)
+	interceptor := UnaryHostTokenInterceptor(testGRPJWTSecret, validator)
 
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "Bearer some-token"))
-	// RegisterRequest 的 Name 字段为零值
 	req := &mazev1.RegisterRequest{}
 
 	_, err := interceptor(ctx, req, &grpc.UnaryServerInfo{FullMethod: "/maze.v1.AgentService/Register"}, successHandler)
@@ -205,26 +275,36 @@ func TestUnaryHostTokenInterceptor_EmptyAgentName(t *testing.T) {
 	assertGRPCStatus(t, err, codes.InvalidArgument, "agent name is required")
 }
 
-func TestUnaryHostTokenInterceptor_EmptyGlobalToken(t *testing.T) {
-	// 全局令牌为空 → 开发模式，所有请求放行
+func TestUnaryHostTokenInterceptor_EmptySecret(t *testing.T) {
 	validator := &mockHostTokenValidator{exists: false, matched: false}
 	interceptor := UnaryHostTokenInterceptor("", validator)
 
-	resp, err := interceptor(
+	_, err := interceptor(
 		context.Background(),
 		&mazev1.RegisterRequest{Name: "agent-1"},
 		&grpc.UnaryServerInfo{FullMethod: "/maze.v1.AgentService/Register"},
 		successHandler,
 	)
-	if err != nil {
-		t.Fatalf("空全局令牌模式应放行，但返回错误: %v", err)
+	if err == nil {
+		t.Fatal("空 secret 应拒绝请求，但放行了")
 	}
-	if resp != "ok" {
-		t.Errorf("resp = %v, 期望 %q", resp, "ok")
-	}
+	assertGRPCStatus(t, err, codes.Unauthenticated, "server misconfiguration: jwt secret not configured")
 }
 
-// assertGRPCStatus 校验错误是否为预期的 gRPC status code 和 message
+func TestUnaryHostTokenInterceptor_RegistryError(t *testing.T) {
+	validator := &mockHostTokenValidator{exists: false, matched: false, err: errors.New("db connection lost")}
+	interceptor := UnaryHostTokenInterceptor(testGRPJWTSecret, validator)
+
+	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "Bearer some-token"))
+	req := &mazev1.RegisterRequest{Name: "agent-1"}
+
+	_, err := interceptor(ctx, req, &grpc.UnaryServerInfo{FullMethod: "/maze.v1.AgentService/Register"}, successHandler)
+	if err == nil {
+		t.Fatal("registry 返回 error 时应拒绝请求，但放行了")
+	}
+	assertGRPCStatus(t, err, codes.Unavailable, "service unavailable: host token validation failed")
+}
+
 func assertGRPCStatus(t *testing.T, err error, wantCode codes.Code, wantMsg string) {
 	t.Helper()
 	s, ok := status.FromError(err)
@@ -236,5 +316,12 @@ func assertGRPCStatus(t *testing.T, err error, wantCode codes.Code, wantMsg stri
 	}
 	if s.Message() != wantMsg {
 		t.Errorf("message = %q, 期望 %q", s.Message(), wantMsg)
+	}
+}
+
+func assertErrorReason(t *testing.T, err error, want auth.ErrorReason) {
+	t.Helper()
+	if got := auth.ErrorReasonFromError(err); got != want {
+		t.Errorf("reason = %q, 期望 %q", got, want)
 	}
 }

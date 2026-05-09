@@ -52,11 +52,6 @@ spec:
             - secretRef:
                 name: director-core-secret
           env:
-            - name: DIRECTOR_CORE_SERVER_AUTH_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: director-core-secret
-                  key: AUTH_TOKEN
             - name: DIRECTOR_CORE_AUTH_DATABASE_USER
               valueFrom:
                 secretKeyRef:
@@ -82,6 +77,14 @@ spec:
               mountPath: /data
             - name: docker-socket
               mountPath: /var/run/docker.sock
+          startupProbe:
+            # 集成测试环境会在冷启动时做数据库迁移和启动恢复，先用 startupProbe 给它完整启动窗口，
+            # 避免 HTTP 监听尚未建立时就被 liveness 误杀。
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 2
+            failureThreshold: 30
           livenessProbe:
             httpGet:
               path: /health

@@ -36,7 +36,7 @@ func TestBuildAndDeploy_Success(t *testing.T) {
 	cfg := &config.Config{
 		Docker: config.DockerConfig{AgentBaseImage: "maze-agent:latest"},
 		Server: config.ServerConfig{
-			ServerConfig: configutil.ServerConfig{AuthToken: "tok"},
+			ServerConfig: configutil.ServerConfig{JWTSecret: "tok"},
 		},
 	}
 	spec := &protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, AuthToken: "host-tok"}
@@ -78,7 +78,7 @@ func TestBuildAndDeploy_DockerfileGenerated(t *testing.T) {
 	cfg := &config.Config{
 		Docker: config.DockerConfig{AgentBaseImage: "maze-agent:latest"},
 		Server: config.ServerConfig{
-			ServerConfig: configutil.ServerConfig{AuthToken: "tok"},
+			ServerConfig: configutil.ServerConfig{JWTSecret: "tok"},
 		},
 	}
 	spec := &protocol.HostSpec{Name: "host-1", Tools: []string{"claude"}, AuthToken: "host-tok"}
@@ -102,7 +102,7 @@ func TestBuildAndDeploy_ServerAuthToken(t *testing.T) {
 	cfg := &config.Config{
 		Docker: config.DockerConfig{AgentBaseImage: "maze-agent:latest"},
 		Server: config.ServerConfig{
-			ServerConfig: configutil.ServerConfig{AuthToken: "server-token"},
+			ServerConfig: configutil.ServerConfig{JWTSecret: "server-token"},
 		},
 	}
 	spec := &protocol.HostSpec{Name: "host-1"}

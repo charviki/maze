@@ -13,10 +13,11 @@ import (
 
 // GatewayRegistrationParams 包含 gateway 注册所需的参数。
 type GatewayRegistrationParams struct {
-	GWMux        *gwruntime.ServeMux
-	GRPCAddr     string
-	GRPCServer   *grpc.Server
-	PermHandler  *PermissionServiceServer
+	GWMux       *gwruntime.ServeMux
+	GRPCAddr    string
+	GRPCServer  *grpc.Server
+	PermHandler *PermissionServiceServer
+	AuthHandler *AuthHandler
 }
 
 // localGRPCEndpoint 将 gRPC 监听地址转换为本地 dial 地址。
@@ -54,6 +55,12 @@ func RegisterGatewayHandlers(ctx context.Context, params GatewayRegistrationPara
 
 	if params.PermHandler != nil {
 		if err := pb.RegisterPermissionServiceHandlerFromEndpoint(ctx, params.GWMux, endpoint, dialOpts); err != nil {
+			return err
+		}
+	}
+
+	if params.AuthHandler != nil {
+		if err := pb.RegisterAuthServiceHandlerFromEndpoint(ctx, params.GWMux, endpoint, dialOpts); err != nil {
 			return err
 		}
 	}

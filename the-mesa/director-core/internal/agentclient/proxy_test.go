@@ -22,8 +22,7 @@ import (
 
 func TestProxyGetNodeAddrErrors(t *testing.T) {
 	registry := newTestNodeRegistry(t)
-	proxy := NewProxy(registry, nil)
-
+	proxy := NewProxy(registry, nil, "")
 	if _, err := proxy.getNodeAddr(context.Background(), "missing"); status.Code(err) != codes.NotFound {
 		t.Fatalf("缺失节点 code = %s, want %s (err=%v)", status.Code(err), codes.NotFound, err)
 	}
@@ -39,7 +38,7 @@ func TestProxyGetNodeAddrErrors(t *testing.T) {
 
 func TestProxyListSessions_MissingNodeReturnsNotFound(t *testing.T) {
 	registry := newTestNodeRegistry(t)
-	proxy := NewProxy(registry, nil)
+	proxy := NewProxy(registry, nil, "")
 
 	_, err := proxy.ListSessions(t.Context(), &pb.ListSessionsRequest{NodeName: "missing"})
 	if status.Code(err) != codes.NotFound {
@@ -51,7 +50,7 @@ func TestProxyGetNodeAddrReturnsGrpcAddress(t *testing.T) {
 	registry := newTestNodeRegistry(t)
 	registerTestNode(registry, "node-1:9090")
 
-	proxy := NewProxy(registry, nil)
+	proxy := NewProxy(registry, nil, "")
 	addr, err := proxy.getNodeAddr(context.Background(), "node-1")
 	if err != nil {
 		t.Fatalf("getNodeAddr 返回错误: %v", err)
@@ -405,7 +404,7 @@ func newTestProxy(t *testing.T, grpcAddr string) (*Proxy, *ConnectionManager) {
 
 	connMgr := NewConnectionManager(logutil.NewNop(), "test-token", time.Minute)
 	t.Cleanup(connMgr.CloseAll)
-	return NewProxy(registry, connMgr), connMgr
+	return NewProxy(registry, connMgr, ""), connMgr
 }
 
 func newRunningTestProxy(t *testing.T, agent *proxyTestAgent) (*Proxy, *ConnectionManager) {
@@ -522,7 +521,7 @@ func TestProxyListSessions_UsesUpdatedNodeAddress(t *testing.T) {
 	registry := newTestNodeRegistry(t)
 	connMgr := NewConnectionManager(logutil.NewNop(), "test-token", time.Minute)
 	t.Cleanup(connMgr.CloseAll)
-	proxy := NewProxy(registry, connMgr)
+	proxy := NewProxy(registry, connMgr, "")
 
 	registerTestNode(registry, startProxyTestAgent(t, firstAgent))
 
@@ -815,7 +814,7 @@ func TestProxy_TemplateAndConfigMutations(t *testing.T) {
 }
 
 func TestProxy_GetTemplateAndConfigClientErrors(t *testing.T) {
-	proxy := NewProxy(filerepo.NewNodeRegistry(filepath.Join(t.TempDir(), "nodes.json"), logutil.NewNop()), NewConnectionManager(logutil.NewNop(), "", time.Minute))
+	proxy := NewProxy(filerepo.NewNodeRegistry(filepath.Join(t.TempDir(), "nodes.json"), logutil.NewNop()), NewConnectionManager(logutil.NewNop(), "", time.Minute), "")
 
 	if _, err := proxy.ListTemplates(t.Context(), &pb.ListTemplatesRequest{NodeName: "missing"}); err == nil {
 		t.Fatal("缺失节点时 ListTemplates 应返回错误")

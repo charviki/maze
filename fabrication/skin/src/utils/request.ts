@@ -1,4 +1,5 @@
 import type { ApiResponse } from '../types';
+import { fetchWithAuthSession } from '../api/auth-session';
 
 const DEFAULT_TIMEOUT_MS = 30000;
 
@@ -18,13 +19,15 @@ export function createRequest(baseUrl = '') {
 
       const signal = externalSignal ?? controller!.signal;
 
-      const response = await fetch(`${baseUrl}${url}`, {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(options?.headers as Record<string, string>),
+      };
+
+      const response = await fetchWithAuthSession(`${baseUrl}${url}`, {
         ...options,
         signal,
-        headers: {
-          'Content-Type': 'application/json',
-          ...options?.headers,
-        },
+        headers,
       });
 
       if (timeoutId) clearTimeout(timeoutId);

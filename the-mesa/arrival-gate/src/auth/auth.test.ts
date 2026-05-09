@@ -1,98 +1,189 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { login, logout, isAuthenticated, getCurrentUser } from './auth';
-
-const STORAGE_KEY = 'maze:auth';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { http, HttpResponse } from 'msw';
+import { getAccessTokenExpiresAt } from '@maze/fabrication';
+import {
+  fetchWithAuth,
+  getAccessToken,
+  getCurrentUser,
+  isAuthenticated,
+  login,
+  logout,
+  refreshAccessToken,
+} from './auth';
+import { server } from '../test/mocks/server';
 
 describe('auth', () => {
   beforeEach(() => {
     localStorage.clear();
   });
 
-  describe('login', () => {
-    it('accepts valid credentials', () => {
-      expect(login('admin', 'admin')).toBe(true);
-    });
+  it('login 成功后会保存用户与 token 绝对过期时间', async () => {
+    server.use(
+      http.post('*/api/v1/auth/login', async ({ request }) => {
+        const body = (await request.json()) as { username: string; password: string };
+        expect(body).toEqual({ username: 'admin', password: 'admin' });
+        return HttpResponse.json({
+          accessToken: 'access-1',
+          refreshToken: 'refresh-1',
+          expiresIn: 3600,
+        });
+      }),
+    );
 
-    it('rejects invalid username', () => {
-      expect(login('wrong', 'admin')).toBe(false);
-    });
-
-    it('rejects invalid password', () => {
-      expect(login('admin', 'wrong')).toBe(false);
-    });
-
-    it('rejects empty credentials', () => {
-      expect(login('', '')).toBe(false);
-    });
-
-    it('persists session to localStorage on success', () => {
-      login('admin', 'admin');
-      const raw = localStorage.getItem(STORAGE_KEY);
-      expect(raw).toBeTruthy();
-      const session = JSON.parse(raw!);
-      expect(session.user).toBe('admin');
-      expect(session.loginAt).toBeTypeOf('number');
-    });
-
-    it('does not persist on failure', () => {
-      login('wrong', 'wrong');
-      expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
-    });
+    await expect(login('admin', 'admin')).resolves.toBe(true);
+    expect(getAccessToken()).toBe('access-1');
+    expect(getCurrentUser()).toBe('admin');
+    expect(getAccessTokenExpiresAt()).toBeGreaterThan(Date.now());
   });
 
-  describe('logout', () => {
-    it('clears localStorage', () => {
-      login('admin', 'admin');
-      expect(isAuthenticated()).toBe(true);
-      logout();
-      expect(isAuthenticated()).toBe(false);
-    });
+  it('login 失败时不保存本地状态', async () => {
+    server.use(
+      http.post('*/api/v1/auth/login', () =>
+        HttpResponse.json({ message: 'invalid credentials' }, { status: 401 }),
+      ),
+    );
+
+    await expect(login('admin', 'wrong')).resolves.toBe(false);
+    expect(isAuthenticated()).toBe(false);
+    expect(getCurrentUser()).toBeNull();
   });
 
-  describe('isAuthenticated', () => {
-    it('returns false when not logged in', () => {
-      expect(isAuthenticated()).toBe(false);
-    });
+  it('logout 有 accessToken 时直接调 logout API 并清理本地状态', async () => {
+    localStorage.setItem('maze:access_token', 'access-1');
+    localStorage.setItem('maze:refresh_token', 'refresh-1');
+    localStorage.setItem('maze:auth_user', 'admin');
 
-    it('returns true after login', () => {
-      login('admin', 'admin');
-      expect(isAuthenticated()).toBe(true);
-    });
+    server.use(
+      http.post('*/api/v1/auth/logout', async ({ request }) => {
+        const body = (await request.json()) as { refreshToken: string };
+        expect(body.refreshToken).toBe('refresh-1');
+        return HttpResponse.json({});
+      }),
+    );
 
-    it('returns true with valid stored session', () => {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: 'admin', loginAt: Date.now() }));
-      expect(isAuthenticated()).toBe(true);
-    });
+    await logout();
 
-    it('returns false with invalid JSON', () => {
-      localStorage.setItem(STORAGE_KEY, 'not-json');
-      expect(isAuthenticated()).toBe(false);
-    });
-
-    it('returns false with empty user', () => {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: '', loginAt: Date.now() }));
-      expect(isAuthenticated()).toBe(false);
-    });
+    expect(isAuthenticated()).toBe(false);
+    expect(getCurrentUser()).toBeNull();
   });
 
-  describe('getCurrentUser', () => {
-    it('returns null when not logged in', () => {
-      expect(getCurrentUser()).toBeNull();
-    });
+  it('logout 无 accessToken 时先 refresh 再调 logout API', async () => {
+    localStorage.setItem('maze:refresh_token', 'refresh-1');
+    localStorage.setItem('maze:auth_user', 'admin');
 
-    it('returns username after login', () => {
-      login('admin', 'admin');
-      expect(getCurrentUser()).toBe('admin');
-    });
+    const refreshCalled = { value: false };
+    server.use(
+      http.post('*/api/v1/auth/refresh', async ({ request }) => {
+        const body = (await request.json()) as { refreshToken: string };
+        expect(body.refreshToken).toBe('refresh-1');
+        refreshCalled.value = true;
+        return HttpResponse.json({
+          accessToken: 'access-new',
+          refreshToken: 'refresh-new',
+          expiresIn: 3600,
+        });
+      }),
+      http.post('*/api/v1/auth/logout', async ({ request }) => {
+        const authHeader = request.headers.get('Authorization');
+        expect(authHeader).toBe('Bearer access-new');
+        const body = (await request.json()) as { refreshToken: string };
+        expect(body.refreshToken).toBe('refresh-new');
+        return HttpResponse.json({});
+      }),
+    );
 
-    it('returns stored username from valid session', () => {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: 'admin', loginAt: Date.now() }));
-      expect(getCurrentUser()).toBe('admin');
-    });
+    await logout();
 
-    it('returns null with invalid JSON', () => {
-      localStorage.setItem(STORAGE_KEY, 'not-json');
-      expect(getCurrentUser()).toBeNull();
-    });
+    expect(refreshCalled.value).toBe(true);
+    expect(isAuthenticated()).toBe(false);
+    expect(getCurrentUser()).toBeNull();
+  });
+
+  it('logout 在 refresh 也失败时仍清理本地状态', async () => {
+    localStorage.setItem('maze:refresh_token', 'refresh-1');
+    localStorage.setItem('maze:auth_user', 'admin');
+
+    server.use(
+      http.post('*/api/v1/auth/refresh', () =>
+        HttpResponse.json({ reason: 'TOKEN_EXPIRED' }, { status: 401 }),
+      ),
+      http.post('*/api/v1/auth/logout', () => HttpResponse.json({})),
+    );
+
+    await logout();
+
+    expect(isAuthenticated()).toBe(false);
+    expect(getCurrentUser()).toBeNull();
+  });
+
+  it('refreshAccessToken 成功时会轮换本地 token', async () => {
+    localStorage.setItem('maze:refresh_token', 'refresh-1');
+    localStorage.setItem('maze:auth_user', 'admin');
+
+    server.use(
+      http.post('*/api/v1/auth/refresh', async ({ request }) => {
+        const body = (await request.json()) as { refreshToken: string };
+        expect(body.refreshToken).toBe('refresh-1');
+        return HttpResponse.json({
+          accessToken: 'access-2',
+          refreshToken: 'refresh-2',
+          expiresIn: 1200,
+        });
+      }),
+    );
+
+    await expect(refreshAccessToken()).resolves.toBe(true);
+    expect(getAccessToken()).toBe('access-2');
+    expect(localStorage.getItem('maze:refresh_token')).toBe('refresh-2');
+    expect(getCurrentUser()).toBe('admin');
+  });
+
+  it('refreshAccessToken 失败时会清理入口页用户信息', async () => {
+    localStorage.setItem('maze:refresh_token', 'refresh-1');
+    localStorage.setItem('maze:auth_user', 'admin');
+
+    server.use(
+      http.post('*/api/v1/auth/refresh', () =>
+        HttpResponse.json({ reason: 'TOKEN_EXPIRED' }, { status: 401 }),
+      ),
+    );
+
+    await expect(refreshAccessToken()).resolves.toBe(false);
+    expect(isAuthenticated()).toBe(false);
+    expect(getCurrentUser()).toBeNull();
+  });
+
+  it('fetchWithAuth 在 401 TOKEN_EXPIRED 后会刷新并重试一次', async () => {
+    localStorage.setItem('maze:access_token', 'access-1');
+    localStorage.setItem('maze:refresh_token', 'refresh-1');
+    localStorage.setItem('maze:auth_user', 'admin');
+
+    const capturedAuth: string[] = [];
+    let attempt = 0;
+    server.use(
+      http.post('*/api/v1/auth/refresh', () =>
+        HttpResponse.json({
+          accessToken: 'access-2',
+          refreshToken: 'refresh-2',
+          expiresIn: 3600,
+        }),
+      ),
+      http.get('*/api/v1/protected', ({ request }) => {
+        capturedAuth.push(request.headers.get('Authorization') ?? '');
+        attempt += 1;
+        if (attempt === 1) {
+          return HttpResponse.json(
+            { reason: 'TOKEN_EXPIRED', message: 'token expired' },
+            { status: 401 },
+          );
+        }
+        return HttpResponse.json({ ok: true });
+      }),
+    );
+
+    const response = await fetchWithAuth('/api/v1/protected');
+
+    expect(response.ok).toBe(true);
+    expect(capturedAuth).toEqual(['Bearer access-1', 'Bearer access-2']);
   });
 });

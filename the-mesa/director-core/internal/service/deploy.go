@@ -20,7 +20,7 @@ func BuildAndDeploy(ctx context.Context, rt runtime.HostRuntime, spec *protocol.
 		Tools:           spec.Tools,
 		Resources:       spec.Resources,
 		AuthToken:       spec.AuthToken,
-		ServerAuthToken: cfg.Server.AuthToken,
+		ServerAuthToken: cfg.Server.JWTSecret,
 	}
 
 	resp, err := rt.DeployHost(ctx, deploySpec, dockerfileContent)

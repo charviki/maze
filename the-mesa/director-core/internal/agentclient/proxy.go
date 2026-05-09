@@ -2,10 +2,13 @@ package agentclient
 
 import (
 	"context"
+	"time"
 
 	pb "github.com/charviki/maze-cradle/api/gen/maze/v1"
+	"github.com/charviki/maze-cradle/auth"
 	"github.com/charviki/maze/the-mesa/director-core/internal/service"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -13,16 +16,32 @@ import (
 // Proxy 负责把 Session/Template/Config RPC 转发到对应的 Agent 节点。
 // 该职责属于 Director Core 访问外部 Agent 的客户端层，不应继续混在业务 service 中。
 type Proxy struct {
-	registry service.NodeRegistry
-	connMgr  *ConnectionManager
+	registry  service.NodeRegistry
+	connMgr   *ConnectionManager
+	jwtSecret string
 }
 
 // NewProxy 创建 Agent RPC 代理。
-func NewProxy(registry service.NodeRegistry, connMgr *ConnectionManager) *Proxy {
+func NewProxy(registry service.NodeRegistry, connMgr *ConnectionManager, jwtSecret string) *Proxy {
 	return &Proxy{
-		registry: registry,
-		connMgr:  connMgr,
+		registry:  registry,
+		connMgr:   connMgr,
+		jwtSecret: jwtSecret,
 	}
+}
+
+// withAuth 生成一个短期 JWT 并注入到 ctx 的 gRPC metadata 中，
+// 使 Agent 的 UnaryAuthInterceptor 能验证 Director Core 的回调请求。
+// 每次调用都生成新 token，避免长期 token 泄露风险。
+func (p *Proxy) withAuth(ctx context.Context) context.Context {
+	if p.jwtSecret == "" {
+		return ctx
+	}
+	token, err := auth.GenerateAccessToken(p.jwtSecret, auth.DefaultIssuer, "service:director-core", 5*time.Minute)
+	if err != nil {
+		return ctx
+	}
+	return metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+token))
 }
 
 // getSessionClient 获取指定节点的 SessionService client。
@@ -86,7 +105,7 @@ func (p *Proxy) ListSessions(ctx context.Context, req *pb.ListSessionsRequest) (
 	if err != nil {
 		return nil, err
 	}
-	return client.ListSessions(ctx, req)
+	return client.ListSessions(p.withAuth(ctx), req)
 }
 
 // CreateSession 创建新的 Session。
@@ -95,7 +114,7 @@ func (p *Proxy) CreateSession(ctx context.Context, req *pb.CreateSessionRequest)
 	if err != nil {
 		return nil, err
 	}
-	return client.CreateSession(ctx, req)
+	return client.CreateSession(p.withAuth(ctx), req)
 }
 
 // GetSession 获取 Session 详情。
@@ -104,7 +123,7 @@ func (p *Proxy) GetSession(ctx context.Context, req *pb.GetSessionRequest) (*pb.
 	if err != nil {
 		return nil, err
 	}
-	return client.GetSession(ctx, req)
+	return client.GetSession(p.withAuth(ctx), req)
 }
 
 // DeleteSession 删除指定 Session。
@@ -113,7 +132,7 @@ func (p *Proxy) DeleteSession(ctx context.Context, req *pb.DeleteSessionRequest)
 	if err != nil {
 		return nil, err
 	}
-	return client.DeleteSession(ctx, req)
+	return client.DeleteSession(p.withAuth(ctx), req)
 }
 
 // GetSessionConfig 获取 Session 配置。
@@ -122,7 +141,7 @@ func (p *Proxy) GetSessionConfig(ctx context.Context, req *pb.GetSessionConfigRe
 	if err != nil {
 		return nil, err
 	}
-	return client.GetSessionConfig(ctx, req)
+	return client.GetSessionConfig(p.withAuth(ctx), req)
 }
 
 // UpdateSessionConfig 更新 Session 配置。
@@ -131,7 +150,7 @@ func (p *Proxy) UpdateSessionConfig(ctx context.Context, req *pb.UpdateSessionCo
 	if err != nil {
 		return nil, err
 	}
-	return client.UpdateSessionConfig(ctx, req)
+	return client.UpdateSessionConfig(p.withAuth(ctx), req)
 }
 
 // RestoreSession 恢复已终止的 Session。
@@ -140,7 +159,7 @@ func (p *Proxy) RestoreSession(ctx context.Context, req *pb.RestoreSessionReques
 	if err != nil {
 		return nil, err
 	}
-	return client.RestoreSession(ctx, req)
+	return client.RestoreSession(p.withAuth(ctx), req)
 }
 
 // SaveSessions 保存 Session 快照。
@@ -149,7 +168,7 @@ func (p *Proxy) SaveSessions(ctx context.Context, req *pb.SaveSessionsRequest) (
 	if err != nil {
 		return nil, err
 	}
-	return client.SaveSessions(ctx, req)
+	return client.SaveSessions(p.withAuth(ctx), req)
 }
 
 // GetSavedSessions 获取已保存的 Session 列表。
@@ -158,7 +177,7 @@ func (p *Proxy) GetSavedSessions(ctx context.Context, req *pb.GetSavedSessionsRe
 	if err != nil {
 		return nil, err
 	}
-	return client.GetSavedSessions(ctx, req)
+	return client.GetSavedSessions(p.withAuth(ctx), req)
 }
 
 // GetOutput 获取终端输出。
@@ -167,7 +186,7 @@ func (p *Proxy) GetOutput(ctx context.Context, req *pb.GetOutputRequest) (*pb.Te
 	if err != nil {
 		return nil, err
 	}
-	return client.GetOutput(ctx, req)
+	return client.GetOutput(p.withAuth(ctx), req)
 }
 
 // SendInput 发送终端输入。
@@ -176,7 +195,7 @@ func (p *Proxy) SendInput(ctx context.Context, req *pb.SendInputRequest) (*empty
 	if err != nil {
 		return nil, err
 	}
-	return client.SendInput(ctx, req)
+	return client.SendInput(p.withAuth(ctx), req)
 }
 
 // SendSignal 发送终端信号。
@@ -185,7 +204,7 @@ func (p *Proxy) SendSignal(ctx context.Context, req *pb.SendSignalRequest) (*emp
 	if err != nil {
 		return nil, err
 	}
-	return client.SendSignal(ctx, req)
+	return client.SendSignal(p.withAuth(ctx), req)
 }
 
 // GetEnv 获取 Agent 环境变量。
@@ -194,7 +213,7 @@ func (p *Proxy) GetEnv(ctx context.Context, req *pb.GetEnvRequest) (*pb.GetEnvRe
 	if err != nil {
 		return nil, err
 	}
-	return client.GetEnv(ctx, req)
+	return client.GetEnv(p.withAuth(ctx), req)
 }
 
 // ListTemplates 查询模板列表。
@@ -203,7 +222,7 @@ func (p *Proxy) ListTemplates(ctx context.Context, req *pb.ListTemplatesRequest)
 	if err != nil {
 		return nil, err
 	}
-	return client.ListTemplates(ctx, req)
+	return client.ListTemplates(p.withAuth(ctx), req)
 }
 
 // CreateTemplate 创建新模板。
@@ -212,7 +231,7 @@ func (p *Proxy) CreateTemplate(ctx context.Context, req *pb.CreateTemplateReques
 	if err != nil {
 		return nil, err
 	}
-	return client.CreateTemplate(ctx, req)
+	return client.CreateTemplate(p.withAuth(ctx), req)
 }
 
 // GetTemplate 获取模板详情。
@@ -221,7 +240,7 @@ func (p *Proxy) GetTemplate(ctx context.Context, req *pb.GetTemplateRequest) (*p
 	if err != nil {
 		return nil, err
 	}
-	return client.GetTemplate(ctx, req)
+	return client.GetTemplate(p.withAuth(ctx), req)
 }
 
 // UpdateTemplate 更新模板。
@@ -230,7 +249,7 @@ func (p *Proxy) UpdateTemplate(ctx context.Context, req *pb.UpdateTemplateReques
 	if err != nil {
 		return nil, err
 	}
-	return client.UpdateTemplate(ctx, req)
+	return client.UpdateTemplate(p.withAuth(ctx), req)
 }
 
 // DeleteTemplate 删除模板。
@@ -239,7 +258,7 @@ func (p *Proxy) DeleteTemplate(ctx context.Context, req *pb.DeleteTemplateReques
 	if err != nil {
 		return nil, err
 	}
-	return client.DeleteTemplate(ctx, req)
+	return client.DeleteTemplate(p.withAuth(ctx), req)
 }
 
 // GetTemplateConfig 获取模板配置。
@@ -248,7 +267,7 @@ func (p *Proxy) GetTemplateConfig(ctx context.Context, req *pb.GetTemplateConfig
 	if err != nil {
 		return nil, err
 	}
-	return client.GetTemplateConfig(ctx, req)
+	return client.GetTemplateConfig(p.withAuth(ctx), req)
 }
 
 // UpdateTemplateConfig 更新模板配置。
@@ -257,7 +276,7 @@ func (p *Proxy) UpdateTemplateConfig(ctx context.Context, req *pb.UpdateTemplate
 	if err != nil {
 		return nil, err
 	}
-	return client.UpdateTemplateConfig(ctx, req)
+	return client.UpdateTemplateConfig(p.withAuth(ctx), req)
 }
 
 // GetConfig 获取 Agent 本地配置。
@@ -266,7 +285,7 @@ func (p *Proxy) GetConfig(ctx context.Context, req *pb.GetConfigRequest) (*pb.Lo
 	if err != nil {
 		return nil, err
 	}
-	return client.GetConfig(ctx, req)
+	return client.GetConfig(p.withAuth(ctx), req)
 }
 
 // UpdateConfig 更新 Agent 本地配置。
@@ -275,5 +294,5 @@ func (p *Proxy) UpdateConfig(ctx context.Context, req *pb.UpdateConfigRequest) (
 	if err != nil {
 		return nil, err
 	}
-	return client.UpdateConfig(ctx, req)
+	return client.UpdateConfig(p.withAuth(ctx), req)
 }

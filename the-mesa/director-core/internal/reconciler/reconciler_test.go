@@ -65,7 +65,7 @@ func newTestReconciler(t *testing.T, rt *mockReconcilerRuntime) (*Reconciler, *f
 	registry := filerepo.NewNodeRegistry(filepath.Join(tmpDir, "nodes.json"), logutil.NewNop())
 	cfg := &config.Config{
 		Server: config.ServerConfig{
-			ServerConfig: configutil.ServerConfig{AuthToken: "test-token"},
+			ServerConfig: configutil.ServerConfig{JWTSecret: "test-token"},
 		},
 		Docker: config.DockerConfig{AgentBaseImage: "test-base:latest"},
 	}

@@ -77,11 +77,11 @@ func newHTTPServer(cfg *config.Config, logger logutil.Logger, gwmux *gwruntime.S
 	dir := dataDir(cfg)
 	logDir := filepath.Join(dir, "host_logs")
 
-	hostSvc := service.NewHostService(registry, hostSpecRepo, hostTxManager, hostRuntime, auditLog, cfg, logger, logDir)
+	hostSvc := service.NewHostService(registry, hostSpecRepo, hostTxManager, hostRuntime, auditLog, nil, cfg, logger, logDir)
 	nodeSvc := service.NewNodeService(registry, logger)
 	auditSvc := service.NewAuditService(auditLog)
 
-	sessionProxyHandler := transport.NewSessionProxyHandler(registry, auditLog, logger, cfg.Server.AuthToken, cfg.AllowedOrigins(), cfg.Server.AllowPrivateNetworks)
+	sessionProxyHandler := transport.NewSessionProxyHandler(registry, auditLog, logger, cfg.Server.JWTSecret, cfg.AllowedOrigins(), cfg.Server.AllowPrivateNetworks)
 
 	rec := reconciler.NewReconciler(hostSpecRepo, registry, hostRuntime, cfg, logger, logDir)
 	rec.RecoverOnStartup(ctx)
@@ -92,11 +92,11 @@ func newHTTPServer(cfg *config.Config, logger logutil.Logger, gwmux *gwruntime.S
 		Logger:              logger,
 		GWMux:               gwmux,
 		SessionProxyHandler: sessionProxyHandler,
-		AuthToken:           cfg.Server.AuthToken,
+		JWTSecret:           cfg.Server.JWTSecret,
 		AllowedOrigins:      cfg.AllowedOrigins(),
 	})
 
-	connMgr := agentclient.NewConnectionManager(logger, cfg.Server.AuthToken, 5*time.Minute)
+	connMgr := agentclient.NewConnectionManager(logger, cfg.Server.JWTSecret, 5*time.Minute)
 
 	resources := &CleanupResources{
 		HostPool:     hostPool,

@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/charviki/maze-cradle/auth"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -54,6 +55,7 @@ func TestHTTPErrorHandler(t *testing.T) {
 		wantHTTPCode int
 		wantGRPCCode codes.Code
 		wantMessage  string
+		wantReason   string
 	}{
 		{
 			name:         "NotFound → 404",
@@ -61,6 +63,7 @@ func TestHTTPErrorHandler(t *testing.T) {
 			wantHTTPCode: http.StatusNotFound,
 			wantGRPCCode: codes.NotFound,
 			wantMessage:  "resource not found",
+			wantReason:   "",
 		},
 		{
 			name:         "InvalidArgument → 400",
@@ -68,6 +71,7 @@ func TestHTTPErrorHandler(t *testing.T) {
 			wantHTTPCode: http.StatusBadRequest,
 			wantGRPCCode: codes.InvalidArgument,
 			wantMessage:  "bad request",
+			wantReason:   "",
 		},
 		{
 			name:         "Internal → 500",
@@ -75,13 +79,15 @@ func TestHTTPErrorHandler(t *testing.T) {
 			wantHTTPCode: http.StatusInternalServerError,
 			wantGRPCCode: codes.Internal,
 			wantMessage:  "something broke",
+			wantReason:   "",
 		},
 		{
-			name:         "Unauthenticated → 401",
-			err:          status.Error(codes.Unauthenticated, "no auth"),
+			name:         "Unauthenticated With Reason → 401",
+			err:          auth.ExpiredTokenError("no auth"),
 			wantHTTPCode: http.StatusUnauthorized,
 			wantGRPCCode: codes.Unauthenticated,
 			wantMessage:  "no auth",
+			wantReason:   string(auth.ErrorReasonTokenExpired),
 		},
 		{
 			name:         "PermissionDenied → 403",
@@ -89,6 +95,7 @@ func TestHTTPErrorHandler(t *testing.T) {
 			wantHTTPCode: http.StatusForbidden,
 			wantGRPCCode: codes.PermissionDenied,
 			wantMessage:  "forbidden",
+			wantReason:   "",
 		},
 		{
 			name:         "AlreadyExists → 409",
@@ -96,6 +103,7 @@ func TestHTTPErrorHandler(t *testing.T) {
 			wantHTTPCode: http.StatusConflict,
 			wantGRPCCode: codes.AlreadyExists,
 			wantMessage:  "duplicate",
+			wantReason:   "",
 		},
 	}
 
@@ -132,6 +140,9 @@ func TestHTTPErrorHandler(t *testing.T) {
 			}
 			if resp.Message != tt.wantMessage {
 				t.Errorf("message = %q, 期望 %q", resp.Message, tt.wantMessage)
+			}
+			if resp.Reason != tt.wantReason {
+				t.Errorf("reason = %q, 期望 %q", resp.Reason, tt.wantReason)
 			}
 		})
 	}

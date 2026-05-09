@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"strings"
 	"time"
 
 	"github.com/charviki/maze-cradle/auth"
@@ -25,7 +24,6 @@ import (
 	"github.com/charviki/maze/the-mesa/director-core/internal/repository/postgres"
 	appservice "github.com/charviki/maze/the-mesa/director-core/internal/service"
 	"github.com/charviki/maze/the-mesa/director-core/internal/transport"
-	"google.golang.org/grpc/metadata"
 )
 
 type auditLoggerAdapter struct {
@@ -64,24 +62,32 @@ func main() {
 	httpServer, resources := newHTTPServer(cfg, logger, gwmux, hostPool)
 	defer cleanupResources(resources)
 
-	proxySvc := agentclient.NewProxy(resources.Registry, resources.ConnMgr)
+	proxySvc := agentclient.NewProxy(resources.Registry, resources.ConnMgr, cfg.Server.JWTSecret)
 
 	// 构建 gRPC interceptor chain
 	interceptors := []grpc.UnaryServerInterceptor{
-		gatewayutil.UnaryAuthInterceptor(cfg.Server.AuthToken),
-		gatewayutil.UnaryHostTokenInterceptor(cfg.Server.AuthToken, resources.Registry),
+		gatewayutil.UnaryAuthInterceptor(cfg.Server.JWTSecret),
+		gatewayutil.UnaryHostTokenInterceptor(cfg.Server.JWTSecret, resources.Registry),
 	}
 
 	var permissionHandler *transport.PermissionServiceServer
+	var authHandler *transport.AuthHandler
 	var janitorCleanup func()
 	if cfg.Authz.Enabled {
-		iHandler, casbinInterceptor, cleanup, err := initAuthz(cfg, logger)
+		iHandler, aHandler, casbinInterceptor, cleanup, credStore, err := initAuthz(cfg, logger)
 		if err != nil {
 			logger.Fatalf("init authz: %v", err)
 		}
 		permissionHandler = iHandler
+		authHandler = aHandler
 		janitorCleanup = cleanup
+		resources.HostSvc.SetCredentialStore(credStore)
 		interceptors = append(interceptors, casbinInterceptor)
+	}
+
+	// 在 initAuthz 成功后立即 defer cleanup，确保正常退出和错误退出都能执行。
+	if janitorCleanup != nil {
+		defer janitorCleanup()
 	}
 
 	interceptors = append(interceptors,
@@ -94,7 +100,7 @@ func main() {
 		resources.AuditSvc,
 		proxySvc,
 		resources.Registry,
-		cfg.Server.AuthToken,
+		cfg.Server.JWTSecret,
 		logger,
 	)
 	grpcCore := grpc.NewServer(grpc.ChainUnaryInterceptor(interceptors...))
@@ -102,6 +108,10 @@ func main() {
 
 	if permissionHandler != nil {
 		pb.RegisterPermissionServiceServer(grpcCore, permissionHandler)
+	}
+
+	if authHandler != nil {
+		pb.RegisterAuthServiceServer(grpcCore, authHandler)
 	}
 
 	managedGRPC := grpcutil.NewManagedGRPCServer(grpcAddr, grpcCore, logger)
@@ -113,6 +123,7 @@ func main() {
 		GRPCAddr:    grpcAddr,
 		GRPCServer:  grpcCore,
 		PermHandler: permissionHandler,
+		AuthHandler: authHandler,
 	}); err != nil {
 		logger.Fatalf("register gateway handlers: %v", err)
 	}
@@ -125,9 +136,6 @@ func main() {
 	manager.Add(managedGRPC)
 
 	logger.Infof("director-core controller started on %s", cfg.Server.ListenAddr)
-	if cfg.IsDevMode() {
-		logger.Warnf("[security] running in DEV mode: auth_token is empty, all API endpoints are open")
-	}
 	if len(cfg.AllowedOrigins()) == 0 {
 		logger.Warnf("[security] running in DEV mode: CORS and WebSocket allow all origins")
 	}
@@ -137,41 +145,38 @@ func main() {
 	}
 
 	if err := manager.Run(context.Background()); err != nil {
-		if janitorCleanup != nil {
-			janitorCleanup()
-		}
 		logger.Fatalf("run server lifecycle: %v", err)
 	}
 }
 
-// initAuthz 初始化权限系统。
-func initAuthz(cfg *config.Config, logger logutil.Logger) (*transport.PermissionServiceServer, grpc.UnaryServerInterceptor, func(), error) {
+// initAuthz 初始化权限系统和 JWT 认证服务。
+func initAuthz(cfg *config.Config, logger logutil.Logger) (*transport.PermissionServiceServer, *transport.AuthHandler, grpc.UnaryServerInterceptor, func(), *postgres.CredentialRepository, error) {
 	ctx := context.Background()
 	if cfg.AuthDatabase.Host == "" {
-		return nil, nil, nil, errors.New("authz.enabled requires database.host")
+		return nil, nil, nil, nil, nil, errors.New("authz.enabled requires database.host")
 	}
 	logger.Infof("[authz] connecting to database %s:%d/%s", cfg.AuthDatabase.Host, cfg.AuthDatabase.Port, cfg.AuthDatabase.Name)
 
 	pool, err := newAuthzPoolWithRetry(ctx, cfg, logger)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 
 	migrationsFS, fsErr := fs.Sub(postgres.AuthMigrationsFS, "migrations")
 	if fsErr != nil {
 		pool.Close()
-		return nil, nil, nil, fsErr
+		return nil, nil, nil, nil, nil, fsErr
 	}
 	if err := cradleDB.RunMigrations(pool, migrationsFS); err != nil {
 		pool.Close()
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 	logger.Infof("[authz] database migrations completed")
 
 	permRepo := postgres.NewPermissionRepository(pool)
 	if err := permRepo.EnsureAdminBootstrap(ctx, cfg.Authz.AdminSubjectKey, cfg.Authz.AdminDisplayName); err != nil {
 		pool.Close()
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 
 	loadFn := func() ([][]string, error) {
@@ -193,11 +198,11 @@ func initAuthz(cfg *config.Config, logger logutil.Logger) (*transport.Permission
 	enforcer, err := casbincasbin.NewEnforcer(adapter)
 	if err != nil {
 		pool.Close()
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 	if err := enforcer.LoadPolicy(); err != nil {
 		pool.Close()
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 
 	permSvc := appservice.NewPermissionService(permRepo, permRepo, enforcer.LoadPolicy)
@@ -212,26 +217,38 @@ func initAuthz(cfg *config.Config, logger logutil.Logger) (*transport.Permission
 
 	permissionHandler := transport.NewPermissionServiceServer(permSvc)
 
+	userRepo := postgres.NewUserRepository(pool)
+	credentialRepo := postgres.NewCredentialRepository(pool)
+	authSvc := appservice.NewAuthService(
+		userRepo,
+		credentialRepo,
+		permRepo,
+		permRepo,
+		cfg.JWT.Secret,
+		cfg.JWT.AccessDuration(),
+		cfg.JWT.RefreshDuration(),
+		cfg.JWT.DefaultAdminUsername,
+		cfg.JWT.DefaultAdminPassword,
+		cfg.Authz.AdminSubjectKey,
+	)
+
+	// 在 migration 完成后、服务启动前执行 admin bootstrap，确保 JWT 登录可用。
+	if created, err := authSvc.BootstrapAdmin(ctx); err != nil {
+		logger.Warnf("[auth] bootstrap admin failed (non-fatal, login may not work): %v", err)
+	} else if created {
+		logger.Warnf("[auth] default admin created — please change the password immediately via API or environment variable MAZE_JWT_DEFAULT_ADMIN_PASSWORD")
+	}
+
+	authHandler := transport.NewAuthHandler(authSvc)
+
 	extractUser := func(ctx context.Context) (*auth.UserInfo, error) {
 		if user := auth.GetUserInfo(ctx); user != nil {
 			return user, nil
 		}
-		if cfg.Server.AuthToken == "" {
+		if cfg.Server.JWTSecret == "" {
 			return &auth.UserInfo{SubjectKey: cfg.Authz.AdminSubjectKey, DisplayName: cfg.Authz.AdminDisplayName}, nil
 		}
-		md, ok := metadata.FromIncomingContext(ctx)
-		if !ok {
-			return nil, errors.New("missing metadata")
-		}
-		values := md.Get("authorization")
-		if len(values) == 0 {
-			return nil, errors.New("missing authorization header")
-		}
-		token := strings.TrimPrefix(values[0], "Bearer ")
-		if token != cfg.Server.AuthToken {
-			return nil, errors.New("invalid authorization header")
-		}
-		return &auth.UserInfo{SubjectKey: cfg.Authz.AdminSubjectKey, DisplayName: cfg.Authz.AdminDisplayName}, nil
+		return nil, errors.New("unauthorized: no user info in context")
 	}
 
 	resourceMap := map[string]casbincasbin.ResourceAction{
@@ -278,7 +295,7 @@ func initAuthz(cfg *config.Config, logger logutil.Logger) (*transport.Permission
 
 	casbinInterceptor := casbincasbin.NewUnaryInterceptor(enforcer, extractUser, resourceMap)
 
-	return permissionHandler, casbinInterceptor, cleanup, nil
+	return permissionHandler, authHandler, casbinInterceptor, cleanup, credentialRepo, nil
 }
 
 func newHostPoolWithRetry(ctx context.Context, cfg *config.Config, logger logutil.Logger) (*pgxpool.Pool, error) {

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/charviki/maze-cradle/auth"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc/status"
 )
@@ -13,6 +14,7 @@ import (
 type rpcStatusBody struct {
 	Code    int32  `json:"code"`
 	Message string `json:"message"`
+	Reason  string `json:"reason,omitempty"`
 }
 
 // HTTPErrorHandler 自定义 gRPC 错误 → HTTP 响应处理器。
@@ -36,9 +38,11 @@ func HTTPErrorHandler(
 	w.Header().Set("Content-Type", marshaler.ContentType(nil))
 	w.WriteHeader(httpCode)
 
+	base := auth.ErrorResponseFromError(s.Err())
 	resp := rpcStatusBody{
-		Code:    int32(s.Code()), //nolint:gosec // G115: gRPC codes.Code 在 [0,16] 范围内，无溢出风险
-		Message: s.Message(),
+		Code:    base.Code,
+		Message: base.Message,
+		Reason:  base.Reason,
 	}
 	body, _ := json.Marshal(resp)
 	_, _ = w.Write(body)

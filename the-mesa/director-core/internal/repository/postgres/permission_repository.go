@@ -21,6 +21,12 @@ var _ service.AuthTxManager = (*PermissionRepository)(nil)
 
 type authTxContextKey struct{}
 
+// dbExecutor 统一 pgx.Tx 和 pgxpool.Pool 的查询能力，使方法可在事务内外复用。
+type dbExecutor interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
+}
+
 // PermissionRepository 是 PostgreSQL/sqlc 驱动的权限仓储实现。
 type PermissionRepository struct {
 	pool *pgxpool.Pool

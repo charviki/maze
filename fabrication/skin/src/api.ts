@@ -13,6 +13,7 @@ import type {
 import type { NormalizedTemplate } from './api/normalize';
 import { createRequest } from './utils/request';
 import { normalizeTemplate } from './api/normalize';
+import { getAccessToken } from './api/token-store';
 
 export interface ISessionApi {
   listSessions(): Promise<ApiResponse<V1Session[]>>;
@@ -125,7 +126,12 @@ export function createAgentApiClient(urlPrefix: string): IAgentApiClient {
     buildWsUrl: (sessionId) => {
       const loc = window.location;
       const protocol = loc.protocol === 'https:' ? 'wss:' : 'ws:';
-      return `${protocol}//${loc.host}${prefix}sessions/${encodeURIComponent(sessionId)}/ws`;
+      const base = `${protocol}//${loc.host}${prefix}sessions/${encodeURIComponent(sessionId)}/ws`;
+      const token = getAccessToken();
+      if (token) {
+        return `${base}?token=${encodeURIComponent(token)}`;
+      }
+      return base;
     },
 
     listTemplates: async () => {

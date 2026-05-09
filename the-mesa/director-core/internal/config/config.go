@@ -1,13 +1,16 @@
 package config
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/charviki/maze-cradle/configutil"
 )
 
-// Config 全局配置结构体，含 Server、Workspace、Docker、Runtime、Kubernetes、AuthDatabase、HostDatabase、Casbin 维度
+// Config 全局配置结构体，含 Server、Workspace、Docker、Runtime、Kubernetes、AuthDatabase、HostDatabase、Casbin、JWT 维度
 type Config struct {
 	Server       ServerConfig     `yaml:"server"`
 	Workspace    WorkspaceConfig  `yaml:"workspace"`
@@ -18,6 +21,7 @@ type Config struct {
 	HostDatabase DatabaseConfig   `yaml:"host_database"`
 	Casbin       CasbinConfig     `yaml:"casbin"`
 	Authz        AuthzConfig      `yaml:"authz"`
+	JWT          JWTConfig        `yaml:"jwt"`
 }
 
 // DatabaseConfig PostgreSQL 数据库连接配置
@@ -40,6 +44,24 @@ type AuthzConfig struct {
 	AdminSubjectKey  string `yaml:"admin_subject_key"`
 	AdminDisplayName string `yaml:"admin_display_name"`
 }
+
+// JWTConfig JWT 认证配置，Director Core 专属。
+type JWTConfig struct {
+	Secret               string `yaml:"secret"`
+	AccessTokenTTL       string `yaml:"access_token_ttl"`
+	RefreshTokenTTL      string `yaml:"refresh_token_ttl"`
+	DefaultAdminUsername string `yaml:"default_admin_username"`
+	DefaultAdminPassword string `yaml:"default_admin_password"`
+	// parsedTTL 在 validate 中由 TTL 字符串解析而来
+	accessDuration  time.Duration
+	refreshDuration time.Duration
+}
+
+// AccessDuration 返回解析后的 access token 有效期。
+func (c *JWTConfig) AccessDuration() time.Duration { return c.accessDuration }
+
+// RefreshDuration 返回解析后的 refresh token 有效期。
+func (c *JWTConfig) RefreshDuration() time.Duration { return c.refreshDuration }
 
 // RuntimeConfig 运行时类型选择
 type RuntimeConfig struct {
@@ -73,6 +95,9 @@ type KubernetesConfig struct {
 	VolumeType string `yaml:"volume_type"`
 	// HostPathBase hostPath 模式下宿主机上的根目录
 	HostPathBase string `yaml:"host_path_base"`
+	// AgentJWTSecret 下发给 Agent 的 JWT 密钥，用于 Agent 自身 HTTP/gRPC 鉴权。
+	// 必须与 Director Core 的 jwt.secret 一致。
+	AgentJWTSecret string `yaml:"agent_jwt_secret"`
 }
 
 // WorkspaceConfig 工作区配置，指定 Director Core 元数据和 Agent 工作目录的宿主机/容器路径
@@ -97,6 +122,9 @@ type DockerConfig struct {
 	AgentDataDir string `yaml:"agent_data_dir"`
 	// DirectorCoreAddr Director Core 在容器网络中的地址（Agent 通过此地址注册心跳）
 	DirectorCoreAddr string `yaml:"director_core_addr"`
+	// AgentJWTSecret 下发给 Agent 容器的 JWT 密钥，用于 Agent 自身 HTTP/gRPC 鉴权。
+	// 必须与 Director Core 的 jwt.secret 一致，否则代理请求会被 Agent 拒绝。
+	AgentJWTSecret string `yaml:"agent_jwt_secret"`
 }
 
 // ServerConfig HTTP 服务配置，含监听地址、鉴权令牌、CORS 白名单
@@ -124,7 +152,9 @@ func LoadFromExe(filename ...string) (*Config, error) {
 		return nil, err
 	}
 	applyEnvOverrides(&cfg)
-	validate(&cfg)
+	if err := validate(&cfg); err != nil {
+		return nil, err
+	}
 	return &cfg, nil
 }
 
@@ -135,7 +165,9 @@ func Load(path string) (*Config, error) {
 		return nil, err
 	}
 	applyEnvOverrides(&cfg)
-	validate(&cfg)
+	if err := validate(&cfg); err != nil {
+		return nil, err
+	}
 	return &cfg, nil
 }
 
@@ -149,7 +181,7 @@ func applyEnvOverrides(cfg *Config) {
 }
 
 // validate 校验配置完整性并填充默认值
-func validate(cfg *Config) {
+func validate(cfg *Config) error {
 	if cfg.Server.ListenAddr == "" {
 		cfg.Server.ListenAddr = ":8080"
 	}
@@ -239,4 +271,38 @@ func validate(cfg *Config) {
 	if cfg.Authz.AdminDisplayName == "" {
 		cfg.Authz.AdminDisplayName = "admin"
 	}
+
+	// JWT 默认值与 TTL 解析
+	if cfg.JWT.Secret == "" {
+		cfg.JWT.Secret = cfg.Server.JWTSecret
+	}
+	cfg.Server.JWTSecret = cfg.JWT.Secret
+	if cfg.JWT.AccessTokenTTL == "" {
+		cfg.JWT.AccessTokenTTL = "15m"
+	}
+	if cfg.JWT.RefreshTokenTTL == "" {
+		cfg.JWT.RefreshTokenTTL = "168h"
+	}
+	if cfg.JWT.DefaultAdminUsername == "" {
+		cfg.JWT.DefaultAdminUsername = "admin"
+	}
+	accessDuration, err := time.ParseDuration(cfg.JWT.AccessTokenTTL)
+	if err != nil {
+		return fmt.Errorf("invalid jwt.access_token_ttl %q: %w", cfg.JWT.AccessTokenTTL, err)
+	}
+	cfg.JWT.accessDuration = accessDuration
+	refreshDuration, err := time.ParseDuration(cfg.JWT.RefreshTokenTTL)
+	if err != nil {
+		return fmt.Errorf("invalid jwt.refresh_token_ttl %q: %w", cfg.JWT.RefreshTokenTTL, err)
+	}
+	cfg.JWT.refreshDuration = refreshDuration
+	// jwt.secret 为必填项，所有环境必须显式配置，不再支持空 secret 开发模式
+	if cfg.JWT.Secret == "" {
+		return errors.New("jwt.secret is required")
+	}
+	// bootstrap admin 需要非空密码；空密码会导致创建一个"存在但无法登录"的管理员。
+	if cfg.JWT.DefaultAdminPassword == "" {
+		return errors.New("jwt.default_admin_password is required")
+	}
+	return nil
 }

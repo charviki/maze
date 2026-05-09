@@ -48,8 +48,8 @@ func TestNewSessionProxyHandler(t *testing.T) {
 	if h == nil {
 		t.Fatal("NewSessionProxyHandler returned nil")
 	}
-	if h.authToken != "test-token" {
-		t.Errorf("authToken = %q, want %q", h.authToken, "test-token")
+	if h.jwtSecret != "test-token" {
+		t.Errorf("jwtSecret = %q, want %q", h.jwtSecret, "test-token")
 	}
 	if len(h.allowedOrigins) != 1 || h.allowedOrigins[0] != "http://localhost:3000" {
 		t.Errorf("allowedOrigins = %v, want [http://localhost:3000]", h.allowedOrigins)

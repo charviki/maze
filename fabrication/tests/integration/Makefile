@@ -42,6 +42,7 @@ ifeq ($(PLATFORM),docker)
 		echo -e "$$TIME Agent base image built in $${ELAPSED}s"; \
 		echo -e "$$INFO [2/4] Starting test environment (docker-compose)..."; \
 		docker images --filter label=maze.dockerfile-hash -q | xargs -r docker rmi -f 2>/dev/null; \
+		rm -rf $(HOST_DATA_DIR)/docker; \
 		mkdir -p $(HOST_DATA_DIR)/docker/agents; \
 		START2=$$(date +%s); \
 		$(DOCKER_TEST_COMPOSE) up -d --build; \
@@ -86,7 +87,9 @@ ifeq ($(PLATFORM),docker)
 			MAZE_TEST_DATA_DIR=$(HOST_DATA_DIR) \
 			MAZE_TEST_AGENT_STORAGE_BACKEND=bind \
 			MAZE_TEST_DIRECTOR_CORE_URL=http://localhost:$(PORT_DIRECTOR_CORE) \
-			MAZE_TEST_AUTH_TOKEN=test-integration-token \
+			MAZE_TEST_JWT_SECRET=test-jwt-secret \
+			MAZE_TEST_ADMIN_USERNAME=admin \
+			MAZE_TEST_ADMIN_PASSWORD=admin \
 			MAZE_TEST_ENABLE_HOST_POOL="$$TEST_HOST_POOL" \
 			MAZE_TEST_POOL_CLAUDE_SIZE="$$TEST_POOL_CLAUDE_SIZE" \
 			MAZE_TEST_POOL_GO_SIZE="$$TEST_POOL_GO_SIZE" \
@@ -98,7 +101,9 @@ ifeq ($(PLATFORM),docker)
 			MAZE_TEST_DATA_DIR=$(HOST_DATA_DIR) \
 			MAZE_TEST_AGENT_STORAGE_BACKEND=bind \
 			MAZE_TEST_DIRECTOR_CORE_URL=http://localhost:$(PORT_DIRECTOR_CORE) \
-			MAZE_TEST_AUTH_TOKEN=test-integration-token \
+			MAZE_TEST_JWT_SECRET=test-jwt-secret \
+			MAZE_TEST_ADMIN_USERNAME=admin \
+			MAZE_TEST_ADMIN_PASSWORD=admin \
 			MAZE_TEST_ENABLE_HOST_POOL="$$TEST_HOST_POOL" \
 			MAZE_TEST_POOL_CLAUDE_SIZE="$$TEST_POOL_CLAUDE_SIZE" \
 			MAZE_TEST_POOL_GO_SIZE="$$TEST_POOL_GO_SIZE" \
@@ -141,6 +146,7 @@ else ifeq ($(PLATFORM),kubernetes)
 		docker build -f $(DIRECTOR_CORE_DOCKERFILE) -t $(DIRECTOR_CORE_IMAGE) $(PROJECT_ROOT); \
 		echo -e "$$INFO [2/5] Recreating test namespace $$NS..."; \
 		kubectl delete namespace $$NS --ignore-not-found=true --wait=true 2>/dev/null || true; \
+		rm -rf $(POSTGRES_HOSTPATH) $(patsubst %/agents,%,$(AGENT_HOSTPATH_BASE)); \
 		kubectl create namespace $$NS --dry-run=client -o yaml | kubectl apply -f -; \
 		DEPLOYED=true; \
 		echo -e "$$INFO [3/5] Deploying test environment to namespace $$NS..."; \
@@ -202,7 +208,9 @@ else ifeq ($(PLATFORM),kubernetes)
 			MAZE_TEST_DATA_DIR=$(HOST_DATA_DIR) \
 			MAZE_TEST_AGENT_STORAGE_BACKEND=hostpath \
 			MAZE_TEST_DIRECTOR_CORE_URL=http://localhost:$(PORT_DIRECTOR_CORE) \
-			MAZE_TEST_AUTH_TOKEN=test-integration-token \
+			MAZE_TEST_JWT_SECRET=test-jwt-secret \
+			MAZE_TEST_ADMIN_USERNAME=admin \
+			MAZE_TEST_ADMIN_PASSWORD=admin \
 			MAZE_TEST_NAMESPACE=$(K8S_NAMESPACE) \
 			MAZE_TEST_ENABLE_HOST_POOL="$$TEST_HOST_POOL" \
 			MAZE_TEST_POOL_CLAUDE_SIZE="$$TEST_POOL_CLAUDE_SIZE" \
@@ -215,7 +223,9 @@ else ifeq ($(PLATFORM),kubernetes)
 			MAZE_TEST_DATA_DIR=$(HOST_DATA_DIR) \
 			MAZE_TEST_AGENT_STORAGE_BACKEND=hostpath \
 			MAZE_TEST_DIRECTOR_CORE_URL=http://localhost:$(PORT_DIRECTOR_CORE) \
-			MAZE_TEST_AUTH_TOKEN=test-integration-token \
+			MAZE_TEST_JWT_SECRET=test-jwt-secret \
+			MAZE_TEST_ADMIN_USERNAME=admin \
+			MAZE_TEST_ADMIN_PASSWORD=admin \
 			MAZE_TEST_NAMESPACE=$(K8S_NAMESPACE) \
 			MAZE_TEST_ENABLE_HOST_POOL="$$TEST_HOST_POOL" \
 			MAZE_TEST_POOL_CLAUDE_SIZE="$$TEST_POOL_CLAUDE_SIZE" \

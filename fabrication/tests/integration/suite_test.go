@@ -22,7 +22,7 @@ func TestMain(m *testing.M) {
 	suite.cfg = kit.LoadTestConfig()
 
 	env := kit.NewTestEnv(suite.cfg)
-	if err := env.WaitForDirectorCore(15 * time.Second); err != nil {
+	if err := env.WaitForDirectorCore(60 * time.Second); err != nil {
 		fmt.Fprintf(os.Stderr, "director-core not ready: %v\n", err)
 		os.Exit(1)
 	}

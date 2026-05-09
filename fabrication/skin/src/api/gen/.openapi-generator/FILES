@@ -1,5 +1,6 @@
 apis/AgentServiceApi.ts
 apis/AuditServiceApi.ts
+apis/AuthServiceApi.ts
 apis/ConfigServiceApi.ts
 apis/HostServiceApi.ts
 apis/NodeServiceApi.ts
@@ -53,10 +54,15 @@ models/V1ListSubjectPermissionsResponse.ts
 models/V1ListTemplatesResponse.ts
 models/V1ListToolsResponse.ts
 models/V1LocalAgentConfig.ts
+models/V1LoginRequest.ts
+models/V1LoginResponse.ts
+models/V1LogoutRequest.ts
 models/V1NodeInfo.ts
 models/V1PermissionApplication.ts
 models/V1PermissionApplicationStatus.ts
 models/V1PermissionTarget.ts
+models/V1RefreshRequest.ts
+models/V1RefreshResponse.ts
 models/V1RegisterRequest.ts
 models/V1RegisterResponse.ts
 models/V1ResourceLimits.ts

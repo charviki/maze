@@ -251,6 +251,10 @@ func (k *KubernetesRuntime) createDeployment(ctx context.Context, ns, appName st
 		// Host 注册/心跳使用 Host 专属令牌
 		{Name: "AGENT_CONTROLLER_AUTH_TOKEN", Value: spec.AuthToken},
 	}
+	// Agent JWT 密钥：必须与 Director Core 一致，否则代理请求被 Agent 鉴权拦截器拒绝。
+	if k.kube.AgentJWTSecret != "" {
+		envs = append(envs, corev1.EnvVar{Name: "AGENT_SERVER_JWT_SECRET", Value: k.kube.AgentJWTSecret})
+	}
 
 	container := corev1.Container{
 		Name:            "agent",

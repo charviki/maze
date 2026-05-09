@@ -29,9 +29,8 @@ CreateHost() → StoreHostToken(name, hostToken) → 注入容器 AGENT_CONTROLL
                                                               ↓
 Agent 启动 → gRPC AgentService.Register (Authorization: Bearer <hostToken>)
             → UnaryHostTokenInterceptor 校验令牌（来自 gatewayutil）：
-                1. 开发模式（全局 auth_token 为空）→ 放行
-                2. 已知 Host（hostTokens 中有预存令牌）→ 精确匹配
-                3. 未知 Host → 回退到全局 auth_token 校验
+                1. 已知 Host（hostTokens 中有预存令牌）→ 精确匹配
+                2. 未知 Host → 回退到 JWT 校验
             → repository/file.NodeRegistry.Register() → 标记 dirty → 返回 Node 信息
 ```
 
@@ -265,7 +264,12 @@ Agent 实例（动态创建）
 | 配置项                        | 环境变量                              | 默认值                        | 说明                                                                                                       |
 | ----------------------------- | ------------------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | server.listen_addr            | DIRECTOR_CORE_SERVER_LISTEN_ADDR      | :8080                         | HTTP 监听地址                                                                                              |
-| server.auth_token             | DIRECTOR_CORE_SERVER_AUTH_TOKEN       | ""                            | API 鉴权 Token，空为开发模式                                                                               |
+| server.jwt_secret             | DIRECTOR_CORE_SERVER_JWT_SECRET       | ""                            | JWT 签名密钥（必填，空值启动报错）                                                                         |
+| jwt.secret                    | DIRECTOR_CORE_JWT_SECRET              | ""                            | JWT 签名密钥（同 server.jwt_secret，优先使用此字段，必填）                                                  |
+| jwt.access_token_ttl          | DIRECTOR_CORE_JWT_ACCESS_TOKEN_TTL    | 15m                           | Access Token 有效期                                                                                        |
+| jwt.refresh_token_ttl         | DIRECTOR_CORE_JWT_REFRESH_TOKEN_TTL   | 168h                          | Refresh Token 有效期                                                                                       |
+| jwt.default_admin_username    | DIRECTOR_CORE_JWT_DEFAULT_ADMIN_USERNAME | admin                      | 默认管理员用户名                                                                                           |
+| jwt.default_admin_password    | DIRECTOR_CORE_JWT_DEFAULT_ADMIN_PASSWORD | ""                         | 默认管理员密码（必填，空值启动报错）                                                                        |
 | server.allowed_origins        | DIRECTOR_CORE_SERVER_ALLOWED_ORIGINS  | []                            | CORS/WebSocket 允许的来源列表                                                                              |
 | server.allow_private_networks | DIRECTOR_CORE_ALLOW_PRIVATE_NETWORKS  | false                         | 是否允许代理到内网 IP                                                                                      |
 | workspace.base_dir            | DIRECTOR_CORE_WORKSPACE_BASE_DIR      | ~/.maze/docker                | Director Core 元数据根目录（nodes.json / host_specs.json / audit.log / host_logs；容器化部署通常挂载到 `/data`） |
@@ -278,31 +282,26 @@ Agent 实例（动态创建）
 
 ### 开发模式
 
-当 `auth_token` 为空时进入开发模式：
-
-- 所有 API 端点无鉴权保护（Auth 中间件空 token 时 pass-through）
-- CORS 和 WebSocket 允许所有来源
-- Director Core 启动时打印 DEV mode 警告日志
-- 若同时启用 `authz.enabled`，当前实现仍会将请求映射到 `user:admin`，仅用于本地开发调试，不建议在共享环境使用
+`jwt.secret` 和 `jwt.default_admin_password` 为必填项，所有环境必须显式配置非空值。空 secret 不再支持开发模式——启动时 validate 校验会直接报错拒绝启动。各部署环境（docker-compose / K8s overlay）均已提供非空默认值。
 
 ## 安全设计
 
-### Auth Token 认证
+### JWT 认证
 
+- **JWT 签发** — 登录接口验证用户名/密码后签发 access token 和 refresh token
 - **分层令牌校验** — 注册和心跳通过 gRPC interceptor `UnaryHostTokenInterceptor`（来自 `gatewayutil`）进行分层校验：
-  1. 开发模式（全局 `auth_token` 为空）→ 放行所有请求
-  2. 已知 Host（`hostTokens` 中有预存令牌）→ 精确匹配 Host 专属令牌
-  3. 未知 Host（非 Director Core 创建）→ 回退到全局 `auth_token` 校验
+  1. 已知 Host（`hostTokens` 中有预存令牌）→ 精确匹配 Host 专属令牌
+  2. 未知 Host（非 Director Core 创建）→ 回退到 JWT 校验
 - Host 专属令牌在 `CreateHost` 时生成（当前阶段使用 hostname），通过 `AGENT_CONTROLLER_AUTH_TOKEN` 注入容器
-- Agent 自身 API 鉴权使用全局 `auth_token`（`AGENT_SERVER_AUTH_TOKEN`），与注册令牌独立
+- Agent 自身 API 鉴权使用独立令牌（`AGENT_SERVER_AUTH_TOKEN`），与注册令牌独立
 - 其余 REST API 认证由 gRPC interceptor chain 统一处理（`UnaryAuthInterceptor`），gateway 统一回环到本地 gRPC Server，避免 REST 路由绕过 interceptor
-- Auth Token 为空时中间件 pass-through（开发模式）
+- JWT 密钥为必填项，空 secret 时中间件拒绝所有请求（不再支持 pass-through 开发模式）
 - Director Core 到 Agent 代理时透传 Auth Token
 
 ### 权限系统
 
 - `authz.enabled=true` 时，Director Core 启动流程会先执行 PostgreSQL migration，再 bootstrap `user:admin`
-- 当前 Bearer token 认证成功后，授权层统一映射到稳定主体 `user:admin`
+- 当前 JWT 认证成功后，授权层统一映射到稳定主体 `user:admin`
 - 授权模型采用 Casbin `sub, obj, act` 三元组，不引入 domain 或角色继承
 - `PermissionService` 负责权限申请闭环：创建申请单、审批、撤销、查询主体当前 grant
 - 过期 grant 由后台 janitor 定期回收，并同步删除对应 Casbin rule

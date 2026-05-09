@@ -8,6 +8,7 @@ tags:
 - name: ConfigService
 - name: AgentService
 - name: AuditService
+- name: AuthService
 - name: PermissionService
 - name: HostService
 - name: NodeService
@@ -43,6 +44,81 @@ paths:
           description: An unexpected error response.
       tags:
       - AuditService
+  /api/v1/auth/login:
+    post:
+      operationId: AuthService_Login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/v1LoginRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1LoginResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - AuthService
+      x-codegen-request-body-name: body
+  /api/v1/auth/logout:
+    post:
+      operationId: AuthService_Logout
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/v1LogoutRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - AuthService
+      x-codegen-request-body-name: body
+  /api/v1/auth/refresh:
+    post:
+      operationId: AuthService_Refresh
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/v1RefreshRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1RefreshResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - AuthService
+      x-codegen-request-body-name: body
   /api/v1/host/tools:
     get:
       operationId: HostService_ListTools
@@ -2816,6 +2892,32 @@ components:
           type: object
       title: 与 protocol.LocalAgentConfig 对齐
       type: object
+    v1LoginRequest:
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      type: object
+    v1LoginResponse:
+      example:
+        expiresIn: expiresIn
+        accessToken: accessToken
+        refreshToken: refreshToken
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresIn:
+          format: int64
+          type: string
+      type: object
+    v1LogoutRequest:
+      properties:
+        refreshToken:
+          type: string
+      type: object
     v1NodeInfo:
       example:
         metadata:
@@ -2960,6 +3062,25 @@ components:
       title: |-
         PermissionTarget 描述一次权限申请里的一项资源动作组合。
         当前授权模型固定为 Casbin 三元组 sub,obj,act，这里对应 obj + act。
+      type: object
+    v1RefreshRequest:
+      properties:
+        refreshToken:
+          type: string
+      type: object
+    v1RefreshResponse:
+      example:
+        expiresIn: expiresIn
+        accessToken: accessToken
+        refreshToken: refreshToken
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresIn:
+          format: int64
+          type: string
       type: object
     v1RegisterRequest:
       properties:

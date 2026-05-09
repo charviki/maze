@@ -40,8 +40,8 @@ export function CreateHostDialog({
 }: CreateHostDialogProps) {
   const [name, setName] = useState('');
   const [selectedTools, setSelectedTools] = useState<string[]>([]);
-  const [cpuLimit, setCpuLimit] = useState('0.5');
-  const [memoryLimit, setMemoryLimit] = useState('256m');
+  const [cpuLimit, setCpuLimit] = useState('2');
+  const [memoryLimit, setMemoryLimit] = useState('2g');
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

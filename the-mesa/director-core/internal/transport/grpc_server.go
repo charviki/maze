@@ -13,6 +13,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	pb "github.com/charviki/maze-cradle/api/gen/maze/v1"
+	"github.com/charviki/maze-cradle/auth"
 	"github.com/charviki/maze-cradle/logutil"
 	"github.com/charviki/maze-cradle/protocol"
 	"github.com/charviki/maze/the-mesa/director-core/internal/agentclient"
@@ -35,9 +36,9 @@ type Server struct {
 	proxy    *agentclient.Proxy
 	registry service.NodeRegistry
 	logger   logutil.Logger
-	// directorCoreAuthToken 复用 director-core server.auth_token，因为 Agent 的 server.auth_token
+	// directorCoreJWTSecret 复用 director-core server.jwt_secret，因为 Agent 的 server.auth_token
 	// 也是由 Director Core 在部署 Host 时下发；Director Core 主动回调 Agent 的内部 RPC 必须携带它。
-	directorCoreAuthToken string
+	directorCoreJWTSecret string
 
 	grpcServer *grpc.Server
 }
@@ -49,7 +50,7 @@ func NewServer(
 	auditSvc *service.AuditService,
 	proxy *agentclient.Proxy,
 	registry service.NodeRegistry,
-	directorCoreAuthToken string,
+	directorCoreJWTSecret string,
 	logger logutil.Logger,
 ) *Server {
 	return &Server{
@@ -59,7 +60,7 @@ func NewServer(
 		proxy:            proxy,
 		registry:         registry,
 		logger:           logger,
-		directorCoreAuthToken: directorCoreAuthToken,
+		directorCoreJWTSecret: directorCoreJWTSecret,
 	}
 }
 
@@ -145,7 +146,7 @@ func (s *Server) restoreAgentSessions(name, grpcAddr string) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	ctx = attachBearerToken(ctx, s.directorCoreAuthToken)
+	ctx = attachBearerToken(ctx, s.directorCoreJWTSecret)
 
 	resp, err := client.GetSavedSessions(ctx, &pb.GetSavedSessionsRequest{NodeName: name})
 	if err != nil {
@@ -166,7 +167,7 @@ func (s *Server) restoreAgentSessions(name, grpcAddr string) {
 		}
 
 		restoreCtx, restoreCancel := context.WithTimeout(context.Background(), 10*time.Second)
-		restoreCtx = attachBearerToken(restoreCtx, s.directorCoreAuthToken)
+		restoreCtx = attachBearerToken(restoreCtx, s.directorCoreJWTSecret)
 		_, err := client.RestoreSession(restoreCtx, &pb.RestoreSessionRequest{
 			NodeName: name,
 			Id:       ss.GetSessionName(),
@@ -187,8 +188,14 @@ func (s *Server) restoreAgentSessions(name, grpcAddr string) {
 	}
 }
 
-func attachBearerToken(ctx context.Context, token string) context.Context {
-	if token == "" {
+// attachBearerToken 生成短期 JWT 并注入到 ctx 的 gRPC metadata 中，
+// 用于 Director Core 主动回调 Agent 时的服务间认证。
+func attachBearerToken(ctx context.Context, jwtSecret string) context.Context {
+	if jwtSecret == "" {
+		return ctx
+	}
+	token, err := auth.GenerateAccessToken(jwtSecret, auth.DefaultIssuer, "service:director-core", 5*time.Minute)
+	if err != nil {
 		return ctx
 	}
 	return metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+token))

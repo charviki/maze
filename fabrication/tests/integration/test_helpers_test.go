@@ -40,11 +40,14 @@ func newTestHelper(t *testing.T) *testHelper {
 	if cfg == nil {
 		cfg = kit.LoadTestConfig()
 	}
-	apiClient := kit.NewTestAPIClient(cfg)
+	apiClient, err := kit.NewTestAPIClient(cfg)
+	if err != nil {
+		t.Fatalf("create test API client: %v", err)
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	_, _, err := apiClient.HostServiceAPI.HostServiceListHosts(ctx).Execute()
+	_, _, err = apiClient.HostServiceAPI.HostServiceListHosts(ctx).Execute()
 	if err != nil {
 		t.Fatalf("Director Core API not available at %s: %v", cfg.DirectorCoreURL, err)
 	}

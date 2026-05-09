@@ -39,9 +39,13 @@ func newHostPool(cfg *kit.TestConfig) (*hostPool, error) {
 	if len(profiles) == 0 {
 		return nil, fmt.Errorf("host pool enabled but no profiles configured")
 	}
+	apiClient, err := kit.NewTestAPIClient(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("create pool API client: %w", err)
+	}
 	return &hostPool{
 		cfg:       cfg,
-		apiClient: kit.NewTestAPIClient(cfg),
+		apiClient: apiClient,
 		leases:    kit.NewLeasePool(profiles),
 		profiles:  profiles,
 	}, nil

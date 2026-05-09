@@ -21,23 +21,19 @@ const (
 
 // HTTPHandlerParams 包含构造 director-core HTTP 入口所需的全部依赖。
 type HTTPHandlerParams struct {
-	Config             *config.Config
-	Logger             logutil.Logger
-	GWMux              *gwruntime.ServeMux
+	Config              *config.Config
+	Logger              logutil.Logger
+	GWMux               *gwruntime.ServeMux
 	SessionProxyHandler *SessionProxyHandler
-	AuthToken          string
-	AllowedOrigins     []string
+	JWTSecret           string
+	AllowedOrigins      []string
 }
 
 // NewHTTPHandler 构造完整的 HTTP 入口，包含路由注册和 middleware 编排。
+// gRPC gateway 统一走 access log + CORS，鉴权由 gRPC interceptor 层处理。
+// WebSocket 不走 gRPC，需独立的 HTTP 层 JWT 校验。
 func NewHTTPHandler(params HTTPHandlerParams) http.Handler {
-	apiHandler := chainHTTP(
-		params.GWMux,
-		accessLogMiddleware(params.Logger),
-		corsMiddleware(params.AllowedOrigins),
-		cradlemw.Auth(params.AuthToken),
-	)
-	agentHandler := chainHTTP(
+	grpcGatewayHandler := chainHTTP(
 		params.GWMux,
 		accessLogMiddleware(params.Logger),
 		corsMiddleware(params.AllowedOrigins),
@@ -46,7 +42,7 @@ func NewHTTPHandler(params HTTPHandlerParams) http.Handler {
 		http.HandlerFunc(params.SessionProxyHandler.ProxyWebSocket),
 		accessLogMiddleware(params.Logger),
 		corsMiddleware(params.AllowedOrigins),
-		cradlemw.Auth(params.AuthToken),
+		cradlemw.Auth(params.JWTSecret),
 	)
 
 	mux := http.NewServeMux()
@@ -54,10 +50,8 @@ func NewHTTPHandler(params HTTPHandlerParams) http.Handler {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	}))
-	mux.Handle("POST /api/v1/nodes/register", agentHandler)
-	mux.Handle("POST /api/v1/nodes/heartbeat", agentHandler)
 	mux.Handle("GET /api/v1/nodes/{name}/sessions/{id}/ws", wsHandler)
-	mux.Handle("/", apiHandler)
+	mux.Handle("/", grpcGatewayHandler)
 
 	return mux
 }

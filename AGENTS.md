@@ -10,6 +10,7 @@ The Maze — AI Agent 管理平台。The Mesa 控制面域负责代理网关 + H
 - **分阶段实施** — 大范围改动拆分为小步骤，每步验证通过后再推进下一步
 - **拒绝技术债** — 识别设计污染或不必要的兼容妥协时，主动指出并给出替代方案
 - **查验全量覆盖** — `make build-go` + `make lint` + `make test` + `make check-frontend` 全部通过
+- **JSON camelCase** — 前后端交互的 JSON 请求体和响应体统一使用 camelCase（grpc-gateway 的 proto3 JSON 映射默认行为：proto 字段 `refresh_token` 在 JSON 中序列化为 `refreshToken`；反序列化时两种格式均可接受，但代码中统一使用 camelCase）
 
 ## 交付铁律
 

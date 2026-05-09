@@ -37,6 +37,25 @@ export {
 // SDK 模型类型：通过 types.ts re-export，不再直接 export * gen models
 export { createRequest } from './utils/request';
 export { createSdkConfiguration } from './api/sdk-config';
+export {
+  ensureFreshAccessToken,
+  fetchWithAuthSession,
+  refreshAccessToken,
+} from './api/auth-session';
+export {
+  DEFAULT_TOKEN_REFRESH_WINDOW_MS,
+  getAccessToken,
+  getAccessTokenExpiresAt,
+  isAccessTokenExpired,
+  setAccessToken,
+  setAccessTokenExpiresAt,
+  getRefreshToken,
+  setRefreshToken,
+  clearTokens,
+  storeTokens,
+  isAuthenticated as isTokenAuthenticated,
+  willAccessTokenExpireSoon,
+} from './api/token-store';
 export { normalizeTemplate, type NormalizedTemplate } from './api/normalize';
 export { unwrapSdkResponse, unwrapVoidResponse } from './api/helpers';
 export { usePollingWithBackoff } from './hooks/usePollingWithBackoff';

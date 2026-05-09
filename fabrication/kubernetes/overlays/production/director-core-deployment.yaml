@@ -43,7 +43,7 @@ spec:
       containers:
         - name: director-core
           image: maze-director-core:latest
-          imagePullPolicy: Never
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
             - containerPort: 9090
@@ -53,11 +53,6 @@ spec:
             - secretRef:
                 name: director-core-secret
           env:
-            - name: DIRECTOR_CORE_SERVER_AUTH_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: director-core-secret
-                  key: AUTH_TOKEN
             - name: DIRECTOR_CORE_AUTH_DATABASE_USER
               valueFrom:
                 secretKeyRef:

@@ -11,7 +11,7 @@ func TestLoad_ValidConfig(t *testing.T) {
 	content := `
 server:
   listen_addr: ":9090"
-  auth_token: "mytoken"
+  jwt_secret: "mytoken"
   name: "test-agent"
   external_addr: "http://localhost:9090"
 tmux:
@@ -40,8 +40,8 @@ workspace:
 	if cfg.Server.ListenAddr != ":9090" {
 		t.Errorf("Server.ListenAddr = %q, 期望 %q", cfg.Server.ListenAddr, ":9090")
 	}
-	if cfg.Server.AuthToken != "mytoken" {
-		t.Errorf("Server.AuthToken = %q, 期望 %q", cfg.Server.AuthToken, "mytoken")
+	if cfg.Server.JWTSecret != "mytoken" {
+		t.Errorf("Server.JWTSecret = %q, 期望 %q", cfg.Server.JWTSecret, "mytoken")
 	}
 	if cfg.Server.Name != "test-agent" {
 		t.Errorf("Server.Name = %q, 期望 %q", cfg.Server.Name, "test-agent")
@@ -77,7 +77,7 @@ func TestLoad_EnvOverride(t *testing.T) {
 	content := `
 server:
   listen_addr: ":9090"
-  auth_token: "file-token"
+  jwt_secret: "file-token"
   name: "file-name"
 tmux:
   default_shell: "/bin/sh"
@@ -98,7 +98,7 @@ workspace:
 
 	envVars := map[string]string{
 		"AGENT_SERVER_LISTEN_ADDR":            ":7070",
-		"AGENT_SERVER_AUTH_TOKEN":             "env-token",
+		"AGENT_SERVER_JWT_SECRET":              "env-token",
 		"AGENT_NAME":                          "env-name",
 		"AGENT_EXTERNAL_ADDR":                 "http://env:7070",
 		"AGENT_TMUX_SOCKET_PATH":              "/tmp/env.sock",
@@ -120,8 +120,8 @@ workspace:
 	if cfg.Server.ListenAddr != ":7070" {
 		t.Errorf("Server.ListenAddr = %q, 期望 %q (环境变量覆盖)", cfg.Server.ListenAddr, ":7070")
 	}
-	if cfg.Server.AuthToken != "env-token" {
-		t.Errorf("Server.AuthToken = %q, 期望 %q (环境变量覆盖)", cfg.Server.AuthToken, "env-token")
+	if cfg.Server.JWTSecret != "env-token" {
+		t.Errorf("Server.JWTSecret = %q, 期望 %q (环境变量覆盖)", cfg.Server.JWTSecret, "env-token")
 	}
 	if cfg.Server.Name != "env-name" {
 		t.Errorf("Server.Name = %q, 期望 %q (环境变量覆盖)", cfg.Server.Name, "env-name")

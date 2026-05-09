@@ -392,12 +392,12 @@ func newHostServiceTestEnv(t *testing.T) (*service.HostService, *hostServiceNode
 	txm := &hostServiceTxManagerStub{registry: registry, specRepo: hostSpecRepo}
 	cfg := &config.Config{
 		Server: config.ServerConfig{
-			ServerConfig: configutil.ServerConfig{AuthToken: "director-core-token"},
+			ServerConfig: configutil.ServerConfig{JWTSecret: "director-core-token"},
 		},
 		Docker: config.DockerConfig{AgentBaseImage: "maze-agent-base:latest"},
 	}
 	logDir := filepath.Join(tmpDir, "host-logs")
-	svc := service.NewHostService(registry, hostSpecRepo, txm, rt, auditLog, cfg, logutil.NewNop(), logDir)
+	svc := service.NewHostService(registry, hostSpecRepo, txm, rt, auditLog, nil, cfg, logutil.NewNop(), logDir)
 	return svc, registry, hostSpecRepo, rt, auditLog
 }
 

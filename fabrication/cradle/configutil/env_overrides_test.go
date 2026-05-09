@@ -18,7 +18,7 @@ type envOverrideConfig struct {
 
 func TestApplyEnvOverrides(t *testing.T) {
 	t.Setenv("MAZE_SERVER_LISTEN_ADDR", ":9090")
-	t.Setenv("MAZE_SERVER_AUTH_TOKEN", "token")
+	t.Setenv("MAZE_SERVER_JWT_SECRET", "token")
 	t.Setenv("MAZE_SERVER_ALLOWED_ORIGINS", "http://a.test, http://b.test")
 	t.Setenv("MAZE_SERVER_ENABLED", "true")
 	t.Setenv("MAZE_WORKER_CONCURRENCY", "8")
@@ -31,8 +31,8 @@ func TestApplyEnvOverrides(t *testing.T) {
 	if cfg.Server.ListenAddr != ":9090" {
 		t.Fatalf("ListenAddr = %q, 期望 :9090", cfg.Server.ListenAddr)
 	}
-	if cfg.Server.AuthToken != "token" {
-		t.Fatalf("AuthToken = %q, 期望 token", cfg.Server.AuthToken)
+	if cfg.Server.JWTSecret != "token" {
+		t.Fatalf("JWTSecret = %q, 期望 token", cfg.Server.JWTSecret)
 	}
 	if !cfg.Server.Enabled {
 		t.Fatal("Enabled = false, 期望 true")
@@ -72,12 +72,12 @@ func TestExpandHomePath(t *testing.T) {
 
 func TestServerConfigHelpers(t *testing.T) {
 	cfg := ServerConfig{
-		AuthToken:      "",
+		JWTSecret:      "",
 		AllowedOrigins: []string{" http://a.test ", "http://b.test"},
 	}
 
-	if !cfg.IsDevMode() {
-		t.Fatal("IsDevMode() = false, 期望 true")
+	if cfg.IsDevMode() {
+		t.Fatal("IsDevMode() = true, 期望 false（已废弃开发模式）")
 	}
 
 	expected := []string{"http://a.test", "http://b.test"}

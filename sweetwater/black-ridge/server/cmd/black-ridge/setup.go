@@ -24,7 +24,7 @@ func newHTTPServer(cfg *config.Config, tmuxService service.TmuxService, logger l
 		Logger:         logger,
 		GWMux:          gwmux,
 		StaticFiles:    staticFiles,
-		AuthToken:      cfg.Server.AuthToken,
+		JWTSecret:      cfg.Server.JWTSecret,
 		AllowedOrigins: cfg.Server.AllowedOrigins,
 	})
 }

@@ -146,6 +146,10 @@ func (d *DockerRuntime) DeployHost(ctx context.Context, spec *protocol.HostDeplo
 		"-e", "AGENT_SERVER_AUTH_TOKEN="+spec.ServerAuthToken,
 		"-e", "AGENT_CONTROLLER_AUTH_TOKEN="+spec.AuthToken,
 	)
+	// Agent JWT 密钥：必须与 Director Core 一致，否则代理请求被 Agent 鉴权拦截器拒绝。
+	if d.docker.AgentJWTSecret != "" {
+		runArgs = append(runArgs, "-e", "AGENT_SERVER_JWT_SECRET="+d.docker.AgentJWTSecret)
+	}
 
 	// 将宿主机数据目录挂载到 Agent 容器的 /home/agent，使 Agent 工作目录数据持久化到宿主机。
 	// -v 格式: host_path:container_path

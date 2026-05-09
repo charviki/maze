@@ -6,3 +6,19 @@ resources:
   - postgres.yaml
   - director-core-configmap.yaml
   - director-core-deployment.yaml
+
+patches:
+  - target:
+      kind: Secret
+      name: director-core-secret
+    patch: |
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: director-core-secret
+      stringData:
+        DIRECTOR_CORE_JWT_SECRET: 'prod-jwt-secret-must-change-before-deploy'
+        DIRECTOR_CORE_JWT_DEFAULT_ADMIN_PASSWORD: 'admin'
+        DIRECTOR_CORE_KUBERNETES_AGENT_JWT_SECRET: 'prod-jwt-secret-must-change-before-deploy'
+        DATABASE_USER: 'maze'
+        DATABASE_PASSWORD: 'maze'

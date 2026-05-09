@@ -3,3 +3,8 @@ packages:
   - 'the-mesa/director-console'
   - 'the-mesa/arrival-gate'
   - 'sweetwater/black-ridge/web'
+
+allowBuilds:
+  '@nestjs/core': false
+  '@openapitools/openapi-generator-cli': false
+  'msw': false

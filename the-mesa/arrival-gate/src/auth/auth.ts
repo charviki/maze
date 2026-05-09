@@ -1,56 +1,102 @@
-/**
- * Authentication service — OIDC-ready interface.
- *
- * Current: hardcoded users + localStorage.
- * Future: swap internals for OIDC token + redirect flow
- * (Auth0, Keycloak, etc.) without touching UI components.
- */
+import {
+  clearTokens,
+  fetchWithAuthSession,
+  getAccessToken as getStoredAccessToken,
+  getRefreshToken as getStoredRefreshToken,
+  isTokenAuthenticated,
+  refreshAccessToken as refreshSharedAccessToken,
+  storeTokens,
+} from '@maze/fabrication';
 
-const STORAGE_KEY = 'maze:auth';
+const USER_KEY = 'maze:auth_user';
 
-interface AuthSession {
-  user: string;
-  loginAt: number;
+interface LoginResponse {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number | string;
 }
 
-const HARDCODED_USERS = [{ username: 'admin', password: 'admin' }];
-
-export function login(username: string, password: string): boolean {
-  const match = HARDCODED_USERS.find((u) => u.username === username && u.password === password);
-  if (!match) return false;
-
-  const session: AuthSession = { user: username, loginAt: Date.now() };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-  return true;
-}
-
-export function logout(): void {
-  localStorage.removeItem(STORAGE_KEY);
-}
-
-export function isAuthenticated(): boolean {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return false;
+export async function login(username: string, password: string): Promise<boolean> {
   try {
-    // JSON.parse returns unknown; validate shape before use
-    const parsed: unknown = JSON.parse(raw);
-    if (typeof parsed !== 'object' || parsed === null) return false;
-    const session = parsed as Record<string, unknown>;
-    return typeof session.user === 'string' && session.user.length > 0;
+    const response = await fetch('/api/v1/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    if (!response.ok) return false;
+    const data = (await response.json()) as LoginResponse;
+    if (!data.accessToken || !data.refreshToken) {
+      return false;
+    }
+    // 登录成功后立即落绝对过期时间，后续请求才能稳定执行预刷新。
+    storeTokens(data);
+    localStorage.setItem(USER_KEY, username);
+    return true;
   } catch {
     return false;
   }
 }
 
-export function getCurrentUser(): string | null {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return null;
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (typeof parsed !== 'object' || parsed === null) return null;
-    const session = parsed as Record<string, unknown>;
-    return typeof session.user === 'string' ? session.user : null;
-  } catch {
-    return null;
+export async function logout(): Promise<void> {
+  const refreshToken = getStoredRefreshToken();
+  let accessToken = getStoredAccessToken();
+
+  // accessToken 已失效时，先用 refreshToken 尝试获取新的，确保 logout API 能鉴权通过
+  if (refreshToken && !accessToken) {
+    try {
+      await refreshSharedAccessToken();
+      accessToken = getStoredAccessToken();
+    } catch {
+      // refresh 失败仍继续调 logout，尽最大努力通知后端
+    }
   }
+
+  if (refreshToken) {
+    const headers = new Headers({ 'Content-Type': 'application/json' });
+    if (accessToken) {
+      headers.set('Authorization', `Bearer ${accessToken}`);
+    }
+    await fetch('/api/v1/auth/logout', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ refreshToken }),
+    }).catch(() => {});
+  }
+  clearTokens();
+  localStorage.removeItem(USER_KEY);
+}
+
+export function isAuthenticated(): boolean {
+  return isTokenAuthenticated();
+}
+
+export function getAccessToken(): string | null {
+  return getStoredAccessToken();
+}
+
+export function getRefreshToken(): string | null {
+  return getStoredRefreshToken();
+}
+
+export function getCurrentUser(): string | null {
+  return localStorage.getItem(USER_KEY);
+}
+
+export async function refreshAccessToken(): Promise<boolean> {
+  const refreshed = await refreshSharedAccessToken();
+  if (!refreshed) {
+    localStorage.removeItem(USER_KEY);
+  }
+  return refreshed;
+}
+
+export async function fetchWithAuth(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> {
+  const response = await fetchWithAuthSession(input, init);
+  if (response.status === 401 && !isTokenAuthenticated()) {
+    localStorage.removeItem(USER_KEY);
+  }
+  return response;
 }

@@ -162,11 +162,17 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [shaking, setShaking] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
+    async (e: React.FormEvent) => {
       e.preventDefault();
-      if (login(username, password)) {
+      if (loading) return;
+      setLoading(true);
+      setError('');
+      const success = await login(username, password);
+      setLoading(false);
+      if (success) {
         onSuccess();
       } else {
         setError('ACCESS DENIED // MOTOR FUNCTIONS SUSPENDED');
@@ -174,7 +180,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
         setTimeout(() => setShaking(false), 500);
       }
     },
-    [username, password, onSuccess],
+    [username, password, onSuccess, loading],
   );
 
   return (
@@ -250,10 +256,11 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
           {/* Submit button */}
           <Button
             type="submit"
-            className="w-full font-mono tracking-[0.2em] uppercase text-xs h-9 bg-primary/15 border border-primary/30 hover:bg-primary/25 hover:border-primary/50 transition-all text-primary"
+            className="w-full font-mono tracking-[0.2em] uppercase text-xs h-9 bg-primary/15 border border-primary/30 hover:bg-primary/25 hover:border-primary/50 transition-all text-primary disabled:opacity-50 disabled:cursor-not-allowed"
             variant="outline"
+            disabled={loading}
           >
-            AUTHENTICATE
+            {loading ? 'VERIFYING...' : 'AUTHENTICATE'}
           </Button>
 
           {/* Protocol hint */}

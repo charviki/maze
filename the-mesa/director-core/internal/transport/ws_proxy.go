@@ -65,8 +65,8 @@ func (h *SessionProxyHandler) ProxyWebSocket(w http.ResponseWriter, r *http.Requ
 
 	// 使用 gorilla/websocket 作为客户端连接 Agent，携带 Auth token
 	dialHeader := http.Header{}
-	if h.authToken != "" {
-		dialHeader.Set("Authorization", "Bearer "+h.authToken)
+	if token := h.generateServiceToken(); token != "" {
+		dialHeader.Set("Authorization", "Bearer "+token)
 	}
 	agentConn, _, err := gorillaws.DefaultDialer.Dial(agentURL, dialHeader)
 	if err != nil {

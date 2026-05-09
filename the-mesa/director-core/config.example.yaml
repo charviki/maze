@@ -1,7 +1,13 @@
 server:
   listen_addr: ':8080'
   grpc_listen_addr: ':9090'
-  auth_token: ''
+
+jwt:
+  secret: ''
+  access_token_ttl: '15m'
+  refresh_token_ttl: '168h'
+  default_admin_username: 'admin'
+  default_admin_password: 'admin'
 
 workspace:
   base_dir: '~/.maze/docker'

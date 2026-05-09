@@ -13,7 +13,9 @@ func TestLoad_ValidConfig(t *testing.T) {
 	// 写入有效的 YAML 配置文件
 	content := `server:
   listen_addr: ":9090"
-  auth_token: "my-secret-token"
+  jwt_secret: "my-secret-token"
+jwt:
+  default_admin_password: "admin"
 workspace:
   base_dir: "/data"
 `
@@ -29,8 +31,8 @@ workspace:
 	if cfg.Server.ListenAddr != ":9090" {
 		t.Errorf("期望 ListenAddr=:9090, 实际=%s", cfg.Server.ListenAddr)
 	}
-	if cfg.Server.AuthToken != "my-secret-token" {
-		t.Errorf("期望 AuthToken=my-secret-token, 实际=%s", cfg.Server.AuthToken)
+	if cfg.Server.JWTSecret != "my-secret-token" {
+		t.Errorf("期望 JWTSecret=my-secret-token, 实际=%s", cfg.Server.JWTSecret)
 	}
 	if cfg.Workspace.BaseDir != "/data" {
 		t.Errorf("期望 BaseDir=/data, 实际=%s", cfg.Workspace.BaseDir)
@@ -41,11 +43,14 @@ func TestValidate_Defaults(t *testing.T) {
 	dir := t.TempDir()
 	cfgPath := filepath.Join(dir, "config.yaml")
 
-	// 写入空配置，验证默认值填充
+	// 写入空配置，验证默认值填充（jwt.secret 和 jwt.default_admin_password 通过环境变量注入）
 	content := `{}`
 	if err := os.WriteFile(cfgPath, []byte(content), 0644); err != nil {
 		t.Fatalf("写入配置文件失败: %v", err)
 	}
+
+	t.Setenv("DIRECTOR_CORE_JWT_SECRET", "test-secret")
+	t.Setenv("DIRECTOR_CORE_JWT_DEFAULT_ADMIN_PASSWORD", "admin")
 
 	cfg, err := Load(cfgPath)
 	if err != nil {
@@ -82,6 +87,8 @@ func TestApplyEnvOverrides_AllowPrivateNetworks(t *testing.T) {
 
 	// 环境变量显式关闭
 	t.Setenv("DIRECTOR_CORE_ALLOW_PRIVATE_NETWORKS", "false")
+	t.Setenv("DIRECTOR_CORE_JWT_SECRET", "test-secret")
+	t.Setenv("DIRECTOR_CORE_JWT_DEFAULT_ADMIN_PASSWORD", "admin")
 
 	cfg, err := Load(cfgPath)
 	if err != nil {
@@ -114,6 +121,9 @@ func TestDockerConfig_Defaults(t *testing.T) {
 		t.Fatalf("写入配置文件失败: %v", err)
 	}
 
+	t.Setenv("DIRECTOR_CORE_JWT_SECRET", "test-secret")
+	t.Setenv("DIRECTOR_CORE_JWT_DEFAULT_ADMIN_PASSWORD", "admin")
+
 	cfg, err := Load(cfgPath)
 	if err != nil {
 		t.Fatalf("Load 失败: %v", err)
@@ -136,6 +146,8 @@ func TestDockerConfig_EnvOverrides(t *testing.T) {
 		t.Fatalf("写入配置文件失败: %v", err)
 	}
 
+	t.Setenv("DIRECTOR_CORE_JWT_SECRET", "test-secret")
+	t.Setenv("DIRECTOR_CORE_JWT_DEFAULT_ADMIN_PASSWORD", "admin")
 	t.Setenv("DIRECTOR_CORE_DOCKER_SOCKET_PATH", "/custom/docker.sock")
 	t.Setenv("DIRECTOR_CORE_DOCKER_NETWORK", "my-network")
 	t.Setenv("DIRECTOR_CORE_DOCKER_DIRECTOR_CORE_ADDR", "http://my-manager:9090")

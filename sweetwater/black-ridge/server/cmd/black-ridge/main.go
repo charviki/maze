@@ -56,7 +56,7 @@ func main() {
 	configFileService := service.NewConfigFileService()
 	grpcServer := transport.NewServer(tmuxService, localConfig, templateStore, configFileService, cfg.Workspace.RootDir, logger)
 	interceptors := []grpc.UnaryServerInterceptor{
-		gatewayutil.UnaryAuthInterceptor(cfg.Server.AuthToken),
+		gatewayutil.UnaryAuthInterceptor(cfg.Server.JWTSecret),
 	}
 	grpcCore := grpc.NewServer(grpc.ChainUnaryInterceptor(interceptors...))
 	grpcServer.RegisterGRPC(grpcCore)
@@ -91,12 +91,6 @@ func main() {
 	manager.Add(autoSaveRunner)
 
 	logger.Infof("agent server started on %s", cfg.Server.ListenAddr)
-	if cfg.Server.AuthToken == "" {
-		logger.Warnf("[security] running in DEV mode: server.auth_token is empty, all API endpoints are open")
-	}
-	if cfg.Controller.Enabled && cfg.Controller.AuthToken == "" {
-		logger.Warnf("[security] running in DEV mode: controller.auth_token is empty, heartbeat/register requests have no auth")
-	}
 	if err := manager.Run(context.Background()); err != nil {
 		logger.Fatalf("run server lifecycle: %v", err)
 	}

@@ -1,4 +1,5 @@
 import { Configuration } from './gen/runtime';
+import { fetchWithAuthSession } from './auth-session';
 
 const DEFAULT_TIMEOUT_MS = 30000;
 
@@ -10,8 +11,10 @@ export function createSdkConfiguration(baseUrl = ''): Configuration {
       const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
 
       try {
-        return await fetch(input, {
+        const headers = new Headers(init?.headers);
+        return await fetchWithAuthSession(input, {
           ...init,
+          headers,
           signal: init?.signal ?? controller.signal,
         });
       } finally {

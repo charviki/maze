@@ -4,6 +4,7 @@ import (
 	"context"
 	"math"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -22,7 +23,7 @@ import (
 )
 
 func TestAttachBearerToken(t *testing.T) {
-	ctx := attachBearerToken(context.Background(), "secret-token")
+	ctx := attachBearerToken(context.Background(), "test-jwt-secret")
 
 	md, ok := metadata.FromOutgoingContext(ctx)
 	if !ok {
@@ -30,8 +31,11 @@ func TestAttachBearerToken(t *testing.T) {
 	}
 
 	got := md.Get("authorization")
-	if len(got) != 1 || got[0] != "Bearer secret-token" {
-		t.Fatalf("authorization metadata = %v, want [Bearer secret-token]", got)
+	if len(got) != 1 {
+		t.Fatalf("authorization metadata = %v, want 1 entry", got)
+	}
+	if !strings.HasPrefix(got[0], "Bearer ey") {
+		t.Fatalf("authorization metadata = %v, want Bearer <JWT>", got)
 	}
 }
 
@@ -120,11 +124,11 @@ func newServerTestEnv(t *testing.T) (*Server, *filerepo.NodeRegistry, *filerepo.
 	rt := &transportRuntimeMock{}
 	cfg := &config.Config{
 		Server: config.ServerConfig{
-			ServerConfig: configutil.ServerConfig{AuthToken: "director-core-token"},
+			ServerConfig: configutil.ServerConfig{JWTSecret: "director-core-token"},
 		},
 		Docker: config.DockerConfig{AgentBaseImage: "maze-agent-base:latest"},
 	}
-	hostSvc := service.NewHostService(registry, specMgr, transportHostTxManagerStub{}, rt, transportAuditLoggerStub{}, cfg, logutil.NewNop(), filepath.Join(tmpDir, "logs"))
+	hostSvc := service.NewHostService(registry, specMgr, transportHostTxManagerStub{}, rt, transportAuditLoggerStub{}, nil, cfg, logutil.NewNop(), filepath.Join(tmpDir, "logs"))
 	nodeSvc := service.NewNodeService(registry, logutil.NewNop())
 	auditSvc := service.NewAuditService(auditrepo.NewLogger("", logutil.NewNop()))
 	server := NewServer(hostSvc, nodeSvc, auditSvc, nil, registry, "director-core-token", logutil.NewNop())

@@ -146,12 +146,27 @@ else ifeq ($(PLATFORM),kubernetes)
 	@bash -c '\
 		set -e; \
 		PF_STARTED=0; \
-		trap "kill 0" SIGINT SIGTERM; \
+		PIDS=""; \
+		CLEANED=0; \
+		cleanup() { \
+			if [ "$$CLEANED" -eq 1 ]; then return 0; fi; \
+			CLEANED=1; \
+			echo ""; \
+			echo "\033[0;32m[INFO]\033[0m Stopping port-forward..."; \
+			for pid in $$PIDS; do \
+				kill -TERM $$pid 2>/dev/null || true; \
+			done; \
+			for pid in $$PIDS; do \
+				wait $$pid 2>/dev/null || true; \
+			done; \
+		}; \
+		trap cleanup SIGINT SIGTERM EXIT; \
 		start_pf() { \
 			name="$$1"; ports="$$2"; desc="$$3"; \
 			if kubectl get svc/$$name -n $(K8S_NAMESPACE) >/dev/null 2>&1; then \
 				echo "  $$desc"; \
 				kubectl port-forward svc/$$name $$ports -n $(K8S_NAMESPACE) & \
+				PIDS="$$PIDS $$!"; \
 				PF_STARTED=1; \
 			else \
 				echo "  skip $$name: service not managed by overlay $(K8S_OVERLAY)"; \

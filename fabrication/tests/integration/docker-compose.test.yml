@@ -28,13 +28,16 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DIRECTOR_CORE_SERVER_AUTH_TOKEN: test-integration-token
+      DIRECTOR_CORE_JWT_SECRET: test-jwt-secret
+      DIRECTOR_CORE_JWT_DEFAULT_ADMIN_USERNAME: admin
+      DIRECTOR_CORE_JWT_DEFAULT_ADMIN_PASSWORD: admin
       DIRECTOR_CORE_ALLOW_PRIVATE_NETWORKS: 'true'
       DIRECTOR_CORE_DOCKER_NETWORK: '${COMPOSE_PROJECT_NAME:-maze-test}_default'
       DIRECTOR_CORE_WORKSPACE_BASE_DIR: /data
       DIRECTOR_CORE_WORKSPACE_MOUNT_DIR: /data
       DIRECTOR_CORE_DOCKER_AGENT_BASE_IMAGE: maze-agent:latest
       DIRECTOR_CORE_DOCKER_AGENT_DATA_DIR: ${HOST_DATA_DIR:-${HOME}/.maze-test}/docker/agents
+      DIRECTOR_CORE_DOCKER_AGENT_JWT_SECRET: test-jwt-secret
       DIRECTOR_CORE_AUTH_DATABASE_HOST: postgres
       DIRECTOR_CORE_AUTH_DATABASE_PORT: '5432'
       DIRECTOR_CORE_AUTH_DATABASE_NAME: maze_auth

@@ -86,7 +86,7 @@ export default function App() {
   }, []);
 
   const handleLogout = useCallback(() => {
-    logout();
+    void logout();
     setPhase('landing');
   }, []);
 

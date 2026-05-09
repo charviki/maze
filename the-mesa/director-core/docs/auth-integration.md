@@ -14,7 +14,7 @@
 
 首批只有一条标准接入路径：
 
-- 管理端请求通过全局 Bearer token 认证
+- 管理端请求通过 JWT 认证（access token / refresh token）
 - 认证成功后统一映射到 `user:admin`
 - 由 `user:admin` 执行所有授权动作
 
@@ -25,8 +25,12 @@
 `Director Core` 需要同时满足以下条件：
 
 ```yaml
-server:
-  auth_token: "<director-core-token>"
+jwt:
+  secret: "<your-jwt-secret>"
+  access_token_ttl: "15m"
+  refresh_token_ttl: "168h"
+  default_admin_username: "admin"
+  default_admin_password: "<admin-password>"
 
 database:
   host: "<postgres-host>"
@@ -49,15 +53,24 @@ authz:
 
 ## 接入步骤
 
-### 1. 使用全局 Bearer token 访问 Director Core
+### 1. 通过 JWT 登录获取 access token
 
-所有管理端 REST / gRPC 请求继续携带：
+调用 `POST /api/v1/auth/login` 接口，使用管理员凭证获取 access token：
 
 ```http
-Authorization: Bearer <director-core-token>
+POST /api/v1/auth/login
+Content-Type: application/json
+
+{"username": "admin", "password": "<admin-password>"}
 ```
 
-Director Core 在当前阶段会把这个认证结果映射到：
+返回 access token 和 refresh token，后续请求携带：
+
+```http
+Authorization: Bearer <access-token>
+```
+
+Director Core 会把这个认证结果映射到：
 
 ```text
 user:admin
@@ -127,14 +140,14 @@ GET /api/v1/subjects/host:demo/permissions
 
 - 当前仓库优先提供“连接外部 PostgreSQL”的接线方式
 - `director-core-config` 提供 `DIRECTOR_CORE_AUTH_DATABASE_HOST/PORT/NAME`、`DIRECTOR_CORE_HOST_DATABASE_HOST/PORT/NAME` 和 `DIRECTOR_CORE_AUTHZ_*`
-- `director-core-secret` 提供 `DATABASE_USER`、`DATABASE_PASSWORD` 与 `AUTH_TOKEN`
+- `director-core-secret` 提供 `DATABASE_USER`、`DATABASE_PASSWORD`、`DIRECTOR_CORE_JWT_SECRET`、`DIRECTOR_CORE_DEFAULT_ADMIN_USERNAME` 与 `DIRECTOR_CORE_DEFAULT_ADMIN_PASSWORD`
 - 如果这些配置缺失，权限系统不会静默降级，而是直接启动失败
 
 ## 建议的接入顺序
 
 如果后续模块需要先接进来，建议顺序如下：
 
-1. 先复用 Director Core 的 Bearer token 认证
+1. 先复用 Director Core 的 JWT 认证
 2. 先按 `user:admin` 跑通全链路
 3. 再为模块里的具体主体分配 `subject_key`
 4. 再通过权限申请单授予最小能力
