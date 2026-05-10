@@ -86,6 +86,7 @@ COPY --from=web-builder /app/the-mesa/director-console/web-dist /usr/share/nginx
 COPY --from=the-forge-builder /app/the-mesa/the-forge/web/web-dist /usr/share/nginx/html/the-forge
 
 ENV DIRECTOR_CORE_UPSTREAM="director-core:8080"
+ENV THE_FORGE_UPSTREAM="the-forge:8080"
 ENV WS_TIMEOUT="3600s"
 
 EXPOSE 80

@@ -25,6 +25,7 @@ services:
       - '${PORT_WEB:-10800}:80'
     depends_on:
       - director-core
+      - the-forge
 
   director-core:
     build:
@@ -62,6 +63,28 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${HOST_DATA_DIR:-~/.maze-prod}/docker:/data
+
+  the-forge:
+    build:
+      context: ..
+      dockerfile: the-mesa/the-forge/Dockerfile
+    ports:
+      - '${PORT_THE_FORGE:-8091}:8080'
+    container_name: the-forge
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      THE_FORGE_SERVER_JWT_SECRET: '${MAZE_JWT_SECRET:-dev-only-jwt-secret-please-change}'
+      THE_FORGE_SERVER_LISTEN_ADDR: ':8080'
+      THE_FORGE_SERVER_GRPC_ADDR: ':9090'
+      THE_FORGE_DATABASE_HOST: 'postgres'
+      THE_FORGE_DATABASE_PORT: '5432'
+      THE_FORGE_DATABASE_NAME: 'maze_forge'
+      THE_FORGE_DATABASE_USER: '${POSTGRES_USER:-maze}'
+      THE_FORGE_DATABASE_PASSWORD: '${POSTGRES_PASSWORD:-maze}'
+    volumes:
+      - ${HOST_DATA_DIR:-~/.maze-prod}/forge-files:/tmp/the-forge/files
 
 volumes:
   director-core-postgres-data:

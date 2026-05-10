@@ -14,6 +14,42 @@ data:
         root /usr/share/nginx/html;
         index index.html;
 
+        # The Forge API routes → the-forge backend
+        # SSE 和文件上传需要额外配置，放在通用 location 之后覆盖
+        location ~ ^/api/v1/(archives|memories|directives)(/|$) {
+            proxy_pass http://${THE_FORGE_UPSTREAM};
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location /api/v1/oracle/ {
+            proxy_pass http://${THE_FORGE_UPSTREAM};
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+
+            # SSE support
+            proxy_http_version 1.1;
+            proxy_set_header Connection '';
+            proxy_buffering off;
+            proxy_cache off;
+            proxy_read_timeout 300s;
+        }
+
+        location /api/v1/files/ {
+            proxy_pass http://${THE_FORGE_UPSTREAM};
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+
+            client_max_body_size 32m;
+        }
+
+        # Director Core API routes
         location /api/ {
             proxy_pass http://${DIRECTOR_CORE_UPSTREAM};
             proxy_set_header Host $host;
@@ -50,6 +86,12 @@ data:
             try_files $uri $uri/ /arrival-gate/index.html;
         }
 
+        # The Forge SPA
+        location /the-forge/ {
+            alias /usr/share/nginx/html/the-forge/;
+            try_files $uri $uri/ /the-forge/index.html;
+        }
+
         # 根路径重定向到 Arrival Gate
         location = / {
             rewrite ^ /arrival-gate/ redirect;
@@ -57,4 +99,5 @@ data:
     }
   # 环境变量默认值
   DIRECTOR_CORE_UPSTREAM: 'director-core.maze-prod.svc.cluster.local:8080'
+  THE_FORGE_UPSTREAM: 'the-forge.maze-prod.svc.cluster.local:8080'
   WS_TIMEOUT: '3600s'

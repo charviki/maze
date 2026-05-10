@@ -8,6 +8,7 @@ TEST_NAME ?=
 MODULES := \
 	fabrication/cradle \
 	the-mesa/director-core \
+	the-mesa/the-forge \
 	sweetwater/black-ridge/server
 
 COVERAGE_MODULES := \
@@ -29,10 +30,12 @@ TEST_DIR := $(PROJECT_ROOT)/fabrication/tests/integration
 MOLDS_DIR := $(PROJECT_ROOT)/fabrication/molds
 
 DIRECTOR_CORE_DOCKERFILE := $(PROJECT_ROOT)/the-mesa/director-core/Dockerfile
+THE_FORGE_DOCKERFILE := $(PROJECT_ROOT)/the-mesa/the-forge/Dockerfile
 WEB_DOCKERFILE := $(PROJECT_ROOT)/the-mesa/Dockerfile.web
 AGENT_DOCKERFILE := $(PROJECT_ROOT)/sweetwater/black-ridge/Dockerfile
 
 DIRECTOR_CORE_IMAGE := maze-director-core:latest
+THE_FORGE_IMAGE := maze-the-forge:latest
 WEB_IMAGE := maze-web:latest
 AGENT_IMAGE := maze-agent:latest
 
@@ -45,6 +48,7 @@ ifeq ($(ENV),dev)
   COMPOSE_PROJECT := maze-dev
   HOST_DATA_DIR := $(HOME)/.maze-dev
   PORT_DIRECTOR_CORE := 7090
+  PORT_THE_FORGE := 7091
   PORT_WEB := 7080
   PORT_POSTGRES := 5432
   POSTGRES_HOSTPATH := /tmp/maze-dev/postgresql/data
@@ -55,6 +59,7 @@ else ifeq ($(ENV),test)
   COMPOSE_PROJECT := maze-test
   HOST_DATA_DIR := $(HOME)/.maze-test
   PORT_DIRECTOR_CORE := 9090
+  PORT_THE_FORGE := 9091
   PORT_WEB := 9080
   PORT_POSTGRES := 5433
   POSTGRES_HOSTPATH := /tmp/maze-test/postgresql/data
@@ -65,6 +70,7 @@ else ifeq ($(ENV),prod)
   COMPOSE_PROJECT := maze-prod
   HOST_DATA_DIR := $(HOME)/.maze-prod
   PORT_DIRECTOR_CORE := 8090
+  PORT_THE_FORGE := 8091
   PORT_WEB := 10800
   PORT_POSTGRES := 5434
   POSTGRES_HOSTPATH :=
@@ -81,4 +87,4 @@ DOCKER_COMPOSE = docker compose -f $(COMPOSE_FILE) -p $(COMPOSE_PROJECT)
 DOCKER_TEST_COMPOSE = docker compose -f $(COMPOSE_TEST_FILE) -p $(COMPOSE_PROJECT)
 
 # Docker Compose 通过环境变量插值解析端口和数据目录；统一在这里导出，避免根和子目录重复维护。
-export PORT_WEB PORT_DIRECTOR_CORE PORT_POSTGRES HOST_DATA_DIR COMPOSE_PROJECT
+export PORT_WEB PORT_DIRECTOR_CORE PORT_THE_FORGE PORT_POSTGRES HOST_DATA_DIR COMPOSE_PROJECT

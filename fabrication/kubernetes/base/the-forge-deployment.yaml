@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: the-forge
+  namespace: maze-prod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: the-forge
+  template:
+    metadata:
+      labels:
+        app: the-forge
+    spec:
+      containers:
+        - name: the-forge
+          image: the-forge:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+            - containerPort: 9090
+          env:
+            - name: THE_FORGE_SERVER_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: the-forge-secret
+                  key: THE_FORGE_SERVER_JWT_SECRET
+            - name: THE_FORGE_DATABASE_HOST
+              value: postgres
+            - name: THE_FORGE_DATABASE_PORT
+              value: '5432'
+            - name: THE_FORGE_DATABASE_NAME
+              value: maze_forge
+            - name: THE_FORGE_DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: the-forge-secret
+                  key: DATABASE_USER
+            - name: THE_FORGE_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: the-forge-secret
+                  key: DATABASE_PASSWORD
+            - name: THE_FORGE_FILE_STORAGE_PATH
+              value: /data/files
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            limits:
+              cpu: '1'
+              memory: 512Mi
+            requests:
+              cpu: '0.1'
+              memory: 128Mi
+          volumeMounts:
+            - name: forge-data
+              mountPath: /data
+      volumes:
+        - name: forge-data
+          persistentVolumeClaim:
+            claimName: the-forge-data
