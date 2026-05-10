@@ -5,15 +5,8 @@ import { directives } from './data/directives.ts';
 import { links } from './data/links.ts';
 import { stats } from './data/stats.ts';
 
-function ok(data: unknown) {
-  return HttpResponse.json({ status: 'ok', data });
-}
-
 function notFound(message: string) {
-  return HttpResponse.json(
-    { status: 'error', error: { code: 'NOT_FOUND', message } },
-    { status: 404 },
-  );
+  return HttpResponse.json({ message }, { status: 404 });
 }
 
 let memoryStore = [...memories];
@@ -69,21 +62,23 @@ function strOrUndef(val: unknown): string | undefined {
 
 export const handlers = [
   http.get('/api/v1/stats', () => {
-    return ok({
-      ...stats,
-      totalMemories: memoryStore.length,
-      totalDirectives: directiveStore.length,
+    return HttpResponse.json({
+      stats: {
+        ...stats,
+        totalMemories: memoryStore.length,
+        totalDirectives: directiveStore.length,
+      },
     });
   }),
 
   http.get('/api/v1/archives', () => {
-    return ok({ items: archiveStore });
+    return HttpResponse.json({ archives: archiveStore });
   }),
 
   http.get('/api/v1/archives/:id', ({ params }) => {
     const archive = archiveStore.find((a) => a.id === params.id);
     if (!archive) return notFound('Archive not found');
-    return ok(archive);
+    return HttpResponse.json(archive);
   }),
 
   http.post('/api/v1/archives', async ({ request }) => {
@@ -99,7 +94,7 @@ export const handlers = [
       updatedAt: now,
     };
     archiveStore.push(archive);
-    return ok(archive);
+    return HttpResponse.json(archive);
   }),
 
   http.put('/api/v1/archives/:id', async ({ params, request }) => {
@@ -114,14 +109,14 @@ export const handlers = [
       updatedAt: new Date().toISOString(),
     };
     archiveStore[idx] = updated;
-    return ok(updated);
+    return HttpResponse.json(updated);
   }),
 
   http.delete('/api/v1/archives/:id', ({ params }) => {
     const idx = archiveStore.findIndex((a) => a.id === params.id);
     if (idx === -1) return notFound('Archive not found');
     archiveStore.splice(idx, 1);
-    return ok(null);
+    return HttpResponse.json({});
   }),
 
   http.get('/api/v1/memories', ({ request }) => {
@@ -137,7 +132,7 @@ export const handlers = [
     if (kind) filtered = filtered.filter((m) => m.kind === kind);
     if (type) filtered = filtered.filter((m) => m.type === type);
 
-    return ok({ items: filtered, total: filtered.length });
+    return HttpResponse.json({ items: filtered, total: filtered.length });
   }),
 
   http.get('/api/v1/memories:search', ({ request }) => {
@@ -168,23 +163,23 @@ export const handlers = [
       summary: m.summary,
       content: m.content,
     }));
-    return ok({ items, total: items.length });
+    return HttpResponse.json({ items });
   }),
 
-  http.get('/api/v1/memories/tree', ({ request }) => {
+  http.get('/api/v1/memories:tree', ({ request }) => {
     const url = new URL(request.url);
     const archiveId = url.searchParams.get('archiveId');
     const parentId = url.searchParams.get('parentId');
     let filtered = [...memoryStore];
     if (archiveId) filtered = filtered.filter((m) => m.archiveId === archiveId);
-    const tree = buildTree(filtered, parentId ?? undefined);
-    return ok({ items: tree });
+    const nodes = buildTree(filtered, parentId ?? undefined);
+    return HttpResponse.json({ nodes });
   }),
 
   http.get('/api/v1/memories/:id', ({ params }) => {
     const memory = memoryStore.find((m) => m.id === params.id);
     if (!memory) return notFound('Memory not found');
-    return ok({
+    return HttpResponse.json({
       meta: {
         id: memory.id,
         archiveId: memory.archiveId,
@@ -229,7 +224,7 @@ export const handlers = [
       updatedAt: now,
     };
     memoryStore.push(memory);
-    return ok(memory);
+    return HttpResponse.json(memory);
   }),
 
   http.put('/api/v1/memories/:id', async ({ params, request }) => {
@@ -256,25 +251,25 @@ export const handlers = [
       updatedAt: new Date().toISOString(),
     };
     memoryStore[idx] = updated;
-    return ok(updated);
+    return HttpResponse.json(updated);
   }),
 
   http.delete('/api/v1/memories/:id', ({ params }) => {
     const idx = memoryStore.findIndex((m) => m.id === params.id);
     if (idx === -1) return notFound('Memory not found');
     memoryStore.splice(idx, 1);
-    return ok(null);
+    return HttpResponse.json({});
   }),
 
   http.get('/api/v1/memories/:id/ancestors', ({ params }) => {
     const chain = getAncestors(memoryStore, String(params.id));
-    return ok({ ancestors: chain });
+    return HttpResponse.json({ ancestors: chain });
   }),
 
   http.get('/api/v1/memories/:id/links', ({ params }) => {
     const id = String(params.id);
     const memLinks = linkStore.filter((l) => l.sourceId === id || l.targetId === id);
-    return ok({ links: memLinks });
+    return HttpResponse.json({ links: memLinks });
   }),
 
   http.post('/api/v1/memories/:id/links', async ({ params, request }) => {
@@ -293,14 +288,14 @@ export const handlers = [
       createdAt: new Date().toISOString(),
     };
     linkStore.push(link);
-    return ok(link);
+    return HttpResponse.json(link);
   }),
 
   http.delete('/api/v1/memories/:id/links/:linkId', ({ params }) => {
     const idx = linkStore.findIndex((l) => l.id === params.linkId);
     if (idx === -1) return notFound('Link not found');
     linkStore.splice(idx, 1);
-    return ok(null);
+    return HttpResponse.json({});
   }),
 
   http.get('/api/v1/directives', ({ request }) => {
@@ -314,13 +309,13 @@ export const handlers = [
     if (priority) filtered = filtered.filter((d) => d.priority === priority);
     if (archiveId) filtered = filtered.filter((d) => d.archiveId === archiveId);
 
-    return ok({ items: filtered, total: filtered.length });
+    return HttpResponse.json({ items: filtered, total: filtered.length });
   }),
 
   http.get('/api/v1/directives/:id', ({ params }) => {
     const directive = directiveStore.find((d) => d.id === params.id);
     if (!directive) return notFound('Directive not found');
-    return ok(directive);
+    return HttpResponse.json(directive);
   }),
 
   http.post('/api/v1/directives', async ({ request }) => {
@@ -342,7 +337,7 @@ export const handlers = [
       updatedAt: now,
     };
     directiveStore.push(directive);
-    return ok(directive);
+    return HttpResponse.json(directive);
   }),
 
   http.put('/api/v1/directives/:id', async ({ params, request }) => {
@@ -362,13 +357,13 @@ export const handlers = [
       updatedAt: new Date().toISOString(),
     };
     directiveStore[idx] = updated;
-    return ok(updated);
+    return HttpResponse.json(updated);
   }),
 
   http.delete('/api/v1/directives/:id', ({ params }) => {
     const idx = directiveStore.findIndex((d) => d.id === params.id);
     if (idx === -1) return notFound('Directive not found');
     directiveStore.splice(idx, 1);
-    return ok(null);
+    return HttpResponse.json({});
   }),
 ];

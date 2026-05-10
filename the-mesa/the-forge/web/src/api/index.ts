@@ -102,15 +102,6 @@ export interface ListResponse<T> {
   total: number;
 }
 
-interface ApiEnvelope<T> {
-  status: string;
-  data: T;
-}
-
-interface ApiError {
-  error?: { message?: string };
-}
-
 function qs(params?: Record<string, string | undefined>): string {
   if (!params) return '';
   const entries = Object.entries(params).filter(([, v]) => v != null);
@@ -128,18 +119,21 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       ...init,
     });
     if (!res.ok) {
-      const body = (await res.json().catch(() => null)) as ApiError | null;
-      throw new Error(body?.error?.message ?? `HTTP ${res.status}`);
+      const body = (await res.json().catch(() => null)) as { message?: string } | null;
+      throw new Error(body?.message ?? `HTTP ${res.status}`);
     }
-    return ((await res.json()) as ApiEnvelope<T>).data;
+    const text = await res.text();
+    if (!text) return {} as T;
+    return JSON.parse(text) as T;
   } finally {
     clearTimeout(timeout);
   }
 }
 
 export const archives = {
-  list(): Promise<ListResponse<Archive>> {
-    return request('/archives');
+  async list(): Promise<ListResponse<Archive>> {
+    const res = await request<{ archives: Archive[] }>('/archives');
+    return { items: res.archives || [], total: res.archives?.length ?? 0 };
   },
   get(id: string): Promise<Archive> {
     return request(`/archives/${id}`);
@@ -153,19 +147,20 @@ export const archives = {
   ): Promise<Archive> {
     return request(`/archives/${id}`, { method: 'PUT', body: JSON.stringify(data) });
   },
-  remove(id: string): Promise<null> {
-    return request(`/archives/${id}`, { method: 'DELETE' });
+  async remove(id: string): Promise<void> {
+    await request(`/archives/${id}`, { method: 'DELETE' });
   },
 };
 
 export const memories = {
-  list(params?: {
+  async list(params?: {
     archiveId?: string;
     parentId?: string;
     kind?: string;
     type?: string;
   }): Promise<ListResponse<Memory>> {
-    return request(`/memories${qs(params as Record<string, string | undefined>)}`);
+    const res = await request<{ items: Memory[]; total: number }>(`/memories${qs(params)}`);
+    return { items: res.items || [], total: res.total ?? 0 };
   },
   get(id: string): Promise<ParsedMemory> {
     return request(`/memories/${id}`);
@@ -176,42 +171,47 @@ export const memories = {
   update(id: string, data: Partial<Memory>): Promise<Memory> {
     return request(`/memories/${id}`, { method: 'PUT', body: JSON.stringify(data) });
   },
-  remove(id: string): Promise<null> {
-    return request(`/memories/${id}`, { method: 'DELETE' });
+  async remove(id: string): Promise<void> {
+    await request(`/memories/${id}`, { method: 'DELETE' });
   },
-  search(query: string): Promise<ListResponse<ParsedMemory>> {
-    return request(`/memories:search?q=${encodeURIComponent(query)}`);
+  async search(query: string): Promise<ListResponse<ParsedMemory>> {
+    const res = await request<{ items: ParsedMemory[] }>(
+      `/memories:search?q=${encodeURIComponent(query)}`,
+    );
+    return { items: res.items || [], total: res.items?.length ?? 0 };
   },
-  getTree(params?: {
+  async getTree(params?: {
     archiveId?: string;
     parentId?: string;
   }): Promise<ListResponse<MemoryTreeNode>> {
-    return request(`/memories/tree${qs(params as Record<string, string | undefined>)}`);
+    const res = await request<{ nodes: MemoryTreeNode[] }>(`/memories:tree${qs(params)}`);
+    return { items: res.nodes || [], total: res.nodes?.length ?? 0 };
   },
-  getAncestors(id: string): Promise<{ ancestors: Memory[] }> {
+  async getAncestors(id: string): Promise<{ ancestors: Memory[] }> {
     return request(`/memories/${id}/ancestors`);
   },
 };
 
 export const links = {
-  list(memoryId: string): Promise<{ links: Link[] }> {
+  async list(memoryId: string): Promise<{ links: Link[] }> {
     return request(`/memories/${memoryId}/links`);
   },
   create(memoryId: string, data: { targetId: string; relationType: string }): Promise<Link> {
     return request(`/memories/${memoryId}/links`, { method: 'POST', body: JSON.stringify(data) });
   },
-  remove(memoryId: string, linkId: string): Promise<null> {
-    return request(`/memories/${memoryId}/links/${linkId}`, { method: 'DELETE' });
+  async remove(memoryId: string, linkId: string): Promise<void> {
+    await request(`/memories/${memoryId}/links/${linkId}`, { method: 'DELETE' });
   },
 };
 
 export const directives = {
-  list(params?: {
+  async list(params?: {
     status?: string;
     priority?: string;
     archiveId?: string;
   }): Promise<ListResponse<Directive>> {
-    return request(`/directives${qs(params as Record<string, string | undefined>)}`);
+    const res = await request<{ items: Directive[]; total: number }>(`/directives${qs(params)}`);
+    return { items: res.items || [], total: res.total ?? 0 };
   },
   get(id: string): Promise<Directive> {
     return request(`/directives/${id}`);
@@ -222,14 +222,15 @@ export const directives = {
   update(id: string, data: Partial<Directive>): Promise<Directive> {
     return request(`/directives/${id}`, { method: 'PUT', body: JSON.stringify(data) });
   },
-  remove(id: string): Promise<null> {
-    return request(`/directives/${id}`, { method: 'DELETE' });
+  async remove(id: string): Promise<void> {
+    await request(`/directives/${id}`, { method: 'DELETE' });
   },
 };
 
 export const stats = {
-  get(): Promise<Stats> {
-    return request('/stats');
+  async get(): Promise<Stats> {
+    const res = await request<{ stats: Stats }>('/stats');
+    return res.stats;
   },
 };
 
@@ -273,11 +274,11 @@ interface SseEvent {
 }
 
 export const oracle = {
-  async chat(prompt: string, history: ChatMessage[], callbacks: ChatCallbacks): Promise<void> {
+  async chat(prompt: string, callbacks: ChatCallbacks): Promise<void> {
     const res = await fetch(`${BASE}/oracle/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, history }),
+      body: JSON.stringify({ message: prompt }),
     });
 
     if (!res.ok) {
@@ -349,19 +350,19 @@ export const oracle = {
 };
 
 export const files = {
-  async upload(memoryId: string, file: File): Promise<Attachment> {
+  async upload(file: File): Promise<{ key: string }> {
     const form = new FormData();
     form.append('file', file);
-    const res = await fetch(`${BASE}/memories/${memoryId}/files`, {
+    const res = await fetch(`${BASE}/files/upload`, {
       method: 'POST',
       body: form,
     });
     if (!res.ok) {
       throw new Error(`Upload failed: HTTP ${res.status}`);
     }
-    return ((await res.json()) as ApiEnvelope<Attachment>).data;
+    return (await res.json()) as { key: string };
   },
-  download(memoryId: string, fileId: string): string {
-    return `${BASE}/memories/${memoryId}/files/${fileId}`;
+  download(fileId: string): string {
+    return `${BASE}/files/${fileId}`;
   },
 };

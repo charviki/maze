@@ -57,30 +57,35 @@ export default function ChatPanel({ className = '' }: ChatPanelProps) {
     setInput('');
     setLoading(true);
 
-    const history: ChatMessage[] = messages.map((m) => ({ role: m.role, content: m.content }));
+    let aborted = false;
 
-    await oracle.chat(prompt, history, {
+    await oracle.chat(prompt, {
       onThinking: (content) => {
+        if (aborted) return;
         setMessages((prev) =>
           prev.map((m) => (m.id === assistantMsg.id ? { ...m, thinking: content } : m)),
         );
       },
       onText: (text) => {
+        if (aborted) return;
         setMessages((prev) =>
           prev.map((m) => (m.id === assistantMsg.id ? { ...m, content: m.content + text } : m)),
         );
       },
       onToolUse: (data) => {
+        if (aborted) return;
         setMessages((prev) =>
           prev.map((m) => (m.id === assistantMsg.id ? { ...m, toolUse: data } : m)),
         );
       },
       onToolResult: (data) => {
+        if (aborted) return;
         setMessages((prev) =>
           prev.map((m) => (m.id === assistantMsg.id ? { ...m, toolResult: data } : m)),
         );
       },
       onDocContent: (data) => {
+        if (aborted) return;
         setMessages((prev) =>
           prev.map((m) => (m.id === assistantMsg.id ? { ...m, docContent: data } : m)),
         );
@@ -89,6 +94,7 @@ export default function ChatPanel({ className = '' }: ChatPanelProps) {
         setLoading(false);
       },
       onError: (error) => {
+        aborted = true;
         setMessages((prev) =>
           prev.map((m) => (m.id === assistantMsg.id ? { ...m, content: `Error: ${error}` } : m)),
         );
