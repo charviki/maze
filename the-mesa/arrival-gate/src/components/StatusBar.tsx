@@ -1,21 +1,12 @@
 import { useState, useEffect } from 'react';
-import { DecryptText } from '@maze/fabrication';
+import { DecryptText, useClock } from '@maze/fabrication';
 import { WESTWORLD_QUOTES, MOCK_NODES, MOCK_HOSTS, BUILD_VERSION } from '../data/mock-data';
 
 const onlineNodes = MOCK_NODES.filter((n) => n.status === 'online').length;
 
 export function StatusBar() {
-  const [clock, setClock] = useState(new Date().toLocaleTimeString());
+  const clock = useClock();
   const [quoteIndex, setQuoteIndex] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setClock(new Date().toLocaleTimeString());
-    }, 1000);
-    return () => {
-      clearInterval(timer);
-    };
-  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {

@@ -1,6 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
 import { NodeList } from './components/NodeList';
-import { AuthGuard } from './components/AuthGuard';
 import { createAgentApi } from './api/agent';
 import { controllerApi } from './api/controller';
 import {
@@ -9,14 +8,14 @@ import {
   RadarView,
   BootSequence,
   TerrainBackground,
-  ErrorBoundary,
   Button,
-  AnimationSettingsProvider,
   AnimationSettingsPanel,
-  ToastProvider,
   CreateHostDialog,
   HostLogPanel,
   useToast,
+  AppShell,
+  AppNavbar,
+  CalibrationMarks,
 } from '@maze/fabrication';
 import type { Host, RadarNode, Tool, CreateHostRequest, HostSpec } from '@maze/fabrication';
 import { Server, Activity, Menu, Settings, Plus } from 'lucide-react';
@@ -140,23 +139,12 @@ function AppContent() {
   return (
     <>
       <div className="h-screen w-screen bg-background text-foreground dark relative overflow-hidden grid grid-rows-[56px_1fr] grid-cols-[288px_1fr]">
-        {/* Background calibration marks */}
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute top-4 left-4 w-4 h-4 border-t border-l border-primary/30"></div>
-          <div className="absolute top-4 right-4 w-4 h-4 border-t border-r border-primary/30"></div>
-          <div className="absolute bottom-4 left-4 w-4 h-4 border-b border-l border-primary/30"></div>
-          <div className="absolute bottom-4 right-4 w-4 h-4 border-b border-r border-primary/30"></div>
+        <CalibrationMarks />
 
-          <div className="absolute top-1/2 left-4 w-2 h-[1px] bg-primary/30"></div>
-          <div className="absolute top-1/2 right-4 w-2 h-[1px] bg-primary/30"></div>
-          <div className="absolute top-4 left-1/2 w-[1px] h-2 bg-primary/30"></div>
-          <div className="absolute bottom-4 left-1/2 w-[1px] h-2 bg-primary/30"></div>
-        </div>
-
-        {/* Top Navbar */}
-        <div className="col-span-2 border-b border-border/50 flex items-center justify-between px-6 bg-background relative overflow-hidden z-10">
-          <div className="absolute top-0 left-0 w-full h-[1px] bg-primary/20"></div>
-          <div className="flex items-center gap-3 font-bold text-lg tracking-wider text-primary">
+        <AppNavbar
+          title="THE MESA // DELOS CONTROL"
+          icon={<Activity className="w-5 h-5 text-primary" />}
+          leftContent={
             <Button
               variant="ghost"
               size="icon"
@@ -167,21 +155,21 @@ function AppContent() {
             >
               <Menu className="w-5 h-5" />
             </Button>
-            <Activity className="w-5 h-5 text-primary" />
-            <DecryptText text="THE MESA // DELOS CONTROL" className="uppercase" />
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-primary hover:text-primary hover:bg-primary/20 rounded-none"
-            onClick={() => {
-              setShowAnimSettings(true);
-            }}
-            title="Visual Effects"
-          >
-            <Settings className="w-4 h-4" />
-          </Button>
-        </div>
+          }
+          rightContent={
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-primary hover:text-primary hover:bg-primary/20 rounded-none"
+              onClick={() => {
+                setShowAnimSettings(true);
+              }}
+              title="Visual Effects"
+            >
+              <Settings className="w-4 h-4" />
+            </Button>
+          }
+        />
 
         {/* Pane 1: Hosts */}
         <div
@@ -268,15 +256,9 @@ function AppContent() {
 
 function App() {
   return (
-    <ErrorBoundary>
-      <AuthGuard>
-        <AnimationSettingsProvider>
-          <ToastProvider>
-            <AppContent />
-          </ToastProvider>
-        </AnimationSettingsProvider>
-      </AuthGuard>
-    </ErrorBoundary>
+    <AppShell requireAuth>
+      <AppContent />
+    </AppShell>
   );
 }
 

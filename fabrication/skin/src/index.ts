@@ -20,10 +20,16 @@ export * from './components/ui/SessionPipeline';
 export * from './components/ui/AnimationSettings';
 export * from './components/ui/Toast';
 export * from './components/ui/Skeleton';
+export * from './components/ui/CalibrationMarks';
+export * from './components/ui/AppNavbar';
+export * from './components/ui/AuthGuard';
+export * from './components/ui/AppShell';
+export * from './components/ui/EmptyState';
 export * from './components/agent/AgentPanel';
 export * from './components/agent/TemplateManager';
 export * from './utils';
 export * from './utils/mask';
+export { formatTimeAgo } from './utils/format-time';
 export * from './types';
 export * from './api';
 // SDK API 类：显式 re-export 避免触发 gen 内部文件的 noUnusedLocals
@@ -58,4 +64,12 @@ export {
 } from './api/token-store';
 export { normalizeTemplate, type NormalizedTemplate } from './api/normalize';
 export { unwrapSdkResponse, unwrapVoidResponse } from './api/helpers';
+export {
+  login,
+  logout,
+  getCurrentUser,
+  refreshAccessToken as refreshAuthAccessToken,
+  fetchWithAuth,
+} from './api/auth-actions';
 export { usePollingWithBackoff } from './hooks/usePollingWithBackoff';
+export { useClock } from './hooks/useClock';

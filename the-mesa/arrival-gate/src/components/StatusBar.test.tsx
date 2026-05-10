@@ -1,20 +1,24 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { act } from '@testing-library/react';
 import { StatusBar } from './StatusBar';
 
-// DecryptText 依赖 Canvas，用纯文本 span 替代
+const mockClockFn = vi.fn();
+
+// DecryptText 依赖 Canvas，useClock 用 mock 替代
 vi.mock('@maze/fabrication', () => ({
   DecryptText: ({ text }: { text: string }) => <span>{text}</span>,
+  useClock: () => mockClockFn(),
 }));
 
 describe('StatusBar', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    mockClockFn.mockReturnValue('12:00:00');
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    mockClockFn.mockReset();
   });
 
   // 状态栏应显示 NODES 计数指标
@@ -41,16 +45,9 @@ describe('StatusBar', () => {
     expect(screen.getByText(/SYS_CLOCK:/)).toBeInTheDocument();
   });
 
-  // 系统时钟应随时间推移实时更新
-  it('should update clock over time', () => {
+  // 系统时钟由 useClock 驱动显示
+  it('should display clock value from useClock', () => {
     render(<StatusBar />);
-    const before = screen.getByText(/SYS_CLOCK:/).textContent;
-
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
-
-    const after = screen.getByText(/SYS_CLOCK:/).textContent;
-    expect(after).not.toBe(before);
+    expect(screen.getByText(/SYS_CLOCK: 12:00:00/)).toBeInTheDocument();
   });
 });

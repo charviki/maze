@@ -10,6 +10,7 @@ import {
   usePollingWithBackoff,
   clipPathHalf,
   useToast,
+  formatTimeAgo,
 } from '@maze/fabrication';
 import { Trash2, FileText } from 'lucide-react';
 
@@ -62,12 +63,6 @@ export function NodeList({
     } else {
       showToast('error', res.message || '删除 Host 失败');
     }
-  };
-
-  const formatTimeAgo = (dateStr: string) => {
-    const diffSec = Math.floor((new Date().getTime() - new Date(dateStr).getTime()) / 1000);
-    if (diffSec < 60) return `${diffSec}s ago`;
-    return `${Math.floor(diffSec / 60)}m ago`;
   };
 
   // HostStatus 合法值集合，用于运行时校验后端返回的 status 字段

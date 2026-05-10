@@ -32,6 +32,14 @@ vi.mock('@maze/fabrication', () => ({
   AnimationSettingsProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   AnimationSettingsPanel: () => <div data-testid="anim-settings" />,
   ToastProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  AppShell: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  AppNavbar: ({ title, rightContent }: { title: string; rightContent?: React.ReactNode }) => (
+    <div>
+      <span>{title}</span>
+      {rightContent}
+    </div>
+  ),
+  CalibrationMarks: () => <div data-testid="calibration-marks" />,
 }));
 
 // mock API client 模块，避免真实的网络请求

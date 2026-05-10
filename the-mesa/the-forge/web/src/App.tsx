@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { ToastProvider } from '@maze/fabrication';
+import { AppShell } from '@maze/fabrication';
 import Layout from '@/components/Layout';
 import Dashboard from '@/pages/Dashboard';
 import KnowledgeList from '@/pages/KnowledgeList';
@@ -18,9 +18,9 @@ function NotFound() {
   );
 }
 
-export default function App() {
+function App() {
   return (
-    <ToastProvider>
+    <AppShell>
       <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
         <Layout>
           <Routes>
@@ -37,6 +37,8 @@ export default function App() {
           </Routes>
         </Layout>
       </BrowserRouter>
-    </ToastProvider>
+    </AppShell>
   );
 }
+
+export default App;
