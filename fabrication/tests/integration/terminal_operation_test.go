@@ -6,7 +6,7 @@ import (
 	"context"
 	"testing"
 
-	client "github.com/charviki/maze-cradle/api/gen/http"
+	client "github.com/charviki/maze/fabrication/cradle/api/gen/http"
 )
 
 // TestTerminalGetOutput — Given: 已上线的 Host 和活跃 Session; When: 获取终端输出; Then: 返回输出内容

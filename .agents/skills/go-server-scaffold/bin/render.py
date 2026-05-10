@@ -55,7 +55,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--cradle-replace",
-        help="Optional replace target for github.com/charviki/maze-cradle.",
+        help="Optional replace target for github.com/charviki/maze/fabrication/cradle.",
     )
     parser.add_argument(
         "--force",

@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charviki/maze-cradle/auth"
+	"github.com/charviki/maze/fabrication/cradle/auth"
 	"github.com/charviki/maze-integration-tests/kit"
 )
 

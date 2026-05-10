@@ -12,10 +12,10 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	pb "github.com/charviki/maze-cradle/api/gen/maze/v1"
-	"github.com/charviki/maze-cradle/auth"
-	"github.com/charviki/maze-cradle/logutil"
-	"github.com/charviki/maze-cradle/protocol"
+	pb "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
+	"github.com/charviki/maze/fabrication/cradle/auth"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
+	"github.com/charviki/maze/fabrication/cradle/protocol"
 	"github.com/charviki/maze/the-mesa/director-core/internal/agentclient"
 	"github.com/charviki/maze/the-mesa/director-core/internal/service"
 )

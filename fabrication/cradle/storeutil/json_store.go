@@ -6,8 +6,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/charviki/maze-cradle/configutil"
-	"github.com/charviki/maze-cradle/logutil"
+	"github.com/charviki/maze/fabrication/cradle/configutil"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
 )
 
 // JSONStore 泛型 JSON 文件持久化存储，通过原子写入保证数据完整性。

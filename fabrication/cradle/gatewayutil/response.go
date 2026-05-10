@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/charviki/maze-cradle/auth"
+	"github.com/charviki/maze/fabrication/cradle/auth"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc/status"
 )

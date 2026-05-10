@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/charviki/maze-cradle/configutil"
+	"github.com/charviki/maze/fabrication/cradle/configutil"
 )
 
 // Config 全局配置结构体，含 Server、Workspace、Docker、Runtime、Kubernetes、AuthDatabase、HostDatabase、Casbin、JWT 维度

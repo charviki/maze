@@ -8,7 +8,7 @@ import (
 
 	gorillaws "github.com/gorilla/websocket"
 
-	"github.com/charviki/maze-cradle/httputil"
+	"github.com/charviki/maze/fabrication/cradle/httputil"
 )
 
 func TestAccessLogMiddlewarePreservesWebSocketUpgrade(t *testing.T) {

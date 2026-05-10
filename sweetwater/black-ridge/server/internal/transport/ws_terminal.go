@@ -10,8 +10,8 @@ import (
 
 	gorillaws "github.com/gorilla/websocket"
 
-	"github.com/charviki/maze-cradle/httputil"
-	"github.com/charviki/maze-cradle/logutil"
+	"github.com/charviki/maze/fabrication/cradle/httputil"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
 	"github.com/charviki/sweetwater-black-ridge/internal/service"
 	"github.com/creack/pty/v2"
 )

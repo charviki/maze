@@ -2628,8 +2628,8 @@ const file_maze_v1_knowledge_proto_rawDesc = "" +
 	"CreateLink\x12\x1a.maze.v1.CreateLinkRequest\x1a\x13.maze.v1.NeuralLink\"&\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/api/v1/memories/{id}/links\x12o\n" +
 	"\n" +
 	"DeleteLink\x12\x1a.maze.v1.DeleteLinkRequest\x1a\x16.google.protobuf.Empty\"-\x82\xd3\xe4\x93\x02'*%/api/v1/memories/{id}/links/{link_id}\x12V\n" +
-	"\bGetStats\x12\x18.maze.v1.GetStatsRequest\x1a\x19.maze.v1.GetStatsResponse\"\x15\x82\xd3\xe4\x93\x02\x0f\x12\r/api/v1/statsB\x92\x01\n" +
-	"\vcom.maze.v1B\x0eKnowledgeProtoP\x01Z6github.com/charviki/maze-cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
+	"\bGetStats\x12\x18.maze.v1.GetStatsRequest\x1a\x19.maze.v1.GetStatsResponse\"\x15\x82\xd3\xe4\x93\x02\x0f\x12\r/api/v1/statsB\x9e\x01\n" +
+	"\vcom.maze.v1B\x0eKnowledgeProtoP\x01ZBgithub.com/charviki/maze/fabrication/cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
 
 var (
 	file_maze_v1_knowledge_proto_rawDescOnce sync.Once

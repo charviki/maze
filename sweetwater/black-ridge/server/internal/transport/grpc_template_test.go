@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pb "github.com/charviki/maze-cradle/api/gen/maze/v1"
+	pb "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
 )
 
 func TestListTemplates_ReturnsBuiltins(t *testing.T) {

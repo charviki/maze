@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charviki/maze-cradle/logutil"
-	"github.com/charviki/maze-cradle/pipeline"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
+	"github.com/charviki/maze/fabrication/cradle/pipeline"
 )
 
 func TestGetSavedSessions_EmptyDir(t *testing.T) {

@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	pb "github.com/charviki/maze-cradle/api/gen/maze/v1"
-	"github.com/charviki/maze-cradle/logutil"
-	"github.com/charviki/maze-cradle/protocol"
+	pb "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
+	"github.com/charviki/maze/fabrication/cradle/protocol"
 	filerepo "github.com/charviki/maze/the-mesa/director-core/internal/repository/file"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

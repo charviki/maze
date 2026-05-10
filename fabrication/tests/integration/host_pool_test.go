@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	client "github.com/charviki/maze-cradle/api/gen/http"
+	client "github.com/charviki/maze/fabrication/cradle/api/gen/http"
 	"github.com/charviki/maze-integration-tests/kit"
 )
 

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charviki/maze-cradle/pipeline"
+	"github.com/charviki/maze/fabrication/cradle/pipeline"
 )
 
 func TestFileSessionStateRepository_SaveAndLoad(t *testing.T) {

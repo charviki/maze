@@ -993,8 +993,8 @@ const file_maze_v1_template_proto_rawDesc = "" +
 	"\x0eUpdateTemplate\x12\x1e.maze.v1.UpdateTemplateRequest\x1a\x18.maze.v1.SessionTemplate\"P\x82\xd3\xe4\x93\x02J:\x01*Z\x1b:\x01*\x1a\x16/api/v1/templates/{id}\x1a(/api/v1/nodes/{node_name}/templates/{id}\x12\x94\x01\n" +
 	"\x0eDeleteTemplate\x12\x1e.maze.v1.DeleteTemplateRequest\x1a\x16.google.protobuf.Empty\"J\x82\xd3\xe4\x93\x02DZ\x18*\x16/api/v1/templates/{id}*(/api/v1/nodes/{node_name}/templates/{id}\x12\xad\x01\n" +
 	"\x11GetTemplateConfig\x12!.maze.v1.GetTemplateConfigRequest\x1a\x1b.maze.v1.TemplateConfigView\"X\x82\xd3\xe4\x93\x02RZ\x1f\x12\x1d/api/v1/templates/{id}/config\x12//api/v1/nodes/{node_name}/templates/{id}/config\x12\xb9\x01\n" +
-	"\x14UpdateTemplateConfig\x12$.maze.v1.UpdateTemplateConfigRequest\x1a\x1b.maze.v1.TemplateConfigView\"^\x82\xd3\xe4\x93\x02X:\x01*Z\":\x01*\x1a\x1d/api/v1/templates/{id}/config\x1a//api/v1/nodes/{node_name}/templates/{id}/configB\x91\x01\n" +
-	"\vcom.maze.v1B\rTemplateProtoP\x01Z6github.com/charviki/maze-cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
+	"\x14UpdateTemplateConfig\x12$.maze.v1.UpdateTemplateConfigRequest\x1a\x1b.maze.v1.TemplateConfigView\"^\x82\xd3\xe4\x93\x02X:\x01*Z\":\x01*\x1a\x1d/api/v1/templates/{id}/config\x1a//api/v1/nodes/{node_name}/templates/{id}/configB\x9d\x01\n" +
+	"\vcom.maze.v1B\rTemplateProtoP\x01ZBgithub.com/charviki/maze/fabrication/cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
 
 var (
 	file_maze_v1_template_proto_rawDescOnce sync.Once

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/charviki/maze-cradle/configutil"
+	"github.com/charviki/maze/fabrication/cradle/configutil"
 )
 
 // SessionStateRepository 隔离 session 状态的文件系统持久化

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/charviki/maze-cradle/pipeline"
+	"github.com/charviki/maze/fabrication/cradle/pipeline"
 )
 
 func TestSessionState_ToJSON_ContainsAllFields(t *testing.T) {

@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/charviki/maze-cradle/logutil"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
 	"golang.org/x/sync/errgroup"
 )
 

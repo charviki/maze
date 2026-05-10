@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/charviki/maze-cradle/logutil"
-	"github.com/charviki/maze-cradle/pipeline"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
+	"github.com/charviki/maze/fabrication/cradle/pipeline"
 	"github.com/charviki/sweetwater-black-ridge/internal/service"
 )
 

@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/pashagolub/pgxmock/v4"
 
-	"github.com/charviki/maze-cradle/protocol"
+	"github.com/charviki/maze/fabrication/cradle/protocol"
 	"github.com/charviki/maze/the-mesa/director-core/internal/service"
 )
 

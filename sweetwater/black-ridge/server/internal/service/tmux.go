@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/charviki/maze-cradle/logutil"
-	"github.com/charviki/maze-cradle/pipeline"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
+	"github.com/charviki/maze/fabrication/cradle/pipeline"
 	"github.com/charviki/sweetwater-black-ridge/internal/config"
 	"github.com/charviki/sweetwater-black-ridge/internal/service/provider"
 	"github.com/creack/pty/v2"

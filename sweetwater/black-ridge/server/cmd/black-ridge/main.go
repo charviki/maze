@@ -5,13 +5,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charviki/maze-cradle/grpcutil"
+	"github.com/charviki/maze/fabrication/cradle/grpcutil"
 	"google.golang.org/grpc"
 
-	pb "github.com/charviki/maze-cradle/api/gen/maze/v1"
-	"github.com/charviki/maze-cradle/gatewayutil"
-	"github.com/charviki/maze-cradle/lifecycle"
-	"github.com/charviki/maze-cradle/logutil"
+	pb "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
+	"github.com/charviki/maze/fabrication/cradle/gatewayutil"
+	"github.com/charviki/maze/fabrication/cradle/lifecycle"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
 	"github.com/charviki/sweetwater-black-ridge/internal/config"
 	"github.com/charviki/sweetwater-black-ridge/internal/service"
 	"github.com/charviki/sweetwater-black-ridge/internal/service/provider"

@@ -3,7 +3,7 @@ module github.com/charviki/sweetwater-black-ridge
 go 1.26.0
 
 require (
-	github.com/charviki/maze-cradle v0.0.0
+	github.com/charviki/maze/fabrication/cradle v0.0.0
 	github.com/creack/pty/v2 v2.0.1
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0
@@ -23,4 +23,4 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260420184626-e10c466a9529 // indirect
 )
 
-replace github.com/charviki/maze-cradle => ../../../fabrication/cradle
+replace github.com/charviki/maze/fabrication/cradle => ../../../fabrication/cradle

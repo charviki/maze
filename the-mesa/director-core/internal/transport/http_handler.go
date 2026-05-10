@@ -7,9 +7,9 @@ import (
 
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 
-	"github.com/charviki/maze-cradle/httputil"
-	"github.com/charviki/maze-cradle/logutil"
-	cradlemw "github.com/charviki/maze-cradle/middleware"
+	"github.com/charviki/maze/fabrication/cradle/httputil"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
+	cradlemw "github.com/charviki/maze/fabrication/cradle/middleware"
 	"github.com/charviki/maze/the-mesa/director-core/internal/config"
 )
 

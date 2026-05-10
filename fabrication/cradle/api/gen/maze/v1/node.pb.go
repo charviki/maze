@@ -346,8 +346,8 @@ const file_maze_v1_node_proto_rawDesc = "" +
 	"\tListNodes\x12\x19.maze.v1.ListNodesRequest\x1a\x1a.maze.v1.ListNodesResponse\"\x15\x82\xd3\xe4\x93\x02\x0f\x12\r/api/v1/nodes\x12S\n" +
 	"\aGetNode\x12\x17.maze.v1.GetNodeRequest\x1a\x11.maze.v1.NodeInfo\"\x1c\x82\xd3\xe4\x93\x02\x16\x12\x14/api/v1/nodes/{name}\x12^\n" +
 	"\n" +
-	"DeleteNode\x12\x1a.maze.v1.DeleteNodeRequest\x1a\x16.google.protobuf.Empty\"\x1c\x82\xd3\xe4\x93\x02\x16*\x14/api/v1/nodes/{name}B\x8d\x01\n" +
-	"\vcom.maze.v1B\tNodeProtoP\x01Z6github.com/charviki/maze-cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
+	"DeleteNode\x12\x1a.maze.v1.DeleteNodeRequest\x1a\x16.google.protobuf.Empty\"\x1c\x82\xd3\xe4\x93\x02\x16*\x14/api/v1/nodes/{name}B\x99\x01\n" +
+	"\vcom.maze.v1B\tNodeProtoP\x01ZBgithub.com/charviki/maze/fabrication/cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
 
 var (
 	file_maze_v1_node_proto_rawDescOnce sync.Once

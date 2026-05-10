@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charviki/maze-cradle/logutil"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

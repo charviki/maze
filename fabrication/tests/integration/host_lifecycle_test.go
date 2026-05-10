@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	client "github.com/charviki/maze-cradle/api/gen/http"
+	client "github.com/charviki/maze/fabrication/cradle/api/gen/http"
 )
 
 // TestHostCreateOnline 验证 Host 创建后能成功上线

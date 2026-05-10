@@ -4,8 +4,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/charviki/maze-cradle/configutil"
-	"github.com/charviki/maze-cradle/logutil"
+	"github.com/charviki/maze/fabrication/cradle/configutil"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
 )
 
 func TestTemplateStore_EnsureBuiltins(t *testing.T) {

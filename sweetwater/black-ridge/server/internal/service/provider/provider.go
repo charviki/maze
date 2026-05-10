@@ -5,7 +5,7 @@ import (
 	"os"
 	"sort"
 
-	"github.com/charviki/maze-cradle/logutil"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
 )
 
 // Provider 定义 AI CLI 工具与 Agent 引擎的集成协议。

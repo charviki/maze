@@ -7,7 +7,7 @@ import (
 	"net"
 	"sync"
 
-	"github.com/charviki/maze-cradle/logutil"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
 	"google.golang.org/grpc"
 )
 

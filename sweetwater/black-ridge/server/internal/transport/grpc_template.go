@@ -8,8 +8,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	pb "github.com/charviki/maze-cradle/api/gen/maze/v1"
-	"github.com/charviki/maze-cradle/configutil"
+	pb "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
+	"github.com/charviki/maze/fabrication/cradle/configutil"
 	
 	"github.com/charviki/sweetwater-black-ridge/internal/service"
 )

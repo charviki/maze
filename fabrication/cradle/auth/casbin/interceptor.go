@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	mazev1 "github.com/charviki/maze-cradle/api/gen/maze/v1"
-	"github.com/charviki/maze-cradle/auth"
+	mazev1 "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
+	"github.com/charviki/maze/fabrication/cradle/auth"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

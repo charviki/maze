@@ -3,7 +3,7 @@ package runtime
 import (
 	"context"
 
-	"github.com/charviki/maze-cradle/protocol"
+	"github.com/charviki/maze/fabrication/cradle/protocol"
 )
 
 // HostRuntime Host 运行时抽象接口

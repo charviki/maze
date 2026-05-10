@@ -694,8 +694,8 @@ const file_maze_v1_task_proto_rawDesc = "" +
 	"\fGetDirective\x12\x1c.maze.v1.GetDirectiveRequest\x1a\x12.maze.v1.Directive\"\x1f\x82\xd3\xe4\x93\x02\x19\x12\x17/api/v1/directives/{id}\x12m\n" +
 	"\x0eListDirectives\x12\x1e.maze.v1.ListDirectivesRequest\x1a\x1f.maze.v1.ListDirectivesResponse\"\x1a\x82\xd3\xe4\x93\x02\x14\x12\x12/api/v1/directives\x12j\n" +
 	"\x0fUpdateDirective\x12\x1f.maze.v1.UpdateDirectiveRequest\x1a\x12.maze.v1.Directive\"\"\x82\xd3\xe4\x93\x02\x1c:\x01*\x1a\x17/api/v1/directives/{id}\x12k\n" +
-	"\x0fDeleteDirective\x12\x1f.maze.v1.DeleteDirectiveRequest\x1a\x16.google.protobuf.Empty\"\x1f\x82\xd3\xe4\x93\x02\x19*\x17/api/v1/directives/{id}B\x8d\x01\n" +
-	"\vcom.maze.v1B\tTaskProtoP\x01Z6github.com/charviki/maze-cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
+	"\x0fDeleteDirective\x12\x1f.maze.v1.DeleteDirectiveRequest\x1a\x16.google.protobuf.Empty\"\x1f\x82\xd3\xe4\x93\x02\x19*\x17/api/v1/directives/{id}B\x99\x01\n" +
+	"\vcom.maze.v1B\tTaskProtoP\x01ZBgithub.com/charviki/maze/fabrication/cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
 
 var (
 	file_maze_v1_task_proto_rawDescOnce sync.Once

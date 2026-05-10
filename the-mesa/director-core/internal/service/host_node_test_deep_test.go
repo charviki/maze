@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charviki/maze-cradle/protocol"
+	"github.com/charviki/maze/fabrication/cradle/protocol"
 )
 
 func TestNode_RefreshOfflineStatus(t *testing.T) {

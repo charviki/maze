@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	pb "github.com/charviki/maze-cradle/api/gen/maze/v1"
-	"github.com/charviki/maze-cradle/auth"
+	pb "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
+	"github.com/charviki/maze/fabrication/cradle/auth"
 	"github.com/charviki/maze/the-mesa/director-core/internal/service"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

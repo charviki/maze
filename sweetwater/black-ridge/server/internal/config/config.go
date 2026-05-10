@@ -3,7 +3,7 @@ package config
 import (
 	"path/filepath"
 
-	"github.com/charviki/maze-cradle/configutil"
+	"github.com/charviki/maze/fabrication/cradle/configutil"
 )
 
 // Config 全局配置结构体，包含服务端、tmux、终端、控制器、工作区和自动保存配置

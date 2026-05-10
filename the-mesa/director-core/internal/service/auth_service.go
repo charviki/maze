@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/charviki/maze-cradle/auth"
+	"github.com/charviki/maze/fabrication/cradle/auth"
 	"github.com/charviki/maze/the-mesa/director-core/internal/repository"
 	"github.com/jackc/pgx/v5/pgconn"
 	"golang.org/x/crypto/bcrypt"

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	mazev1 "github.com/charviki/maze-cradle/api/gen/maze/v1"
+	mazev1 "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"

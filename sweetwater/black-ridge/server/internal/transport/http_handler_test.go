@@ -10,13 +10,13 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/charviki/maze-cradle/configutil"
-	"github.com/charviki/maze-cradle/logutil"
+	"github.com/charviki/maze/fabrication/cradle/configutil"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
 	"github.com/charviki/sweetwater-black-ridge/internal/config"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	gorillaws "github.com/gorilla/websocket"
 
-	"github.com/charviki/maze-cradle/httputil"
+	"github.com/charviki/maze/fabrication/cradle/httputil"
 )
 
 func TestCorsMiddleware_NilOrigins(t *testing.T) {

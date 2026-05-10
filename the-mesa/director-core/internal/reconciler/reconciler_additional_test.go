@@ -5,7 +5,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/charviki/maze-cradle/protocol"
+	"github.com/charviki/maze/fabrication/cradle/protocol"
 )
 
 func TestReconciler_RecoverOnStartup_RestoresHostToken(t *testing.T) {

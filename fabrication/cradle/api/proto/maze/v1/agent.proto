@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package maze.v1;
 
-option go_package = "github.com/charviki/maze-cradle/api/gen/maze/v1";
+option go_package = "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1";
 
 import "google/api/annotations.proto";
 import "maze/v1/config.proto";

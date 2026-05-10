@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"time"
 
-	client "github.com/charviki/maze-cradle/api/gen/http"
+	client "github.com/charviki/maze/fabrication/cradle/api/gen/http"
 )
 
 // TestConfig 集成测试运行参数，从环境变量加载。

@@ -308,8 +308,8 @@ const file_maze_v1_auth_proto_rawDesc = "" +
 	"\vAuthService\x12U\n" +
 	"\x05Login\x12\x15.maze.v1.LoginRequest\x1a\x16.maze.v1.LoginResponse\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/api/v1/auth/login\x12]\n" +
 	"\aRefresh\x12\x17.maze.v1.RefreshRequest\x1a\x18.maze.v1.RefreshResponse\"\x1f\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/api/v1/auth/refresh\x12X\n" +
-	"\x06Logout\x12\x16.maze.v1.LogoutRequest\x1a\x16.google.protobuf.Empty\"\x1e\x82\xd3\xe4\x93\x02\x18:\x01*\"\x13/api/v1/auth/logoutB\x8d\x01\n" +
-	"\vcom.maze.v1B\tAuthProtoP\x01Z6github.com/charviki/maze-cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
+	"\x06Logout\x12\x16.maze.v1.LogoutRequest\x1a\x16.google.protobuf.Empty\"\x1e\x82\xd3\xe4\x93\x02\x18:\x01*\"\x13/api/v1/auth/logoutB\x99\x01\n" +
+	"\vcom.maze.v1B\tAuthProtoP\x01ZBgithub.com/charviki/maze/fabrication/cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
 
 var (
 	file_maze_v1_auth_proto_rawDescOnce sync.Once

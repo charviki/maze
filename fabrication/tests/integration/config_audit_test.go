@@ -6,7 +6,7 @@ import (
 	"context"
 	"testing"
 
-	client "github.com/charviki/maze-cradle/api/gen/http"
+	client "github.com/charviki/maze/fabrication/cradle/api/gen/http"
 )
 
 // TestLocalConfigGetAndUpdate — Given: 已上线的 Host; When: 查询/更新本地配置; Then: 配置正确返回

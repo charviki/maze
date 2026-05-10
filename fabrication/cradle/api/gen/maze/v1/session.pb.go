@@ -1594,8 +1594,8 @@ const file_maze_v1_session_proto_rawDesc = "" +
 	"\tSendInput\x12\x19.maze.v1.SendInputRequest\x1a\x16.google.protobuf.Empty\"Z\x82\xd3\xe4\x93\x02T:\x01*Z :\x01*\"\x1b/api/v1/sessions/{id}/input\"-/api/v1/nodes/{node_name}/sessions/{id}/input\x12\x9e\x01\n" +
 	"\n" +
 	"SendSignal\x12\x1a.maze.v1.SendSignalRequest\x1a\x16.google.protobuf.Empty\"\\\x82\xd3\xe4\x93\x02V:\x01*Z!:\x01*\"\x1c/api/v1/sessions/{id}/signal\"./api/v1/nodes/{node_name}/sessions/{id}/signal\x12\x8b\x01\n" +
-	"\x06GetEnv\x12\x16.maze.v1.GetEnvRequest\x1a\x17.maze.v1.GetEnvResponse\"P\x82\xd3\xe4\x93\x02JZ\x1b\x12\x19/api/v1/sessions/{id}/env\x12+/api/v1/nodes/{node_name}/sessions/{id}/envB\x90\x01\n" +
-	"\vcom.maze.v1B\fSessionProtoP\x01Z6github.com/charviki/maze-cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
+	"\x06GetEnv\x12\x16.maze.v1.GetEnvRequest\x1a\x17.maze.v1.GetEnvResponse\"P\x82\xd3\xe4\x93\x02JZ\x1b\x12\x19/api/v1/sessions/{id}/env\x12+/api/v1/nodes/{node_name}/sessions/{id}/envB\x9c\x01\n" +
+	"\vcom.maze.v1B\fSessionProtoP\x01ZBgithub.com/charviki/maze/fabrication/cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
 
 var (
 	file_maze_v1_session_proto_rawDescOnce sync.Once

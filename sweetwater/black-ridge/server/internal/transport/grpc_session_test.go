@@ -11,10 +11,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pb "github.com/charviki/maze-cradle/api/gen/maze/v1"
-	"github.com/charviki/maze-cradle/configutil"
-	"github.com/charviki/maze-cradle/logutil"
-	"github.com/charviki/maze-cradle/pipeline"
+	pb "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
+	"github.com/charviki/maze/fabrication/cradle/configutil"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
+	"github.com/charviki/maze/fabrication/cradle/pipeline"
 	"github.com/charviki/sweetwater-black-ridge/internal/service"
 )
 

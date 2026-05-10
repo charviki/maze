@@ -1,4 +1,4 @@
-module github.com/charviki/maze-cradle
+module github.com/charviki/maze/fabrication/cradle
 
 go 1.26.0
 

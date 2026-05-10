@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/charviki/maze-cradle/auth"
+	"github.com/charviki/maze/fabrication/cradle/auth"
 )
 
 // Auth 返回 JWT 鉴权中间件。

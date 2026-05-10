@@ -14,9 +14,9 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 
-	pb "github.com/charviki/maze-cradle/api/gen/maze/v1"
-	"github.com/charviki/maze-cradle/logutil"
-	"github.com/charviki/maze-cradle/protocol"
+	pb "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
+	"github.com/charviki/maze/fabrication/cradle/protocol"
 	"github.com/charviki/sweetwater-black-ridge/internal/config"
 	"github.com/charviki/sweetwater-black-ridge/internal/service/provider"
 )

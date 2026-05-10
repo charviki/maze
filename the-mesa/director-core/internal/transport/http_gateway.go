@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	pb "github.com/charviki/maze-cradle/api/gen/maze/v1"
+	pb "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
 )
 
 // GatewayRegistrationParams 包含 gateway 注册所需的参数。

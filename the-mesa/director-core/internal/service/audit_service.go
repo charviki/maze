@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/charviki/maze-cradle/protocol"
+	"github.com/charviki/maze/fabrication/cradle/protocol"
 )
 
 // AuditService 审计日志业务逻辑（Director Core 本地），供 HTTP handler 和 gRPC handler 共用

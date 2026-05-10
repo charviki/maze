@@ -6,7 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/charviki/maze-cradle/protocol"
+	"github.com/charviki/maze/fabrication/cradle/protocol"
 	hostgen "github.com/charviki/maze/the-mesa/director-core/internal/repository/postgres/sqlc/host"
 )
 

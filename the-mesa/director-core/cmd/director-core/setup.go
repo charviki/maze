@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
-	cradleDB "github.com/charviki/maze-cradle/db"
-	"github.com/charviki/maze-cradle/logutil"
+	cradleDB "github.com/charviki/maze/fabrication/cradle/db"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
 	"github.com/charviki/maze/the-mesa/director-core/internal/agentclient"
 	"github.com/charviki/maze/the-mesa/director-core/internal/config"
 	"github.com/charviki/maze/the-mesa/director-core/internal/reconciler"

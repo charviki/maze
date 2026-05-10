@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/charviki/maze-cradle/configutil"
+	"github.com/charviki/maze/fabrication/cradle/configutil"
 )
 
 const configConflictMessage = "配置已变更，请重新加载后再修改"

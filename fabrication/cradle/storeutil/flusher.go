@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/charviki/maze-cradle/logutil"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
 )
 
 // DirtyFlusher 通用脏标记定时刷盘器。

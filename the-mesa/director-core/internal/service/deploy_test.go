@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/charviki/maze-cradle/configutil"
-	"github.com/charviki/maze-cradle/protocol"
+	"github.com/charviki/maze/fabrication/cradle/configutil"
+	"github.com/charviki/maze/fabrication/cradle/protocol"
 	"github.com/charviki/maze/the-mesa/director-core/internal/config"
 	hostbuilder "github.com/charviki/maze/the-mesa/director-core/internal/hostbuilder"
 )

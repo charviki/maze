@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/charviki/maze-cradle/auth"
-	"github.com/charviki/maze-cradle/httputil"
+	"github.com/charviki/maze/fabrication/cradle/auth"
+	"github.com/charviki/maze/fabrication/cradle/httputil"
 )
 
 // HTTPResourceResolver 将 HTTP 请求映射成资源动作。

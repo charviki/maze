@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/charviki/maze-cradle/configutil"
+	"github.com/charviki/maze/fabrication/cradle/configutil"
 )
 
 // ClaudeProvider 是 Claude Code CLI 的 Provider 实现。

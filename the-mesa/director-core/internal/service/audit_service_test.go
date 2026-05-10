@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/charviki/maze-cradle/protocol"
+	"github.com/charviki/maze/fabrication/cradle/protocol"
 )
 
 type mockAuditLogRepo struct {

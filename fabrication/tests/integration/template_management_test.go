@@ -6,7 +6,7 @@ import (
 	"context"
 	"testing"
 
-	client "github.com/charviki/maze-cradle/api/gen/http"
+	client "github.com/charviki/maze/fabrication/cradle/api/gen/http"
 )
 
 // TestTemplateCRUD — Given: 已上线的 Host; When: 创建→查询→更新→删除模板; Then: 全生命周期正确

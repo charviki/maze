@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"github.com/charviki/maze-cradle/httputil"
+	"github.com/charviki/maze/fabrication/cradle/httputil"
 )
 
 // CORS 返回 CORS 中间件（允许所有来源），委托给 cradle/httputil。

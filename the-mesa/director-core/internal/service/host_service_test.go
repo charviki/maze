@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charviki/maze-cradle/configutil"
-	"github.com/charviki/maze-cradle/logutil"
-	"github.com/charviki/maze-cradle/protocol"
+	"github.com/charviki/maze/fabrication/cradle/configutil"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
+	"github.com/charviki/maze/fabrication/cradle/protocol"
 	"github.com/charviki/maze/the-mesa/director-core/internal/config"
 	service "github.com/charviki/maze/the-mesa/director-core/internal/service"
 )

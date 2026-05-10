@@ -268,9 +268,9 @@ const file_maze_v1_audit_proto_rawDesc = "" +
 	"\x04page\x18\x03 \x01(\x05R\x04page\x12\x1b\n" +
 	"\tpage_size\x18\x04 \x01(\x05R\bpageSize2w\n" +
 	"\fAuditService\x12g\n" +
-	"\fGetAuditLogs\x12\x1c.maze.v1.GetAuditLogsRequest\x1a\x1d.maze.v1.GetAuditLogsResponse\"\x1a\x82\xd3\xe4\x93\x02\x14\x12\x12/api/v1/audit/logsB\x8e\x01\n" +
+	"\fGetAuditLogs\x12\x1c.maze.v1.GetAuditLogsRequest\x1a\x1d.maze.v1.GetAuditLogsResponse\"\x1a\x82\xd3\xe4\x93\x02\x14\x12\x12/api/v1/audit/logsB\x9a\x01\n" +
 	"\vcom.maze.v1B\n" +
-	"AuditProtoP\x01Z6github.com/charviki/maze-cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
+	"AuditProtoP\x01ZBgithub.com/charviki/maze/fabrication/cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
 
 var (
 	file_maze_v1_audit_proto_rawDescOnce sync.Once

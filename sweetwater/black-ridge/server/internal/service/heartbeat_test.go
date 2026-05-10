@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/charviki/maze-cradle/logutil"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
 	"github.com/charviki/sweetwater-black-ridge/internal/config"
 	"github.com/charviki/sweetwater-black-ridge/internal/service/provider"
 )

@@ -7,8 +7,8 @@ import (
 
 	gorillaws "github.com/gorilla/websocket"
 
-	"github.com/charviki/maze-cradle/httputil"
-	"github.com/charviki/maze-cradle/protocol"
+	"github.com/charviki/maze/fabrication/cradle/httputil"
+	"github.com/charviki/maze/fabrication/cradle/protocol"
 )
 
 // ProxyWebSocket WebSocket 双向代理：前端 ↔ Manager ↔ Agent。

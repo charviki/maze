@@ -3,7 +3,7 @@ package service
 import (
 	"encoding/json"
 
-	"github.com/charviki/maze-cradle/pipeline"
+	"github.com/charviki/maze/fabrication/cradle/pipeline"
 )
 
 // SessionState 记录一个会话的管线配置和环境快照，用于跨重启恢复

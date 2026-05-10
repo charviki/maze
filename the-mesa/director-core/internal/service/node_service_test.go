@@ -7,8 +7,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/charviki/maze-cradle/logutil"
-	"github.com/charviki/maze-cradle/protocol"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
+	"github.com/charviki/maze/fabrication/cradle/protocol"
 	service "github.com/charviki/maze/the-mesa/director-core/internal/service"
 )
 

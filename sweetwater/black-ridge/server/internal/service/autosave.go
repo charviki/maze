@@ -3,7 +3,7 @@ package service
 import (
 	"time"
 
-	"github.com/charviki/maze-cradle/logutil"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
 )
 
 // AutoSaveService 定时保存所有活跃 session 的管线状态

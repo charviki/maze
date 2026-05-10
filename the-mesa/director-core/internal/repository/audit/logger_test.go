@@ -5,8 +5,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/charviki/maze-cradle/logutil"
-	"github.com/charviki/maze-cradle/protocol"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
+	"github.com/charviki/maze/fabrication/cradle/protocol"
 )
 
 func TestLogger_ListConcurrentWithLog(t *testing.T) {

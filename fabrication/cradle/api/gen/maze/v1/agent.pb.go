@@ -594,9 +594,9 @@ const file_maze_v1_agent_proto_rawDesc = "" +
 	"\x06status\x18\x02 \x01(\tR\x06status2\xda\x01\n" +
 	"\fAgentService\x12b\n" +
 	"\bRegister\x12\x18.maze.v1.RegisterRequest\x1a\x19.maze.v1.RegisterResponse\"!\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/api/v1/nodes/register\x12f\n" +
-	"\tHeartbeat\x12\x19.maze.v1.HeartbeatRequest\x1a\x1a.maze.v1.HeartbeatResponse\"\"\x82\xd3\xe4\x93\x02\x1c:\x01*\"\x17/api/v1/nodes/heartbeatB\x8e\x01\n" +
+	"\tHeartbeat\x12\x19.maze.v1.HeartbeatRequest\x1a\x1a.maze.v1.HeartbeatResponse\"\"\x82\xd3\xe4\x93\x02\x1c:\x01*\"\x17/api/v1/nodes/heartbeatB\x9a\x01\n" +
 	"\vcom.maze.v1B\n" +
-	"AgentProtoP\x01Z6github.com/charviki/maze-cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
+	"AgentProtoP\x01ZBgithub.com/charviki/maze/fabrication/cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
 
 var (
 	file_maze_v1_agent_proto_rawDescOnce sync.Once

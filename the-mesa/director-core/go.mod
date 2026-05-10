@@ -3,7 +3,7 @@ module github.com/charviki/maze/the-mesa/director-core
 go 1.26.0
 
 require (
-	github.com/charviki/maze-cradle v0.0.0
+	github.com/charviki/maze/fabrication/cradle v0.0.0
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0
 	github.com/jackc/pgx/v5 v5.9.2
@@ -68,4 +68,4 @@ require (
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
 
-replace github.com/charviki/maze-cradle => ../../fabrication/cradle
+replace github.com/charviki/maze/fabrication/cradle => ../../fabrication/cradle

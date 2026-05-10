@@ -3,7 +3,7 @@ package file
 import (
 	"testing"
 
-	"github.com/charviki/maze-cradle/protocol"
+	"github.com/charviki/maze/fabrication/cradle/protocol"
 	"github.com/charviki/maze/the-mesa/director-core/internal/service"
 )
 

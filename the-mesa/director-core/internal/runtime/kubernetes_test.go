@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/charviki/maze-cradle/logutil"
-	"github.com/charviki/maze-cradle/protocol"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
+	"github.com/charviki/maze/fabrication/cradle/protocol"
 	"github.com/charviki/maze/the-mesa/director-core/internal/config"
 
 	appsv1 "k8s.io/api/apps/v1"

@@ -7,7 +7,7 @@ import (
 
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 
-	"github.com/charviki/maze-cradle/logutil"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
 	"github.com/charviki/sweetwater-black-ridge/internal/config"
 	"github.com/charviki/sweetwater-black-ridge/internal/service"
 	"github.com/charviki/sweetwater-black-ridge/internal/transport"

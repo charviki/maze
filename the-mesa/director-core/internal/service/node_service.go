@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/charviki/maze-cradle/logutil"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
 )
 
 // NodeService 节点管理业务逻辑（Director Core 本地），供 HTTP handler 和 gRPC handler 共用

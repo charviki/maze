@@ -13,9 +13,9 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/charviki/maze-cradle/auth"
-	"github.com/charviki/maze-cradle/logutil"
-	"github.com/charviki/maze-cradle/protocol"
+	"github.com/charviki/maze/fabrication/cradle/auth"
+	"github.com/charviki/maze/fabrication/cradle/logutil"
+	"github.com/charviki/maze/fabrication/cradle/protocol"
 	"github.com/charviki/maze/the-mesa/director-core/internal/config"
 	hostbuilder "github.com/charviki/maze/the-mesa/director-core/internal/hostbuilder"
 	"github.com/charviki/maze/the-mesa/director-core/internal/repository"

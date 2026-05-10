@@ -3,7 +3,7 @@ package hostbuilder
 import (
 	"sort"
 
-	"github.com/charviki/maze-cradle/protocol"
+	"github.com/charviki/maze/fabrication/cradle/protocol"
 )
 
 // DefaultToolRegistry 默认工具注册表，记录所有可选配的工具

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/charviki/maze-cradle/protocol"
+	"github.com/charviki/maze/fabrication/cradle/protocol"
 	"github.com/charviki/maze/the-mesa/director-core/internal/config"
 	hostbuilder "github.com/charviki/maze/the-mesa/director-core/internal/hostbuilder"
 	"github.com/charviki/maze/the-mesa/director-core/internal/runtime"

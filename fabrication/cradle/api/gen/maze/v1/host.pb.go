@@ -1052,8 +1052,8 @@ const file_maze_v1_host_proto_rawDesc = "" +
 	"DeleteHost\x12\x1a.maze.v1.DeleteHostRequest\x1a\x16.google.protobuf.Empty\"\x1c\x82\xd3\xe4\x93\x02\x16*\x14/api/v1/hosts/{name}\x12q\n" +
 	"\vGetBuildLog\x12\x1b.maze.v1.GetBuildLogRequest\x1a\x1c.maze.v1.GetBuildLogResponse\"'\x82\xd3\xe4\x93\x02!\x12\x1f/api/v1/hosts/{name}/logs/build\x12y\n" +
 	"\rGetRuntimeLog\x12\x1d.maze.v1.GetRuntimeLogRequest\x1a\x1e.maze.v1.GetRuntimeLogResponse\")\x82\xd3\xe4\x93\x02#\x12!/api/v1/hosts/{name}/logs/runtime\x12^\n" +
-	"\tListTools\x12\x19.maze.v1.ListToolsRequest\x1a\x1a.maze.v1.ListToolsResponse\"\x1a\x82\xd3\xe4\x93\x02\x14\x12\x12/api/v1/host/toolsB\x8d\x01\n" +
-	"\vcom.maze.v1B\tHostProtoP\x01Z6github.com/charviki/maze-cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
+	"\tListTools\x12\x19.maze.v1.ListToolsRequest\x1a\x1a.maze.v1.ListToolsResponse\"\x1a\x82\xd3\xe4\x93\x02\x14\x12\x12/api/v1/host/toolsB\x99\x01\n" +
+	"\vcom.maze.v1B\tHostProtoP\x01ZBgithub.com/charviki/maze/fabrication/cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
 
 var (
 	file_maze_v1_host_proto_rawDescOnce sync.Once

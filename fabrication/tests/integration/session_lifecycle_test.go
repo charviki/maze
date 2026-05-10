@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	client "github.com/charviki/maze-cradle/api/gen/http"
+	client "github.com/charviki/maze/fabrication/cradle/api/gen/http"
 )
 
 // TestSessionSaveAndRestore — Given: 已上线的 Host 和活跃 Session; When: 保存→查询→恢复; Then: Session 状态完整保留

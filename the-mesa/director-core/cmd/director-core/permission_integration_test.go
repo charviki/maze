@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	pb "github.com/charviki/maze-cradle/api/gen/maze/v1"
-	"github.com/charviki/maze-cradle/gatewayutil"
+	pb "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
+	"github.com/charviki/maze/fabrication/cradle/gatewayutil"
 	"github.com/charviki/maze/the-mesa/director-core/internal/service"
 	"github.com/charviki/maze/the-mesa/director-core/internal/transport"
 	"google.golang.org/grpc"

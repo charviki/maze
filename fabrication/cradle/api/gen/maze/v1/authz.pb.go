@@ -907,9 +907,9 @@ const file_maze_v1_authz_proto_rawDesc = "" +
 	"\x18GetPermissionApplication\x12(.maze.v1.GetPermissionApplicationRequest\x1a\x1e.maze.v1.PermissionApplication\"C\x82\xd3\xe4\x93\x02=\x12;/api/v1/permission-applications/{permission_application_id}\x12\xb9\x01\n" +
 	"\x1bReviewPermissionApplication\x12+.maze.v1.ReviewPermissionApplicationRequest\x1a\x1e.maze.v1.PermissionApplication\"M\x82\xd3\xe4\x93\x02G:\x01*\"B/api/v1/permission-applications/{permission_application_id}:review\x12\xb9\x01\n" +
 	"\x1bRevokePermissionApplication\x12+.maze.v1.RevokePermissionApplicationRequest\x1a\x1e.maze.v1.PermissionApplication\"M\x82\xd3\xe4\x93\x02G:\x01*\"B/api/v1/permission-applications/{permission_application_id}:revoke\x12\x9d\x01\n" +
-	"\x16ListSubjectPermissions\x12&.maze.v1.ListSubjectPermissionsRequest\x1a'.maze.v1.ListSubjectPermissionsResponse\"2\x82\xd3\xe4\x93\x02,\x12*/api/v1/subjects/{subject_key}/permissionsB\x8e\x01\n" +
+	"\x16ListSubjectPermissions\x12&.maze.v1.ListSubjectPermissionsRequest\x1a'.maze.v1.ListSubjectPermissionsResponse\"2\x82\xd3\xe4\x93\x02,\x12*/api/v1/subjects/{subject_key}/permissionsB\x9a\x01\n" +
 	"\vcom.maze.v1B\n" +
-	"AuthzProtoP\x01Z6github.com/charviki/maze-cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
+	"AuthzProtoP\x01ZBgithub.com/charviki/maze/fabrication/cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
 
 var (
 	file_maze_v1_authz_proto_rawDescOnce sync.Once
