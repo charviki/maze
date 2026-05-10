@@ -1,0 +1,130 @@
+@import '../../../../fabrication/skin/src/styles/index.css';
+
+:root,
+.dark {
+  --accent: 38 90% 53%;
+  --accent-foreground: 240 5.9% 10%;
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse-opacity {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-page-in {
+  animation: page-in 0.2s ease-out;
+}
+
+.doc-card {
+  position: relative;
+  border-left: 3px solid hsl(var(--accent));
+  transition: all 0.2s ease;
+}
+.doc-card:hover {
+  border-color: hsl(var(--accent));
+  box-shadow: 0 0 10px hsl(38 90% 53% / 0.15);
+}
+
+.memory-card {
+  position: relative;
+  background: hsl(var(--card) / 0.8) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+.markdown-body h1 {
+  @apply text-xl font-bold text-foreground mt-6 mb-3 border-b border-border pb-2;
+}
+.markdown-body h2 {
+  @apply text-lg font-bold text-foreground mt-5 mb-2;
+}
+.markdown-body h3 {
+  @apply text-base font-semibold text-muted-foreground mt-4 mb-2;
+}
+.markdown-body p {
+  @apply my-2 leading-relaxed;
+}
+.markdown-body ul {
+  @apply my-2 pl-5 list-disc;
+}
+.markdown-body ol {
+  @apply my-2 pl-5 list-decimal;
+}
+.markdown-body li {
+  @apply my-1;
+}
+.markdown-body code {
+  @apply bg-card text-primary px-1.5 py-0.5 rounded text-sm font-mono;
+}
+.markdown-body pre {
+  @apply bg-card border border-border rounded p-4 my-3 overflow-x-auto;
+}
+.markdown-body pre code {
+  @apply bg-transparent text-foreground px-0 py-0;
+}
+.markdown-body blockquote {
+  @apply border-l-2 border-primary pl-4 my-3 text-muted-foreground italic;
+}
+.markdown-body a {
+  @apply text-primary underline hover:text-accent;
+}
+.markdown-body table {
+  @apply w-full my-3 border-collapse;
+}
+.markdown-body th {
+  @apply border border-border px-3 py-2 text-left text-sm font-semibold bg-card;
+}
+.markdown-body td {
+  @apply border border-border px-3 py-2 text-sm;
+}
+.markdown-body hr {
+  @apply border-border my-6;
+}
+.markdown-body strong {
+  @apply font-semibold text-foreground;
+}
+
+.cm-editor-wrapper .cm-editor {
+  height: 100%;
+  font-size: 14px;
+}
+.cm-editor-wrapper .cm-editor.cm-focused {
+  outline: none;
+}
+.cm-editor-wrapper .cm-scroller {
+  font-family: 'Share Tech Mono', monospace;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

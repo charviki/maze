@@ -2,6 +2,7 @@ packages:
   - 'fabrication/skin'
   - 'the-mesa/director-console'
   - 'the-mesa/arrival-gate'
+  - 'the-mesa/the-forge/web'
   - 'sweetwater/black-ridge/web'
 
 allowBuilds:

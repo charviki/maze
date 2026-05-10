@@ -24,10 +24,16 @@
       "name": "HostService"
     },
     {
+      "name": "KnowledgeService"
+    },
+    {
       "name": "NodeService"
     },
     {
       "name": "SessionService"
+    },
+    {
+      "name": "DirectiveService"
     },
     {
       "name": "TemplateService"
@@ -40,6 +46,153 @@
     "application/json"
   ],
   "paths": {
+    "/api/v1/archives": {
+      "get": {
+        "operationId": "KnowledgeService_ListArchives",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListArchivesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "KnowledgeService"
+        ]
+      },
+      "post": {
+        "operationId": "KnowledgeService_CreateArchive",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Archive"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreateArchiveRequest"
+            }
+          }
+        ],
+        "tags": [
+          "KnowledgeService"
+        ]
+      }
+    },
+    "/api/v1/archives/{id}": {
+      "get": {
+        "operationId": "KnowledgeService_GetArchive",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Archive"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "KnowledgeService"
+        ]
+      },
+      "delete": {
+        "operationId": "KnowledgeService_DeleteArchive",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "KnowledgeService"
+        ]
+      },
+      "put": {
+        "operationId": "KnowledgeService_UpdateArchive",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Archive"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/KnowledgeServiceUpdateArchiveBody"
+            }
+          }
+        ],
+        "tags": [
+          "KnowledgeService"
+        ]
+      }
+    },
     "/api/v1/audit/logs": {
       "get": {
         "operationId": "AuditService_GetAuditLogs",
@@ -172,6 +325,193 @@
         ],
         "tags": [
           "AuthService"
+        ]
+      }
+    },
+    "/api/v1/directives": {
+      "get": {
+        "operationId": "DirectiveService_ListDirectives",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListDirectivesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "assignee",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "priority",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "visibility",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "tags": [
+          "DirectiveService"
+        ]
+      },
+      "post": {
+        "operationId": "DirectiveService_CreateDirective",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Directive"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreateDirectiveRequest"
+            }
+          }
+        ],
+        "tags": [
+          "DirectiveService"
+        ]
+      }
+    },
+    "/api/v1/directives/{id}": {
+      "get": {
+        "operationId": "DirectiveService_GetDirective",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Directive"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "DirectiveService"
+        ]
+      },
+      "delete": {
+        "operationId": "DirectiveService_DeleteDirective",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "DirectiveService"
+        ]
+      },
+      "put": {
+        "operationId": "DirectiveService_UpdateDirective",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Directive"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/DirectiveServiceUpdateDirectiveBody"
+            }
+          }
+        ],
+        "tags": [
+          "DirectiveService"
         ]
       }
     },
@@ -425,6 +765,470 @@
         ],
         "tags": [
           "ConfigService"
+        ]
+      }
+    },
+    "/api/v1/memories": {
+      "get": {
+        "operationId": "KnowledgeService_ListMemories",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListMemoriesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "archiveId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "parentId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "visibility",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "author",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "tags": [
+          "KnowledgeService"
+        ]
+      },
+      "post": {
+        "operationId": "KnowledgeService_CreateMemory",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Memory"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreateMemoryRequest"
+            }
+          }
+        ],
+        "tags": [
+          "KnowledgeService"
+        ]
+      }
+    },
+    "/api/v1/memories/{id}": {
+      "get": {
+        "operationId": "KnowledgeService_GetMemory",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ParsedMemory"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "KnowledgeService"
+        ]
+      },
+      "delete": {
+        "operationId": "KnowledgeService_DeleteMemory",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "KnowledgeService"
+        ]
+      },
+      "put": {
+        "operationId": "KnowledgeService_UpdateMemory",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Memory"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/KnowledgeServiceUpdateMemoryBody"
+            }
+          }
+        ],
+        "tags": [
+          "KnowledgeService"
+        ]
+      }
+    },
+    "/api/v1/memories/{id}/ancestors": {
+      "get": {
+        "operationId": "KnowledgeService_GetMemoryAncestors",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetMemoryAncestorsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "KnowledgeService"
+        ]
+      }
+    },
+    "/api/v1/memories/{id}/directives": {
+      "get": {
+        "operationId": "KnowledgeService_GetMemoryDirectives",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetMemoryDirectivesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "KnowledgeService"
+        ]
+      }
+    },
+    "/api/v1/memories/{id}/links": {
+      "get": {
+        "operationId": "KnowledgeService_GetLinks",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetLinksResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "relationType",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "KnowledgeService"
+        ]
+      },
+      "post": {
+        "operationId": "KnowledgeService_CreateLink",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1NeuralLink"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/KnowledgeServiceCreateLinkBody"
+            }
+          }
+        ],
+        "tags": [
+          "KnowledgeService"
+        ]
+      }
+    },
+    "/api/v1/memories/{id}/links/{linkId}": {
+      "delete": {
+        "operationId": "KnowledgeService_DeleteLink",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "linkId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "KnowledgeService"
+        ]
+      }
+    },
+    "/api/v1/memories:search": {
+      "get": {
+        "operationId": "KnowledgeService_SearchMemories",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1SearchMemoriesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "archiveId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "visibility",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "author",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "KnowledgeService"
+        ]
+      }
+    },
+    "/api/v1/memories:tree": {
+      "get": {
+        "operationId": "KnowledgeService_GetMemoryTree",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetMemoryTreeResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "archiveId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "parentId",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "KnowledgeService"
         ]
       }
     },
@@ -2032,6 +2836,28 @@
         ]
       }
     },
+    "/api/v1/stats": {
+      "get": {
+        "operationId": "KnowledgeService_GetStats",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetStatsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "KnowledgeService"
+        ]
+      }
+    },
     "/api/v1/subjects/{subjectKey}/permissions": {
       "get": {
         "summary": "ListSubjectPermissions 列出主体当前权限视图。",
@@ -2318,6 +3144,114 @@
         }
       }
     },
+    "DirectiveServiceUpdateDirectiveBody": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "priority": {
+          "type": "string"
+        },
+        "assignee": {
+          "type": "string"
+        },
+        "author": {
+          "type": "string"
+        },
+        "requireDocIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "narrativeId": {
+          "type": "string"
+        },
+        "archiveId": {
+          "type": "string"
+        },
+        "visibility": {
+          "type": "string"
+        }
+      }
+    },
+    "KnowledgeServiceCreateLinkBody": {
+      "type": "object",
+      "properties": {
+        "targetId": {
+          "type": "string"
+        },
+        "relationType": {
+          "type": "string"
+        }
+      }
+    },
+    "KnowledgeServiceUpdateArchiveBody": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        }
+      }
+    },
+    "KnowledgeServiceUpdateMemoryBody": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "visibility": {
+          "type": "string"
+        },
+        "sharedWith": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "attachments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Attachment"
+          }
+        },
+        "parentId": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        }
+      }
+    },
     "PermissionServiceReviewPermissionApplicationBody": {
       "type": "object",
       "properties": {
@@ -2545,6 +3479,53 @@
       },
       "title": "与 protocol.AgentStatus 对齐"
     },
+    "v1Archive": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "author": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      }
+    },
+    "v1Attachment": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "contentType": {
+          "type": "string"
+        },
+        "size": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
     "v1AuditLogEntry": {
       "type": "object",
       "properties": {
@@ -2651,6 +3632,55 @@
         }
       }
     },
+    "v1CreateArchiveRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        }
+      }
+    },
+    "v1CreateDirectiveRequest": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "priority": {
+          "type": "string"
+        },
+        "assignee": {
+          "type": "string"
+        },
+        "requireDocIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "narrativeId": {
+          "type": "string"
+        },
+        "archiveId": {
+          "type": "string"
+        },
+        "visibility": {
+          "type": "string"
+        }
+      }
+    },
     "v1CreateHostRequest": {
       "type": "object",
       "properties": {
@@ -2668,6 +3698,57 @@
         },
         "resources": {
           "$ref": "#/definitions/v1ResourceLimits"
+        }
+      }
+    },
+    "v1CreateMemoryRequest": {
+      "type": "object",
+      "properties": {
+        "archiveId": {
+          "type": "string"
+        },
+        "parentId": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "author": {
+          "type": "string"
+        },
+        "visibility": {
+          "type": "string"
+        },
+        "sharedWith": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "attachments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Attachment"
+          }
         }
       }
     },
@@ -2737,6 +3818,70 @@
         },
         "template": {
           "$ref": "#/definitions/v1SessionTemplate"
+        }
+      }
+    },
+    "v1Directive": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "priority": {
+          "type": "string"
+        },
+        "assignee": {
+          "type": "string"
+        },
+        "author": {
+          "type": "string"
+        },
+        "requireDocIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "narrativeId": {
+          "type": "string"
+        },
+        "archiveId": {
+          "type": "string"
+        },
+        "visibility": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      }
+    },
+    "v1DirectiveRef": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "priority": {
+          "type": "string"
         }
       }
     },
@@ -2820,6 +3965,54 @@
         }
       }
     },
+    "v1GetLinksResponse": {
+      "type": "object",
+      "properties": {
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1NeuralLink"
+          }
+        }
+      }
+    },
+    "v1GetMemoryAncestorsResponse": {
+      "type": "object",
+      "properties": {
+        "ancestors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Memory"
+          }
+        }
+      }
+    },
+    "v1GetMemoryDirectivesResponse": {
+      "type": "object",
+      "properties": {
+        "directives": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1DirectiveRef"
+          }
+        }
+      }
+    },
+    "v1GetMemoryTreeResponse": {
+      "type": "object",
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1MemoryTreeNode"
+          }
+        }
+      }
+    },
     "v1GetRuntimeLogResponse": {
       "type": "object",
       "properties": {
@@ -2837,6 +4030,14 @@
             "type": "object",
             "$ref": "#/definitions/v1SessionState"
           }
+        }
+      }
+    },
+    "v1GetStatsResponse": {
+      "type": "object",
+      "properties": {
+        "stats": {
+          "$ref": "#/definitions/v1Stats"
         }
       }
     },
@@ -2950,6 +4151,34 @@
       },
       "title": "与 protocol.HostSpec 对齐"
     },
+    "v1ListArchivesResponse": {
+      "type": "object",
+      "properties": {
+        "archives": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Archive"
+          }
+        }
+      }
+    },
+    "v1ListDirectivesResponse": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Directive"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
     "v1ListHostsResponse": {
       "type": "object",
       "properties": {
@@ -2959,6 +4188,22 @@
             "type": "object",
             "$ref": "#/definitions/v1HostInfo"
           }
+        }
+      }
+    },
+    "v1ListMemoriesResponse": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Memory"
+          }
+        },
+        "total": {
+          "type": "integer",
+          "format": "int32"
         }
       }
     },
@@ -3092,6 +4337,170 @@
         }
       }
     },
+    "v1Memory": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "archiveId": {
+          "type": "string"
+        },
+        "parentId": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "author": {
+          "type": "string"
+        },
+        "visibility": {
+          "type": "string"
+        },
+        "sharedWith": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "attachments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Attachment"
+          }
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      }
+    },
+    "v1MemoryMeta": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "archiveId": {
+          "type": "string"
+        },
+        "parentId": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "author": {
+          "type": "string"
+        },
+        "visibility": {
+          "type": "string"
+        },
+        "sharedWith": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "attachments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Attachment"
+          }
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "priority": {
+          "type": "string"
+        }
+      }
+    },
+    "v1MemoryTreeNode": {
+      "type": "object",
+      "properties": {
+        "memory": {
+          "$ref": "#/definitions/v1Memory"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1MemoryTreeNode"
+          }
+        }
+      }
+    },
+    "v1NeuralLink": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "sourceId": {
+          "type": "string"
+        },
+        "targetId": {
+          "type": "string"
+        },
+        "relationType": {
+          "type": "string"
+        },
+        "sourceTitle": {
+          "type": "string"
+        },
+        "targetTitle": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string"
+        }
+      }
+    },
     "v1NodeInfo": {
       "type": "object",
       "properties": {
@@ -3130,6 +4539,20 @@
         }
       },
       "title": "与 model.Node 对齐"
+    },
+    "v1ParsedMemory": {
+      "type": "object",
+      "properties": {
+        "meta": {
+          "$ref": "#/definitions/v1MemoryMeta"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        }
+      }
     },
     "v1PermissionApplication": {
       "type": "object",
@@ -3282,6 +4705,18 @@
       "properties": {
         "savedAt": {
           "type": "string"
+        }
+      }
+    },
+    "v1SearchMemoriesResponse": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Memory"
+          }
         }
       }
     },
@@ -3450,6 +4885,33 @@
         }
       },
       "title": "与 model.SessionTemplate 对齐"
+    },
+    "v1Stats": {
+      "type": "object",
+      "properties": {
+        "totalMemories": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "totalDirectives": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "directivesByStatus": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "recentMemories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Memory"
+          }
+        }
+      }
     },
     "v1SubjectPermissionGrant": {
       "type": "object",

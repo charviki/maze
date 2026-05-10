@@ -20,6 +20,7 @@ FRONTEND_MODULES := \
 	fabrication/skin \
 	the-mesa/arrival-gate \
 	the-mesa/director-console \
+	the-mesa/the-forge/web \
 	sweetwater/black-ridge/web
 
 CRADLE_API_DIR := $(PROJECT_ROOT)/fabrication/cradle/api

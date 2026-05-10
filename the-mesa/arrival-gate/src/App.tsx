@@ -47,7 +47,8 @@ const MODULES = [
     name: 'The Forge',
     description: '"The cradle of the park\'s intelligence"',
     icon: Database,
-    status: 'locked' as const,
+    status: 'online' as const,
+    href: '/the-forge/',
   },
   {
     name: 'Saloon',

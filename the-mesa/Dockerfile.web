@@ -10,6 +10,7 @@ COPY fabrication/skin/package.json fabrication/skin/package.json
 COPY the-mesa/director-console/package.json the-mesa/director-console/package.json
 COPY the-mesa/arrival-gate/package.json the-mesa/arrival-gate/package.json
 COPY sweetwater/black-ridge/web/package.json sweetwater/black-ridge/web/package.json
+COPY the-mesa/the-forge/web/package.json the-mesa/the-forge/web/package.json
 
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     pnpm install
@@ -33,6 +34,7 @@ COPY fabrication/skin/package.json fabrication/skin/package.json
 COPY the-mesa/director-console/package.json the-mesa/director-console/package.json
 COPY the-mesa/arrival-gate/package.json the-mesa/arrival-gate/package.json
 COPY sweetwater/black-ridge/web/package.json sweetwater/black-ridge/web/package.json
+COPY the-mesa/the-forge/web/package.json the-mesa/the-forge/web/package.json
 
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     pnpm install
@@ -43,6 +45,29 @@ COPY the-mesa/director-console/ the-mesa/director-console/
 
 WORKDIR /app/the-mesa/director-console
 RUN pnpm run build
+
+# ===== The Forge builder =====
+FROM public.ecr.aws/docker/library/node:22-bookworm-slim AS the-forge-builder
+
+WORKDIR /app
+
+RUN npm install -g pnpm
+
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY fabrication/skin/package.json fabrication/skin/package.json
+COPY the-mesa/director-console/package.json the-mesa/director-console/package.json
+COPY the-mesa/arrival-gate/package.json the-mesa/arrival-gate/package.json
+COPY sweetwater/black-ridge/web/package.json sweetwater/black-ridge/web/package.json
+COPY the-mesa/the-forge/web/package.json the-mesa/the-forge/web/package.json
+
+RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
+    pnpm install
+
+COPY fabrication/skin/ fabrication/skin/
+COPY the-mesa/the-forge/web/ the-mesa/the-forge/web/
+
+WORKDIR /app/the-mesa/the-forge/web
+RUN pnpm --filter @maze/the-forge build
 
 # ===== nginx =====
 FROM public.ecr.aws/docker/library/nginx:alpine
@@ -56,6 +81,9 @@ COPY --from=arrival-gate-builder /app/the-mesa/arrival-gate/web-dist /usr/share/
 
 # Director Console 静态文件 → /director-console/
 COPY --from=web-builder /app/the-mesa/director-console/web-dist /usr/share/nginx/html/director-console
+
+# The Forge 静态文件 → /the-forge/
+COPY --from=the-forge-builder /app/the-mesa/the-forge/web/web-dist /usr/share/nginx/html/the-forge
 
 ENV DIRECTOR_CORE_UPSTREAM="director-core:8080"
 ENV WS_TIMEOUT="3600s"

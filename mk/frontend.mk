@@ -4,6 +4,7 @@ check-frontend: ## 前端三道检查：tsc → eslint → vitest（每个模块
 	@cd $(PROJECT_ROOT)/fabrication/skin && pnpm exec tsc --noEmit || exit 1 && pnpm exec eslint . || exit 1 && pnpm exec vitest run || exit 1
 	@cd $(PROJECT_ROOT)/the-mesa/arrival-gate && pnpm exec tsc -b --noEmit || exit 1 && pnpm exec eslint . || exit 1 && pnpm exec vitest run || exit 1
 	@cd $(PROJECT_ROOT)/the-mesa/director-console && pnpm exec tsc -b --noEmit || exit 1 && pnpm exec eslint . || exit 1 && pnpm exec vitest run || exit 1
+	@cd $(PROJECT_ROOT)/the-mesa/the-forge/web && pnpm exec tsc -b --noEmit || exit 1 && pnpm exec eslint . || exit 1 && pnpm exec vitest run || exit 1
 	@cd $(PROJECT_ROOT)/sweetwater/black-ridge/web && pnpm exec tsc -b --noEmit || exit 1 && pnpm exec eslint . || exit 1 && pnpm exec vitest run || exit 1
 	@echo "\033[0;32m[check-frontend]\033[0m All frontend checks passed!"
 
