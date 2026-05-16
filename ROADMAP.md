@@ -20,6 +20,7 @@
 - **知识库服务** — The Forge 实现 Archive / Doc / DocLink 三层知识模型（Archive / Doc / DocLink），支持全文搜索（pg_trgm）、树形嵌套、Markdown 编辑，gRPC + grpc-gateway 双协议
 - **集成测试体系** — Docker/Kubernetes 双环境集成测试，38+ 测试用例覆盖 Host/Session/Template/Config/Terminal/Forge 全链路
 - **工程化** — Makefile 统一构建/代码生成/测试命令，lefthook pre-commit/pre-push 自动检查
+- **Proto 层校验** — 通过 buf.validate 在 Proto 定义中声明字段约束（min_len、UUID pattern、min_items），由共享 gRPC 拦截器统一执行，消除 transport/service 层的手动校验代码
 
 ## 规划中的模块
 

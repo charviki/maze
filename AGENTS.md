@@ -27,7 +27,7 @@ The Maze — AI Agent 管理平台。The Mesa 控制面域负责代理网关 + H
 | ----------------- | ------------------------------ | ---------------------------------------------------- |
 | The Mesa          | the-mesa/                      | [AGENTS.md](the-mesa/AGENTS.md)                      |
 | Arrival Gate      | the-mesa/arrival-gate/         | [AGENTS.md](the-mesa/arrival-gate/AGENTS.md)         |
-| Director Core     | the-mesa/director-core/        | [AGENTS.md](the-mesa/AGENTS.md)                      |
+| Director Core     | the-mesa/director-core/        | [AGENTS.md](the-mesa/director-core/AGENTS.md)        |
 | The Forge         | the-mesa/the-forge/            | [AGENTS.md](the-mesa/the-forge/AGENTS.md)            |
 | Director Console  | the-mesa/director-console/     | [AGENTS.md](the-mesa/director-console/AGENTS.md)     |
 | Cradle            | fabrication/cradle/            | [AGENTS.md](fabrication/cradle/AGENTS.md)            |

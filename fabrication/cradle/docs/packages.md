@@ -6,7 +6,7 @@
 | httputil | 统一 JSON 响应封装、CORS、WebSocket upgrader/relay、SSRF 校验 |
 | logutil | 结构化日志接口（基于 slog） |
 | middleware | 标准 `net/http` 中间件（Bearer Token 鉴权、CORS） |
-| gatewayutil | grpc-gateway 响应格式包装器、ServeMux 工厂、gRPC 认证/审计 interceptor |
+| gatewayutil | grpc-gateway 响应格式包装器、ServeMux 工厂、gRPC 认证/审计/Proto 校验 interceptor |
 | grpcutil | gRPC 生命周期适配器（`ManagedGRPCServer`） |
 | lifecycle | 多服务器统一启停管理（errgroup + signal + 优雅关闭） |
 | pipeline | Session 管线步骤定义与层级过滤 |
