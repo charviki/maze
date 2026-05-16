@@ -187,6 +187,8 @@ func applyEnvOverrides(cfg *Config) {
 }
 
 // validate 校验配置完整性并填充默认值
+//
+//nolint:gocyclo // validation is naturally branch-heavy; split when it exceeds maintainability
 func validate(cfg *Config) error {
 	if cfg.Server.ListenAddr == "" {
 		cfg.Server.ListenAddr = ":8080"

@@ -68,8 +68,11 @@ func (h *SessionProxyHandler) ProxyWebSocket(w http.ResponseWriter, r *http.Requ
 	if token := h.generateServiceToken(); token != "" {
 		dialHeader.Set("Authorization", "Bearer "+token)
 	}
-	agentConn, _, err := gorillaws.DefaultDialer.Dial(agentURL, dialHeader)
+	agentConn, resp, err := gorillaws.DefaultDialer.Dial(agentURL, dialHeader)
 	if err != nil {
+		if resp != nil {
+			_ = resp.Body.Close()
+		}
 		h.logger.Errorf("[ws-proxy] dial agent %s failed: %v", agentURL, err)
 		return
 	}

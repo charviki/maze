@@ -37,7 +37,8 @@ func (s *ManagedGRPCServer) ListenAndServe() error {
 		return errors.New("grpc server is nil")
 	}
 
-	lis, err := net.Listen("tcp", s.addr)
+	lc := net.ListenConfig{}
+	lis, err := lc.Listen(context.Background(), "tcp", s.addr)
 	if err != nil {
 		return fmt.Errorf("grpc listen %s: %w", s.addr, err)
 	}

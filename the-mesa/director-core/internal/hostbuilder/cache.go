@@ -1,6 +1,7 @@
 package hostbuilder
 
 import (
+	"context"
 	"os/exec"
 	"strings"
 )
@@ -8,14 +9,14 @@ import (
 // ImageExistsLocally 检查指定镜像是否已存在于本地 docker 中
 func ImageExistsLocally(imageName string) bool {
 	//nolint:gosec // docker CLI args are internally constructed
-	cmd := exec.Command("docker", "image", "inspect", imageName)
+	cmd := exec.CommandContext(context.Background(), "docker", "image", "inspect", imageName)
 	return cmd.Run() == nil
 }
 
 // CheckDockerfileHash 从镜像 label 中读取 dockerfile-hash 与期望值比较
 func CheckDockerfileHash(imageName, expectedHash string) bool {
 	//nolint:gosec // docker CLI args are internally constructed
-	cmd := exec.Command("docker", "inspect", "--format",
+	cmd := exec.CommandContext(context.Background(), "docker", "inspect", "--format",
 		"{{index .Config.Labels \"maze.dockerfile-hash\"}}", imageName)
 	output, err := cmd.Output()
 	if err != nil {

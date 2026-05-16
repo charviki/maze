@@ -1,6 +1,7 @@
 package httputil
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -30,16 +31,17 @@ func ValidateTargetURL(rawURL string, allowPrivate bool) error {
 	if host == "" {
 		return errors.New("empty host")
 	}
-	ips, err := net.LookupIP(host)
+	resolver := net.Resolver{}
+	ips, err := resolver.LookupIPAddr(context.Background(), host)
 	if err != nil {
 		return fmt.Errorf("resolve host %s: %w", host, err)
 	}
 	if allowPrivate {
 		return nil
 	}
-	for _, ip := range ips {
-		if IsPrivateIP(ip) {
-			return fmt.Errorf("host %s resolves to private IP %s", host, ip)
+	for _, addr := range ips {
+		if IsPrivateIP(addr.IP) {
+			return fmt.Errorf("host %s resolves to private IP %s", host, addr.IP)
 		}
 	}
 	return nil

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"crypto/rand"
 	"errors"
 	"fmt"
@@ -139,7 +140,7 @@ func (s *tmuxServiceImpl) tmuxArgs(args ...string) []string {
 // runTmux 执行 tmux 命令并返回输出。统一设置 TERM、COLORTERM、LANG 等环境变量
 func (s *tmuxServiceImpl) runTmux(args ...string) (string, error) {
 	//nolint:gosec // tmux CLI args are internally constructed
-	cmd := exec.Command("tmux", s.tmuxArgs(args...)...)
+	cmd := exec.CommandContext(context.Background(), "tmux", s.tmuxArgs(args...)...)
 	cmd.Env = append(os.Environ(),
 		"TERM=xterm-256color",
 		"COLORTERM=truecolor",
@@ -251,6 +252,8 @@ func (s *tmuxServiceImpl) BuildPipeline(workingDir string, command string, confi
 
 // ExecutePipeline 按 order 顺序执行管线步骤，每个步骤通过 tmux send-keys 注入。
 // env/file 步骤涉及敏感值，执行前关闭 shell 回显防止泄露到终端。
+//
+//nolint:gocyclo // pipeline dispatch is inherently branch-heavy
 func (s *tmuxServiceImpl) ExecutePipeline(sessionName string, pipe pipeline.Pipeline) error {
 	sorted := pipe.Sorted()
 
@@ -555,7 +558,7 @@ func (s *tmuxServiceImpl) AttachSession(name string, rows, cols uint16) (*os.Fil
 
 	tmuxArgs := s.tmuxArgs("attach-session", "-t", name)
 	//nolint:gosec // tmux CLI args are internally constructed
-	cmd := exec.Command("tmux", tmuxArgs...)
+	cmd := exec.CommandContext(context.Background(), "tmux", tmuxArgs...)
 	cmd.Env = append(os.Environ(),
 		"TERM=xterm-256color",
 		"COLORTERM=truecolor",

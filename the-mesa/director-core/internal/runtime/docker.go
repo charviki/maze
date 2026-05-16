@@ -34,7 +34,7 @@ func (d *DockerRuntime) dockerCmd(args ...string) *exec.Cmd {
 	//nolint:gosec // docker CLI args are internally constructed
 	args = append([]string{"-H", "unix://" + d.docker.SocketPath}, args...)
 	//nolint:gosec
-	return exec.Command("docker", args...)
+	return exec.CommandContext(context.Background(), "docker", args...)
 }
 
 // imageExistsLocally 检查指定镜像是否已存在于本地 docker 中

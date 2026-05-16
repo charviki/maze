@@ -83,7 +83,7 @@ func (k *KubernetesRuntime) buildDockerImage(spec *protocol.HostDeploySpec, dock
 		// hash 不匹配，删除旧镜像触发重建
 		k.logger.Infof("image %s hash mismatch, rebuilding", imageName)
 		//nolint:gosec
-		_ = exec.Command("docker", "rmi", imageName).Run()
+		_ = exec.CommandContext(context.Background(), "docker", "rmi", imageName).Run()
 	}
 
 	// 检查工具组合镜像是否已存在且 hash 匹配
@@ -92,7 +92,7 @@ func (k *KubernetesRuntime) buildDockerImage(spec *protocol.HostDeploySpec, dock
 		if k.checkDockerfileHash(comboTag, expectedHash) {
 			k.logger.Infof("combo image %s exists, tagging as %s", comboTag, imageName)
 			//nolint:gosec
-			cmd := exec.Command("docker", "tag", comboTag, imageName)
+			cmd := exec.CommandContext(context.Background(), "docker", "tag", comboTag, imageName)
 			if cmd.Run() == nil {
 				return imageName, nil
 			}
@@ -100,7 +100,7 @@ func (k *KubernetesRuntime) buildDockerImage(spec *protocol.HostDeploySpec, dock
 		// hash 不匹配，删除旧缓存触发重建
 		k.logger.Infof("combo image %s hash mismatch, rebuilding", comboTag)
 		//nolint:gosec
-		func() { _ = exec.Command("docker", "rmi", comboTag).Run() }()
+		func() { _ = exec.CommandContext(context.Background(), "docker", "rmi", comboTag).Run() }()
 	}
 
 	// 获取构建槽位，防止重建风暴
@@ -122,7 +122,7 @@ func (k *KubernetesRuntime) buildDockerImage(spec *protocol.HostDeploySpec, dock
 
 	// 执行 docker build，启用 BuildKit 加速构建
 	//nolint:gosec
-	cmd := exec.Command("docker", "build", "-f", dockerfilePath, "-t", imageName, "--cache-from", imageName, tmpDir)
+	cmd := exec.CommandContext(context.Background(), "docker", "build", "-f", dockerfilePath, "-t", imageName, "--cache-from", imageName, tmpDir)
 	cmd.Env = append(os.Environ(), "DOCKER_BUILDKIT=1")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -133,7 +133,7 @@ func (k *KubernetesRuntime) buildDockerImage(spec *protocol.HostDeploySpec, dock
 
 	// 构建完成后打上组合标签，供后续相同组合的 Host 复用
 	//nolint:gosec
-	tagCmd := exec.Command("docker", "tag", imageName, comboTag)
+	tagCmd := exec.CommandContext(context.Background(), "docker", "tag", imageName, comboTag)
 	_ = tagCmd.Run()
 
 	return imageName, nil
@@ -143,7 +143,7 @@ func (k *KubernetesRuntime) buildDockerImage(spec *protocol.HostDeploySpec, dock
 func (k *KubernetesRuntime) removeDockerImage(name string) {
 	imageName := "maze-agent:" + name
 	//nolint:gosec
-	cmd := exec.Command("docker", "rmi", imageName, "-f")
+	cmd := exec.CommandContext(context.Background(), "docker", "rmi", imageName, "-f")
 	_ = cmd.Run()
 }
 
