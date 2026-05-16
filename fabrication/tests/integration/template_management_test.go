@@ -65,6 +65,7 @@ func TestTemplateCRUD(t *testing.T) {
 	newName := "updated-template"
 	updateBody := client.TemplateServiceUpdateTemplateBody{
 		Template: &client.V1SessionTemplate{
+			Id:   &tmplID,
 			Name: &newName,
 		},
 	}

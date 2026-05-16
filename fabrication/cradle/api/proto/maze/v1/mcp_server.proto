@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+package maze.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+
+option go_package = "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1";
+
+message MCPServer {
+  string name = 1;
+  string type = 2;
+  string command = 3;
+  string url = 4;
+  repeated string args = 5;
+  map<string, string> env = 6;
+  string created_at = 7;
+  string updated_at = 8;
+}
+
+message CreateMCPServerRequest {
+  string name = 1 [(buf.validate.field).string = {min_len: 1}];
+  string type = 2 [(buf.validate.field).string = {
+    in: [
+      "stdio",
+      "sse",
+      "streamable-http"
+    ]
+  }];
+  string command = 3;
+  string url = 4;
+  repeated string args = 5;
+  map<string, string> env = 6;
+}
+
+message ListMCPServersRequest {}
+
+message ListMCPServersResponse {
+  repeated MCPServer servers = 1;
+}
+
+message GetMCPServerRequest {
+  string name = 1 [(buf.validate.field).string = {min_len: 1}];
+}
+
+message UpdateMCPServerRequest {
+  string name = 1 [(buf.validate.field).string = {min_len: 1}];
+  string type = 2 [(buf.validate.field).string = {
+    in: [
+      "stdio",
+      "sse",
+      "streamable-http"
+    ]
+  }];
+  string command = 3;
+  string url = 4;
+  repeated string args = 5;
+  map<string, string> env = 6;
+}
+
+message DeleteMCPServerRequest {
+  string name = 1 [(buf.validate.field).string = {min_len: 1}];
+}
+
+service MCPService {
+  rpc CreateMCPServer(CreateMCPServerRequest) returns (MCPServer) {
+    option (google.api.http) = {
+      post: "/api/v1/mcp-servers"
+      body: "*"
+    };
+  }
+
+  rpc ListMCPServers(ListMCPServersRequest) returns (ListMCPServersResponse) {
+    option (google.api.http) = {get: "/api/v1/mcp-servers"};
+  }
+
+  rpc GetMCPServer(GetMCPServerRequest) returns (MCPServer) {
+    option (google.api.http) = {get: "/api/v1/mcp-servers/{name}"};
+  }
+
+  rpc UpdateMCPServer(UpdateMCPServerRequest) returns (MCPServer) {
+    option (google.api.http) = {
+      put: "/api/v1/mcp-servers/{name}"
+      body: "*"
+    };
+  }
+
+  rpc DeleteMCPServer(DeleteMCPServerRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/api/v1/mcp-servers/{name}"};
+  }
+}

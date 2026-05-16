@@ -45,6 +45,10 @@ func RegisterGatewayHandlers(ctx context.Context, params GatewayRegistrationPara
 		{"TemplateService", pb.RegisterTemplateServiceHandlerFromEndpoint},
 		{"ConfigService", pb.RegisterConfigServiceHandlerFromEndpoint},
 		{"AgentService", pb.RegisterAgentServiceHandlerFromEndpoint},
+		{"SkillService", pb.RegisterSkillServiceHandlerFromEndpoint},
+		{"MCPService", pb.RegisterMCPServiceHandlerFromEndpoint},
+		{"RuleService", pb.RegisterRuleServiceHandlerFromEndpoint},
+		{"GitKeyService", pb.RegisterGitKeyServiceHandlerFromEndpoint},
 	}
 
 	for _, reg := range registrations {

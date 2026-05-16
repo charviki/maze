@@ -22,6 +22,10 @@ type Config struct {
 	Casbin       CasbinConfig     `yaml:"casbin"`
 	Authz        AuthzConfig      `yaml:"authz"`
 	JWT          JWTConfig        `yaml:"jwt"`
+
+	// GitKeyEncryptionKey 用于加密 Git Key token 的 AES-256-GCM 密钥（hex 编码 32 字节）。
+	// 优先从环境变量 GIT_KEY_ENCRYPTION_KEY 读取，回退到配置文件。
+	GitKeyEncryptionKey string `yaml:"git_key_encryption_key"`
 }
 
 // DatabaseConfig PostgreSQL 数据库连接配置
@@ -178,6 +182,8 @@ func applyEnvOverrides(cfg *Config) {
 	}
 	// AllowPrivateNetworks 属于顶层开关，不走 server 子前缀，因此单独覆盖。
 	configutil.ApplyBoolOverride(&cfg.Server.AllowPrivateNetworks, "DIRECTOR_CORE_ALLOW_PRIVATE_NETWORKS")
+	// GitKeyEncryptionKey 使用独立环境变量名，便于密钥管理工具注入。
+	configutil.ApplyStringOverride(&cfg.GitKeyEncryptionKey, "GIT_KEY_ENCRYPTION_KEY")
 }
 
 // validate 校验配置完整性并填充默认值

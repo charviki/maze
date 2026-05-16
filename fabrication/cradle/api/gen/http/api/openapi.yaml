@@ -10,10 +10,14 @@ tags:
 - name: AuditService
 - name: AuthService
 - name: PermissionService
+- name: GitKeyService
 - name: HostService
 - name: KnowledgeService
+- name: MCPService
 - name: NodeService
+- name: RuleService
 - name: SessionService
+- name: SkillService
 - name: TemplateService
 paths:
   /api/v1/archives:
@@ -566,6 +570,95 @@ paths:
           description: An unexpected error response.
       tags:
       - KnowledgeService
+  /api/v1/git-keys:
+    get:
+      operationId: GitKeyService_ListGitKeys
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1ListGitKeysResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - GitKeyService
+    post:
+      operationId: GitKeyService_CreateGitKey
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/v1CreateGitKeyRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1GitKey"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - GitKeyService
+      x-codegen-request-body-name: body
+  /api/v1/git-keys/{name}:
+    delete:
+      operationId: GitKeyService_DeleteGitKey
+      parameters:
+      - in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - GitKeyService
+    get:
+      operationId: GitKeyService_GetGitKey
+      parameters:
+      - in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1GitKey"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - GitKeyService
   /api/v1/host/tools:
     get:
       operationId: HostService_ListTools
@@ -767,6 +860,125 @@ paths:
           description: An unexpected error response.
       tags:
       - ConfigService
+      x-codegen-request-body-name: body
+  /api/v1/mcp-servers:
+    get:
+      operationId: MCPService_ListMCPServers
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1ListMCPServersResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - MCPService
+    post:
+      operationId: MCPService_CreateMCPServer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/v1CreateMCPServerRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1MCPServer"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - MCPService
+      x-codegen-request-body-name: body
+  /api/v1/mcp-servers/{name}:
+    delete:
+      operationId: MCPService_DeleteMCPServer
+      parameters:
+      - in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - MCPService
+    get:
+      operationId: MCPService_GetMCPServer
+      parameters:
+      - in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1MCPServer"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - MCPService
+    put:
+      operationId: MCPService_UpdateMCPServer
+      parameters:
+      - in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MCPServiceUpdateMCPServerBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1MCPServer"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - MCPService
       x-codegen-request-body-name: body
   /api/v1/nodes:
     get:
@@ -1692,6 +1904,125 @@ paths:
       tags:
       - PermissionService
       x-codegen-request-body-name: body
+  /api/v1/rules:
+    get:
+      operationId: RuleService_ListRules
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1ListRulesResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - RuleService
+    post:
+      operationId: RuleService_CreateRule
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/v1CreateRuleRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1Rule"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - RuleService
+      x-codegen-request-body-name: body
+  /api/v1/rules/{name}:
+    delete:
+      operationId: RuleService_DeleteRule
+      parameters:
+      - in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - RuleService
+    get:
+      operationId: RuleService_GetRule
+      parameters:
+      - in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1Rule"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - RuleService
+    put:
+      operationId: RuleService_UpdateRule
+      parameters:
+      - in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RuleServiceUpdateRuleBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1Rule"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - RuleService
+      x-codegen-request-body-name: body
   /api/v1/sessions:
     get:
       operationId: SessionService_ListSessions2
@@ -2052,6 +2383,125 @@ paths:
       tags:
       - SessionService
       x-codegen-request-body-name: body
+  /api/v1/skills:
+    get:
+      operationId: SkillService_ListSkills
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1ListSkillsResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SkillService
+    post:
+      operationId: SkillService_CreateSkill
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/v1CreateSkillRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1Skill"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SkillService
+      x-codegen-request-body-name: body
+  /api/v1/skills/{name}:
+    delete:
+      operationId: SkillService_DeleteSkill
+      parameters:
+      - in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SkillService
+    get:
+      operationId: SkillService_GetSkill
+      parameters:
+      - in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1Skill"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SkillService
+    put:
+      operationId: SkillService_UpdateSkill
+      parameters:
+      - in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SkillServiceUpdateSkillBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1Skill"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - SkillService
+      x-codegen-request-body-name: body
   /api/v1/subjects/{subjectKey}/permissions:
     get:
       operationId: PermissionService_ListSubjectPermissions
@@ -2362,6 +2812,32 @@ components:
         parentId:
           type: string
       type: object
+    MCPServiceUpdateMCPServerBody:
+      example:
+        args:
+        - args
+        - args
+        type: type
+        env:
+          key: env
+        command: command
+        url: url
+      properties:
+        type:
+          type: string
+        command:
+          type: string
+        url:
+          type: string
+        args:
+          items:
+            type: string
+          type: array
+        env:
+          additionalProperties:
+            type: string
+          type: object
+      type: object
     PermissionServiceReviewPermissionApplicationBody:
       example:
         approved: true
@@ -2383,6 +2859,13 @@ components:
           title: revoke_reason 记录撤销原因，供审计与排障使用。
           type: string
       title: RevokePermissionApplicationRequest 撤销一张已批准申请对应的授权结果。
+      type: object
+    RuleServiceUpdateRuleBody:
+      example:
+        content: content
+      properties:
+        content:
+          type: string
       type: object
     SessionServiceCreateSessionBody:
       example:
@@ -2459,6 +2942,19 @@ components:
           items:
             $ref: "#/components/schemas/v1ConfigFileUpdate"
           type: array
+      type: object
+    SkillServiceUpdateSkillBody:
+      example:
+        description: description
+        config:
+          key: config
+      properties:
+        description:
+          type: string
+        config:
+          additionalProperties:
+            type: string
+          type: object
       type: object
     TemplateServiceCreateTemplateBody:
       example:
@@ -2861,6 +3357,13 @@ components:
             $ref: "#/components/schemas/v1Attachment"
           type: array
       type: object
+    v1CreateGitKeyRequest:
+      properties:
+        name:
+          type: string
+        token:
+          type: string
+      type: object
     v1CreateHostRequest:
       properties:
         name:
@@ -2873,6 +3376,25 @@ components:
           type: string
         resources:
           $ref: "#/components/schemas/v1ResourceLimits"
+      type: object
+    v1CreateMCPServerRequest:
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        command:
+          type: string
+        url:
+          type: string
+        args:
+          items:
+            type: string
+          type: array
+        env:
+          additionalProperties:
+            type: string
+          type: object
       type: object
     v1CreatePermissionApplicationRequest:
       properties:
@@ -2893,6 +3415,13 @@ components:
           type: string
       title: CreatePermissionApplicationRequest 创建一张新的权限申请单。
       type: object
+    v1CreateRuleRequest:
+      properties:
+        name:
+          type: string
+        content:
+          type: string
+      type: object
     v1CreateSessionRequest:
       properties:
         nodeName:
@@ -2912,6 +3441,17 @@ components:
         templateId:
           type: string
       title: 与 model.CreateSessionRequest 对齐
+      type: object
+    v1CreateSkillRequest:
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        config:
+          additionalProperties:
+            type: string
+          type: object
       type: object
     v1CreateTemplateRequest:
       properties:
@@ -3357,6 +3897,22 @@ components:
             $ref: "#/components/schemas/v1SessionState"
           type: array
       type: object
+    v1GitKey:
+      example:
+        createdAt: createdAt
+        name: name
+        tokenMask: tokenMask
+        updatedAt: updatedAt
+      properties:
+        name:
+          type: string
+        tokenMask:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      type: object
     v1HeartbeatRequest:
       properties:
         name:
@@ -3562,6 +4118,23 @@ components:
           format: int32
           type: integer
       type: object
+    v1ListGitKeysResponse:
+      example:
+        gitKeys:
+        - createdAt: createdAt
+          name: name
+          tokenMask: tokenMask
+          updatedAt: updatedAt
+        - createdAt: createdAt
+          name: name
+          tokenMask: tokenMask
+          updatedAt: updatedAt
+      properties:
+        gitKeys:
+          items:
+            $ref: "#/components/schemas/v1GitKey"
+          type: array
+      type: object
     v1ListHostsResponse:
       example:
         hosts:
@@ -3601,6 +4174,37 @@ components:
         hosts:
           items:
             $ref: "#/components/schemas/v1HostInfo"
+          type: array
+      type: object
+    v1ListMCPServersResponse:
+      example:
+        servers:
+        - args:
+          - args
+          - args
+          createdAt: createdAt
+          name: name
+          type: type
+          env:
+            key: env
+          command: command
+          url: url
+          updatedAt: updatedAt
+        - args:
+          - args
+          - args
+          createdAt: createdAt
+          name: name
+          type: type
+          env:
+            key: env
+          command: command
+          url: url
+          updatedAt: updatedAt
+      properties:
+        servers:
+          items:
+            $ref: "#/components/schemas/v1MCPServer"
           type: array
       type: object
     v1ListNodesResponse:
@@ -3730,6 +4334,23 @@ components:
           type: integer
       title: ListPermissionApplicationsResponse 返回分页申请单结果。
       type: object
+    v1ListRulesResponse:
+      example:
+        rules:
+        - createdAt: createdAt
+          name: name
+          content: content
+          updatedAt: updatedAt
+        - createdAt: createdAt
+          name: name
+          content: content
+          updatedAt: updatedAt
+      properties:
+        rules:
+          items:
+            $ref: "#/components/schemas/v1Rule"
+          type: array
+      type: object
     v1ListSessionsResponse:
       example:
         sessions:
@@ -3751,6 +4372,27 @@ components:
         sessions:
           items:
             $ref: "#/components/schemas/v1Session"
+          type: array
+      type: object
+    v1ListSkillsResponse:
+      example:
+        skills:
+        - createdAt: createdAt
+          name: name
+          description: description
+          config:
+            key: config
+          updatedAt: updatedAt
+        - createdAt: createdAt
+          name: name
+          description: description
+          config:
+            key: config
+          updatedAt: updatedAt
+      properties:
+        skills:
+          items:
+            $ref: "#/components/schemas/v1Skill"
           type: array
       type: object
     v1ListSubjectPermissionsResponse:
@@ -3936,6 +4578,41 @@ components:
     v1LogoutRequest:
       properties:
         refreshToken:
+          type: string
+      type: object
+    v1MCPServer:
+      example:
+        args:
+        - args
+        - args
+        createdAt: createdAt
+        name: name
+        type: type
+        env:
+          key: env
+        command: command
+        url: url
+        updatedAt: updatedAt
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        command:
+          type: string
+        url:
+          type: string
+        args:
+          items:
+            type: string
+          type: array
+        env:
+          additionalProperties:
+            type: string
+          type: object
+        createdAt:
+          type: string
+        updatedAt:
           type: string
       type: object
     v1NodeInfo:
@@ -4140,6 +4817,22 @@ components:
         memoryLimit:
           type: string
       title: 与 protocol.ResourceLimits 对齐
+      type: object
+    v1Rule:
+      example:
+        createdAt: createdAt
+        name: name
+        content: content
+        updatedAt: updatedAt
+      properties:
+        name:
+          type: string
+        content:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
       type: object
     v1SaveSessionsResponse:
       example:
@@ -4424,6 +5117,28 @@ components:
         sessionSchema:
           $ref: "#/components/schemas/v1SessionSchema"
       title: 与 model.SessionTemplate 对齐
+      type: object
+    v1Skill:
+      example:
+        createdAt: createdAt
+        name: name
+        description: description
+        config:
+          key: config
+        updatedAt: updatedAt
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        config:
+          additionalProperties:
+            type: string
+          type: object
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
       type: object
     v1SubjectPermissionGrant:
       example:

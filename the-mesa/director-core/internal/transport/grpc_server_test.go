@@ -115,6 +115,41 @@ func (s *headerCapturingTransportStream) SetTrailer(md metadata.MD) error {
 	return nil
 }
 
+type stubSkillRepo struct{}
+
+func (stubSkillRepo) Create(context.Context, *protocol.Skill) (*protocol.Skill, error) { return nil, nil }
+func (stubSkillRepo) Get(context.Context, string) (*protocol.Skill, error)             { return nil, nil }
+func (stubSkillRepo) List(context.Context) ([]*protocol.Skill, error)                  { return nil, nil }
+func (stubSkillRepo) Update(context.Context, *protocol.Skill) (*protocol.Skill, error) { return nil, nil }
+func (stubSkillRepo) Delete(context.Context, string) error                             { return nil }
+
+type stubMCPServerRepo struct{}
+
+func (stubMCPServerRepo) Create(context.Context, *protocol.MCPServer) (*protocol.MCPServer, error) {
+	return nil, nil
+}
+func (stubMCPServerRepo) Get(context.Context, string) (*protocol.MCPServer, error) { return nil, nil }
+func (stubMCPServerRepo) List(context.Context) ([]*protocol.MCPServer, error)      { return nil, nil }
+func (stubMCPServerRepo) Update(context.Context, *protocol.MCPServer) (*protocol.MCPServer, error) {
+	return nil, nil
+}
+func (stubMCPServerRepo) Delete(context.Context, string) error { return nil }
+
+type stubRuleRepo struct{}
+
+func (stubRuleRepo) Create(context.Context, *protocol.Rule) (*protocol.Rule, error) { return nil, nil }
+func (stubRuleRepo) Get(context.Context, string) (*protocol.Rule, error)            { return nil, nil }
+func (stubRuleRepo) List(context.Context) ([]*protocol.Rule, error)                 { return nil, nil }
+func (stubRuleRepo) Update(context.Context, *protocol.Rule) (*protocol.Rule, error) { return nil, nil }
+func (stubRuleRepo) Delete(context.Context, string) error                           { return nil }
+
+type stubGitKeyRepo struct{}
+
+func (stubGitKeyRepo) Create(context.Context, *protocol.GitKey) (*protocol.GitKey, error) { return nil, nil }
+func (stubGitKeyRepo) Get(context.Context, string) (*protocol.GitKey, error)              { return nil, nil }
+func (stubGitKeyRepo) List(context.Context) ([]*protocol.GitKey, error)                   { return nil, nil }
+func (stubGitKeyRepo) Delete(context.Context, string) error                               { return nil }
+
 func newServerTestEnv(t *testing.T) (*Server, *filerepo.NodeRegistry, *filerepo.HostSpecRepository, *transportRuntimeMock) {
 	t.Helper()
 
@@ -131,7 +166,11 @@ func newServerTestEnv(t *testing.T) (*Server, *filerepo.NodeRegistry, *filerepo.
 	hostSvc := service.NewHostService(registry, specMgr, transportHostTxManagerStub{}, rt, transportAuditLoggerStub{}, nil, cfg, logutil.NewNop(), filepath.Join(tmpDir, "logs"))
 	nodeSvc := service.NewNodeService(registry, logutil.NewNop())
 	auditSvc := service.NewAuditService(auditrepo.NewLogger("", logutil.NewNop()))
-	server := NewServer(hostSvc, nodeSvc, auditSvc, nil, registry, "director-core-token", logutil.NewNop())
+	skillSvc := service.NewSkillService(stubSkillRepo{}, logutil.NewNop())
+	mcpSvc := service.NewMCPServerService(stubMCPServerRepo{}, logutil.NewNop())
+	ruleSvc := service.NewRuleService(stubRuleRepo{}, logutil.NewNop())
+	gitKeySvc, _ := service.NewGitKeyService(stubGitKeyRepo{}, make([]byte, 32), logutil.NewNop())
+	server := NewServer(hostSvc, nodeSvc, auditSvc, skillSvc, mcpSvc, ruleSvc, gitKeySvc, nil, registry, "director-core-token", logutil.NewNop())
 
 	t.Cleanup(specMgr.WaitSave)
 	t.Cleanup(registry.WaitSave)

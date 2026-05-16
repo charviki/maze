@@ -57,15 +57,23 @@ type APIClient struct {
 
 	ConfigServiceAPI *ConfigServiceAPIService
 
+	GitKeyServiceAPI *GitKeyServiceAPIService
+
 	HostServiceAPI *HostServiceAPIService
 
 	KnowledgeServiceAPI *KnowledgeServiceAPIService
+
+	MCPServiceAPI *MCPServiceAPIService
 
 	NodeServiceAPI *NodeServiceAPIService
 
 	PermissionServiceAPI *PermissionServiceAPIService
 
+	RuleServiceAPI *RuleServiceAPIService
+
 	SessionServiceAPI *SessionServiceAPIService
+
+	SkillServiceAPI *SkillServiceAPIService
 
 	TemplateServiceAPI *TemplateServiceAPIService
 }
@@ -90,11 +98,15 @@ func NewAPIClient(cfg *Configuration) *APIClient {
 	c.AuditServiceAPI = (*AuditServiceAPIService)(&c.common)
 	c.AuthServiceAPI = (*AuthServiceAPIService)(&c.common)
 	c.ConfigServiceAPI = (*ConfigServiceAPIService)(&c.common)
+	c.GitKeyServiceAPI = (*GitKeyServiceAPIService)(&c.common)
 	c.HostServiceAPI = (*HostServiceAPIService)(&c.common)
 	c.KnowledgeServiceAPI = (*KnowledgeServiceAPIService)(&c.common)
+	c.MCPServiceAPI = (*MCPServiceAPIService)(&c.common)
 	c.NodeServiceAPI = (*NodeServiceAPIService)(&c.common)
 	c.PermissionServiceAPI = (*PermissionServiceAPIService)(&c.common)
+	c.RuleServiceAPI = (*RuleServiceAPIService)(&c.common)
 	c.SessionServiceAPI = (*SessionServiceAPIService)(&c.common)
+	c.SkillServiceAPI = (*SkillServiceAPIService)(&c.common)
 	c.TemplateServiceAPI = (*TemplateServiceAPIService)(&c.common)
 
 	return c

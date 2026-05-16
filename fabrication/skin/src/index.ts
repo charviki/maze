@@ -39,6 +39,10 @@ export {
   ConfigServiceApi,
   NodeServiceApi,
   HostServiceApi,
+  SkillServiceApi,
+  MCPServiceApi,
+  RuleServiceApi,
+  GitKeyServiceApi,
 } from './api/gen/apis/index';
 // SDK 模型类型：通过 types.ts re-export，不再直接 export * gen models
 export { createRequest } from './utils/request';

@@ -9,5 +9,5 @@ var AuthMigrationsFS embed.FS
 
 // HostMigrationsFS 包含 Host 数据库 (maze_host) 的 Goose 迁移 SQL 文件。
 //
-//go:embed migrations/00003_*.sql
+//go:embed migrations/00003_*.sql migrations/00006_*.sql
 var HostMigrationsFS embed.FS

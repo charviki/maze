@@ -1,11 +1,11 @@
-import { useState, useMemo, useCallback } from 'react';
-import { NodeList } from './components/NodeList';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { createAgentApi } from './api/agent';
 import { controllerApi } from './api/controller';
+import { Sidebar, type FabricationItem } from './components/Sidebar';
+import { FabricationPanel } from './components/FabricationPanel';
 import {
   AgentPanel,
   DecryptText,
-  RadarView,
   BootSequence,
   TerrainBackground,
   Button,
@@ -18,7 +18,7 @@ import {
   CalibrationMarks,
 } from '@maze/fabrication';
 import type { Host, RadarNode, Tool, CreateHostRequest, HostSpec } from '@maze/fabrication';
-import { Server, Activity, Menu, Settings, Plus } from 'lucide-react';
+import { Activity, Menu, Settings } from 'lucide-react';
 import './index.css';
 
 // Toast hook 依赖 Provider，上层壳组件负责先装配 Provider，避免应用启动即白屏。
@@ -33,9 +33,20 @@ function AppContent() {
   const [availableTools, setAvailableTools] = useState<Tool[]>([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [logPanelHost, setLogPanelHost] = useState<string | null>(null);
+  const [selectedFabricationItem, setSelectedFabricationItem] = useState<FabricationItem | null>(
+    null,
+  );
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
 
   const handleSelectNode = useCallback((node: Host) => {
     setSelectedHost(node);
+    setSelectedFabricationItem(null);
     if (window.innerWidth < 768) {
       setSidebarOpen(false);
     }
@@ -88,11 +99,16 @@ function AppContent() {
 
   // 轮询等待 Host 上线，3 分钟超时，每 2 秒轮询一次
   const handleWaitOnline = useCallback(async (hostName: string): Promise<boolean> => {
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+
     const maxWaitMs = 3 * 60 * 1000;
     const pollIntervalMs = 2000;
     const startTime = Date.now();
 
     while (Date.now() - startTime < maxWaitMs) {
+      if (ac.signal.aborted) return false;
       try {
         const res = await controllerApi.getHost(hostName);
         if (res.status === 'ok' && res.data?.status === 'online') {
@@ -102,7 +118,17 @@ function AppContent() {
       } catch {
         // 节点可能还未注册，继续等待
       }
-      await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+      await new Promise<void>((resolve) => {
+        const timer = setTimeout(resolve, pollIntervalMs);
+        ac.signal.addEventListener(
+          'abort',
+          () => {
+            clearTimeout(timer);
+            resolve();
+          },
+          { once: true },
+        );
+      });
     }
 
     setRefreshTrigger((n) => n + 1);
@@ -171,49 +197,28 @@ function AppContent() {
           }
         />
 
-        {/* Pane 1: Hosts */}
-        <div
-          className={`border-r border-border/50 ${!sidebarOpen ? 'hidden md:flex' : 'flex'} flex-col bg-background/50 relative z-10 overflow-hidden`}
-        >
-          <div className="absolute right-0 top-0 w-[1px] h-full bg-gradient-to-b from-primary/20 to-transparent"></div>
-          <div className="p-3 border-b border-border/50 font-bold flex items-center justify-between text-xs uppercase tracking-widest text-primary/80">
-            <div className="flex items-center gap-2">
-              <Server className="w-4 h-4" />
-              HOSTS
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-5 w-5 rounded-none text-primary/60 hover:text-primary hover:bg-primary/20"
-              onClick={handleOpenCreateHost}
-              title="Create Host"
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </Button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-2">
-            <NodeList
-              onSelectNode={handleSelectNode}
-              selectedNodeName={selectedHost?.name || null}
-              onNodesChange={handleNodesChange}
-              refreshTrigger={refreshTrigger}
-              onViewLog={handleViewLog}
-            />
-          </div>
-          {/* Radar View */}
-          <div className="p-4 border-t border-border/50 flex flex-col items-center justify-center relative overflow-hidden bg-background/40">
-            <RadarView className="w-24 h-24 opacity-80" nodes={radarNodes} />
-            <div className="mt-3 text-[10px] text-primary/50 tracking-[0.2em] font-mono">
-              TOPOLOGY SCAN
-            </div>
-          </div>
+        {/* Pane 1: Sidebar with HOSTS + FABRICATION */}
+        <div className={`row-start-2 ${!sidebarOpen ? 'hidden md:flex' : 'flex'}`}>
+          <Sidebar
+            selectedHostName={selectedHost?.name || null}
+            onSelectHost={handleSelectNode}
+            onHostsChange={handleNodesChange}
+            refreshTrigger={refreshTrigger}
+            onViewLog={handleViewLog}
+            selectedFabricationItem={selectedFabricationItem}
+            onSelectFabricationItem={setSelectedFabricationItem}
+            onOpenCreateHost={handleOpenCreateHost}
+            radarNodes={radarNodes}
+          />
         </div>
 
-        {/* Pane 2 & 3: AgentPanel */}
+        {/* Pane 2 & 3: Main Content */}
         <div
-          className={`flex w-full h-full relative z-10 bg-background overflow-hidden ${!sidebarOpen ? 'col-span-2' : ''}`}
+          className={`row-start-2 flex w-full h-full relative z-10 bg-background overflow-hidden ${!sidebarOpen ? 'col-span-2' : ''}`}
         >
-          {agentApi ? (
+          {selectedFabricationItem ? (
+            <FabricationPanel item={selectedFabricationItem} />
+          ) : agentApi ? (
             <AgentPanel
               apiClient={agentApi}
               nodeName={selectedHost!.name}

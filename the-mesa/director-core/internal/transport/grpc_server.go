@@ -2,6 +2,7 @@ package transport
 
 import (
 	"context"
+	"errors"
 	"math"
 	"time"
 
@@ -29,15 +30,21 @@ type Server struct {
 	pb.UnimplementedSessionServiceServer
 	pb.UnimplementedTemplateServiceServer
 	pb.UnimplementedConfigServiceServer
+	pb.UnimplementedSkillServiceServer
+	pb.UnimplementedMCPServiceServer
+	pb.UnimplementedRuleServiceServer
+	pb.UnimplementedGitKeyServiceServer
 
-	hostSvc  *service.HostService
-	nodeSvc  *service.NodeService
-	auditSvc *service.AuditService
-	proxy    *agentclient.Proxy
-	registry service.NodeRegistry
-	logger   logutil.Logger
-	// directorCoreJWTSecret 复用 director-core server.jwt_secret，因为 Agent 的 server.auth_token
-	// 也是由 Director Core 在部署 Host 时下发；Director Core 主动回调 Agent 的内部 RPC 必须携带它。
+	hostSvc    *service.HostService
+	nodeSvc    *service.NodeService
+	auditSvc   *service.AuditService
+	skillSvc   *service.SkillService
+	mcpSvc     *service.MCPServerService
+	ruleSvc    *service.RuleService
+	gitKeySvc  *service.GitKeyService
+	proxy      *agentclient.Proxy
+	registry   service.NodeRegistry
+	logger     logutil.Logger
 	directorCoreJWTSecret string
 
 	grpcServer *grpc.Server
@@ -48,15 +55,26 @@ func NewServer(
 	hostSvc *service.HostService,
 	nodeSvc *service.NodeService,
 	auditSvc *service.AuditService,
+	skillSvc *service.SkillService,
+	mcpSvc *service.MCPServerService,
+	ruleSvc *service.RuleService,
+	gitKeySvc *service.GitKeyService,
 	proxy *agentclient.Proxy,
 	registry service.NodeRegistry,
 	directorCoreJWTSecret string,
 	logger logutil.Logger,
 ) *Server {
+	if skillSvc == nil || mcpSvc == nil || ruleSvc == nil || gitKeySvc == nil {
+		panic("fabrication services (skill, mcp, rule, git-key) must not be nil")
+	}
 	return &Server{
 		hostSvc:          hostSvc,
 		nodeSvc:          nodeSvc,
 		auditSvc:         auditSvc,
+		skillSvc:         skillSvc,
+		mcpSvc:           mcpSvc,
+		ruleSvc:          ruleSvc,
+		gitKeySvc:        gitKeySvc,
 		proxy:            proxy,
 		registry:         registry,
 		logger:           logger,
@@ -75,6 +93,10 @@ func (s *Server) RegisterGRPC(grpcServer *grpc.Server) {
 	pb.RegisterSessionServiceServer(grpcServer, s)
 	pb.RegisterTemplateServiceServer(grpcServer, s)
 	pb.RegisterConfigServiceServer(grpcServer, s)
+	pb.RegisterSkillServiceServer(grpcServer, s)
+	pb.RegisterMCPServiceServer(grpcServer, s)
+	pb.RegisterRuleServiceServer(grpcServer, s)
+	pb.RegisterGitKeyServiceServer(grpcServer, s)
 }
 
 // AgentService — Register / Heartbeat
@@ -635,6 +657,10 @@ var (
 	_ pb.SessionServiceServer  = (*Server)(nil)
 	_ pb.TemplateServiceServer = (*Server)(nil)
 	_ pb.ConfigServiceServer   = (*Server)(nil)
+	_ pb.SkillServiceServer    = (*Server)(nil)
+	_ pb.MCPServiceServer      = (*Server)(nil)
+	_ pb.RuleServiceServer     = (*Server)(nil)
+	_ pb.GitKeyServiceServer   = (*Server)(nil)
 )
 
 func safeInt32(n int) int32 {
@@ -645,4 +671,332 @@ func safeInt32(n int) int32 {
 		return math.MinInt32
 	}
 	return int32(n)
+}
+
+// SkillService handlers
+
+// CreateSkill creates a new skill.
+func (s *Server) CreateSkill(ctx context.Context, req *pb.CreateSkillRequest) (*pb.Skill, error) {
+	skill := &protocol.Skill{
+		Name:        req.GetName(),
+		Description: req.GetDescription(),
+	}
+	if req.GetConfig() != nil {
+		skill.Config = req.GetConfig()
+	}
+	result, err := s.skillSvc.Create(ctx, skill)
+	if err != nil {
+		if errors.Is(err, service.ErrAlreadyExists) {
+			return nil, status.Error(codes.AlreadyExists, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	return skillToProto(result), nil
+}
+
+// DeleteSkill deletes a skill.
+func (s *Server) DeleteSkill(ctx context.Context, req *pb.DeleteSkillRequest) (*emptypb.Empty, error) {
+	if err := s.skillSvc.Delete(ctx, req.GetName()); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	return &emptypb.Empty{}, nil
+}
+
+// ListSkills lists all skills.
+func (s *Server) ListSkills(ctx context.Context, _ *pb.ListSkillsRequest) (*pb.ListSkillsResponse, error) {
+	skills, err := s.skillSvc.List(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	items := make([]*pb.Skill, 0, len(skills))
+	for _, sk := range skills {
+		items = append(items, skillToProto(sk))
+	}
+	return &pb.ListSkillsResponse{Skills: items}, nil
+}
+
+// GetSkill returns a skill by name.
+func (s *Server) GetSkill(ctx context.Context, req *pb.GetSkillRequest) (*pb.Skill, error) {
+	skill, err := s.skillSvc.Get(ctx, req.GetName())
+	if err != nil {
+		if errors.Is(err, service.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	return skillToProto(skill), nil
+}
+
+// UpdateSkill updates an existing skill.
+func (s *Server) UpdateSkill(ctx context.Context, req *pb.UpdateSkillRequest) (*pb.Skill, error) {
+	skill := &protocol.Skill{
+		Name:        req.GetName(),
+		Description: req.GetDescription(),
+	}
+	if req.GetConfig() != nil {
+		skill.Config = req.GetConfig()
+	}
+	result, err := s.skillSvc.Update(ctx, skill)
+	if err != nil {
+		if errors.Is(err, service.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	return skillToProto(result), nil
+}
+
+func skillToProto(skill *protocol.Skill) *pb.Skill {
+	if skill == nil {
+		return nil
+	}
+	return &pb.Skill{
+		Name:        skill.Name,
+		Description: skill.Description,
+		Config:      skill.Config,
+		CreatedAt:   skill.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:   skill.UpdatedAt.Format(time.RFC3339),
+	}
+}
+
+// MCPService handlers
+
+// CreateMCPServer creates a new MCP server.
+func (s *Server) CreateMCPServer(ctx context.Context, req *pb.CreateMCPServerRequest) (*pb.MCPServer, error) {
+	server := &protocol.MCPServer{
+		Name:    req.GetName(),
+		Type:    req.GetType(),
+		Command: req.GetCommand(),
+		URL:     req.GetUrl(),
+		Args:    req.GetArgs(),
+	}
+	if req.GetEnv() != nil {
+		server.Env = req.GetEnv()
+	}
+	result, err := s.mcpSvc.Create(ctx, server)
+	if err != nil {
+		if errors.Is(err, service.ErrAlreadyExists) {
+			return nil, status.Error(codes.AlreadyExists, err.Error())
+		}
+		if errors.Is(err, service.ErrInvalidInput) {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	return mcpServerToProto(result), nil
+}
+
+// ListMCPServers lists all MCP servers.
+func (s *Server) ListMCPServers(ctx context.Context, _ *pb.ListMCPServersRequest) (*pb.ListMCPServersResponse, error) {
+	servers, err := s.mcpSvc.List(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	items := make([]*pb.MCPServer, 0, len(servers))
+	for _, sv := range servers {
+		items = append(items, mcpServerToProto(sv))
+	}
+	return &pb.ListMCPServersResponse{Servers: items}, nil
+}
+
+// GetMCPServer returns an MCP server by name.
+func (s *Server) GetMCPServer(ctx context.Context, req *pb.GetMCPServerRequest) (*pb.MCPServer, error) {
+	server, err := s.mcpSvc.Get(ctx, req.GetName())
+	if err != nil {
+		if errors.Is(err, service.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	return mcpServerToProto(server), nil
+}
+
+// UpdateMCPServer updates an existing MCP server.
+func (s *Server) UpdateMCPServer(ctx context.Context, req *pb.UpdateMCPServerRequest) (*pb.MCPServer, error) {
+	server := &protocol.MCPServer{
+		Name:    req.GetName(),
+		Type:    req.GetType(),
+		Command: req.GetCommand(),
+		URL:     req.GetUrl(),
+		Args:    req.GetArgs(),
+	}
+	if req.GetEnv() != nil {
+		server.Env = req.GetEnv()
+	}
+	result, err := s.mcpSvc.Update(ctx, server)
+	if err != nil {
+		if errors.Is(err, service.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		if errors.Is(err, service.ErrInvalidInput) {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	return mcpServerToProto(result), nil
+}
+
+// DeleteMCPServer deletes an MCP server.
+func (s *Server) DeleteMCPServer(ctx context.Context, req *pb.DeleteMCPServerRequest) (*emptypb.Empty, error) {
+	if err := s.mcpSvc.Delete(ctx, req.GetName()); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func mcpServerToProto(server *protocol.MCPServer) *pb.MCPServer {
+	if server == nil {
+		return nil
+	}
+	return &pb.MCPServer{
+		Name:      server.Name,
+		Type:      server.Type,
+		Command:   server.Command,
+		Url:       server.URL,
+		Args:      server.Args,
+		Env:       server.Env,
+		CreatedAt: server.CreatedAt.Format(time.RFC3339),
+		UpdatedAt: server.UpdatedAt.Format(time.RFC3339),
+	}
+}
+
+// RuleService handlers
+
+// CreateRule creates a new rule.
+func (s *Server) CreateRule(ctx context.Context, req *pb.CreateRuleRequest) (*pb.Rule, error) {
+	rule := &protocol.Rule{
+		Name:    req.GetName(),
+		Content: req.GetContent(),
+	}
+	result, err := s.ruleSvc.Create(ctx, rule)
+	if err != nil {
+		if errors.Is(err, service.ErrAlreadyExists) {
+			return nil, status.Error(codes.AlreadyExists, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	return ruleToProto(result), nil
+}
+
+// ListRules lists all rules.
+func (s *Server) ListRules(ctx context.Context, _ *pb.ListRulesRequest) (*pb.ListRulesResponse, error) {
+	rules, err := s.ruleSvc.List(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	items := make([]*pb.Rule, 0, len(rules))
+	for _, r := range rules {
+		items = append(items, ruleToProto(r))
+	}
+	return &pb.ListRulesResponse{Rules: items}, nil
+}
+
+// GetRule returns a rule by name.
+func (s *Server) GetRule(ctx context.Context, req *pb.GetRuleRequest) (*pb.Rule, error) {
+	rule, err := s.ruleSvc.Get(ctx, req.GetName())
+	if err != nil {
+		if errors.Is(err, service.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	return ruleToProto(rule), nil
+}
+
+// UpdateRule updates an existing rule.
+func (s *Server) UpdateRule(ctx context.Context, req *pb.UpdateRuleRequest) (*pb.Rule, error) {
+	rule := &protocol.Rule{
+		Name:    req.GetName(),
+		Content: req.GetContent(),
+	}
+	result, err := s.ruleSvc.Update(ctx, rule)
+	if err != nil {
+		if errors.Is(err, service.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	return ruleToProto(result), nil
+}
+
+// DeleteRule deletes a rule.
+func (s *Server) DeleteRule(ctx context.Context, req *pb.DeleteRuleRequest) (*emptypb.Empty, error) {
+	if err := s.ruleSvc.Delete(ctx, req.GetName()); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func ruleToProto(rule *protocol.Rule) *pb.Rule {
+	if rule == nil {
+		return nil
+	}
+	return &pb.Rule{
+		Name:      rule.Name,
+		Content:   rule.Content,
+		CreatedAt: rule.CreatedAt.Format(time.RFC3339),
+		UpdatedAt: rule.UpdatedAt.Format(time.RFC3339),
+	}
+}
+
+// GitKeyService handlers
+
+// CreateGitKey creates a new git key.
+func (s *Server) CreateGitKey(ctx context.Context, req *pb.CreateGitKeyRequest) (*pb.GitKey, error) {
+	result, err := s.gitKeySvc.Create(ctx, &protocol.GitKey{
+		Name:  req.GetName(),
+		Token: req.GetToken(),
+	})
+	if err != nil {
+		if errors.Is(err, service.ErrAlreadyExists) {
+			return nil, status.Error(codes.AlreadyExists, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	return gitKeyToProto(result), nil
+}
+
+// ListGitKeys lists all git keys.
+func (s *Server) ListGitKeys(ctx context.Context, _ *pb.ListGitKeysRequest) (*pb.ListGitKeysResponse, error) {
+	keys, err := s.gitKeySvc.List(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	items := make([]*pb.GitKey, 0, len(keys))
+	for _, k := range keys {
+		items = append(items, gitKeyToProto(k))
+	}
+	return &pb.ListGitKeysResponse{GitKeys: items}, nil
+}
+
+// GetGitKey returns a git key by name.
+func (s *Server) GetGitKey(ctx context.Context, req *pb.GetGitKeyRequest) (*pb.GitKey, error) {
+	key, err := s.gitKeySvc.Get(ctx, req.GetName())
+	if err != nil {
+		if errors.Is(err, service.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	return gitKeyToProto(key), nil
+}
+
+// DeleteGitKey deletes a git key.
+func (s *Server) DeleteGitKey(ctx context.Context, req *pb.DeleteGitKeyRequest) (*emptypb.Empty, error) {
+	if err := s.gitKeySvc.Delete(ctx, req.GetName()); err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func gitKeyToProto(key *protocol.GitKey) *pb.GitKey {
+	if key == nil {
+		return nil
+	}
+	return &pb.GitKey{
+		Name:      key.Name,
+		TokenMask: key.TokenMask,
+		CreatedAt: key.CreatedAt.Format(time.RFC3339),
+		UpdatedAt: key.UpdatedAt.Format(time.RFC3339),
+	}
 }

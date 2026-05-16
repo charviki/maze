@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package maze.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+
+option go_package = "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1";
+
+message Skill {
+  string name = 1;
+  string description = 2;
+  map<string, string> config = 3;
+  string created_at = 4;
+  string updated_at = 5;
+}
+
+message CreateSkillRequest {
+  string name = 1 [(buf.validate.field).string = {min_len: 1}];
+  string description = 2;
+  map<string, string> config = 3;
+}
+
+message ListSkillsRequest {}
+
+message ListSkillsResponse {
+  repeated Skill skills = 1;
+}
+
+message GetSkillRequest {
+  string name = 1 [(buf.validate.field).string = {min_len: 1}];
+}
+
+message UpdateSkillRequest {
+  string name = 1 [(buf.validate.field).string = {min_len: 1}];
+  string description = 2;
+  map<string, string> config = 3;
+}
+
+message DeleteSkillRequest {
+  string name = 1 [(buf.validate.field).string = {min_len: 1}];
+}
+
+service SkillService {
+  rpc CreateSkill(CreateSkillRequest) returns (Skill) {
+    option (google.api.http) = {
+      post: "/api/v1/skills"
+      body: "*"
+    };
+  }
+
+  rpc ListSkills(ListSkillsRequest) returns (ListSkillsResponse) {
+    option (google.api.http) = {get: "/api/v1/skills"};
+  }
+
+  rpc GetSkill(GetSkillRequest) returns (Skill) {
+    option (google.api.http) = {get: "/api/v1/skills/{name}"};
+  }
+
+  rpc UpdateSkill(UpdateSkillRequest) returns (Skill) {
+    option (google.api.http) = {
+      put: "/api/v1/skills/{name}"
+      body: "*"
+    };
+  }
+
+  rpc DeleteSkill(DeleteSkillRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/api/v1/skills/{name}"};
+  }
+}

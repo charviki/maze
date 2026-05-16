@@ -20,6 +20,10 @@ import type {
   V1ToolConfig,
   V1ResourceLimits,
   V1CreateHostRequest,
+  V1Skill,
+  V1MCPServer,
+  V1Rule,
+  V1GitKey,
 } from './api/gen/models';
 
 // ===== SDK 类型 re-export（向后兼容别名） =====
@@ -48,6 +52,10 @@ export type {
   V1ResourceLimits,
   V1SessionState,
   V1SaveSessionsResponse,
+  V1Skill,
+  V1MCPServer,
+  V1Rule,
+  V1GitKey,
 } from './api/gen/models';
 
 export type Session = V1Session;
@@ -71,6 +79,10 @@ export type LocalAgentConfig = V1LocalAgentConfig;
 export type Tool = V1ToolConfig;
 export type ResourceLimits = V1ResourceLimits;
 export type CreateHostRequest = V1CreateHostRequest;
+export type Skill = V1Skill;
+export type MCPServer = V1MCPServer;
+export type Rule = V1Rule;
+export type GitKey = V1GitKey;
 export type { NormalizedTemplate } from './api/normalize';
 
 // ===== 前端特有类型 =====

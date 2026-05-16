@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package maze.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+
+option go_package = "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1";
+
+message Rule {
+  string name = 1;
+  string content = 2;
+  string created_at = 3;
+  string updated_at = 4;
+}
+
+message CreateRuleRequest {
+  string name = 1 [(buf.validate.field).string = {min_len: 1}];
+  string content = 2;
+}
+
+message ListRulesRequest {}
+
+message ListRulesResponse {
+  repeated Rule rules = 1;
+}
+
+message GetRuleRequest {
+  string name = 1 [(buf.validate.field).string = {min_len: 1}];
+}
+
+message UpdateRuleRequest {
+  string name = 1 [(buf.validate.field).string = {min_len: 1}];
+  string content = 2;
+}
+
+message DeleteRuleRequest {
+  string name = 1 [(buf.validate.field).string = {min_len: 1}];
+}
+
+service RuleService {
+  rpc CreateRule(CreateRuleRequest) returns (Rule) {
+    option (google.api.http) = {
+      post: "/api/v1/rules"
+      body: "*"
+    };
+  }
+
+  rpc ListRules(ListRulesRequest) returns (ListRulesResponse) {
+    option (google.api.http) = {get: "/api/v1/rules"};
+  }
+
+  rpc GetRule(GetRuleRequest) returns (Rule) {
+    option (google.api.http) = {get: "/api/v1/rules/{name}"};
+  }
+
+  rpc UpdateRule(UpdateRuleRequest) returns (Rule) {
+    option (google.api.http) = {
+      put: "/api/v1/rules/{name}"
+      body: "*"
+    };
+  }
+
+  rpc DeleteRule(DeleteRuleRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/api/v1/rules/{name}"};
+  }
+}

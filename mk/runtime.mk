@@ -21,6 +21,19 @@ else ifeq ($(PLATFORM),kubernetes)
 	@if [ -n "$(AGENT_HOSTPATH_BASE)" ]; then mkdir -p $(AGENT_HOSTPATH_BASE); fi
 	@kubectl create namespace $(K8S_NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
 	@kubectl kustomize "$(K8S_OVERLAY_DIR)" | kubectl apply -f -
+	@echo "\033[0;32m[INFO]\033[0m Restarting deployments to pick up rebuilt images (required when image tag is unchanged, e.g. latest)..."
+	@if kubectl get deployment/postgresql -n $(K8S_NAMESPACE) >/dev/null 2>&1; then \
+		kubectl rollout restart deployment/postgresql -n $(K8S_NAMESPACE) 2>/dev/null || true; \
+	fi
+	@if kubectl get deployment/director-core -n $(K8S_NAMESPACE) >/dev/null 2>&1; then \
+		kubectl rollout restart deployment/director-core -n $(K8S_NAMESPACE); \
+	fi
+	@if kubectl get deployment/web -n $(K8S_NAMESPACE) >/dev/null 2>&1; then \
+		kubectl rollout restart deployment/web -n $(K8S_NAMESPACE); \
+	fi
+	@if kubectl get deployment/the-forge -n $(K8S_NAMESPACE) >/dev/null 2>&1; then \
+		kubectl rollout restart deployment/the-forge -n $(K8S_NAMESPACE); \
+	fi
 	@echo "\033[0;32m[INFO]\033[0m Waiting for deployments to roll out..."
 	@if kubectl get deployment/postgresql -n $(K8S_NAMESPACE) >/dev/null 2>&1; then \
 		kubectl rollout status deployment/postgresql -n $(K8S_NAMESPACE) --timeout=180s || \

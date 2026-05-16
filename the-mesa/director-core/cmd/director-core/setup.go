@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/hex"
 	"io/fs"
 	"net/http"
 	"os"
@@ -41,6 +42,10 @@ type CleanupResources struct {
 	HostSvc      *service.HostService
 	NodeSvc      *service.NodeService
 	AuditSvc     *service.AuditService
+	SkillSvc     *service.SkillService
+	MCPSvc       *service.MCPServerService
+	RuleSvc      *service.RuleService
+	GitKeySvc    *service.GitKeyService
 	ConnMgr      *agentclient.ConnectionManager
 }
 
@@ -81,6 +86,30 @@ func newHTTPServer(cfg *config.Config, logger logutil.Logger, gwmux *gwruntime.S
 	nodeSvc := service.NewNodeService(registry, logger)
 	auditSvc := service.NewAuditService(auditLog)
 
+	skillRepo := postgres.NewSkillRepository(hostPool)
+	mcpRepo := postgres.NewMCPServerRepository(hostPool)
+	ruleRepo := postgres.NewRuleRepository(hostPool)
+	gitKeyRepo := postgres.NewGitKeyRepository(hostPool)
+	skillSvc := service.NewSkillService(skillRepo, logger)
+	mcpSvc := service.NewMCPServerService(mcpRepo, logger)
+	ruleSvc := service.NewRuleService(ruleRepo, logger)
+
+	var gitKeyEncryptKey []byte
+	if cfg.GitKeyEncryptionKey != "" {
+		decoded, err := hex.DecodeString(cfg.GitKeyEncryptionKey)
+		if err != nil {
+			logger.Fatalf("invalid git_key_encryption_key: not valid hex: %v", err)
+		}
+		if len(decoded) != 32 {
+			logger.Fatalf("invalid git_key_encryption_key: expected 32 bytes (64 hex chars), got %d bytes", len(decoded))
+		}
+		gitKeyEncryptKey = decoded
+	}
+	gitKeySvc, err := service.NewGitKeyService(gitKeyRepo, gitKeyEncryptKey, logger)
+	if err != nil {
+		logger.Fatalf("%v", err)
+	}
+
 	sessionProxyHandler := transport.NewSessionProxyHandler(registry, auditLog, logger, cfg.Server.JWTSecret, cfg.AllowedOrigins(), cfg.Server.AllowPrivateNetworks)
 
 	rec := reconciler.NewReconciler(hostSpecRepo, registry, hostRuntime, cfg, logger, logDir)
@@ -107,6 +136,10 @@ func newHTTPServer(cfg *config.Config, logger logutil.Logger, gwmux *gwruntime.S
 		HostSvc:      hostSvc,
 		NodeSvc:      nodeSvc,
 		AuditSvc:     auditSvc,
+		SkillSvc:     skillSvc,
+		MCPSvc:       mcpSvc,
+		RuleSvc:      ruleSvc,
+		GitKeySvc:    gitKeySvc,
 		ConnMgr:      connMgr,
 	}
 

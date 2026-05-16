@@ -20,6 +20,15 @@ type AuditEntry struct {
 	StatusCode     int32              `json:"status_code"`
 }
 
+type GitKey struct {
+	ID             int64              `json:"id"`
+	Name           string             `json:"name"`
+	EncryptedToken string             `json:"encrypted_token"`
+	TokenMask      string             `json:"token_mask"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
 type HostSpec struct {
 	ID          int64              `json:"id"`
 	Name        string             `json:"name"`
@@ -41,6 +50,18 @@ type HostToken struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
+type McpServer struct {
+	ID        int64              `json:"id"`
+	Name      string             `json:"name"`
+	Type      string             `json:"type"`
+	Command   string             `json:"command"`
+	Url       string             `json:"url"`
+	Args      []byte             `json:"args"`
+	Env       []byte             `json:"env"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Node struct {
 	ID            int64              `json:"id"`
 	Name          string             `json:"name"`
@@ -53,4 +74,21 @@ type Node struct {
 	Metadata      []byte             `json:"metadata"`
 	RegisteredAt  pgtype.Timestamptz `json:"registered_at"`
 	LastHeartbeat pgtype.Timestamptz `json:"last_heartbeat"`
+}
+
+type Rule struct {
+	ID        int64              `json:"id"`
+	Name      string             `json:"name"`
+	Content   string             `json:"content"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type Skill struct {
+	ID          int64              `json:"id"`
+	Name        string             `json:"name"`
+	Description string             `json:"description"`
+	Config      []byte             `json:"config"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }

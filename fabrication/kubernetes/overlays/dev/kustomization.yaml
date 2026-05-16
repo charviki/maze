@@ -52,6 +52,7 @@ patches:
         DIRECTOR_CORE_KUBERNETES_AGENT_JWT_SECRET: 'dev-jwt-secret-change-me'
         DATABASE_USER: 'maze'
         DATABASE_PASSWORD: 'maze'
+        GIT_KEY_ENCRYPTION_KEY: '1d5b7cf4eb5ff47b9c503a5079ece467a0d19ab3a00bad876d69ddfcd029a627'
   - target:
       kind: Secret
       name: the-forge-secret

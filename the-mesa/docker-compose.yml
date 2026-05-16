@@ -60,6 +60,7 @@ services:
       DIRECTOR_CORE_AUTHZ_ENABLED: '${AUTHZ_ENABLED:-true}'
       DIRECTOR_CORE_AUTHZ_ADMIN_SUBJECT_KEY: '${AUTHZ_ADMIN_SUBJECT_KEY:-user:admin}'
       DIRECTOR_CORE_AUTHZ_ADMIN_DISPLAY_NAME: '${AUTHZ_ADMIN_DISPLAY_NAME:-admin}'
+      GIT_KEY_ENCRYPTION_KEY: '${GIT_KEY_ENCRYPTION_KEY:-61d687541e3c1737b4028d76ac6c17ce9edce12e7455c09c645eb6ecca9438ee}'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${HOST_DATA_DIR:-~/.maze-prod}/docker:/data

@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package maze.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+
+option go_package = "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1";
+
+message GitKey {
+  string name = 1;
+  string token_mask = 2;
+  string created_at = 3;
+  string updated_at = 4;
+}
+
+message CreateGitKeyRequest {
+  string name = 1 [(buf.validate.field).string = {min_len: 1}];
+  string token = 2 [(buf.validate.field).string = {min_len: 1}];
+}
+
+message ListGitKeysRequest {}
+
+message ListGitKeysResponse {
+  repeated GitKey git_keys = 1;
+}
+
+message GetGitKeyRequest {
+  string name = 1 [(buf.validate.field).string = {min_len: 1}];
+}
+
+message DeleteGitKeyRequest {
+  string name = 1 [(buf.validate.field).string = {min_len: 1}];
+}
+
+service GitKeyService {
+  rpc CreateGitKey(CreateGitKeyRequest) returns (GitKey) {
+    option (google.api.http) = {
+      post: "/api/v1/git-keys"
+      body: "*"
+    };
+  }
+
+  rpc ListGitKeys(ListGitKeysRequest) returns (ListGitKeysResponse) {
+    option (google.api.http) = {get: "/api/v1/git-keys"};
+  }
+
+  rpc GetGitKey(GetGitKeyRequest) returns (GitKey) {
+    option (google.api.http) = {get: "/api/v1/git-keys/{name}"};
+  }
+
+  rpc DeleteGitKey(DeleteGitKeyRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/api/v1/git-keys/{name}"};
+  }
+}

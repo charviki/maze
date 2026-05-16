@@ -21,16 +21,28 @@
       "name": "PermissionService"
     },
     {
+      "name": "GitKeyService"
+    },
+    {
       "name": "HostService"
     },
     {
       "name": "KnowledgeService"
     },
     {
+      "name": "MCPService"
+    },
+    {
       "name": "NodeService"
     },
     {
+      "name": "RuleService"
+    },
+    {
       "name": "SessionService"
+    },
+    {
+      "name": "SkillService"
     },
     {
       "name": "TemplateService"
@@ -747,6 +759,117 @@
         ]
       }
     },
+    "/api/v1/git-keys": {
+      "get": {
+        "operationId": "GitKeyService_ListGitKeys",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListGitKeysResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "GitKeyService"
+        ]
+      },
+      "post": {
+        "operationId": "GitKeyService_CreateGitKey",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GitKey"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreateGitKeyRequest"
+            }
+          }
+        ],
+        "tags": [
+          "GitKeyService"
+        ]
+      }
+    },
+    "/api/v1/git-keys/{name}": {
+      "get": {
+        "operationId": "GitKeyService_GetGitKey",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GitKey"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "GitKeyService"
+        ]
+      },
+      "delete": {
+        "operationId": "GitKeyService_DeleteGitKey",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "GitKeyService"
+        ]
+      }
+    },
     "/api/v1/host/tools": {
       "get": {
         "operationId": "HostService_ListTools",
@@ -997,6 +1120,153 @@
         ],
         "tags": [
           "ConfigService"
+        ]
+      }
+    },
+    "/api/v1/mcp-servers": {
+      "get": {
+        "operationId": "MCPService_ListMCPServers",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListMCPServersResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "MCPService"
+        ]
+      },
+      "post": {
+        "operationId": "MCPService_CreateMCPServer",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1MCPServer"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreateMCPServerRequest"
+            }
+          }
+        ],
+        "tags": [
+          "MCPService"
+        ]
+      }
+    },
+    "/api/v1/mcp-servers/{name}": {
+      "get": {
+        "operationId": "MCPService_GetMCPServer",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1MCPServer"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "MCPService"
+        ]
+      },
+      "delete": {
+        "operationId": "MCPService_DeleteMCPServer",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "MCPService"
+        ]
+      },
+      "put": {
+        "operationId": "MCPService_UpdateMCPServer",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1MCPServer"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/MCPServiceUpdateMCPServerBody"
+            }
+          }
+        ],
+        "tags": [
+          "MCPService"
         ]
       }
     },
@@ -2145,6 +2415,153 @@
         ]
       }
     },
+    "/api/v1/rules": {
+      "get": {
+        "operationId": "RuleService_ListRules",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListRulesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "RuleService"
+        ]
+      },
+      "post": {
+        "operationId": "RuleService_CreateRule",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Rule"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreateRuleRequest"
+            }
+          }
+        ],
+        "tags": [
+          "RuleService"
+        ]
+      }
+    },
+    "/api/v1/rules/{name}": {
+      "get": {
+        "operationId": "RuleService_GetRule",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Rule"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuleService"
+        ]
+      },
+      "delete": {
+        "operationId": "RuleService_DeleteRule",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "RuleService"
+        ]
+      },
+      "put": {
+        "operationId": "RuleService_UpdateRule",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Rule"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/RuleServiceUpdateRuleBody"
+            }
+          }
+        ],
+        "tags": [
+          "RuleService"
+        ]
+      }
+    },
     "/api/v1/sessions": {
       "get": {
         "operationId": "SessionService_ListSessions2",
@@ -2604,6 +3021,153 @@
         ]
       }
     },
+    "/api/v1/skills": {
+      "get": {
+        "operationId": "SkillService_ListSkills",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ListSkillsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "tags": [
+          "SkillService"
+        ]
+      },
+      "post": {
+        "operationId": "SkillService_CreateSkill",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Skill"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1CreateSkillRequest"
+            }
+          }
+        ],
+        "tags": [
+          "SkillService"
+        ]
+      }
+    },
+    "/api/v1/skills/{name}": {
+      "get": {
+        "operationId": "SkillService_GetSkill",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Skill"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "SkillService"
+        ]
+      },
+      "delete": {
+        "operationId": "SkillService_DeleteSkill",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "SkillService"
+        ]
+      },
+      "put": {
+        "operationId": "SkillService_UpdateSkill",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1Skill"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SkillServiceUpdateSkillBody"
+            }
+          }
+        ],
+        "tags": [
+          "SkillService"
+        ]
+      }
+    },
     "/api/v1/subjects/{subjectKey}/permissions": {
       "get": {
         "summary": "ListSubjectPermissions 列出主体当前权限视图。",
@@ -2963,6 +3527,32 @@
         }
       }
     },
+    "MCPServiceUpdateMCPServerBody": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "command": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "PermissionServiceReviewPermissionApplicationBody": {
       "type": "object",
       "properties": {
@@ -2986,6 +3576,14 @@
         }
       },
       "title": "RevokePermissionApplicationRequest 撤销一张已批准申请对应的授权结果。"
+    },
+    "RuleServiceUpdateRuleBody": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string"
+        }
+      }
     },
     "SessionServiceCreateSessionBody": {
       "type": "object",
@@ -3056,6 +3654,20 @@
           "items": {
             "type": "object",
             "$ref": "#/definitions/v1ConfigFileUpdate"
+          }
+        }
+      }
+    },
+    "SkillServiceUpdateSkillBody": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
           }
         }
       }
@@ -3408,6 +4020,17 @@
         }
       }
     },
+    "v1CreateGitKeyRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "token": {
+          "type": "string"
+        }
+      }
+    },
     "v1CreateHostRequest": {
       "type": "object",
       "properties": {
@@ -3425,6 +4048,35 @@
         },
         "resources": {
           "$ref": "#/definitions/v1ResourceLimits"
+        }
+      }
+    },
+    "v1CreateMCPServerRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "command": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
         }
       }
     },
@@ -3454,6 +4106,17 @@
         }
       },
       "title": "CreatePermissionApplicationRequest 创建一张新的权限申请单。"
+    },
+    "v1CreateRuleRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        }
+      }
     },
     "v1CreateSessionRequest": {
       "type": "object",
@@ -3485,6 +4148,23 @@
         }
       },
       "title": "与 model.CreateSessionRequest 对齐"
+    },
+    "v1CreateSkillRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
     },
     "v1CreateTemplateRequest": {
       "type": "object",
@@ -3737,6 +4417,23 @@
         }
       }
     },
+    "v1GitKey": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "tokenMask": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      }
+    },
     "v1HeartbeatRequest": {
       "type": "object",
       "properties": {
@@ -3875,6 +4572,18 @@
         }
       }
     },
+    "v1ListGitKeysResponse": {
+      "type": "object",
+      "properties": {
+        "gitKeys": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1GitKey"
+          }
+        }
+      }
+    },
     "v1ListHostsResponse": {
       "type": "object",
       "properties": {
@@ -3883,6 +4592,18 @@
           "items": {
             "type": "object",
             "$ref": "#/definitions/v1HostInfo"
+          }
+        }
+      }
+    },
+    "v1ListMCPServersResponse": {
+      "type": "object",
+      "properties": {
+        "servers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1MCPServer"
           }
         }
       }
@@ -3916,6 +4637,18 @@
       },
       "title": "ListPermissionApplicationsResponse 返回分页申请单结果。"
     },
+    "v1ListRulesResponse": {
+      "type": "object",
+      "properties": {
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Rule"
+          }
+        }
+      }
+    },
     "v1ListSessionsResponse": {
       "type": "object",
       "properties": {
@@ -3924,6 +4657,18 @@
           "items": {
             "type": "object",
             "$ref": "#/definitions/v1Session"
+          }
+        }
+      }
+    },
+    "v1ListSkillsResponse": {
+      "type": "object",
+      "properties": {
+        "skills": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Skill"
           }
         }
       }
@@ -4013,6 +4758,41 @@
       "type": "object",
       "properties": {
         "refreshToken": {
+          "type": "string"
+        }
+      }
+    },
+    "v1MCPServer": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "command": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
           "type": "string"
         }
       }
@@ -4202,6 +4982,23 @@
       },
       "title": "与 protocol.ResourceLimits 对齐"
     },
+    "v1Rule": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      }
+    },
     "v1SaveSessionsResponse": {
       "type": "object",
       "properties": {
@@ -4387,6 +5184,29 @@
         }
       },
       "title": "与 model.SessionTemplate 对齐"
+    },
+    "v1Skill": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      }
     },
     "v1SubjectPermissionGrant": {
       "type": "object",

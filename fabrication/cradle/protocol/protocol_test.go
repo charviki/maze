@@ -320,3 +320,61 @@ func TestJSONTags_FieldMapping(t *testing.T) {
 		})
 	}
 }
+
+func TestSkill_JSONRoundTrip(t *testing.T) {
+	original := Skill{
+		Name:        "web-search",
+		Description: "Web search skill",
+		Config:      map[string]string{"api_key": "xxx", "model": "gpt-4"},
+		CreatedAt:   newFixedTime(),
+		UpdatedAt:   newFixedTime(),
+	}
+
+	data, err := json.Marshal(original)
+	if err != nil {
+		t.Fatalf("Marshal 失败: %v", err)
+	}
+
+	var decoded Skill
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("Unmarshal 失败: %v", err)
+	}
+
+	if decoded.Name != original.Name {
+		t.Errorf("Name: 期望 %q, 实际 %q", original.Name, decoded.Name)
+	}
+	if decoded.Description != original.Description {
+		t.Errorf("Description: 期望 %q, 实际 %q", original.Description, decoded.Description)
+	}
+	if len(decoded.Config) != len(original.Config) {
+		t.Errorf("Config 长度: 期望 %d, 实际 %d", len(original.Config), len(decoded.Config))
+	}
+	if !decoded.CreatedAt.Equal(original.CreatedAt) {
+		t.Errorf("CreatedAt: 期望 %v, 实际 %v", original.CreatedAt, decoded.CreatedAt)
+	}
+}
+
+func TestGitKey_TokenOmitted(t *testing.T) {
+	original := GitKey{
+		Name:      "github",
+		Token:     "super-secret-token",
+		TokenMask: "supe****oken",
+		CreatedAt: newFixedTime(),
+	}
+
+	data, err := json.Marshal(original)
+	if err != nil {
+		t.Fatalf("Marshal 失败: %v", err)
+	}
+
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		t.Fatalf("Unmarshal 到 raw map 失败: %v", err)
+	}
+	if _, ok := raw["token"]; ok {
+		t.Error("token 字段应被 json:\"-\" 省略，但出现在 JSON 中")
+	}
+	if _, ok := raw["token_mask"]; !ok {
+		t.Error("token_mask 字段应出现在 JSON 中")
+	}
+}
