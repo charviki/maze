@@ -14,7 +14,7 @@ fabrication/cradle/api/gen/
 fabrication/skin/src/api/gen/
 
 # 自动生成的嵌入资源（从 YAML 模板生成）
-sweetwater/black-ridge/server/templates.json
+sweetwater/black-ridge/templates.json
 
 # 配置模板（YAML/JSON 占位符不应被格式化）
 config.example.yaml

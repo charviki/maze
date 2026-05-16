@@ -9,13 +9,13 @@ MODULES := \
 	fabrication/cradle \
 	the-mesa/director-core \
 	the-mesa/the-forge \
-	sweetwater/black-ridge/server
+	sweetwater/black-ridge
 
 COVERAGE_MODULES := \
 	fabrication/cradle \
 	fabrication/tests/integration \
 	the-mesa/director-core \
-	sweetwater/black-ridge/server
+	sweetwater/black-ridge
 
 FRONTEND_MODULES := \
 	fabrication/skin \

@@ -33,17 +33,18 @@ ENV GOPROXY=https://goproxy.cn,direct
 ENV GOSUMDB=sum.golang.org
 
 COPY fabrication/cradle/ fabrication/cradle/
-COPY sweetwater/black-ridge/server/go.mod sweetwater/black-ridge/server/go.sum ./
+COPY sweetwater/black-ridge/go.mod sweetwater/black-ridge/go.sum ./
 
 RUN rm -rf ./internal/webstatic/web-dist
 COPY --from=frontend-builder /src/sweetwater/black-ridge/web-dist ./internal/webstatic/web-dist/
 
-RUN sed -i 's|../../../fabrication/cradle|./fabrication/cradle|g' go.mod
+RUN sed -i 's|../../fabrication/cradle|./fabrication/cradle|g' go.mod
 RUN --mount=type=cache,id=go-pkg-mod,target=/go/pkg/mod \
     go mod download
 
-COPY sweetwater/black-ridge/server/ ./
-RUN sed -i 's|../../../fabrication/cradle|./fabrication/cradle|g' go.mod
+COPY sweetwater/black-ridge/cmd/ ./cmd/
+COPY sweetwater/black-ridge/internal/ ./internal/
+COPY sweetwater/black-ridge/templates.json ./templates.json
 
 RUN --mount=type=cache,id=go-pkg-mod,target=/go/pkg/mod \
     CGO_ENABLED=0 go build -tags embed -o /bin/agent ./cmd/black-ridge

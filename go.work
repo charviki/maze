@@ -5,5 +5,5 @@ use (
 	./fabrication/tests/integration
 	./the-mesa/director-core
 	./the-mesa/the-forge
-	./sweetwater/black-ridge/server
+	./sweetwater/black-ridge
 )

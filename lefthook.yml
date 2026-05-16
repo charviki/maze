@@ -25,7 +25,7 @@ pre-commit:
           case "$f" in
             fabrication/cradle/*) MODULES="$MODULES fabrication/cradle" ;;
             the-mesa/director-core/*) MODULES="$MODULES the-mesa/director-core" ;;
-            sweetwater/black-ridge/server/*) MODULES="$MODULES sweetwater/black-ridge/server" ;;
+            sweetwater/black-ridge/*) MODULES="$MODULES sweetwater/black-ridge" ;;
             fabrication/tests/integration/*) MODULES="$MODULES fabrication/tests/integration" ;;
           esac
         done

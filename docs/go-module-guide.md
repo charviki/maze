@@ -7,7 +7,7 @@
 - `fabrication/cradle/`：Go 共享库
 - `the-mesa/director-core/`：The Mesa 控制核心的 Go 模块
 - `the-mesa/the-forge/`：知识库后端服务的 Go 模块
-- `sweetwater/black-ridge/server/`：Black Ridge 的 Go 模块
+- `sweetwater/black-ridge/`：Black Ridge 的 Go 模块
 - `fabrication/tests/integration/`：跨模块集成测试模块
 
 根目录通过 `go.work` 统一收敛这些主模块；根 `Makefile` 的 `MODULES` 只负责需要参与常规 Go 构建和静态检查的服务模块。
