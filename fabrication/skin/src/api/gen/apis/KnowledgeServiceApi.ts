@@ -25,10 +25,10 @@ import {
     KnowledgeServiceUpdateArchiveBodyToJSON,
 } from '../models/KnowledgeServiceUpdateArchiveBody';
 import {
-    type KnowledgeServiceUpdateMemoryBody,
-    KnowledgeServiceUpdateMemoryBodyFromJSON,
-    KnowledgeServiceUpdateMemoryBodyToJSON,
-} from '../models/KnowledgeServiceUpdateMemoryBody';
+    type KnowledgeServiceUpdateDocBody,
+    KnowledgeServiceUpdateDocBodyFromJSON,
+    KnowledgeServiceUpdateDocBodyToJSON,
+} from '../models/KnowledgeServiceUpdateDocBody';
 import {
     type RpcStatus,
     RpcStatusFromJSON,
@@ -45,68 +45,57 @@ import {
     V1CreateArchiveRequestToJSON,
 } from '../models/V1CreateArchiveRequest';
 import {
-    type V1CreateMemoryRequest,
-    V1CreateMemoryRequestFromJSON,
-    V1CreateMemoryRequestToJSON,
-} from '../models/V1CreateMemoryRequest';
+    type V1CreateDocRequest,
+    V1CreateDocRequestFromJSON,
+    V1CreateDocRequestToJSON,
+} from '../models/V1CreateDocRequest';
+import {
+    type V1Doc,
+    V1DocFromJSON,
+    V1DocToJSON,
+} from '../models/V1Doc';
+import {
+    type V1DocLink,
+    V1DocLinkFromJSON,
+    V1DocLinkToJSON,
+} from '../models/V1DocLink';
+import {
+    type V1GetDocAncestorsResponse,
+    V1GetDocAncestorsResponseFromJSON,
+    V1GetDocAncestorsResponseToJSON,
+} from '../models/V1GetDocAncestorsResponse';
+import {
+    type V1GetDocTreeResponse,
+    V1GetDocTreeResponseFromJSON,
+    V1GetDocTreeResponseToJSON,
+} from '../models/V1GetDocTreeResponse';
 import {
     type V1GetLinksResponse,
     V1GetLinksResponseFromJSON,
     V1GetLinksResponseToJSON,
 } from '../models/V1GetLinksResponse';
 import {
-    type V1GetMemoryAncestorsResponse,
-    V1GetMemoryAncestorsResponseFromJSON,
-    V1GetMemoryAncestorsResponseToJSON,
-} from '../models/V1GetMemoryAncestorsResponse';
-import {
-    type V1GetMemoryDirectivesResponse,
-    V1GetMemoryDirectivesResponseFromJSON,
-    V1GetMemoryDirectivesResponseToJSON,
-} from '../models/V1GetMemoryDirectivesResponse';
-import {
-    type V1GetMemoryTreeResponse,
-    V1GetMemoryTreeResponseFromJSON,
-    V1GetMemoryTreeResponseToJSON,
-} from '../models/V1GetMemoryTreeResponse';
-import {
-    type V1GetStatsResponse,
-    V1GetStatsResponseFromJSON,
-    V1GetStatsResponseToJSON,
-} from '../models/V1GetStatsResponse';
-import {
     type V1ListArchivesResponse,
     V1ListArchivesResponseFromJSON,
     V1ListArchivesResponseToJSON,
 } from '../models/V1ListArchivesResponse';
 import {
-    type V1ListMemoriesResponse,
-    V1ListMemoriesResponseFromJSON,
-    V1ListMemoriesResponseToJSON,
-} from '../models/V1ListMemoriesResponse';
+    type V1ListDocsResponse,
+    V1ListDocsResponseFromJSON,
+    V1ListDocsResponseToJSON,
+} from '../models/V1ListDocsResponse';
 import {
-    type V1Memory,
-    V1MemoryFromJSON,
-    V1MemoryToJSON,
-} from '../models/V1Memory';
-import {
-    type V1NeuralLink,
-    V1NeuralLinkFromJSON,
-    V1NeuralLinkToJSON,
-} from '../models/V1NeuralLink';
-import {
-    type V1ParsedMemory,
-    V1ParsedMemoryFromJSON,
-    V1ParsedMemoryToJSON,
-} from '../models/V1ParsedMemory';
-import {
-    type V1SearchMemoriesResponse,
-    V1SearchMemoriesResponseFromJSON,
-    V1SearchMemoriesResponseToJSON,
-} from '../models/V1SearchMemoriesResponse';
+    type V1SearchDocsResponse,
+    V1SearchDocsResponseFromJSON,
+    V1SearchDocsResponseToJSON,
+} from '../models/V1SearchDocsResponse';
 
 export interface KnowledgeServiceCreateArchiveRequest {
     body: V1CreateArchiveRequest;
+}
+
+export interface KnowledgeServiceCreateDocRequest {
+    body: V1CreateDocRequest;
 }
 
 export interface KnowledgeServiceCreateLinkRequest {
@@ -114,11 +103,11 @@ export interface KnowledgeServiceCreateLinkRequest {
     body: KnowledgeServiceCreateLinkBody;
 }
 
-export interface KnowledgeServiceCreateMemoryRequest {
-    body: V1CreateMemoryRequest;
+export interface KnowledgeServiceDeleteArchiveRequest {
+    id: string;
 }
 
-export interface KnowledgeServiceDeleteArchiveRequest {
+export interface KnowledgeServiceDeleteDocRequest {
     id: string;
 }
 
@@ -127,12 +116,21 @@ export interface KnowledgeServiceDeleteLinkRequest {
     linkId: string;
 }
 
-export interface KnowledgeServiceDeleteMemoryRequest {
+export interface KnowledgeServiceGetArchiveRequest {
     id: string;
 }
 
-export interface KnowledgeServiceGetArchiveRequest {
+export interface KnowledgeServiceGetDocRequest {
     id: string;
+}
+
+export interface KnowledgeServiceGetDocAncestorsRequest {
+    id: string;
+}
+
+export interface KnowledgeServiceGetDocTreeRequest {
+    archiveId?: string;
+    parentId?: string;
 }
 
 export interface KnowledgeServiceGetLinksRequest {
@@ -141,36 +139,17 @@ export interface KnowledgeServiceGetLinksRequest {
     relationType?: string;
 }
 
-export interface KnowledgeServiceGetMemoryRequest {
-    id: string;
-}
-
-export interface KnowledgeServiceGetMemoryAncestorsRequest {
-    id: string;
-}
-
-export interface KnowledgeServiceGetMemoryDirectivesRequest {
-    id: string;
-}
-
-export interface KnowledgeServiceGetMemoryTreeRequest {
+export interface KnowledgeServiceListDocsRequest {
     archiveId?: string;
     parentId?: string;
-}
-
-export interface KnowledgeServiceListMemoriesRequest {
-    archiveId?: string;
-    parentId?: string;
-    kind?: string;
-    type?: string;
-    tag?: string;
+    status?: string;
     visibility?: string;
     author?: string;
     limit?: number;
     offset?: number;
 }
 
-export interface KnowledgeServiceSearchMemoriesRequest {
+export interface KnowledgeServiceSearchDocsRequest {
     q?: string;
     archiveId?: string;
     visibility?: string;
@@ -182,9 +161,9 @@ export interface KnowledgeServiceUpdateArchiveRequest {
     body: KnowledgeServiceUpdateArchiveBody;
 }
 
-export interface KnowledgeServiceUpdateMemoryRequest {
+export interface KnowledgeServiceUpdateDocRequest {
     id: string;
-    body: KnowledgeServiceUpdateMemoryBody;
+    body: KnowledgeServiceUpdateDocBody;
 }
 
 /**
@@ -238,6 +217,51 @@ export class KnowledgeServiceApi extends runtime.BaseAPI {
     }
 
     /**
+     * Creates request options for knowledgeServiceCreateDoc without sending the request
+     */
+    async knowledgeServiceCreateDocRequestOpts(requestParameters: KnowledgeServiceCreateDocRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['body'] == null) {
+            throw new runtime.RequiredError(
+                'body',
+                'Required parameter "body" was null or undefined when calling knowledgeServiceCreateDoc().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+
+        let urlPath = `/api/v1/docs`;
+
+        return {
+            path: urlPath,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: V1CreateDocRequestToJSON(requestParameters['body']),
+        };
+    }
+
+    /**
+     */
+    async knowledgeServiceCreateDocRaw(requestParameters: KnowledgeServiceCreateDocRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<V1Doc>> {
+        const requestOptions = await this.knowledgeServiceCreateDocRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => V1DocFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async knowledgeServiceCreateDoc(requestParameters: KnowledgeServiceCreateDocRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<V1Doc> {
+        const response = await this.knowledgeServiceCreateDocRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Creates request options for knowledgeServiceCreateLink without sending the request
      */
     async knowledgeServiceCreateLinkRequestOpts(requestParameters: KnowledgeServiceCreateLinkRequest): Promise<runtime.RequestOpts> {
@@ -262,7 +286,7 @@ export class KnowledgeServiceApi extends runtime.BaseAPI {
         headerParameters['Content-Type'] = 'application/json';
 
 
-        let urlPath = `/api/v1/memories/{id}/links`;
+        let urlPath = `/api/v1/docs/{id}/links`;
         urlPath = urlPath.replace('{id}', encodeURIComponent(String(requestParameters['id'])));
 
         return {
@@ -276,62 +300,17 @@ export class KnowledgeServiceApi extends runtime.BaseAPI {
 
     /**
      */
-    async knowledgeServiceCreateLinkRaw(requestParameters: KnowledgeServiceCreateLinkRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<V1NeuralLink>> {
+    async knowledgeServiceCreateLinkRaw(requestParameters: KnowledgeServiceCreateLinkRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<V1DocLink>> {
         const requestOptions = await this.knowledgeServiceCreateLinkRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => V1NeuralLinkFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response, (jsonValue) => V1DocLinkFromJSON(jsonValue));
     }
 
     /**
      */
-    async knowledgeServiceCreateLink(requestParameters: KnowledgeServiceCreateLinkRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<V1NeuralLink> {
+    async knowledgeServiceCreateLink(requestParameters: KnowledgeServiceCreateLinkRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<V1DocLink> {
         const response = await this.knowledgeServiceCreateLinkRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Creates request options for knowledgeServiceCreateMemory without sending the request
-     */
-    async knowledgeServiceCreateMemoryRequestOpts(requestParameters: KnowledgeServiceCreateMemoryRequest): Promise<runtime.RequestOpts> {
-        if (requestParameters['body'] == null) {
-            throw new runtime.RequiredError(
-                'body',
-                'Required parameter "body" was null or undefined when calling knowledgeServiceCreateMemory().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-        headerParameters['Content-Type'] = 'application/json';
-
-
-        let urlPath = `/api/v1/memories`;
-
-        return {
-            path: urlPath,
-            method: 'POST',
-            headers: headerParameters,
-            query: queryParameters,
-            body: V1CreateMemoryRequestToJSON(requestParameters['body']),
-        };
-    }
-
-    /**
-     */
-    async knowledgeServiceCreateMemoryRaw(requestParameters: KnowledgeServiceCreateMemoryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<V1Memory>> {
-        const requestOptions = await this.knowledgeServiceCreateMemoryRequestOpts(requestParameters);
-        const response = await this.request(requestOptions, initOverrides);
-
-        return new runtime.JSONApiResponse(response, (jsonValue) => V1MemoryFromJSON(jsonValue));
-    }
-
-    /**
-     */
-    async knowledgeServiceCreateMemory(requestParameters: KnowledgeServiceCreateMemoryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<V1Memory> {
-        const response = await this.knowledgeServiceCreateMemoryRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -379,6 +358,49 @@ export class KnowledgeServiceApi extends runtime.BaseAPI {
     }
 
     /**
+     * Creates request options for knowledgeServiceDeleteDoc without sending the request
+     */
+    async knowledgeServiceDeleteDocRequestOpts(requestParameters: KnowledgeServiceDeleteDocRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling knowledgeServiceDeleteDoc().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+
+        let urlPath = `/api/v1/docs/{id}`;
+        urlPath = urlPath.replace('{id}', encodeURIComponent(String(requestParameters['id'])));
+
+        return {
+            path: urlPath,
+            method: 'DELETE',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     */
+    async knowledgeServiceDeleteDocRaw(requestParameters: KnowledgeServiceDeleteDocRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<object>> {
+        const requestOptions = await this.knowledgeServiceDeleteDocRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse<any>(response);
+    }
+
+    /**
+     */
+    async knowledgeServiceDeleteDoc(requestParameters: KnowledgeServiceDeleteDocRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<object> {
+        const response = await this.knowledgeServiceDeleteDocRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Creates request options for knowledgeServiceDeleteLink without sending the request
      */
     async knowledgeServiceDeleteLinkRequestOpts(requestParameters: KnowledgeServiceDeleteLinkRequest): Promise<runtime.RequestOpts> {
@@ -401,7 +423,7 @@ export class KnowledgeServiceApi extends runtime.BaseAPI {
         const headerParameters: runtime.HTTPHeaders = {};
 
 
-        let urlPath = `/api/v1/memories/{id}/links/{linkId}`;
+        let urlPath = `/api/v1/docs/{id}/links/{linkId}`;
         urlPath = urlPath.replace('{id}', encodeURIComponent(String(requestParameters['id'])));
         urlPath = urlPath.replace('{linkId}', encodeURIComponent(String(requestParameters['linkId'])));
 
@@ -426,49 +448,6 @@ export class KnowledgeServiceApi extends runtime.BaseAPI {
      */
     async knowledgeServiceDeleteLink(requestParameters: KnowledgeServiceDeleteLinkRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<object> {
         const response = await this.knowledgeServiceDeleteLinkRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Creates request options for knowledgeServiceDeleteMemory without sending the request
-     */
-    async knowledgeServiceDeleteMemoryRequestOpts(requestParameters: KnowledgeServiceDeleteMemoryRequest): Promise<runtime.RequestOpts> {
-        if (requestParameters['id'] == null) {
-            throw new runtime.RequiredError(
-                'id',
-                'Required parameter "id" was null or undefined when calling knowledgeServiceDeleteMemory().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-
-        let urlPath = `/api/v1/memories/{id}`;
-        urlPath = urlPath.replace('{id}', encodeURIComponent(String(requestParameters['id'])));
-
-        return {
-            path: urlPath,
-            method: 'DELETE',
-            headers: headerParameters,
-            query: queryParameters,
-        };
-    }
-
-    /**
-     */
-    async knowledgeServiceDeleteMemoryRaw(requestParameters: KnowledgeServiceDeleteMemoryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<object>> {
-        const requestOptions = await this.knowledgeServiceDeleteMemoryRequestOpts(requestParameters);
-        const response = await this.request(requestOptions, initOverrides);
-
-        return new runtime.JSONApiResponse<any>(response);
-    }
-
-    /**
-     */
-    async knowledgeServiceDeleteMemory(requestParameters: KnowledgeServiceDeleteMemoryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<object> {
-        const response = await this.knowledgeServiceDeleteMemoryRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -516,6 +495,135 @@ export class KnowledgeServiceApi extends runtime.BaseAPI {
     }
 
     /**
+     * Creates request options for knowledgeServiceGetDoc without sending the request
+     */
+    async knowledgeServiceGetDocRequestOpts(requestParameters: KnowledgeServiceGetDocRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling knowledgeServiceGetDoc().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+
+        let urlPath = `/api/v1/docs/{id}`;
+        urlPath = urlPath.replace('{id}', encodeURIComponent(String(requestParameters['id'])));
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     */
+    async knowledgeServiceGetDocRaw(requestParameters: KnowledgeServiceGetDocRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<V1Doc>> {
+        const requestOptions = await this.knowledgeServiceGetDocRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => V1DocFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async knowledgeServiceGetDoc(requestParameters: KnowledgeServiceGetDocRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<V1Doc> {
+        const response = await this.knowledgeServiceGetDocRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for knowledgeServiceGetDocAncestors without sending the request
+     */
+    async knowledgeServiceGetDocAncestorsRequestOpts(requestParameters: KnowledgeServiceGetDocAncestorsRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling knowledgeServiceGetDocAncestors().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+
+        let urlPath = `/api/v1/docs/{id}/ancestors`;
+        urlPath = urlPath.replace('{id}', encodeURIComponent(String(requestParameters['id'])));
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     */
+    async knowledgeServiceGetDocAncestorsRaw(requestParameters: KnowledgeServiceGetDocAncestorsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<V1GetDocAncestorsResponse>> {
+        const requestOptions = await this.knowledgeServiceGetDocAncestorsRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => V1GetDocAncestorsResponseFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async knowledgeServiceGetDocAncestors(requestParameters: KnowledgeServiceGetDocAncestorsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<V1GetDocAncestorsResponse> {
+        const response = await this.knowledgeServiceGetDocAncestorsRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for knowledgeServiceGetDocTree without sending the request
+     */
+    async knowledgeServiceGetDocTreeRequestOpts(requestParameters: KnowledgeServiceGetDocTreeRequest): Promise<runtime.RequestOpts> {
+        const queryParameters: any = {};
+
+        if (requestParameters['archiveId'] != null) {
+            queryParameters['archiveId'] = requestParameters['archiveId'];
+        }
+
+        if (requestParameters['parentId'] != null) {
+            queryParameters['parentId'] = requestParameters['parentId'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+
+        let urlPath = `/api/v1/docs:tree`;
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     */
+    async knowledgeServiceGetDocTreeRaw(requestParameters: KnowledgeServiceGetDocTreeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<V1GetDocTreeResponse>> {
+        const requestOptions = await this.knowledgeServiceGetDocTreeRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => V1GetDocTreeResponseFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async knowledgeServiceGetDocTree(requestParameters: KnowledgeServiceGetDocTreeRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<V1GetDocTreeResponse> {
+        const response = await this.knowledgeServiceGetDocTreeRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Creates request options for knowledgeServiceGetLinks without sending the request
      */
     async knowledgeServiceGetLinksRequestOpts(requestParameters: KnowledgeServiceGetLinksRequest): Promise<runtime.RequestOpts> {
@@ -539,7 +647,7 @@ export class KnowledgeServiceApi extends runtime.BaseAPI {
         const headerParameters: runtime.HTTPHeaders = {};
 
 
-        let urlPath = `/api/v1/memories/{id}/links`;
+        let urlPath = `/api/v1/docs/{id}/links`;
         urlPath = urlPath.replace('{id}', encodeURIComponent(String(requestParameters['id'])));
 
         return {
@@ -563,213 +671,6 @@ export class KnowledgeServiceApi extends runtime.BaseAPI {
      */
     async knowledgeServiceGetLinks(requestParameters: KnowledgeServiceGetLinksRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<V1GetLinksResponse> {
         const response = await this.knowledgeServiceGetLinksRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Creates request options for knowledgeServiceGetMemory without sending the request
-     */
-    async knowledgeServiceGetMemoryRequestOpts(requestParameters: KnowledgeServiceGetMemoryRequest): Promise<runtime.RequestOpts> {
-        if (requestParameters['id'] == null) {
-            throw new runtime.RequiredError(
-                'id',
-                'Required parameter "id" was null or undefined when calling knowledgeServiceGetMemory().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-
-        let urlPath = `/api/v1/memories/{id}`;
-        urlPath = urlPath.replace('{id}', encodeURIComponent(String(requestParameters['id'])));
-
-        return {
-            path: urlPath,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        };
-    }
-
-    /**
-     */
-    async knowledgeServiceGetMemoryRaw(requestParameters: KnowledgeServiceGetMemoryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<V1ParsedMemory>> {
-        const requestOptions = await this.knowledgeServiceGetMemoryRequestOpts(requestParameters);
-        const response = await this.request(requestOptions, initOverrides);
-
-        return new runtime.JSONApiResponse(response, (jsonValue) => V1ParsedMemoryFromJSON(jsonValue));
-    }
-
-    /**
-     */
-    async knowledgeServiceGetMemory(requestParameters: KnowledgeServiceGetMemoryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<V1ParsedMemory> {
-        const response = await this.knowledgeServiceGetMemoryRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Creates request options for knowledgeServiceGetMemoryAncestors without sending the request
-     */
-    async knowledgeServiceGetMemoryAncestorsRequestOpts(requestParameters: KnowledgeServiceGetMemoryAncestorsRequest): Promise<runtime.RequestOpts> {
-        if (requestParameters['id'] == null) {
-            throw new runtime.RequiredError(
-                'id',
-                'Required parameter "id" was null or undefined when calling knowledgeServiceGetMemoryAncestors().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-
-        let urlPath = `/api/v1/memories/{id}/ancestors`;
-        urlPath = urlPath.replace('{id}', encodeURIComponent(String(requestParameters['id'])));
-
-        return {
-            path: urlPath,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        };
-    }
-
-    /**
-     */
-    async knowledgeServiceGetMemoryAncestorsRaw(requestParameters: KnowledgeServiceGetMemoryAncestorsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<V1GetMemoryAncestorsResponse>> {
-        const requestOptions = await this.knowledgeServiceGetMemoryAncestorsRequestOpts(requestParameters);
-        const response = await this.request(requestOptions, initOverrides);
-
-        return new runtime.JSONApiResponse(response, (jsonValue) => V1GetMemoryAncestorsResponseFromJSON(jsonValue));
-    }
-
-    /**
-     */
-    async knowledgeServiceGetMemoryAncestors(requestParameters: KnowledgeServiceGetMemoryAncestorsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<V1GetMemoryAncestorsResponse> {
-        const response = await this.knowledgeServiceGetMemoryAncestorsRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Creates request options for knowledgeServiceGetMemoryDirectives without sending the request
-     */
-    async knowledgeServiceGetMemoryDirectivesRequestOpts(requestParameters: KnowledgeServiceGetMemoryDirectivesRequest): Promise<runtime.RequestOpts> {
-        if (requestParameters['id'] == null) {
-            throw new runtime.RequiredError(
-                'id',
-                'Required parameter "id" was null or undefined when calling knowledgeServiceGetMemoryDirectives().'
-            );
-        }
-
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-
-        let urlPath = `/api/v1/memories/{id}/directives`;
-        urlPath = urlPath.replace('{id}', encodeURIComponent(String(requestParameters['id'])));
-
-        return {
-            path: urlPath,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        };
-    }
-
-    /**
-     */
-    async knowledgeServiceGetMemoryDirectivesRaw(requestParameters: KnowledgeServiceGetMemoryDirectivesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<V1GetMemoryDirectivesResponse>> {
-        const requestOptions = await this.knowledgeServiceGetMemoryDirectivesRequestOpts(requestParameters);
-        const response = await this.request(requestOptions, initOverrides);
-
-        return new runtime.JSONApiResponse(response, (jsonValue) => V1GetMemoryDirectivesResponseFromJSON(jsonValue));
-    }
-
-    /**
-     */
-    async knowledgeServiceGetMemoryDirectives(requestParameters: KnowledgeServiceGetMemoryDirectivesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<V1GetMemoryDirectivesResponse> {
-        const response = await this.knowledgeServiceGetMemoryDirectivesRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Creates request options for knowledgeServiceGetMemoryTree without sending the request
-     */
-    async knowledgeServiceGetMemoryTreeRequestOpts(requestParameters: KnowledgeServiceGetMemoryTreeRequest): Promise<runtime.RequestOpts> {
-        const queryParameters: any = {};
-
-        if (requestParameters['archiveId'] != null) {
-            queryParameters['archiveId'] = requestParameters['archiveId'];
-        }
-
-        if (requestParameters['parentId'] != null) {
-            queryParameters['parentId'] = requestParameters['parentId'];
-        }
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-
-        let urlPath = `/api/v1/memories:tree`;
-
-        return {
-            path: urlPath,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        };
-    }
-
-    /**
-     */
-    async knowledgeServiceGetMemoryTreeRaw(requestParameters: KnowledgeServiceGetMemoryTreeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<V1GetMemoryTreeResponse>> {
-        const requestOptions = await this.knowledgeServiceGetMemoryTreeRequestOpts(requestParameters);
-        const response = await this.request(requestOptions, initOverrides);
-
-        return new runtime.JSONApiResponse(response, (jsonValue) => V1GetMemoryTreeResponseFromJSON(jsonValue));
-    }
-
-    /**
-     */
-    async knowledgeServiceGetMemoryTree(requestParameters: KnowledgeServiceGetMemoryTreeRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<V1GetMemoryTreeResponse> {
-        const response = await this.knowledgeServiceGetMemoryTreeRaw(requestParameters, initOverrides);
-        return await response.value();
-    }
-
-    /**
-     * Creates request options for knowledgeServiceGetStats without sending the request
-     */
-    async knowledgeServiceGetStatsRequestOpts(): Promise<runtime.RequestOpts> {
-        const queryParameters: any = {};
-
-        const headerParameters: runtime.HTTPHeaders = {};
-
-
-        let urlPath = `/api/v1/stats`;
-
-        return {
-            path: urlPath,
-            method: 'GET',
-            headers: headerParameters,
-            query: queryParameters,
-        };
-    }
-
-    /**
-     */
-    async knowledgeServiceGetStatsRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<V1GetStatsResponse>> {
-        const requestOptions = await this.knowledgeServiceGetStatsRequestOpts();
-        const response = await this.request(requestOptions, initOverrides);
-
-        return new runtime.JSONApiResponse(response, (jsonValue) => V1GetStatsResponseFromJSON(jsonValue));
-    }
-
-    /**
-     */
-    async knowledgeServiceGetStats(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<V1GetStatsResponse> {
-        const response = await this.knowledgeServiceGetStatsRaw(initOverrides);
         return await response.value();
     }
 
@@ -809,9 +710,9 @@ export class KnowledgeServiceApi extends runtime.BaseAPI {
     }
 
     /**
-     * Creates request options for knowledgeServiceListMemories without sending the request
+     * Creates request options for knowledgeServiceListDocs without sending the request
      */
-    async knowledgeServiceListMemoriesRequestOpts(requestParameters: KnowledgeServiceListMemoriesRequest): Promise<runtime.RequestOpts> {
+    async knowledgeServiceListDocsRequestOpts(requestParameters: KnowledgeServiceListDocsRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         if (requestParameters['archiveId'] != null) {
@@ -822,16 +723,8 @@ export class KnowledgeServiceApi extends runtime.BaseAPI {
             queryParameters['parentId'] = requestParameters['parentId'];
         }
 
-        if (requestParameters['kind'] != null) {
-            queryParameters['kind'] = requestParameters['kind'];
-        }
-
-        if (requestParameters['type'] != null) {
-            queryParameters['type'] = requestParameters['type'];
-        }
-
-        if (requestParameters['tag'] != null) {
-            queryParameters['tag'] = requestParameters['tag'];
+        if (requestParameters['status'] != null) {
+            queryParameters['status'] = requestParameters['status'];
         }
 
         if (requestParameters['visibility'] != null) {
@@ -853,7 +746,7 @@ export class KnowledgeServiceApi extends runtime.BaseAPI {
         const headerParameters: runtime.HTTPHeaders = {};
 
 
-        let urlPath = `/api/v1/memories`;
+        let urlPath = `/api/v1/docs`;
 
         return {
             path: urlPath,
@@ -865,24 +758,24 @@ export class KnowledgeServiceApi extends runtime.BaseAPI {
 
     /**
      */
-    async knowledgeServiceListMemoriesRaw(requestParameters: KnowledgeServiceListMemoriesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<V1ListMemoriesResponse>> {
-        const requestOptions = await this.knowledgeServiceListMemoriesRequestOpts(requestParameters);
+    async knowledgeServiceListDocsRaw(requestParameters: KnowledgeServiceListDocsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<V1ListDocsResponse>> {
+        const requestOptions = await this.knowledgeServiceListDocsRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => V1ListMemoriesResponseFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response, (jsonValue) => V1ListDocsResponseFromJSON(jsonValue));
     }
 
     /**
      */
-    async knowledgeServiceListMemories(requestParameters: KnowledgeServiceListMemoriesRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<V1ListMemoriesResponse> {
-        const response = await this.knowledgeServiceListMemoriesRaw(requestParameters, initOverrides);
+    async knowledgeServiceListDocs(requestParameters: KnowledgeServiceListDocsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<V1ListDocsResponse> {
+        const response = await this.knowledgeServiceListDocsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
-     * Creates request options for knowledgeServiceSearchMemories without sending the request
+     * Creates request options for knowledgeServiceSearchDocs without sending the request
      */
-    async knowledgeServiceSearchMemoriesRequestOpts(requestParameters: KnowledgeServiceSearchMemoriesRequest): Promise<runtime.RequestOpts> {
+    async knowledgeServiceSearchDocsRequestOpts(requestParameters: KnowledgeServiceSearchDocsRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
         if (requestParameters['q'] != null) {
@@ -904,7 +797,7 @@ export class KnowledgeServiceApi extends runtime.BaseAPI {
         const headerParameters: runtime.HTTPHeaders = {};
 
 
-        let urlPath = `/api/v1/memories:search`;
+        let urlPath = `/api/v1/docs:search`;
 
         return {
             path: urlPath,
@@ -916,17 +809,17 @@ export class KnowledgeServiceApi extends runtime.BaseAPI {
 
     /**
      */
-    async knowledgeServiceSearchMemoriesRaw(requestParameters: KnowledgeServiceSearchMemoriesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<V1SearchMemoriesResponse>> {
-        const requestOptions = await this.knowledgeServiceSearchMemoriesRequestOpts(requestParameters);
+    async knowledgeServiceSearchDocsRaw(requestParameters: KnowledgeServiceSearchDocsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<V1SearchDocsResponse>> {
+        const requestOptions = await this.knowledgeServiceSearchDocsRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => V1SearchMemoriesResponseFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response, (jsonValue) => V1SearchDocsResponseFromJSON(jsonValue));
     }
 
     /**
      */
-    async knowledgeServiceSearchMemories(requestParameters: KnowledgeServiceSearchMemoriesRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<V1SearchMemoriesResponse> {
-        const response = await this.knowledgeServiceSearchMemoriesRaw(requestParameters, initOverrides);
+    async knowledgeServiceSearchDocs(requestParameters: KnowledgeServiceSearchDocsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<V1SearchDocsResponse> {
+        const response = await this.knowledgeServiceSearchDocsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -984,20 +877,20 @@ export class KnowledgeServiceApi extends runtime.BaseAPI {
     }
 
     /**
-     * Creates request options for knowledgeServiceUpdateMemory without sending the request
+     * Creates request options for knowledgeServiceUpdateDoc without sending the request
      */
-    async knowledgeServiceUpdateMemoryRequestOpts(requestParameters: KnowledgeServiceUpdateMemoryRequest): Promise<runtime.RequestOpts> {
+    async knowledgeServiceUpdateDocRequestOpts(requestParameters: KnowledgeServiceUpdateDocRequest): Promise<runtime.RequestOpts> {
         if (requestParameters['id'] == null) {
             throw new runtime.RequiredError(
                 'id',
-                'Required parameter "id" was null or undefined when calling knowledgeServiceUpdateMemory().'
+                'Required parameter "id" was null or undefined when calling knowledgeServiceUpdateDoc().'
             );
         }
 
         if (requestParameters['body'] == null) {
             throw new runtime.RequiredError(
                 'body',
-                'Required parameter "body" was null or undefined when calling knowledgeServiceUpdateMemory().'
+                'Required parameter "body" was null or undefined when calling knowledgeServiceUpdateDoc().'
             );
         }
 
@@ -1008,7 +901,7 @@ export class KnowledgeServiceApi extends runtime.BaseAPI {
         headerParameters['Content-Type'] = 'application/json';
 
 
-        let urlPath = `/api/v1/memories/{id}`;
+        let urlPath = `/api/v1/docs/{id}`;
         urlPath = urlPath.replace('{id}', encodeURIComponent(String(requestParameters['id'])));
 
         return {
@@ -1016,23 +909,23 @@ export class KnowledgeServiceApi extends runtime.BaseAPI {
             method: 'PUT',
             headers: headerParameters,
             query: queryParameters,
-            body: KnowledgeServiceUpdateMemoryBodyToJSON(requestParameters['body']),
+            body: KnowledgeServiceUpdateDocBodyToJSON(requestParameters['body']),
         };
     }
 
     /**
      */
-    async knowledgeServiceUpdateMemoryRaw(requestParameters: KnowledgeServiceUpdateMemoryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<V1Memory>> {
-        const requestOptions = await this.knowledgeServiceUpdateMemoryRequestOpts(requestParameters);
+    async knowledgeServiceUpdateDocRaw(requestParameters: KnowledgeServiceUpdateDocRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<V1Doc>> {
+        const requestOptions = await this.knowledgeServiceUpdateDocRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => V1MemoryFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response, (jsonValue) => V1DocFromJSON(jsonValue));
     }
 
     /**
      */
-    async knowledgeServiceUpdateMemory(requestParameters: KnowledgeServiceUpdateMemoryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<V1Memory> {
-        const response = await this.knowledgeServiceUpdateMemoryRaw(requestParameters, initOverrides);
+    async knowledgeServiceUpdateDoc(requestParameters: KnowledgeServiceUpdateDocRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<V1Doc> {
+        const response = await this.knowledgeServiceUpdateDocRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

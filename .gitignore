@@ -59,3 +59,4 @@ tmp/
 *.tgz
 *.tar.gz
 the-forge-old/
+**/the-forge/the-forge

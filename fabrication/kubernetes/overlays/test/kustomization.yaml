@@ -79,3 +79,66 @@ patches:
         DIRECTOR_CORE_KUBERNETES_AGENT_JWT_SECRET: 'test-jwt-secret'
         DATABASE_USER: 'maze'
         DATABASE_PASSWORD: 'maze'
+  - target:
+      kind: Secret
+      name: the-forge-secret
+    patch: |
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: the-forge-secret
+      stringData:
+        THE_FORGE_SERVER_JWT_SECRET: 'test-jwt-secret'
+        DATABASE_USER: 'maze'
+        DATABASE_PASSWORD: 'maze'
+  - target:
+      kind: Deployment
+      name: the-forge
+    patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: the-forge
+      spec:
+        template:
+          spec:
+            initContainers:
+              - name: wait-for-database
+                image: postgres:17-alpine
+                env:
+                  - name: THE_FORGE_DATABASE_HOST
+                    value: postgresql
+                  - name: THE_FORGE_DATABASE_PORT
+                    value: '5432'
+                  - name: THE_FORGE_DATABASE_USER
+                    valueFrom:
+                      secretKeyRef:
+                        name: the-forge-secret
+                        key: DATABASE_USER
+                  - name: THE_FORGE_DATABASE_PASSWORD
+                    valueFrom:
+                      secretKeyRef:
+                        name: the-forge-secret
+                        key: DATABASE_PASSWORD
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    export PGPASSWORD="$THE_FORGE_DATABASE_PASSWORD"
+                    until pg_isready -h "$THE_FORGE_DATABASE_HOST" -p "$THE_FORGE_DATABASE_PORT" -U "$THE_FORGE_DATABASE_USER" -d "maze_forge"; do
+                      echo "waiting for database ${THE_FORGE_DATABASE_HOST}:${THE_FORGE_DATABASE_PORT}/maze_forge"
+                      sleep 1
+                    done
+            containers:
+              - name: the-forge
+                image: maze-the-forge:latest
+                imagePullPolicy: Never
+                env:
+                  - name: THE_FORGE_DATABASE_HOST
+                    value: postgresql
+                readinessProbe:
+                  httpGet:
+                    path: /health
+                    port: 8080
+                  initialDelaySeconds: 5
+                  periodSeconds: 5

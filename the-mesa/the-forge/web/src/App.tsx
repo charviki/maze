@@ -1,13 +1,9 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { AppShell } from '@maze/fabrication';
+import { AppShell, ErrorBoundary } from '@maze/fabrication';
 import Layout from '@/components/Layout';
 import Dashboard from '@/pages/Dashboard';
-import KnowledgeList from '@/pages/KnowledgeList';
-import KnowledgeDetail from '@/pages/KnowledgeDetail';
-import KnowledgeEdit from '@/pages/KnowledgeEdit';
-import TaskList from '@/pages/TaskList';
-import TaskDetail from '@/pages/TaskDetail';
-import TaskEdit from '@/pages/TaskEdit';
+import DocDetail from '@/pages/DocDetail';
+import DocEdit from '@/pages/DocEdit';
 
 function NotFound() {
   return (
@@ -20,22 +16,21 @@ function NotFound() {
 
 function App() {
   return (
-    <AppShell>
+    <AppShell requireAuth loginUrl="/arrival-gate/">
       <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/knowledge" element={<KnowledgeList />} />
-            <Route path="/knowledge/new" element={<KnowledgeEdit />} />
-            <Route path="/knowledge/:id" element={<KnowledgeDetail />} />
-            <Route path="/knowledge/:id/edit" element={<KnowledgeEdit />} />
-            <Route path="/tasks" element={<TaskList />} />
-            <Route path="/tasks/new" element={<TaskEdit />} />
-            <Route path="/tasks/:id" element={<TaskDetail />} />
-            <Route path="/tasks/:id/edit" element={<TaskEdit />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Layout>
+        <ErrorBoundary>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/docs/:archiveId" element={<DocDetail />} />
+              <Route path="/docs/:archiveId/new" element={<DocEdit />} />
+              <Route path="/docs/:archiveId/:parentId/new" element={<DocEdit />} />
+              <Route path="/docs/:archiveId/:docId" element={<DocDetail />} />
+              <Route path="/docs/:archiveId/:docId/edit" element={<DocEdit />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Layout>
+        </ErrorBoundary>
       </BrowserRouter>
     </AppShell>
   );

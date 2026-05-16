@@ -1,4 +1,6 @@
-// TODO: 接入 Director Core 认证体系，替换为真实用户身份
+import { getCurrentUser } from '@maze/fabrication';
+
 export function useIdentity() {
-  return { username: 'forge-operator', displayName: 'Forge Operator' };
+  const username = getCurrentUser() ?? 'anonymous';
+  return { username, displayName: username };
 }

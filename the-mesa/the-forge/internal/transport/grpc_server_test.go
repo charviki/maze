@@ -1,10 +1,15 @@
 package transport
 
 import (
+	"context"
+	"errors"
 	"testing"
 	"time"
 
+	pb "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
 	"github.com/charviki/maze/the-mesa/the-forge/internal/service"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func TestArchiveToProto(t *testing.T) {
@@ -25,23 +30,36 @@ func TestArchiveToProto(t *testing.T) {
 	}
 }
 
-func TestMemoryToProto(t *testing.T) {
+func TestDocToProto(t *testing.T) {
 	now := time.Now()
 	parentID := "parent-1"
-	mem := &service.Memory{
-		ID: "mem-1", ArchiveID: "arch-1", ParentID: &parentID,
-		Kind: "doc", Title: "Title", Content: "body", Type: "note",
-		Summary: "sum", Tags: []string{"tag1"}, Author: "user1",
+	statusVal := "active"
+	priority := "high"
+	doc := &service.Doc{
+		ID: "doc-1", ArchiveID: "arch-1", ParentID: &parentID,
+		Title: "Title", Content: "body",
+		Summary: "sum", Status: &statusVal, Priority: &priority,
+		Assignee: "assignee-1",
+		Tags:     []string{"tag1"}, Author: "user1",
 		Visibility: "private", SharedWith: []string{"user2"},
 		Attachments: []service.Attachment{{ID: "att-1", Key: "key-1", Name: "file.txt", ContentType: "text/plain", Size: 100}},
-		CreatedAt: now, UpdatedAt: now,
+		CreatedAt:   now, UpdatedAt: now,
 	}
-	pb := memoryToProto(mem)
-	if pb.GetId() != "mem-1" {
-		t.Errorf("Id = %s, want mem-1", pb.GetId())
+	pb := docToProto(doc)
+	if pb.GetId() != "doc-1" {
+		t.Errorf("Id = %s, want doc-1", pb.GetId())
 	}
 	if pb.GetParentId() != "parent-1" {
 		t.Errorf("ParentId = %s, want parent-1", pb.GetParentId())
+	}
+	if pb.GetStatus() != "active" {
+		t.Errorf("Status = %s, want active", pb.GetStatus())
+	}
+	if pb.GetPriority() != "high" {
+		t.Errorf("Priority = %s, want high", pb.GetPriority())
+	}
+	if pb.GetAssignee() != "assignee-1" {
+		t.Errorf("Assignee = %s, want assignee-1", pb.GetAssignee())
 	}
 	if len(pb.GetTags()) != 1 || pb.GetTags()[0] != "tag1" {
 		t.Errorf("Tags = %v, want [tag1]", pb.GetTags())
@@ -51,55 +69,31 @@ func TestMemoryToProto(t *testing.T) {
 	}
 }
 
-func TestMemoryToProto_NilParent(t *testing.T) {
-	mem := &service.Memory{ID: "mem-1", Tags: []string{}, SharedWith: []string{}, Attachments: nil}
-	pb := memoryToProto(mem)
+func TestDocToProto_NilParent(t *testing.T) {
+	doc := &service.Doc{ID: "doc-1", Tags: []string{}, SharedWith: []string{}, Attachments: nil}
+	pb := docToProto(doc)
 	if pb.GetParentId() != "" {
 		t.Errorf("ParentId = %s, want empty", pb.GetParentId())
 	}
 	if pb.GetAttachments() != nil {
 		t.Errorf("Attachments should be nil when input is nil")
 	}
+	if pb.GetStatus() != "" {
+		t.Errorf("Status = %s, want empty", pb.GetStatus())
+	}
+	if pb.GetPriority() != "" {
+		t.Errorf("Priority = %s, want empty", pb.GetPriority())
+	}
 }
 
-func TestDirectiveToProto(t *testing.T) {
+func TestDocLinkToProto(t *testing.T) {
 	now := time.Now()
-	archiveID := "arch-1"
-	dir := &service.Directive{
-		ID: "dir-1", Title: "Task", Description: "desc", Status: "open",
-		Priority: "high", Assignee: "user1", Author: "author1",
-		RequireDocIDs: []string{"doc-1"}, NarrativeID: "narr-1",
-		ArchiveID: &archiveID, Visibility: "private",
-		CreatedAt: now, UpdatedAt: now,
-	}
-	pb := directiveToProto(dir)
-	if pb.GetId() != "dir-1" {
-		t.Errorf("Id = %s, want dir-1", pb.GetId())
-	}
-	if pb.GetArchiveId() != "arch-1" {
-		t.Errorf("ArchiveId = %s, want arch-1", pb.GetArchiveId())
-	}
-	if len(pb.GetRequireDocIds()) != 1 {
-		t.Errorf("len(RequireDocIds) = %d, want 1", len(pb.GetRequireDocIds()))
-	}
-}
-
-func TestDirectiveToProto_NilArchiveID(t *testing.T) {
-	dir := &service.Directive{ID: "dir-1"}
-	pb := directiveToProto(dir)
-	if pb.GetArchiveId() != "" {
-		t.Errorf("ArchiveId = %s, want empty", pb.GetArchiveId())
-	}
-}
-
-func TestNeuralLinkToProto(t *testing.T) {
-	now := time.Now()
-	link := &service.NeuralLink{
+	link := &service.DocLink{
 		ID: "link-1", SourceID: "s-1", TargetID: "t-1",
 		RelationType: "references", SourceTitle: "Source", TargetTitle: "Target",
 		CreatedAt: now,
 	}
-	pb := neuralLinkToProto(link)
+	pb := docLinkToProto(link)
 	if pb.GetSourceId() != "s-1" {
 		t.Errorf("SourceId = %s, want s-1", pb.GetSourceId())
 	}
@@ -125,13 +119,6 @@ func TestSafeInt32(t *testing.T) {
 	}
 }
 
-func TestSafeInt32FromInt(t *testing.T) {
-	got := safeInt32FromInt(100)
-	if got != 100 {
-		t.Errorf("safeInt32FromInt(100) = %d, want 100", got)
-	}
-}
-
 func TestStrPtr(t *testing.T) {
 	p := strPtr("hello")
 	if p == nil || *p != "hello" {
@@ -149,21 +136,343 @@ func TestStrValue(t *testing.T) {
 	}
 }
 
+func TestStrPtrOrNil(t *testing.T) {
+	if got := strPtrOrNil(""); got != nil {
+		t.Errorf("strPtrOrNil(\"\") = %v, want nil", got)
+	}
+	p := strPtrOrNil("hello")
+	if p == nil || *p != "hello" {
+		t.Errorf("strPtrOrNil(\"hello\") = %v, want *\"hello\"", p)
+	}
+}
+
 func TestProtoToAttachments(t *testing.T) {
-	mem := &service.Memory{
-		ID: "mem-1",
+	doc := &service.Doc{
+		ID: "doc-1",
 		Attachments: []service.Attachment{
 			{ID: "a-1", Key: "k-1", Name: "f.txt", ContentType: "text/plain", Size: 42},
 		},
 		Tags:       []string{},
 		SharedWith: []string{},
 	}
-	pb := memoryToProto(mem)
+	pb := docToProto(doc)
 	attachments := pb.GetAttachments()
 	if len(attachments) != 1 {
 		t.Fatalf("len(Attachments) = %d, want 1", len(attachments))
 	}
 	if attachments[0].GetName() != "f.txt" {
 		t.Errorf("Name = %s, want f.txt", attachments[0].GetName())
+	}
+}
+
+// --- UUID Validation Tests ---
+
+func TestValidateUUID(t *testing.T) {
+	tests := []struct {
+		name  string
+		field string
+		value string
+		want  codes.Code
+	}{
+		{"empty", "id", "", codes.InvalidArgument},
+		{"invalid", "id", "not-a-uuid", codes.InvalidArgument},
+		{"valid", "id", "550e8400-e29b-41d4-a716-446655440000", codes.OK},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateUUID(tt.field, tt.value)
+			if tt.want == codes.OK {
+				if err != nil {
+					t.Errorf("validateUUID(%s, %s) = %v, want nil", tt.field, tt.value, err)
+				}
+			} else {
+				st, ok := status.FromError(err)
+				if !ok {
+					t.Fatalf("expected gRPC status error, got %v", err)
+				}
+				if st.Code() != tt.want {
+					t.Errorf("code = %v, want %v", st.Code(), tt.want)
+				}
+			}
+		})
+	}
+}
+
+// --- gRPC Method Validation Tests ---
+
+func TestCreateDoc_Validation(t *testing.T) {
+	transport := NewServer(service.NewDocService(nil))
+
+	tests := []struct {
+		name     string
+		req      *pb.CreateDocRequest
+		wantCode codes.Code
+	}{
+		{"empty archive_id", &pb.CreateDocRequest{Title: "test"}, codes.InvalidArgument},
+		{"invalid archive_id", &pb.CreateDocRequest{Title: "test", ArchiveId: "not-a-uuid"}, codes.InvalidArgument},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := transport.CreateDoc(context.Background(), tt.req)
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			st, ok := status.FromError(err)
+			if !ok {
+				t.Fatalf("expected gRPC status error, got %v", err)
+			}
+			if st.Code() != tt.wantCode {
+				t.Errorf("code = %v (%s), want %v", st.Code(), st.Message(), tt.wantCode)
+			}
+		})
+	}
+}
+
+func TestGetDoc_Validation(t *testing.T) {
+	transport := NewServer(service.NewDocService(nil))
+
+	_, err := transport.GetDoc(context.Background(), &pb.GetDocRequest{Id: "not-a-uuid"})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	st, _ := status.FromError(err)
+	if st.Code() != codes.InvalidArgument {
+		t.Errorf("code = %v, want InvalidArgument", st.Code())
+	}
+
+	_, err = transport.GetDoc(context.Background(), &pb.GetDocRequest{Id: ""})
+	if err == nil {
+		t.Fatal("expected error for empty id")
+	}
+}
+
+func TestDeleteDoc_Validation(t *testing.T) {
+	transport := NewServer(service.NewDocService(nil))
+
+	_, err := transport.DeleteDoc(context.Background(), &pb.DeleteDocRequest{Id: "not-a-uuid"})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	st, _ := status.FromError(err)
+	if st.Code() != codes.InvalidArgument {
+		t.Errorf("code = %v, want InvalidArgument", st.Code())
+	}
+}
+
+func TestUpdateDoc_Validation(t *testing.T) {
+	transport := NewServer(service.NewDocService(nil))
+
+	_, err := transport.UpdateDoc(context.Background(), &pb.UpdateDocRequest{Id: "not-a-uuid"})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	st, _ := status.FromError(err)
+	if st.Code() != codes.InvalidArgument {
+		t.Errorf("code = %v, want InvalidArgument", st.Code())
+	}
+}
+
+func TestGetArchive_Validation(t *testing.T) {
+	transport := NewServer(service.NewDocService(nil))
+
+	_, err := transport.GetArchive(context.Background(), &pb.GetArchiveRequest{Id: "not-a-uuid"})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	st, _ := status.FromError(err)
+	if st.Code() != codes.InvalidArgument {
+		t.Errorf("code = %v, want InvalidArgument", st.Code())
+	}
+}
+
+func TestDeleteArchive_Validation(t *testing.T) {
+	transport := NewServer(service.NewDocService(nil))
+
+	_, err := transport.DeleteArchive(context.Background(), &pb.DeleteArchiveRequest{Id: ""})
+	if err == nil {
+		t.Fatal("expected error for empty id")
+	}
+}
+
+func TestGetDocTree_Validation(t *testing.T) {
+	transport := NewServer(service.NewDocService(nil))
+
+	_, err := transport.GetDocTree(context.Background(), &pb.GetDocTreeRequest{ArchiveId: "not-a-uuid"})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	st, _ := status.FromError(err)
+	if st.Code() != codes.InvalidArgument {
+		t.Errorf("code = %v, want InvalidArgument", st.Code())
+	}
+}
+
+func TestGetDocAncestors_Validation(t *testing.T) {
+	transport := NewServer(service.NewDocService(nil))
+
+	_, err := transport.GetDocAncestors(context.Background(), &pb.GetDocAncestorsRequest{Id: "not-a-uuid"})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	st, _ := status.FromError(err)
+	if st.Code() != codes.InvalidArgument {
+		t.Errorf("code = %v, want InvalidArgument", st.Code())
+	}
+}
+
+func TestCreateLink_Validation(t *testing.T) {
+	transport := NewServer(service.NewDocService(nil))
+
+	tests := []struct {
+		name string
+		req  *pb.CreateLinkRequest
+	}{
+		{"empty id", &pb.CreateLinkRequest{Id: "", TargetId: "550e8400-e29b-41d4-a716-446655440000"}},
+		{"invalid id", &pb.CreateLinkRequest{Id: "not-a-uuid", TargetId: "550e8400-e29b-41d4-a716-446655440000"}},
+		{"empty target_id", &pb.CreateLinkRequest{Id: "550e8400-e29b-41d4-a716-446655440000", TargetId: ""}},
+		{"invalid target_id", &pb.CreateLinkRequest{Id: "550e8400-e29b-41d4-a716-446655440000", TargetId: "not-a-uuid"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := transport.CreateLink(context.Background(), tt.req)
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+			st, _ := status.FromError(err)
+			if st.Code() != codes.InvalidArgument {
+				t.Errorf("code = %v, want InvalidArgument", st.Code())
+			}
+		})
+	}
+}
+
+func TestDeleteLink_Validation(t *testing.T) {
+	transport := NewServer(service.NewDocService(nil))
+
+	_, err := transport.DeleteLink(context.Background(), &pb.DeleteLinkRequest{LinkId: "not-a-uuid"})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	st, _ := status.FromError(err)
+	if st.Code() != codes.InvalidArgument {
+		t.Errorf("code = %v, want InvalidArgument", st.Code())
+	}
+}
+
+func TestGetLinks_Validation(t *testing.T) {
+	transport := NewServer(service.NewDocService(nil))
+
+	_, err := transport.GetLinks(context.Background(), &pb.GetLinksRequest{Id: "not-a-uuid"})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	st, _ := status.FromError(err)
+	if st.Code() != codes.InvalidArgument {
+		t.Errorf("code = %v, want InvalidArgument", st.Code())
+	}
+}
+
+func TestSearchDocs_Validation(t *testing.T) {
+	transport := NewServer(service.NewDocService(nil))
+
+	_, err := transport.SearchDocs(context.Background(), &pb.SearchDocsRequest{Q: ""})
+	if err == nil {
+		t.Fatal("expected error for empty query")
+	}
+	st, _ := status.FromError(err)
+	if st.Code() != codes.InvalidArgument {
+		t.Errorf("code = %v, want InvalidArgument", st.Code())
+	}
+}
+
+// --- toStatusError Tests ---
+
+func TestToStatusError(t *testing.T) {
+	tests := []struct {
+		name     string
+		err      error
+		wantCode codes.Code
+	}{
+		{"nil", nil, codes.OK},
+		{"archive not found", service.ErrArchiveNotFound, codes.NotFound},
+		{"doc not found", service.ErrDocNotFound, codes.NotFound},
+		{"link not found", service.ErrLinkNotFound, codes.NotFound},
+		{"already exists", service.ErrAlreadyExists, codes.AlreadyExists},
+		{"generic error", errors.New("something broke"), codes.Internal},
+		{"already gRPC status", status.Error(codes.PermissionDenied, "denied"), codes.PermissionDenied},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := toStatusError(tt.err)
+			if tt.err == nil {
+				if result != nil {
+					t.Errorf("toStatusError(nil) = %v, want nil", result)
+				}
+				return
+			}
+			st, ok := status.FromError(result)
+			if !ok {
+				t.Fatalf("expected gRPC status error, got %v", result)
+			}
+			if st.Code() != tt.wantCode {
+				t.Errorf("code = %v, want %v", st.Code(), tt.wantCode)
+			}
+		})
+	}
+}
+
+// --- Tree Building Tests ---
+
+func TestBuildTree(t *testing.T) {
+	parentID := "parent-1"
+	childID := "child-1"
+	grandchildID := "gc-1"
+
+	docs := []service.Doc{
+		{ID: "root-1", Title: "Root Doc", Tags: []string{}, SharedWith: []string{}, Attachments: []service.Attachment{}},
+		{ID: parentID, Title: "Folder", Tags: []string{}, SharedWith: []string{}, Attachments: []service.Attachment{}},
+		{ID: childID, ParentID: &parentID, Title: "Child", Tags: []string{}, SharedWith: []string{}, Attachments: []service.Attachment{}},
+		{ID: grandchildID, ParentID: &childID, Title: "Grandchild", Tags: []string{}, SharedWith: []string{}, Attachments: []service.Attachment{}},
+	}
+
+	nodes := buildTree(docs)
+
+	if len(nodes) != 2 {
+		t.Fatalf("len(root nodes) = %d, want 2", len(nodes))
+	}
+
+	// root-1 has no children
+	if nodes[0].GetDoc().GetId() != "root-1" {
+		t.Errorf("nodes[0].Id = %s, want root-1", nodes[0].GetDoc().GetId())
+	}
+	if len(nodes[0].GetChildren()) != 0 {
+		t.Errorf("root-1 should have no children, got %d", len(nodes[0].GetChildren()))
+	}
+
+	// parent-1 has child-1
+	if nodes[1].GetDoc().GetId() != parentID {
+		t.Errorf("nodes[1].Id = %s, want %s", nodes[1].GetDoc().GetId(), parentID)
+	}
+	if len(nodes[1].GetChildren()) != 1 {
+		t.Fatalf("folder children = %d, want 1", len(nodes[1].GetChildren()))
+	}
+
+	// child-1 has grandchild
+	child := nodes[1].GetChildren()[0]
+	if child.GetDoc().GetId() != childID {
+		t.Errorf("child.Id = %s, want %s", child.GetDoc().GetId(), childID)
+	}
+	if len(child.GetChildren()) != 1 {
+		t.Fatalf("grandchild count = %d, want 1", len(child.GetChildren()))
+	}
+	if child.GetChildren()[0].GetDoc().GetId() != grandchildID {
+		t.Errorf("grandchild.Id = %s, want %s", child.GetChildren()[0].GetDoc().GetId(), grandchildID)
+	}
+}
+
+func TestBuildTree_Empty(t *testing.T) {
+	nodes := buildTree(nil)
+	if len(nodes) != 0 {
+		t.Errorf("expected 0 nodes for empty input, got %d", len(nodes))
 	}
 }

@@ -1,56 +1,48 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { ToastProvider } from '@maze/fabrication';
 import Dashboard from './Dashboard';
 
 function renderDashboard() {
   return render(
     <MemoryRouter>
-      <Dashboard />
+      <ToastProvider>
+        <Dashboard />
+      </ToastProvider>
     </MemoryRouter>,
   );
 }
 
 describe('Dashboard', () => {
-  it('renders stats cards after loading', async () => {
+  it('renders header', async () => {
     renderDashboard();
 
     await waitFor(() => {
-      expect(screen.getByText('TOTAL MEMORIES')).toBeInTheDocument();
+      expect(screen.getByText('THE FORGE')).toBeInTheDocument();
     });
-    expect(screen.getByText('TOTAL DIRECTIVES')).toBeInTheDocument();
-    expect(screen.getByText('DIRECTIVE STATUS')).toBeInTheDocument();
   });
 
-  it('displays memory and directive counts from API', async () => {
+  it('renders stats cards', async () => {
     renderDashboard();
 
     await waitFor(() => {
-      expect(screen.getByText('TOTAL MEMORIES')).toBeInTheDocument();
+      expect(screen.getByText('ARCHIVES')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('15')).toBeInTheDocument();
-    expect(screen.getByText('10')).toBeInTheDocument();
+    expect(screen.getByText('ACTIVE')).toBeInTheDocument();
+    expect(screen.getByText('PENDING')).toBeInTheDocument();
+    expect(screen.getByText('DONE')).toBeInTheDocument();
   });
 
-  it('renders recent memories list', async () => {
+  it('renders quick action links', async () => {
     renderDashboard();
 
     await waitFor(() => {
-      expect(screen.getByText('RECENT MEMORIES')).toBeInTheDocument();
+      expect(screen.getByText('THE FORGE')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Quick Start Guide')).toBeInTheDocument();
-  });
-
-  it('renders directive status badges', async () => {
-    renderDashboard();
-
-    await waitFor(() => {
-      expect(screen.getByText('DIRECTIVE STATUS')).toBeInTheDocument();
-    });
-
-    expect(screen.getByText(/pending:/)).toBeInTheDocument();
-    expect(screen.getByText(/active:/)).toBeInTheDocument();
+    expect(screen.getByText('NEW DOCUMENT')).toBeInTheDocument();
+    expect(screen.getByText('BROWSE ARCHIVES')).toBeInTheDocument();
   });
 });

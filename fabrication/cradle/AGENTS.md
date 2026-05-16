@@ -2,11 +2,11 @@
 
 ## 职责
 
-Go 共享库，为 Manager 和 Agent 提供统一的日志、配置、HTTP 工具、中间件、通信协议（gRPC/Protobuf）、管线编排及数据持久化能力。
+Go 共享库，为 Manager、Agent 和知识库服务提供统一的日志、配置、HTTP 工具、中间件、通信协议（gRPC/Protobuf）、管线编排及数据持久化能力。
 
 ## 项目结构
 
-Protobuf IDL 定义在 api/proto/，由 buf 生成 Go 类型/gRPC stub/gateway handler/OpenAPI spec（api/gen/），openapi-generator 再生成 Go HTTP client。工具包按 domain 划分：configutil（配置）、httputil（HTTP 封装）、logutil（日志）、middleware/gatewayutil（认证/审计）、grpcutil/lifecycle（gRPC 生命周期）、pipeline（管线）、protocol（领域模型）、maskutil（脱敏）、storeutil（持久化）。PostgreSQL 共享能力在 db/。
+Protobuf IDL 定义在 api/proto/（含 Director Core 的 Host/Node/Auth/Permission/Session/Template/Config/Agent 服务和 The Forge 的 KnowledgeService），由 buf 生成 Go 类型/gRPC stub/gateway handler/OpenAPI spec（api/gen/），openapi-generator 再生成 Go HTTP client。工具包按 domain 划分：configutil（配置）、httputil（HTTP 封装）、logutil（日志）、middleware/gatewayutil（认证/审计）、grpcutil/lifecycle（gRPC 生命周期）、pipeline（管线）、protocol（领域模型）、maskutil（脱敏）、storeutil（持久化）。PostgreSQL 共享能力在 db/。
 
 ## 核心原则
 
@@ -23,7 +23,7 @@ Protobuf IDL 定义在 api/proto/，由 buf 生成 Go 类型/gRPC stub/gateway h
 ## 依赖
 
 - 依赖: Go 1.26 + yaml.v3 + gRPC + protobuf + grpc-gateway + buf
-- 被依赖: [the-mesa](../../the-mesa/AGENTS.md), [black-ridge](../../sweetwater/black-ridge/AGENTS.md)
+- 被依赖: [the-mesa](../../the-mesa/AGENTS.md), [the-forge](../../the-mesa/the-forge/AGENTS.md), [black-ridge](../../sweetwater/black-ridge/AGENTS.md)
 
 ## 详细文档
 

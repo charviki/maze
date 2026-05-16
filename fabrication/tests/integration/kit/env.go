@@ -117,7 +117,44 @@ func (e *TestEnv) WaitForDirectorCore(timeout time.Duration) error {
 	return fmt.Errorf("director-core not available at %s after %v (last failure: %s)", e.cfg.DirectorCoreURL, timeout, lastFailure)
 }
 
-// sleep 等待 2 秒，收到信号时立即返回 false。
+// WaitForTheForge 轮询 The Forge /health 端点直到就绪。
+func (e *TestEnv) WaitForTheForge(timeout time.Duration) error {
+	if e.cfg.TheForgeURL == "" {
+		return nil
+	}
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	deadline := time.Now().Add(timeout)
+	httpClient := &http.Client{Timeout: 5 * time.Second}
+	lastFailure := "no probe executed"
+
+	for time.Now().Before(deadline) {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("interrupted while waiting for the-forge at %s", e.cfg.TheForgeURL)
+		default:
+		}
+
+		resp, err := httpClient.Get(e.cfg.TheForgeURL + "/health")
+		if err != nil || resp.StatusCode != http.StatusOK {
+			if err != nil {
+				lastFailure = fmt.Sprintf("/health request failed: %v", err)
+			} else {
+				lastFailure = fmt.Sprintf("/health returned status %d", resp.StatusCode)
+			}
+			if resp != nil {
+				_ = resp.Body.Close()
+			}
+			if !sleep(ctx) {
+				return fmt.Errorf("interrupted while waiting for the-forge at %s", e.cfg.TheForgeURL)
+			}
+			continue
+		}
+		_ = resp.Body.Close()
+		return nil
+	}
+	return fmt.Errorf("the-forge not available at %s after %v (last failure: %s)", e.cfg.TheForgeURL, timeout, lastFailure)
+}
 func sleep(ctx context.Context) bool {
 	timer := time.NewTimer(2 * time.Second)
 	defer timer.Stop()

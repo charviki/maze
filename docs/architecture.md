@@ -7,6 +7,7 @@ graph TD
     subgraph "The Mesa (控制面)"
         ArrivalGate["Arrival Gate<br/>统一入口门户<br/>React + Vite"]
         MesaControl["Director Core / Director Console<br/>代理网关 + Host 编排引擎<br/>Go + React"]
+        TheForge["The Forge<br/>知识库服务<br/>Go + React"]
     end
 
     subgraph "Sweetwater (运行时)"
@@ -22,9 +23,12 @@ graph TD
     ArrivalGate -->|消费组件| Skin
     MesaControl -->|import Go 库| Cradle
     MesaControl -->|消费组件| Skin
+    TheForge -->|import Go 库| Cradle
+    TheForge -->|消费组件| Skin
     BR -->|import Go 库| Cradle
     BR -->|消费组件| Skin
     IT -->|测试| MesaControl
+    IT -->|测试| TheForge
     IT -->|测试| BR
 
     MesaControl -.->|gRPC 代理| BR
@@ -36,13 +40,17 @@ graph TD
 
 ```mermaid
 graph LR
-    Browser["浏览器<br/>Arrival Gate / Director Console 前端"] -->|HTTP/WS| Nginx["Nginx<br/>路由分发"]
+    Browser["浏览器<br/>Arrival Gate / Director Console / The Forge 前端"] -->|HTTP/WS| Nginx["Nginx<br/>路由分发"]
     Nginx -->|"/arrival-gate/"| ArrivalGate
     Nginx -->|"/director-console/"| DirectorConsole["Director Console SPA"]
+    Nginx -->|"/the-forge/"| TheForgeUI["The Forge SPA"]
+    Nginx -->|"/api/v1/(archives|docs|...)"| TheForge["The Forge<br/>net/http + grpc-gateway + gRPC"]
     Nginx -->|"/api/*"| DirectorCore["Director Core<br/>net/http + grpc-gateway + gRPC"]
 
     DirectorCore -->|"gRPC 进程内"| DirectorCoreLogic["Director Core 业务逻辑<br/>Host/Node/权限/审计"]
     DirectorCore -->|"gRPC 出站"| BR_BE["Black Ridge 后端<br/>net/http + grpc-gateway + gRPC"]
+
+    TheForge -->|"gRPC 进程内"| ForgeLogic["The Forge 业务逻辑<br/>Archive / Doc / DocLink"]
 
     BR_BE -->|tmux| CLI["AI CLI<br/>Claude Code / Codex / Bash"]
 
@@ -120,6 +128,7 @@ sequenceDiagram
 |------|------|
 | Arrival Gate | 统一入口门户，西部世界主题 Landing → 主界面 |
 | Director Core / Director Console | 代理网关 + Host 编排引擎，管控 Agent 节点全生命周期 |
+| The Forge | 知识库服务，Archive / Doc / DocLink 三层知识模型（Archive / Doc / DocLink） |
 | Black Ridge | Agent 运行时，tmux + Pipeline 管理 AI CLI 会话 |
 | Cradle | Go 共享库，Proto IDL 驱动，提供 HTTP/Config/Auth/Pipeline |
 | Skin | Westworld 主题 React 组件库，视觉特效 + Agent 业务组件 |
@@ -130,7 +139,7 @@ sequenceDiagram
 
 | 依赖 | 用途 |
 |------|------|
-| PostgreSQL | Director Core 权限系统持久化 |
+| PostgreSQL | Director Core 权限系统 + The Forge 知识库持久化 |
 | Docker | Host 容器运行时 + 镜像构建 |
 | Kubernetes | 生产环境容器编排（可选） |
 | tmux | Black Ridge Agent 节点的终端会话管理 |

@@ -14,7 +14,6 @@ tags:
 - name: KnowledgeService
 - name: NodeService
 - name: SessionService
-- name: DirectiveService
 - name: TemplateService
 paths:
   /api/v1/archives:
@@ -240,24 +239,28 @@ paths:
       tags:
       - AuthService
       x-codegen-request-body-name: body
-  /api/v1/directives:
+  /api/v1/docs:
     get:
-      operationId: DirectiveService_ListDirectives
+      operationId: KnowledgeService_ListDocs
       parameters:
+      - in: query
+        name: archiveId
+        schema:
+          type: string
+      - in: query
+        name: parentId
+        schema:
+          type: string
       - in: query
         name: status
         schema:
           type: string
       - in: query
-        name: assignee
-        schema:
-          type: string
-      - in: query
-        name: priority
-        schema:
-          type: string
-      - in: query
         name: visibility
+        schema:
+          type: string
+      - in: query
+        name: author
         schema:
           type: string
       - in: query
@@ -275,7 +278,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/v1ListDirectivesResponse"
+                $ref: "#/components/schemas/v1ListDocsResponse"
           description: A successful response.
         default:
           content:
@@ -284,21 +287,21 @@ paths:
                 $ref: "#/components/schemas/rpcStatus"
           description: An unexpected error response.
       tags:
-      - DirectiveService
+      - KnowledgeService
     post:
-      operationId: DirectiveService_CreateDirective
+      operationId: KnowledgeService_CreateDoc
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/v1CreateDirectiveRequest"
+              $ref: "#/components/schemas/v1CreateDocRequest"
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/v1Directive"
+                $ref: "#/components/schemas/v1Doc"
           description: A successful response.
         default:
           content:
@@ -307,11 +310,11 @@ paths:
                 $ref: "#/components/schemas/rpcStatus"
           description: An unexpected error response.
       tags:
-      - DirectiveService
+      - KnowledgeService
       x-codegen-request-body-name: body
-  /api/v1/directives/{id}:
+  /api/v1/docs/{id}:
     delete:
-      operationId: DirectiveService_DeleteDirective
+      operationId: KnowledgeService_DeleteDoc
       parameters:
       - in: path
         name: id
@@ -332,9 +335,9 @@ paths:
                 $ref: "#/components/schemas/rpcStatus"
           description: An unexpected error response.
       tags:
-      - DirectiveService
+      - KnowledgeService
     get:
-      operationId: DirectiveService_GetDirective
+      operationId: KnowledgeService_GetDoc
       parameters:
       - in: path
         name: id
@@ -346,7 +349,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/v1Directive"
+                $ref: "#/components/schemas/v1Doc"
           description: A successful response.
         default:
           content:
@@ -355,9 +358,9 @@ paths:
                 $ref: "#/components/schemas/rpcStatus"
           description: An unexpected error response.
       tags:
-      - DirectiveService
+      - KnowledgeService
     put:
-      operationId: DirectiveService_UpdateDirective
+      operationId: KnowledgeService_UpdateDoc
       parameters:
       - in: path
         name: id
@@ -368,14 +371,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/DirectiveServiceUpdateDirectiveBody"
+              $ref: "#/components/schemas/KnowledgeServiceUpdateDocBody"
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/v1Directive"
+                $ref: "#/components/schemas/v1Doc"
           description: A successful response.
         default:
           content:
@@ -384,8 +387,185 @@ paths:
                 $ref: "#/components/schemas/rpcStatus"
           description: An unexpected error response.
       tags:
-      - DirectiveService
+      - KnowledgeService
       x-codegen-request-body-name: body
+  /api/v1/docs/{id}/ancestors:
+    get:
+      operationId: KnowledgeService_GetDocAncestors
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1GetDocAncestorsResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - KnowledgeService
+  /api/v1/docs/{id}/links:
+    get:
+      operationId: KnowledgeService_GetLinks
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      - in: query
+        name: direction
+        schema:
+          type: string
+      - in: query
+        name: relationType
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1GetLinksResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - KnowledgeService
+    post:
+      operationId: KnowledgeService_CreateLink
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KnowledgeServiceCreateLinkBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1DocLink"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - KnowledgeService
+      x-codegen-request-body-name: body
+  /api/v1/docs/{id}/links/{linkId}:
+    delete:
+      operationId: KnowledgeService_DeleteLink
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: linkId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - KnowledgeService
+  /api/v1/docs:search:
+    get:
+      operationId: KnowledgeService_SearchDocs
+      parameters:
+      - in: query
+        name: q
+        schema:
+          type: string
+      - in: query
+        name: archiveId
+        schema:
+          type: string
+      - in: query
+        name: visibility
+        schema:
+          type: string
+      - in: query
+        name: author
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1SearchDocsResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - KnowledgeService
+  /api/v1/docs:tree:
+    get:
+      operationId: KnowledgeService_GetDocTree
+      parameters:
+      - in: query
+        name: archiveId
+        schema:
+          type: string
+      - in: query
+        name: parentId
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1GetDocTreeResponse"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - KnowledgeService
   /api/v1/host/tools:
     get:
       operationId: HostService_ListTools
@@ -588,365 +768,6 @@ paths:
       tags:
       - ConfigService
       x-codegen-request-body-name: body
-  /api/v1/memories:
-    get:
-      operationId: KnowledgeService_ListMemories
-      parameters:
-      - in: query
-        name: archiveId
-        schema:
-          type: string
-      - in: query
-        name: parentId
-        schema:
-          type: string
-      - in: query
-        name: kind
-        schema:
-          type: string
-      - in: query
-        name: type
-        schema:
-          type: string
-      - in: query
-        name: tag
-        schema:
-          type: string
-      - in: query
-        name: visibility
-        schema:
-          type: string
-      - in: query
-        name: author
-        schema:
-          type: string
-      - in: query
-        name: limit
-        schema:
-          format: int32
-          type: integer
-      - in: query
-        name: offset
-        schema:
-          format: int32
-          type: integer
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/v1ListMemoriesResponse"
-          description: A successful response.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/rpcStatus"
-          description: An unexpected error response.
-      tags:
-      - KnowledgeService
-    post:
-      operationId: KnowledgeService_CreateMemory
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/v1CreateMemoryRequest"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/v1Memory"
-          description: A successful response.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/rpcStatus"
-          description: An unexpected error response.
-      tags:
-      - KnowledgeService
-      x-codegen-request-body-name: body
-  /api/v1/memories/{id}:
-    delete:
-      operationId: KnowledgeService_DeleteMemory
-      parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                type: object
-          description: A successful response.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/rpcStatus"
-          description: An unexpected error response.
-      tags:
-      - KnowledgeService
-    get:
-      operationId: KnowledgeService_GetMemory
-      parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/v1ParsedMemory"
-          description: A successful response.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/rpcStatus"
-          description: An unexpected error response.
-      tags:
-      - KnowledgeService
-    put:
-      operationId: KnowledgeService_UpdateMemory
-      parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/KnowledgeServiceUpdateMemoryBody"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/v1Memory"
-          description: A successful response.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/rpcStatus"
-          description: An unexpected error response.
-      tags:
-      - KnowledgeService
-      x-codegen-request-body-name: body
-  /api/v1/memories/{id}/ancestors:
-    get:
-      operationId: KnowledgeService_GetMemoryAncestors
-      parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/v1GetMemoryAncestorsResponse"
-          description: A successful response.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/rpcStatus"
-          description: An unexpected error response.
-      tags:
-      - KnowledgeService
-  /api/v1/memories/{id}/directives:
-    get:
-      operationId: KnowledgeService_GetMemoryDirectives
-      parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/v1GetMemoryDirectivesResponse"
-          description: A successful response.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/rpcStatus"
-          description: An unexpected error response.
-      tags:
-      - KnowledgeService
-  /api/v1/memories/{id}/links:
-    get:
-      operationId: KnowledgeService_GetLinks
-      parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      - in: query
-        name: direction
-        schema:
-          type: string
-      - in: query
-        name: relationType
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/v1GetLinksResponse"
-          description: A successful response.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/rpcStatus"
-          description: An unexpected error response.
-      tags:
-      - KnowledgeService
-    post:
-      operationId: KnowledgeService_CreateLink
-      parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/KnowledgeServiceCreateLinkBody"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/v1NeuralLink"
-          description: A successful response.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/rpcStatus"
-          description: An unexpected error response.
-      tags:
-      - KnowledgeService
-      x-codegen-request-body-name: body
-  /api/v1/memories/{id}/links/{linkId}:
-    delete:
-      operationId: KnowledgeService_DeleteLink
-      parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: string
-      - in: path
-        name: linkId
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                type: object
-          description: A successful response.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/rpcStatus"
-          description: An unexpected error response.
-      tags:
-      - KnowledgeService
-  /api/v1/memories:search:
-    get:
-      operationId: KnowledgeService_SearchMemories
-      parameters:
-      - in: query
-        name: q
-        schema:
-          type: string
-      - in: query
-        name: archiveId
-        schema:
-          type: string
-      - in: query
-        name: visibility
-        schema:
-          type: string
-      - in: query
-        name: author
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/v1SearchMemoriesResponse"
-          description: A successful response.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/rpcStatus"
-          description: An unexpected error response.
-      tags:
-      - KnowledgeService
-  /api/v1/memories:tree:
-    get:
-      operationId: KnowledgeService_GetMemoryTree
-      parameters:
-      - in: query
-        name: archiveId
-        schema:
-          type: string
-      - in: query
-        name: parentId
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/v1GetMemoryTreeResponse"
-          description: A successful response.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/rpcStatus"
-          description: An unexpected error response.
-      tags:
-      - KnowledgeService
   /api/v1/nodes:
     get:
       operationId: NodeService_ListNodes
@@ -2231,24 +2052,6 @@ paths:
       tags:
       - SessionService
       x-codegen-request-body-name: body
-  /api/v1/stats:
-    get:
-      operationId: KnowledgeService_GetStats
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/v1GetStatsResponse"
-          description: A successful response.
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/rpcStatus"
-          description: An unexpected error response.
-      tags:
-      - KnowledgeService
   /api/v1/subjects/{subjectKey}/permissions:
     get:
       operationId: PermissionService_ListSubjectPermissions
@@ -2479,44 +2282,6 @@ components:
             type: string
           type: object
       type: object
-    DirectiveServiceUpdateDirectiveBody:
-      example:
-        visibility: visibility
-        author: author
-        requireDocIds:
-        - requireDocIds
-        - requireDocIds
-        narrativeId: narrativeId
-        description: description
-        assignee: assignee
-        title: title
-        priority: priority
-        archiveId: archiveId
-        status: status
-      properties:
-        title:
-          type: string
-        description:
-          type: string
-        status:
-          type: string
-        priority:
-          type: string
-        assignee:
-          type: string
-        author:
-          type: string
-        requireDocIds:
-          items:
-            type: string
-          type: array
-        narrativeId:
-          type: string
-        archiveId:
-          type: string
-        visibility:
-          type: string
-      type: object
     KnowledgeServiceCreateLinkBody:
       example:
         relationType: relationType
@@ -2540,7 +2305,7 @@ components:
         icon:
           type: string
       type: object
-    KnowledgeServiceUpdateMemoryBody:
+    KnowledgeServiceUpdateDocBody:
       example:
         summary: summary
         attachments:
@@ -2555,14 +2320,15 @@ components:
           contentType: contentType
           key: key
         visibility: visibility
-        kind: kind
+        assignee: assignee
         title: title
-        type: type
+        priority: priority
         sharedWith:
         - sharedWith
         - sharedWith
         content: content
         parentId: parentId
+        status: status
         tags:
         - tags
         - tags
@@ -2571,9 +2337,13 @@ components:
           type: string
         content:
           type: string
-        type:
-          type: string
         summary:
+          type: string
+        status:
+          type: string
+        priority:
+          type: string
+        assignee:
           type: string
         tags:
           items:
@@ -2590,8 +2360,6 @@ components:
             $ref: "#/components/schemas/v1Attachment"
           type: array
         parentId:
-          type: string
-        kind:
           type: string
       type: object
     PermissionServiceReviewPermissionApplicationBody:
@@ -3060,11 +2828,17 @@ components:
         icon:
           type: string
       type: object
-    v1CreateDirectiveRequest:
+    v1CreateDocRequest:
       properties:
+        archiveId:
+          type: string
+        parentId:
+          type: string
         title:
           type: string
-        description:
+        content:
+          type: string
+        summary:
           type: string
         status:
           type: string
@@ -3072,16 +2846,20 @@ components:
           type: string
         assignee:
           type: string
-        requireDocIds:
+        tags:
           items:
             type: string
           type: array
-        narrativeId:
-          type: string
-        archiveId:
-          type: string
         visibility:
           type: string
+        sharedWith:
+          items:
+            type: string
+          type: array
+        attachments:
+          items:
+            $ref: "#/components/schemas/v1Attachment"
+          type: array
       type: object
     v1CreateHostRequest:
       properties:
@@ -3095,39 +2873,6 @@ components:
           type: string
         resources:
           $ref: "#/components/schemas/v1ResourceLimits"
-      type: object
-    v1CreateMemoryRequest:
-      properties:
-        archiveId:
-          type: string
-        parentId:
-          type: string
-        kind:
-          type: string
-        title:
-          type: string
-        content:
-          type: string
-        type:
-          type: string
-        summary:
-          type: string
-        tags:
-          items:
-            type: string
-          type: array
-        author:
-          type: string
-        visibility:
-          type: string
-        sharedWith:
-          items:
-            type: string
-          type: array
-        attachments:
-          items:
-            $ref: "#/components/schemas/v1Attachment"
-          type: array
       type: object
     v1CreatePermissionApplicationRequest:
       properties:
@@ -3175,19 +2920,34 @@ components:
         template:
           $ref: "#/components/schemas/v1SessionTemplate"
       type: object
-    v1Directive:
+    v1Doc:
       example:
+        summary: summary
+        attachments:
+        - size: size
+          name: name
+          id: id
+          contentType: contentType
+          key: key
+        - size: size
+          name: name
+          id: id
+          contentType: contentType
+          key: key
         visibility: visibility
         author: author
-        narrativeId: narrativeId
-        description: description
         title: title
         priority: priority
+        sharedWith:
+        - sharedWith
+        - sharedWith
         archiveId: archiveId
+        parentId: parentId
+        content: content
+        tags:
+        - tags
+        - tags
         createdAt: createdAt
-        requireDocIds:
-        - requireDocIds
-        - requireDocIds
         id: id
         assignee: assignee
         status: status
@@ -3195,9 +2955,15 @@ components:
       properties:
         id:
           type: string
+        archiveId:
+          type: string
+        parentId:
+          type: string
         title:
           type: string
-        description:
+        content:
+          type: string
+        summary:
           type: string
         status:
           type: string
@@ -3205,38 +2971,95 @@ components:
           type: string
         assignee:
           type: string
-        author:
-          type: string
-        requireDocIds:
+        tags:
           items:
             type: string
           type: array
-        narrativeId:
-          type: string
-        archiveId:
+        author:
           type: string
         visibility:
           type: string
+        sharedWith:
+          items:
+            type: string
+          type: array
+        attachments:
+          items:
+            $ref: "#/components/schemas/v1Attachment"
+          type: array
         createdAt:
           type: string
         updatedAt:
           type: string
       type: object
-    v1DirectiveRef:
+    v1DocLink:
       example:
+        sourceId: sourceId
+        relationType: relationType
+        createdAt: createdAt
+        targetId: targetId
+        targetTitle: targetTitle
+        sourceTitle: sourceTitle
         id: id
-        title: title
-        priority: priority
-        status: status
       properties:
         id:
           type: string
-        title:
+        sourceId:
           type: string
-        status:
+        targetId:
           type: string
-        priority:
+        relationType:
           type: string
+        sourceTitle:
+          type: string
+        targetTitle:
+          type: string
+        createdAt:
+          type: string
+      type: object
+    v1DocTreeNode:
+      example:
+        children:
+        - null
+        - null
+        doc:
+          summary: summary
+          attachments:
+          - size: size
+            name: name
+            id: id
+            contentType: contentType
+            key: key
+          - size: size
+            name: name
+            id: id
+            contentType: contentType
+            key: key
+          visibility: visibility
+          author: author
+          title: title
+          priority: priority
+          sharedWith:
+          - sharedWith
+          - sharedWith
+          archiveId: archiveId
+          parentId: parentId
+          content: content
+          tags:
+          - tags
+          - tags
+          createdAt: createdAt
+          id: id
+          assignee: assignee
+          status: status
+          updatedAt: updatedAt
+      properties:
+        doc:
+          $ref: "#/components/schemas/v1Doc"
+        children:
+          items:
+            $ref: "#/components/schemas/v1DocTreeNode"
+          type: array
       type: object
     v1EnvDef:
       example:
@@ -3317,6 +3140,152 @@ components:
         log:
           type: string
       type: object
+    v1GetDocAncestorsResponse:
+      example:
+        ancestors:
+        - summary: summary
+          attachments:
+          - size: size
+            name: name
+            id: id
+            contentType: contentType
+            key: key
+          - size: size
+            name: name
+            id: id
+            contentType: contentType
+            key: key
+          visibility: visibility
+          author: author
+          title: title
+          priority: priority
+          sharedWith:
+          - sharedWith
+          - sharedWith
+          archiveId: archiveId
+          parentId: parentId
+          content: content
+          tags:
+          - tags
+          - tags
+          createdAt: createdAt
+          id: id
+          assignee: assignee
+          status: status
+          updatedAt: updatedAt
+        - summary: summary
+          attachments:
+          - size: size
+            name: name
+            id: id
+            contentType: contentType
+            key: key
+          - size: size
+            name: name
+            id: id
+            contentType: contentType
+            key: key
+          visibility: visibility
+          author: author
+          title: title
+          priority: priority
+          sharedWith:
+          - sharedWith
+          - sharedWith
+          archiveId: archiveId
+          parentId: parentId
+          content: content
+          tags:
+          - tags
+          - tags
+          createdAt: createdAt
+          id: id
+          assignee: assignee
+          status: status
+          updatedAt: updatedAt
+      properties:
+        ancestors:
+          items:
+            $ref: "#/components/schemas/v1Doc"
+          type: array
+      type: object
+    v1GetDocTreeResponse:
+      example:
+        nodes:
+        - children:
+          - null
+          - null
+          doc:
+            summary: summary
+            attachments:
+            - size: size
+              name: name
+              id: id
+              contentType: contentType
+              key: key
+            - size: size
+              name: name
+              id: id
+              contentType: contentType
+              key: key
+            visibility: visibility
+            author: author
+            title: title
+            priority: priority
+            sharedWith:
+            - sharedWith
+            - sharedWith
+            archiveId: archiveId
+            parentId: parentId
+            content: content
+            tags:
+            - tags
+            - tags
+            createdAt: createdAt
+            id: id
+            assignee: assignee
+            status: status
+            updatedAt: updatedAt
+        - children:
+          - null
+          - null
+          doc:
+            summary: summary
+            attachments:
+            - size: size
+              name: name
+              id: id
+              contentType: contentType
+              key: key
+            - size: size
+              name: name
+              id: id
+              contentType: contentType
+              key: key
+            visibility: visibility
+            author: author
+            title: title
+            priority: priority
+            sharedWith:
+            - sharedWith
+            - sharedWith
+            archiveId: archiveId
+            parentId: parentId
+            content: content
+            tags:
+            - tags
+            - tags
+            createdAt: createdAt
+            id: id
+            assignee: assignee
+            status: status
+            updatedAt: updatedAt
+      properties:
+        nodes:
+          items:
+            $ref: "#/components/schemas/v1DocTreeNode"
+          type: array
+      type: object
     v1GetEnvResponse:
       example:
         env:
@@ -3347,166 +3316,7 @@ components:
       properties:
         links:
           items:
-            $ref: "#/components/schemas/v1NeuralLink"
-          type: array
-      type: object
-    v1GetMemoryAncestorsResponse:
-      example:
-        ancestors:
-        - summary: summary
-          attachments:
-          - size: size
-            name: name
-            id: id
-            contentType: contentType
-            key: key
-          - size: size
-            name: name
-            id: id
-            contentType: contentType
-            key: key
-          visibility: visibility
-          kind: kind
-          author: author
-          title: title
-          type: type
-          sharedWith:
-          - sharedWith
-          - sharedWith
-          archiveId: archiveId
-          parentId: parentId
-          content: content
-          tags:
-          - tags
-          - tags
-          createdAt: createdAt
-          id: id
-          updatedAt: updatedAt
-        - summary: summary
-          attachments:
-          - size: size
-            name: name
-            id: id
-            contentType: contentType
-            key: key
-          - size: size
-            name: name
-            id: id
-            contentType: contentType
-            key: key
-          visibility: visibility
-          kind: kind
-          author: author
-          title: title
-          type: type
-          sharedWith:
-          - sharedWith
-          - sharedWith
-          archiveId: archiveId
-          parentId: parentId
-          content: content
-          tags:
-          - tags
-          - tags
-          createdAt: createdAt
-          id: id
-          updatedAt: updatedAt
-      properties:
-        ancestors:
-          items:
-            $ref: "#/components/schemas/v1Memory"
-          type: array
-      type: object
-    v1GetMemoryDirectivesResponse:
-      example:
-        directives:
-        - id: id
-          title: title
-          priority: priority
-          status: status
-        - id: id
-          title: title
-          priority: priority
-          status: status
-      properties:
-        directives:
-          items:
-            $ref: "#/components/schemas/v1DirectiveRef"
-          type: array
-      type: object
-    v1GetMemoryTreeResponse:
-      example:
-        nodes:
-        - memory:
-            summary: summary
-            attachments:
-            - size: size
-              name: name
-              id: id
-              contentType: contentType
-              key: key
-            - size: size
-              name: name
-              id: id
-              contentType: contentType
-              key: key
-            visibility: visibility
-            kind: kind
-            author: author
-            title: title
-            type: type
-            sharedWith:
-            - sharedWith
-            - sharedWith
-            archiveId: archiveId
-            parentId: parentId
-            content: content
-            tags:
-            - tags
-            - tags
-            createdAt: createdAt
-            id: id
-            updatedAt: updatedAt
-          children:
-          - null
-          - null
-        - memory:
-            summary: summary
-            attachments:
-            - size: size
-              name: name
-              id: id
-              contentType: contentType
-              key: key
-            - size: size
-              name: name
-              id: id
-              contentType: contentType
-              key: key
-            visibility: visibility
-            kind: kind
-            author: author
-            title: title
-            type: type
-            sharedWith:
-            - sharedWith
-            - sharedWith
-            archiveId: archiveId
-            parentId: parentId
-            content: content
-            tags:
-            - tags
-            - tags
-            createdAt: createdAt
-            id: id
-            updatedAt: updatedAt
-          children:
-          - null
-          - null
-      properties:
-        nodes:
-          items:
-            $ref: "#/components/schemas/v1MemoryTreeNode"
+            $ref: "#/components/schemas/v1DocLink"
           type: array
       type: object
     v1GetRuntimeLogResponse:
@@ -3546,76 +3356,6 @@ components:
           items:
             $ref: "#/components/schemas/v1SessionState"
           type: array
-      type: object
-    v1GetStatsResponse:
-      example:
-        stats:
-          totalMemories: 0
-          totalDirectives: 6
-          directivesByStatus:
-            key: 1
-          recentMemories:
-          - summary: summary
-            attachments:
-            - size: size
-              name: name
-              id: id
-              contentType: contentType
-              key: key
-            - size: size
-              name: name
-              id: id
-              contentType: contentType
-              key: key
-            visibility: visibility
-            kind: kind
-            author: author
-            title: title
-            type: type
-            sharedWith:
-            - sharedWith
-            - sharedWith
-            archiveId: archiveId
-            parentId: parentId
-            content: content
-            tags:
-            - tags
-            - tags
-            createdAt: createdAt
-            id: id
-            updatedAt: updatedAt
-          - summary: summary
-            attachments:
-            - size: size
-              name: name
-              id: id
-              contentType: contentType
-              key: key
-            - size: size
-              name: name
-              id: id
-              contentType: contentType
-              key: key
-            visibility: visibility
-            kind: kind
-            author: author
-            title: title
-            type: type
-            sharedWith:
-            - sharedWith
-            - sharedWith
-            archiveId: archiveId
-            parentId: parentId
-            content: content
-            tags:
-            - tags
-            - tags
-            createdAt: createdAt
-            id: id
-            updatedAt: updatedAt
-      properties:
-        stats:
-          $ref: "#/components/schemas/v1Stats"
       type: object
     v1HeartbeatRequest:
       properties:
@@ -3749,36 +3489,66 @@ components:
             $ref: "#/components/schemas/v1Archive"
           type: array
       type: object
-    v1ListDirectivesResponse:
+    v1ListDocsResponse:
       example:
         total: 0
         items:
-        - visibility: visibility
+        - summary: summary
+          attachments:
+          - size: size
+            name: name
+            id: id
+            contentType: contentType
+            key: key
+          - size: size
+            name: name
+            id: id
+            contentType: contentType
+            key: key
+          visibility: visibility
           author: author
-          narrativeId: narrativeId
-          description: description
           title: title
           priority: priority
+          sharedWith:
+          - sharedWith
+          - sharedWith
           archiveId: archiveId
+          parentId: parentId
+          content: content
+          tags:
+          - tags
+          - tags
           createdAt: createdAt
-          requireDocIds:
-          - requireDocIds
-          - requireDocIds
           id: id
           assignee: assignee
           status: status
           updatedAt: updatedAt
-        - visibility: visibility
+        - summary: summary
+          attachments:
+          - size: size
+            name: name
+            id: id
+            contentType: contentType
+            key: key
+          - size: size
+            name: name
+            id: id
+            contentType: contentType
+            key: key
+          visibility: visibility
           author: author
-          narrativeId: narrativeId
-          description: description
           title: title
           priority: priority
+          sharedWith:
+          - sharedWith
+          - sharedWith
           archiveId: archiveId
+          parentId: parentId
+          content: content
+          tags:
+          - tags
+          - tags
           createdAt: createdAt
-          requireDocIds:
-          - requireDocIds
-          - requireDocIds
           id: id
           assignee: assignee
           status: status
@@ -3786,7 +3556,7 @@ components:
       properties:
         items:
           items:
-            $ref: "#/components/schemas/v1Directive"
+            $ref: "#/components/schemas/v1Doc"
           type: array
         total:
           format: int32
@@ -3832,77 +3602,6 @@ components:
           items:
             $ref: "#/components/schemas/v1HostInfo"
           type: array
-      type: object
-    v1ListMemoriesResponse:
-      example:
-        total: 0
-        items:
-        - summary: summary
-          attachments:
-          - size: size
-            name: name
-            id: id
-            contentType: contentType
-            key: key
-          - size: size
-            name: name
-            id: id
-            contentType: contentType
-            key: key
-          visibility: visibility
-          kind: kind
-          author: author
-          title: title
-          type: type
-          sharedWith:
-          - sharedWith
-          - sharedWith
-          archiveId: archiveId
-          parentId: parentId
-          content: content
-          tags:
-          - tags
-          - tags
-          createdAt: createdAt
-          id: id
-          updatedAt: updatedAt
-        - summary: summary
-          attachments:
-          - size: size
-            name: name
-            id: id
-            contentType: contentType
-            key: key
-          - size: size
-            name: name
-            id: id
-            contentType: contentType
-            key: key
-          visibility: visibility
-          kind: kind
-          author: author
-          title: title
-          type: type
-          sharedWith:
-          - sharedWith
-          - sharedWith
-          archiveId: archiveId
-          parentId: parentId
-          content: content
-          tags:
-          - tags
-          - tags
-          createdAt: createdAt
-          id: id
-          updatedAt: updatedAt
-      properties:
-        items:
-          items:
-            $ref: "#/components/schemas/v1Memory"
-          type: array
-        total:
-          format: int32
-          type: integer
       type: object
     v1ListNodesResponse:
       example:
@@ -4239,215 +3938,6 @@ components:
         refreshToken:
           type: string
       type: object
-    v1Memory:
-      example:
-        summary: summary
-        attachments:
-        - size: size
-          name: name
-          id: id
-          contentType: contentType
-          key: key
-        - size: size
-          name: name
-          id: id
-          contentType: contentType
-          key: key
-        visibility: visibility
-        kind: kind
-        author: author
-        title: title
-        type: type
-        sharedWith:
-        - sharedWith
-        - sharedWith
-        archiveId: archiveId
-        parentId: parentId
-        content: content
-        tags:
-        - tags
-        - tags
-        createdAt: createdAt
-        id: id
-        updatedAt: updatedAt
-      properties:
-        id:
-          type: string
-        archiveId:
-          type: string
-        parentId:
-          type: string
-        kind:
-          type: string
-        title:
-          type: string
-        content:
-          type: string
-        type:
-          type: string
-        summary:
-          type: string
-        tags:
-          items:
-            type: string
-          type: array
-        author:
-          type: string
-        visibility:
-          type: string
-        sharedWith:
-          items:
-            type: string
-          type: array
-        attachments:
-          items:
-            $ref: "#/components/schemas/v1Attachment"
-          type: array
-        createdAt:
-          type: string
-        updatedAt:
-          type: string
-      type: object
-    v1MemoryMeta:
-      example:
-        summary: summary
-        attachments:
-        - size: size
-          name: name
-          id: id
-          contentType: contentType
-          key: key
-        - size: size
-          name: name
-          id: id
-          contentType: contentType
-          key: key
-        visibility: visibility
-        kind: kind
-        author: author
-        title: title
-        type: type
-        sharedWith:
-        - sharedWith
-        - sharedWith
-        priority: priority
-        archiveId: archiveId
-        parentId: parentId
-        tags:
-        - tags
-        - tags
-        createdAt: createdAt
-        id: id
-        updatedAt: updatedAt
-        status: status
-      properties:
-        id:
-          type: string
-        archiveId:
-          type: string
-        parentId:
-          type: string
-        kind:
-          type: string
-        title:
-          type: string
-        type:
-          type: string
-        summary:
-          type: string
-        tags:
-          items:
-            type: string
-          type: array
-        author:
-          type: string
-        visibility:
-          type: string
-        sharedWith:
-          items:
-            type: string
-          type: array
-        attachments:
-          items:
-            $ref: "#/components/schemas/v1Attachment"
-          type: array
-        createdAt:
-          type: string
-        updatedAt:
-          type: string
-        status:
-          type: string
-        priority:
-          type: string
-      type: object
-    v1MemoryTreeNode:
-      example:
-        memory:
-          summary: summary
-          attachments:
-          - size: size
-            name: name
-            id: id
-            contentType: contentType
-            key: key
-          - size: size
-            name: name
-            id: id
-            contentType: contentType
-            key: key
-          visibility: visibility
-          kind: kind
-          author: author
-          title: title
-          type: type
-          sharedWith:
-          - sharedWith
-          - sharedWith
-          archiveId: archiveId
-          parentId: parentId
-          content: content
-          tags:
-          - tags
-          - tags
-          createdAt: createdAt
-          id: id
-          updatedAt: updatedAt
-        children:
-        - null
-        - null
-      properties:
-        memory:
-          $ref: "#/components/schemas/v1Memory"
-        children:
-          items:
-            $ref: "#/components/schemas/v1MemoryTreeNode"
-          type: array
-      type: object
-    v1NeuralLink:
-      example:
-        sourceId: sourceId
-        relationType: relationType
-        createdAt: createdAt
-        targetId: targetId
-        targetTitle: targetTitle
-        sourceTitle: sourceTitle
-        id: id
-      properties:
-        id:
-          type: string
-        sourceId:
-          type: string
-        targetId:
-          type: string
-        relationType:
-          type: string
-        sourceTitle:
-          type: string
-        targetTitle:
-          type: string
-        createdAt:
-          type: string
-      type: object
     v1NodeInfo:
       example:
         metadata:
@@ -4512,49 +4002,6 @@ components:
         metadata:
           $ref: "#/components/schemas/v1AgentMetadata"
       title: 与 model.Node 对齐
-      type: object
-    v1ParsedMemory:
-      example:
-        summary: summary
-        meta:
-          summary: summary
-          attachments:
-          - size: size
-            name: name
-            id: id
-            contentType: contentType
-            key: key
-          - size: size
-            name: name
-            id: id
-            contentType: contentType
-            key: key
-          visibility: visibility
-          kind: kind
-          author: author
-          title: title
-          type: type
-          sharedWith:
-          - sharedWith
-          - sharedWith
-          priority: priority
-          archiveId: archiveId
-          parentId: parentId
-          tags:
-          - tags
-          - tags
-          createdAt: createdAt
-          id: id
-          updatedAt: updatedAt
-          status: status
-        content: content
-      properties:
-        meta:
-          $ref: "#/components/schemas/v1MemoryMeta"
-        summary:
-          type: string
-        content:
-          type: string
       type: object
     v1PermissionApplication:
       example:
@@ -4701,7 +4148,7 @@ components:
         savedAt:
           type: string
       type: object
-    v1SearchMemoriesResponse:
+    v1SearchDocsResponse:
       example:
         items:
         - summary: summary
@@ -4717,10 +4164,9 @@ components:
             contentType: contentType
             key: key
           visibility: visibility
-          kind: kind
           author: author
           title: title
-          type: type
+          priority: priority
           sharedWith:
           - sharedWith
           - sharedWith
@@ -4732,6 +4178,8 @@ components:
           - tags
           createdAt: createdAt
           id: id
+          assignee: assignee
+          status: status
           updatedAt: updatedAt
         - summary: summary
           attachments:
@@ -4746,10 +4194,9 @@ components:
             contentType: contentType
             key: key
           visibility: visibility
-          kind: kind
           author: author
           title: title
-          type: type
+          priority: priority
           sharedWith:
           - sharedWith
           - sharedWith
@@ -4761,11 +4208,13 @@ components:
           - tags
           createdAt: createdAt
           id: id
+          assignee: assignee
+          status: status
           updatedAt: updatedAt
       properties:
         items:
           items:
-            $ref: "#/components/schemas/v1Memory"
+            $ref: "#/components/schemas/v1Doc"
           type: array
       type: object
     v1Session:
@@ -4975,88 +4424,6 @@ components:
         sessionSchema:
           $ref: "#/components/schemas/v1SessionSchema"
       title: 与 model.SessionTemplate 对齐
-      type: object
-    v1Stats:
-      example:
-        totalMemories: 0
-        totalDirectives: 6
-        directivesByStatus:
-          key: 1
-        recentMemories:
-        - summary: summary
-          attachments:
-          - size: size
-            name: name
-            id: id
-            contentType: contentType
-            key: key
-          - size: size
-            name: name
-            id: id
-            contentType: contentType
-            key: key
-          visibility: visibility
-          kind: kind
-          author: author
-          title: title
-          type: type
-          sharedWith:
-          - sharedWith
-          - sharedWith
-          archiveId: archiveId
-          parentId: parentId
-          content: content
-          tags:
-          - tags
-          - tags
-          createdAt: createdAt
-          id: id
-          updatedAt: updatedAt
-        - summary: summary
-          attachments:
-          - size: size
-            name: name
-            id: id
-            contentType: contentType
-            key: key
-          - size: size
-            name: name
-            id: id
-            contentType: contentType
-            key: key
-          visibility: visibility
-          kind: kind
-          author: author
-          title: title
-          type: type
-          sharedWith:
-          - sharedWith
-          - sharedWith
-          archiveId: archiveId
-          parentId: parentId
-          content: content
-          tags:
-          - tags
-          - tags
-          createdAt: createdAt
-          id: id
-          updatedAt: updatedAt
-      properties:
-        totalMemories:
-          format: int32
-          type: integer
-        totalDirectives:
-          format: int32
-          type: integer
-        directivesByStatus:
-          additionalProperties:
-            format: int32
-            type: integer
-          type: object
-        recentMemories:
-          items:
-            $ref: "#/components/schemas/v1Memory"
-          type: array
       type: object
     v1SubjectPermissionGrant:
       example:

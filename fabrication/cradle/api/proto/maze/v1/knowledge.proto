@@ -2,10 +2,10 @@ syntax = "proto3";
 
 package maze.v1;
 
-option go_package = "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1";
-
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
+
+option go_package = "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1";
 
 message Attachment {
   string id = 1;
@@ -25,55 +25,31 @@ message Archive {
   string updated_at = 7;
 }
 
-message Memory {
+message Doc {
   string id = 1;
   string archive_id = 2;
   string parent_id = 3;
-  string kind = 4;
-  string title = 5;
-  string content = 6;
-  string type = 7;
-  string summary = 8;
-  repeated string tags = 9;
-  string author = 10;
-  string visibility = 11;
-  repeated string shared_with = 12;
-  repeated Attachment attachments = 13;
-  string created_at = 14;
-  string updated_at = 15;
+  string title = 4;
+  string content = 5;
+  string summary = 6;
+  string status = 7;
+  string priority = 8;
+  string assignee = 9;
+  repeated string tags = 10;
+  string author = 11;
+  string visibility = 12;
+  repeated string shared_with = 13;
+  repeated Attachment attachments = 14;
+  string created_at = 15;
+  string updated_at = 16;
 }
 
-message MemoryMeta {
-  string id = 1;
-  string archive_id = 2;
-  string parent_id = 3;
-  string kind = 4;
-  string title = 5;
-  string type = 6;
-  string summary = 7;
-  repeated string tags = 8;
-  string author = 9;
-  string visibility = 10;
-  repeated string shared_with = 11;
-  repeated Attachment attachments = 12;
-  string created_at = 13;
-  string updated_at = 14;
-  string status = 15;
-  string priority = 16;
+message DocTreeNode {
+  Doc doc = 1;
+  repeated DocTreeNode children = 2;
 }
 
-message ParsedMemory {
-  MemoryMeta meta = 1;
-  string summary = 2;
-  string content = 3;
-}
-
-message MemoryTreeNode {
-  Memory memory = 1;
-  repeated MemoryTreeNode children = 2;
-}
-
-message NeuralLink {
+message DocLink {
   string id = 1;
   string source_id = 2;
   string target_id = 3;
@@ -83,141 +59,99 @@ message NeuralLink {
   string created_at = 7;
 }
 
-message DirectiveRef {
-  string id = 1;
-  string title = 2;
-  string status = 3;
-  string priority = 4;
-}
-
-message ChatMessage {
-  string role = 1;
-  string content = 2;
-  string metadata = 3;
-}
-
-message Stats {
-  int32 total_memories = 1;
-  int32 total_directives = 2;
-  map<string, int32> directives_by_status = 3;
-  repeated Memory recent_memories = 4;
-}
-
 message CreateArchiveRequest {
   string name = 1;
   string description = 2;
   string icon = 3;
 }
-
 message GetArchiveRequest {
   string id = 1;
 }
-
 message ListArchivesRequest {}
-
 message ListArchivesResponse {
   repeated Archive archives = 1;
 }
-
 message UpdateArchiveRequest {
   string id = 1;
   string name = 2;
   string description = 3;
   string icon = 4;
 }
-
 message DeleteArchiveRequest {
   string id = 1;
 }
 
-message CreateMemoryRequest {
+message CreateDocRequest {
   string archive_id = 1;
   string parent_id = 2;
-  string kind = 3;
-  string title = 4;
-  string content = 5;
-  string type = 6;
-  string summary = 7;
-  repeated string tags = 8;
-  string author = 9;
+  string title = 3;
+  string content = 4;
+  string summary = 5;
+  string status = 6;
+  string priority = 7;
+  string assignee = 8;
+  repeated string tags = 9;
   string visibility = 10;
   repeated string shared_with = 11;
   repeated Attachment attachments = 12;
 }
 
-message GetMemoryRequest {
+message GetDocRequest {
   string id = 1;
 }
-
-message ListMemoriesRequest {
+message ListDocsRequest {
   string archive_id = 1;
   string parent_id = 2;
-  string kind = 3;
-  string type = 4;
-  string tag = 5;
-  string visibility = 6;
-  string author = 7;
-  int32 limit = 8;
-  int32 offset = 9;
+  string status = 3;
+  string visibility = 4;
+  string author = 5;
+  int32 limit = 6;
+  int32 offset = 7;
 }
-
-message ListMemoriesResponse {
-  repeated Memory items = 1;
+message ListDocsResponse {
+  repeated Doc items = 1;
   int32 total = 2;
 }
 
-message UpdateMemoryRequest {
+message UpdateDocRequest {
   string id = 1;
   string title = 2;
   string content = 3;
-  string type = 4;
-  string summary = 5;
-  repeated string tags = 6;
-  string visibility = 7;
-  repeated string shared_with = 8;
-  repeated Attachment attachments = 9;
-  string parent_id = 10;
-  string kind = 11;
+  string summary = 4;
+  string status = 5;
+  string priority = 6;
+  string assignee = 7;
+  repeated string tags = 8;
+  string visibility = 9;
+  repeated string shared_with = 10;
+  repeated Attachment attachments = 11;
+  string parent_id = 12;
 }
 
-message DeleteMemoryRequest {
+message DeleteDocRequest {
   string id = 1;
 }
-
-message SearchMemoriesRequest {
+message SearchDocsRequest {
   string q = 1;
   string archive_id = 2;
   string visibility = 3;
   string author = 4;
 }
-
-message SearchMemoriesResponse {
-  repeated Memory items = 1;
+message SearchDocsResponse {
+  repeated Doc items = 1;
 }
-
-message GetMemoryTreeRequest {
+message GetDocTreeRequest {
   string archive_id = 1;
   string parent_id = 2;
 }
-
-message GetMemoryTreeResponse {
-  repeated MemoryTreeNode nodes = 1;
+message GetDocTreeResponse {
+  repeated DocTreeNode nodes = 1;
 }
-
-message GetMemoryAncestorsRequest {
+message GetDocAncestorsRequest {
   string id = 1;
 }
-
-message GetMemoryAncestorsResponse {
-  repeated Memory ancestors = 1;
-}
-
-message GetMemoryDirectivesRequest {
-  string id = 1;
-}
-
-message GetMemoryDirectivesResponse {
-  repeated DirectiveRef directives = 1;
+message GetDocAncestorsResponse {
+  repeated Doc ancestors = 1;
 }
 
 message GetLinksRequest {
@@ -225,37 +159,18 @@ message GetLinksRequest {
   string direction = 2;
   string relation_type = 3;
 }
-
 message GetLinksResponse {
-  repeated NeuralLink links = 1;
+  repeated DocLink links = 1;
 }
-
 message CreateLinkRequest {
   string id = 1;
   string target_id = 2;
   string relation_type = 3;
 }
-
 message DeleteLinkRequest {
   string id = 1;
   string link_id = 2;
 }
-
-message GetStatsRequest {}
-
-message GetStatsResponse {
-  Stats stats = 1;
-}
-
-// Oracle Chat SSE endpoint (non-gRPC, independent HTTP):
-//   POST /api/v1/oracle/chat
-// Oracle Chat History endpoint (non-gRPC, independent HTTP):
-//   GET  /api/v1/oracle/history
-
-// File Upload endpoint (non-gRPC, multipart/form-data):
-//   POST /api/v1/files/upload
-// File Download endpoint (non-gRPC, independent HTTP):
-//   GET  /api/v1/files/{key}
 
 service KnowledgeService {
   rpc CreateArchive(CreateArchiveRequest) returns (Archive) {
@@ -264,110 +179,63 @@ service KnowledgeService {
       body: "*"
     };
   }
-
   rpc GetArchive(GetArchiveRequest) returns (Archive) {
-    option (google.api.http) = {
-      get: "/api/v1/archives/{id}"
-    };
+    option (google.api.http) = {get: "/api/v1/archives/{id}"};
   }
-
   rpc ListArchives(ListArchivesRequest) returns (ListArchivesResponse) {
-    option (google.api.http) = {
-      get: "/api/v1/archives"
-    };
+    option (google.api.http) = {get: "/api/v1/archives"};
   }
-
   rpc UpdateArchive(UpdateArchiveRequest) returns (Archive) {
     option (google.api.http) = {
       put: "/api/v1/archives/{id}"
       body: "*"
     };
   }
-
   rpc DeleteArchive(DeleteArchiveRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      delete: "/api/v1/archives/{id}"
-    };
+    option (google.api.http) = {delete: "/api/v1/archives/{id}"};
   }
 
-  rpc CreateMemory(CreateMemoryRequest) returns (Memory) {
+  rpc CreateDoc(CreateDocRequest) returns (Doc) {
     option (google.api.http) = {
-      post: "/api/v1/memories"
+      post: "/api/v1/docs"
       body: "*"
     };
   }
-
-  rpc GetMemory(GetMemoryRequest) returns (ParsedMemory) {
-    option (google.api.http) = {
-      get: "/api/v1/memories/{id}"
-    };
+  rpc GetDoc(GetDocRequest) returns (Doc) {
+    option (google.api.http) = {get: "/api/v1/docs/{id}"};
   }
-
-  rpc ListMemories(ListMemoriesRequest) returns (ListMemoriesResponse) {
-    option (google.api.http) = {
-      get: "/api/v1/memories"
-    };
+  rpc ListDocs(ListDocsRequest) returns (ListDocsResponse) {
+    option (google.api.http) = {get: "/api/v1/docs"};
   }
-
-  rpc UpdateMemory(UpdateMemoryRequest) returns (Memory) {
+  rpc UpdateDoc(UpdateDocRequest) returns (Doc) {
     option (google.api.http) = {
-      put: "/api/v1/memories/{id}"
+      put: "/api/v1/docs/{id}"
       body: "*"
     };
   }
-
-  rpc DeleteMemory(DeleteMemoryRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      delete: "/api/v1/memories/{id}"
-    };
+  rpc DeleteDoc(DeleteDocRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/api/v1/docs/{id}"};
   }
-
-  rpc SearchMemories(SearchMemoriesRequest) returns (SearchMemoriesResponse) {
-    option (google.api.http) = {
-      get: "/api/v1/memories:search"
-    };
+  rpc SearchDocs(SearchDocsRequest) returns (SearchDocsResponse) {
+    option (google.api.http) = {get: "/api/v1/docs:search"};
   }
-
-  rpc GetMemoryTree(GetMemoryTreeRequest) returns (GetMemoryTreeResponse) {
-    option (google.api.http) = {
-      get: "/api/v1/memories:tree"
-    };
+  rpc GetDocTree(GetDocTreeRequest) returns (GetDocTreeResponse) {
+    option (google.api.http) = {get: "/api/v1/docs:tree"};
   }
-
-  rpc GetMemoryAncestors(GetMemoryAncestorsRequest) returns (GetMemoryAncestorsResponse) {
-    option (google.api.http) = {
-      get: "/api/v1/memories/{id}/ancestors"
-    };
-  }
-
-  rpc GetMemoryDirectives(GetMemoryDirectivesRequest) returns (GetMemoryDirectivesResponse) {
-    option (google.api.http) = {
-      get: "/api/v1/memories/{id}/directives"
-    };
+  rpc GetDocAncestors(GetDocAncestorsRequest) returns (GetDocAncestorsResponse) {
+    option (google.api.http) = {get: "/api/v1/docs/{id}/ancestors"};
   }
 
   rpc GetLinks(GetLinksRequest) returns (GetLinksResponse) {
-    option (google.api.http) = {
-      get: "/api/v1/memories/{id}/links"
-    };
+    option (google.api.http) = {get: "/api/v1/docs/{id}/links"};
   }
-
-  rpc CreateLink(CreateLinkRequest) returns (NeuralLink) {
+  rpc CreateLink(CreateLinkRequest) returns (DocLink) {
     option (google.api.http) = {
-      post: "/api/v1/memories/{id}/links"
+      post: "/api/v1/docs/{id}/links"
       body: "*"
     };
   }
-
   rpc DeleteLink(DeleteLinkRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      delete: "/api/v1/memories/{id}/links/{link_id}"
-    };
-  }
-
-  rpc GetStats(GetStatsRequest) returns (GetStatsResponse) {
-    option (google.api.http) = {
-      get: "/api/v1/stats"
-    };
+    option (google.api.http) = {delete: "/api/v1/docs/{id}/links/{link_id}"};
   }
 }

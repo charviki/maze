@@ -12,8 +12,9 @@ import (
 )
 
 type suiteState struct {
-	cfg  *kit.TestConfig
-	pool *hostPool
+	cfg         *kit.TestConfig
+	pool        *hostPool
+	forgeClient *kit.ForgeTestClient
 }
 
 var suite suiteState
@@ -26,6 +27,18 @@ func TestMain(m *testing.M) {
 		fmt.Fprintf(os.Stderr, "director-core not ready: %v\n", err)
 		os.Exit(1)
 	}
+
+	if err := env.WaitForTheForge(60 * time.Second); err != nil {
+		fmt.Fprintf(os.Stderr, "the-forge not ready: %v\n", err)
+		os.Exit(1)
+	}
+
+	forgeClient, err := kit.NewForgeTestClient(suite.cfg)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "create forge client: %v\n", err)
+		os.Exit(1)
+	}
+	suite.forgeClient = forgeClient
 
 	if suite.cfg.EnableHostPool {
 		pool, err := newHostPool(suite.cfg)

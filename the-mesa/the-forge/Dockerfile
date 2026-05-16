@@ -28,6 +28,7 @@ RUN sed -i 's|deb.debian.org|mirrors.tuna.tsinghua.edu.cn|g' /etc/apt/sources.li
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /bin/the-forge /usr/local/bin/the-forge
+COPY the-mesa/the-forge/config.yaml /usr/local/bin/config.yaml
 
 EXPOSE 8080 9090
 

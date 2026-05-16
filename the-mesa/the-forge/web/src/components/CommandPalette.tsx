@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, FileText, CheckSquare, X, Command } from 'lucide-react';
-import { memories, type ParsedMemory } from '@/api';
+import { docs, type Doc } from '@/api';
 import { highlightMatch } from '@/lib/search';
 
 interface NavItem {
@@ -11,16 +11,16 @@ interface NavItem {
   icon: 'directives' | 'home' | 'new';
 }
 
-interface MemoryItem {
+interface DocItem {
   type: 'memory';
-  data: ParsedMemory;
+  data: Doc;
 }
 
-type SearchItem = NavItem | MemoryItem;
+type SearchItem = NavItem | DocItem;
 
 export default function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<ParsedMemory[]>([]);
+  const [results, setResults] = useState<Doc[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const navigate = useNavigate();
@@ -29,14 +29,11 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
 
   const allItems = useMemo((): SearchItem[] => {
     const items: SearchItem[] = [];
-    if (query.toLowerCase().includes('directive') || query.toLowerCase().includes('task')) {
-      items.push({ type: 'nav', path: '/tasks', title: 'DIRECTIVE LIST', icon: 'directives' });
-    }
     if (query.toLowerCase().includes('dashboard') || query.toLowerCase().includes('home')) {
       items.push({ type: 'nav', path: '/', title: 'DASHBOARD', icon: 'home' });
     }
     if (query.toLowerCase().includes('new') || query.toLowerCase().includes('create')) {
-      items.push({ type: 'nav', path: '/knowledge/new', title: 'NEW MEMORY', icon: 'new' });
+      items.push({ type: 'nav', path: '/docs', title: 'NEW DOCUMENT', icon: 'new' });
     }
     results.forEach((r) => items.push({ type: 'memory', data: r }));
     return items;
@@ -61,7 +58,7 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
       try {
-        const res = await memories.search(query);
+        const res = await docs.search(query);
         setResults(res.items || []);
       } catch {
         setResults([]);
@@ -78,7 +75,7 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
     const item = allItems[index];
     if (!item) return;
     if (item.type === 'memory') {
-      void navigate(`/knowledge/${item.data.meta.id}`);
+      void navigate(`/docs/${item.data.archiveId}/${item.data.id}`);
     } else {
       void navigate(item.path);
     }
@@ -121,7 +118,7 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
               setSelectedIndex(0);
             }}
             onKeyDown={handleKeyDown}
-            placeholder="Search memories, navigate..."
+            placeholder="Search documents, navigate..."
             className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground font-mono text-sm focus:outline-none"
           />
           <button
@@ -171,10 +168,10 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
                   </button>
                 );
               }
-              const meta = item.data.meta;
+              const docItem = item.data;
               return (
                 <button
-                  key={meta.id}
+                  key={docItem.id}
                   onClick={() => handleSelect(i)}
                   className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-mono transition-colors ${
                     isSelected ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-border/30'
@@ -182,9 +179,8 @@ export default function CommandPalette({ open, onClose }: { open: boolean; onClo
                 >
                   <FileText size={14} className="shrink-0 text-muted-foreground" />
                   <span className="flex-1 text-left truncate">
-                    {highlightMatch(meta.title, query)}
+                    {highlightMatch(docItem.title || '', query)}
                   </span>
-                  <span className="text-[10px] text-muted-foreground shrink-0">{meta.type}</span>
                 </button>
               );
             })}

@@ -66,6 +66,23 @@ ifeq ($(PLATFORM),docker)
 		fi; \
 		ELAPSED3=$$(($$(date +%s) - $$START3)); \
 		echo -e "$$TIME Director Core ready in $${ELAPSED3}s"; \
+		echo -e "$$INFO [3.5/4] Waiting for The Forge to be ready..."; \
+		START3b=$$(date +%s); \
+		THE_FORGE_READY=0; \
+		for i in $$(seq 1 30); do \
+			if curl -sf http://localhost:$(PORT_THE_FORGE)/health > /dev/null 2>&1; then \
+				THE_FORGE_READY=1; \
+				break; \
+			fi; \
+			echo "  waiting for the-forge... ($$i/30)"; sleep 2; \
+		done; \
+		if [ "$$THE_FORGE_READY" != "1" ]; then \
+			echo -e "$$ERROR The Forge did not become ready within 60s."; \
+			$(DOCKER_TEST_COMPOSE) logs --tail=100 the-forge; \
+			exit 1; \
+		fi; \
+		ELAPSED3b=$$(($$(date +%s) - $$START3b)); \
+		echo -e "$$TIME The Forge ready in $${ELAPSED3b}s"; \
 		TOTAL_SETUP=$$(($$(date +%s) - $$START)); \
 		echo -e "$$INFO [4/4] Running integration tests (env=docker)..."; \
 		echo -e "$$TIME Total setup time: $${TOTAL_SETUP}s"; \
@@ -87,6 +104,7 @@ ifeq ($(PLATFORM),docker)
 			MAZE_TEST_DATA_DIR=$(HOST_DATA_DIR) \
 			MAZE_TEST_AGENT_STORAGE_BACKEND=bind \
 			MAZE_TEST_DIRECTOR_CORE_URL=http://localhost:$(PORT_DIRECTOR_CORE) \
+				MAZE_TEST_THE_FORGE_URL=http://localhost:$(PORT_THE_FORGE) \
 			MAZE_TEST_JWT_SECRET=test-jwt-secret \
 			MAZE_TEST_ADMIN_USERNAME=admin \
 			MAZE_TEST_ADMIN_PASSWORD=admin \
@@ -101,6 +119,7 @@ ifeq ($(PLATFORM),docker)
 			MAZE_TEST_DATA_DIR=$(HOST_DATA_DIR) \
 			MAZE_TEST_AGENT_STORAGE_BACKEND=bind \
 			MAZE_TEST_DIRECTOR_CORE_URL=http://localhost:$(PORT_DIRECTOR_CORE) \
+				MAZE_TEST_THE_FORGE_URL=http://localhost:$(PORT_THE_FORGE) \
 			MAZE_TEST_JWT_SECRET=test-jwt-secret \
 			MAZE_TEST_ADMIN_USERNAME=admin \
 			MAZE_TEST_ADMIN_PASSWORD=admin \
@@ -144,6 +163,7 @@ else ifeq ($(PLATFORM),kubernetes)
 		echo -e "$$INFO [1/5] Building local images for Kubernetes test env..."; \
 		docker build -f $(AGENT_DOCKERFILE) -t $(AGENT_IMAGE) $(PROJECT_ROOT); \
 		docker build -f $(DIRECTOR_CORE_DOCKERFILE) -t $(DIRECTOR_CORE_IMAGE) $(PROJECT_ROOT); \
+			docker build -f $(THE_FORGE_DOCKERFILE) -t $(THE_FORGE_IMAGE) $(PROJECT_ROOT); \
 		echo -e "$$INFO [2/5] Recreating test namespace $$NS..."; \
 		kubectl delete namespace $$NS --ignore-not-found=true --wait=true 2>/dev/null || true; \
 		rm -rf $(POSTGRES_HOSTPATH) $(patsubst %/agents,%,$(AGENT_HOSTPATH_BASE)); \
@@ -170,10 +190,14 @@ else ifeq ($(PLATFORM),kubernetes)
 			(echo -e "$$WARN postgresql not ready." && kubectl get pods -n $$NS && exit 1); \
 		kubectl wait --for=condition=ready pod -l app=director-core --timeout=180s -n $$NS 2>/dev/null || \
 			(echo -e "$$WARN director-core not ready." && kubectl get pods -n $$NS && exit 1); \
+		kubectl wait --for=condition=ready pod -l app=the-forge --timeout=180s -n $$NS 2>/dev/null || \
+			(echo -e "$$WARN the-forge not ready." && kubectl get pods -n $$NS && exit 1); \
 		echo -e "$$INFO [4/5] Starting port-forward..."; \
 		kubectl port-forward svc/director-core $(PORT_DIRECTOR_CORE):8080 -n $$NS 2>&1 | grep -v "^Handling" & \
 		PF_PID1=$$!; \
-		PF_PIDS="$$PF_PID1"; \
+		kubectl port-forward svc/the-forge $(PORT_THE_FORGE):8080 -n $$NS 2>&1 | grep -v "^Handling" & \
+		PF_PID2=$$!; \
+		PF_PIDS="$$PF_PID1 $$PF_PID2"; \
 		for i in $$(seq 1 30); do \
 			if curl -sf http://localhost:$(PORT_DIRECTOR_CORE)/health > /dev/null 2>&1; then \
 				break; \
@@ -208,6 +232,7 @@ else ifeq ($(PLATFORM),kubernetes)
 			MAZE_TEST_DATA_DIR=$(HOST_DATA_DIR) \
 			MAZE_TEST_AGENT_STORAGE_BACKEND=hostpath \
 			MAZE_TEST_DIRECTOR_CORE_URL=http://localhost:$(PORT_DIRECTOR_CORE) \
+				MAZE_TEST_THE_FORGE_URL=http://localhost:$(PORT_THE_FORGE) \
 			MAZE_TEST_JWT_SECRET=test-jwt-secret \
 			MAZE_TEST_ADMIN_USERNAME=admin \
 			MAZE_TEST_ADMIN_PASSWORD=admin \
@@ -223,6 +248,7 @@ else ifeq ($(PLATFORM),kubernetes)
 			MAZE_TEST_DATA_DIR=$(HOST_DATA_DIR) \
 			MAZE_TEST_AGENT_STORAGE_BACKEND=hostpath \
 			MAZE_TEST_DIRECTOR_CORE_URL=http://localhost:$(PORT_DIRECTOR_CORE) \
+				MAZE_TEST_THE_FORGE_URL=http://localhost:$(PORT_THE_FORGE) \
 			MAZE_TEST_JWT_SECRET=test-jwt-secret \
 			MAZE_TEST_ADMIN_USERNAME=admin \
 			MAZE_TEST_ADMIN_PASSWORD=admin \

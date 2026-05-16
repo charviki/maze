@@ -14,11 +14,11 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
-    "@maze/fabrication": "workspace:*",
     "@codemirror/lang-markdown": "^6.3.2",
+    "@codemirror/state": "^6.5.2",
     "@codemirror/theme-one-dark": "^6.1.2",
     "@codemirror/view": "^6.36.7",
-    "@codemirror/state": "^6.5.2",
+    "@maze/fabrication": "workspace:*",
     "codemirror": "^6.0.1",
     "d3-force": "^3.0.0",
     "lucide-react": "^1.8.0",
@@ -26,6 +26,7 @@
     "react-dom": "^19.2.4",
     "react-markdown": "^9.0.3",
     "react-router-dom": "^7.6.0",
+    "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.0"
   },
   "devDependencies": {

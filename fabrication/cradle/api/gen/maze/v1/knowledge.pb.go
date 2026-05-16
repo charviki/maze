@@ -191,41 +191,42 @@ func (x *Archive) GetUpdatedAt() string {
 	return ""
 }
 
-type Memory struct {
+type Doc struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	ArchiveId     string                 `protobuf:"bytes,2,opt,name=archive_id,json=archiveId,proto3" json:"archive_id,omitempty"`
 	ParentId      string                 `protobuf:"bytes,3,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"`
-	Kind          string                 `protobuf:"bytes,4,opt,name=kind,proto3" json:"kind,omitempty"`
-	Title         string                 `protobuf:"bytes,5,opt,name=title,proto3" json:"title,omitempty"`
-	Content       string                 `protobuf:"bytes,6,opt,name=content,proto3" json:"content,omitempty"`
-	Type          string                 `protobuf:"bytes,7,opt,name=type,proto3" json:"type,omitempty"`
-	Summary       string                 `protobuf:"bytes,8,opt,name=summary,proto3" json:"summary,omitempty"`
-	Tags          []string               `protobuf:"bytes,9,rep,name=tags,proto3" json:"tags,omitempty"`
-	Author        string                 `protobuf:"bytes,10,opt,name=author,proto3" json:"author,omitempty"`
-	Visibility    string                 `protobuf:"bytes,11,opt,name=visibility,proto3" json:"visibility,omitempty"`
-	SharedWith    []string               `protobuf:"bytes,12,rep,name=shared_with,json=sharedWith,proto3" json:"shared_with,omitempty"`
-	Attachments   []*Attachment          `protobuf:"bytes,13,rep,name=attachments,proto3" json:"attachments,omitempty"`
-	CreatedAt     string                 `protobuf:"bytes,14,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt     string                 `protobuf:"bytes,15,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	Title         string                 `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
+	Content       string                 `protobuf:"bytes,5,opt,name=content,proto3" json:"content,omitempty"`
+	Summary       string                 `protobuf:"bytes,6,opt,name=summary,proto3" json:"summary,omitempty"`
+	Status        string                 `protobuf:"bytes,7,opt,name=status,proto3" json:"status,omitempty"`
+	Priority      string                 `protobuf:"bytes,8,opt,name=priority,proto3" json:"priority,omitempty"`
+	Assignee      string                 `protobuf:"bytes,9,opt,name=assignee,proto3" json:"assignee,omitempty"`
+	Tags          []string               `protobuf:"bytes,10,rep,name=tags,proto3" json:"tags,omitempty"`
+	Author        string                 `protobuf:"bytes,11,opt,name=author,proto3" json:"author,omitempty"`
+	Visibility    string                 `protobuf:"bytes,12,opt,name=visibility,proto3" json:"visibility,omitempty"`
+	SharedWith    []string               `protobuf:"bytes,13,rep,name=shared_with,json=sharedWith,proto3" json:"shared_with,omitempty"`
+	Attachments   []*Attachment          `protobuf:"bytes,14,rep,name=attachments,proto3" json:"attachments,omitempty"`
+	CreatedAt     string                 `protobuf:"bytes,15,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt     string                 `protobuf:"bytes,16,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Memory) Reset() {
-	*x = Memory{}
+func (x *Doc) Reset() {
+	*x = Doc{}
 	mi := &file_maze_v1_knowledge_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Memory) String() string {
+func (x *Doc) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Memory) ProtoMessage() {}
+func (*Doc) ProtoMessage() {}
 
-func (x *Memory) ProtoReflect() protoreflect.Message {
+func (x *Doc) ProtoReflect() protoreflect.Message {
 	mi := &file_maze_v1_knowledge_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -237,304 +238,146 @@ func (x *Memory) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Memory.ProtoReflect.Descriptor instead.
-func (*Memory) Descriptor() ([]byte, []int) {
+// Deprecated: Use Doc.ProtoReflect.Descriptor instead.
+func (*Doc) Descriptor() ([]byte, []int) {
 	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *Memory) GetId() string {
+func (x *Doc) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-func (x *Memory) GetArchiveId() string {
+func (x *Doc) GetArchiveId() string {
 	if x != nil {
 		return x.ArchiveId
 	}
 	return ""
 }
 
-func (x *Memory) GetParentId() string {
+func (x *Doc) GetParentId() string {
 	if x != nil {
 		return x.ParentId
 	}
 	return ""
 }
 
-func (x *Memory) GetKind() string {
-	if x != nil {
-		return x.Kind
-	}
-	return ""
-}
-
-func (x *Memory) GetTitle() string {
+func (x *Doc) GetTitle() string {
 	if x != nil {
 		return x.Title
 	}
 	return ""
 }
 
-func (x *Memory) GetContent() string {
+func (x *Doc) GetContent() string {
 	if x != nil {
 		return x.Content
 	}
 	return ""
 }
 
-func (x *Memory) GetType() string {
-	if x != nil {
-		return x.Type
-	}
-	return ""
-}
-
-func (x *Memory) GetSummary() string {
+func (x *Doc) GetSummary() string {
 	if x != nil {
 		return x.Summary
 	}
 	return ""
 }
 
-func (x *Memory) GetTags() []string {
-	if x != nil {
-		return x.Tags
-	}
-	return nil
-}
-
-func (x *Memory) GetAuthor() string {
-	if x != nil {
-		return x.Author
-	}
-	return ""
-}
-
-func (x *Memory) GetVisibility() string {
-	if x != nil {
-		return x.Visibility
-	}
-	return ""
-}
-
-func (x *Memory) GetSharedWith() []string {
-	if x != nil {
-		return x.SharedWith
-	}
-	return nil
-}
-
-func (x *Memory) GetAttachments() []*Attachment {
-	if x != nil {
-		return x.Attachments
-	}
-	return nil
-}
-
-func (x *Memory) GetCreatedAt() string {
-	if x != nil {
-		return x.CreatedAt
-	}
-	return ""
-}
-
-func (x *Memory) GetUpdatedAt() string {
-	if x != nil {
-		return x.UpdatedAt
-	}
-	return ""
-}
-
-type MemoryMeta struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	ArchiveId     string                 `protobuf:"bytes,2,opt,name=archive_id,json=archiveId,proto3" json:"archive_id,omitempty"`
-	ParentId      string                 `protobuf:"bytes,3,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"`
-	Kind          string                 `protobuf:"bytes,4,opt,name=kind,proto3" json:"kind,omitempty"`
-	Title         string                 `protobuf:"bytes,5,opt,name=title,proto3" json:"title,omitempty"`
-	Type          string                 `protobuf:"bytes,6,opt,name=type,proto3" json:"type,omitempty"`
-	Summary       string                 `protobuf:"bytes,7,opt,name=summary,proto3" json:"summary,omitempty"`
-	Tags          []string               `protobuf:"bytes,8,rep,name=tags,proto3" json:"tags,omitempty"`
-	Author        string                 `protobuf:"bytes,9,opt,name=author,proto3" json:"author,omitempty"`
-	Visibility    string                 `protobuf:"bytes,10,opt,name=visibility,proto3" json:"visibility,omitempty"`
-	SharedWith    []string               `protobuf:"bytes,11,rep,name=shared_with,json=sharedWith,proto3" json:"shared_with,omitempty"`
-	Attachments   []*Attachment          `protobuf:"bytes,12,rep,name=attachments,proto3" json:"attachments,omitempty"`
-	CreatedAt     string                 `protobuf:"bytes,13,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt     string                 `protobuf:"bytes,14,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	Status        string                 `protobuf:"bytes,15,opt,name=status,proto3" json:"status,omitempty"`
-	Priority      string                 `protobuf:"bytes,16,opt,name=priority,proto3" json:"priority,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *MemoryMeta) Reset() {
-	*x = MemoryMeta{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *MemoryMeta) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*MemoryMeta) ProtoMessage() {}
-
-func (x *MemoryMeta) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use MemoryMeta.ProtoReflect.Descriptor instead.
-func (*MemoryMeta) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *MemoryMeta) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
-}
-
-func (x *MemoryMeta) GetArchiveId() string {
-	if x != nil {
-		return x.ArchiveId
-	}
-	return ""
-}
-
-func (x *MemoryMeta) GetParentId() string {
-	if x != nil {
-		return x.ParentId
-	}
-	return ""
-}
-
-func (x *MemoryMeta) GetKind() string {
-	if x != nil {
-		return x.Kind
-	}
-	return ""
-}
-
-func (x *MemoryMeta) GetTitle() string {
-	if x != nil {
-		return x.Title
-	}
-	return ""
-}
-
-func (x *MemoryMeta) GetType() string {
-	if x != nil {
-		return x.Type
-	}
-	return ""
-}
-
-func (x *MemoryMeta) GetSummary() string {
-	if x != nil {
-		return x.Summary
-	}
-	return ""
-}
-
-func (x *MemoryMeta) GetTags() []string {
-	if x != nil {
-		return x.Tags
-	}
-	return nil
-}
-
-func (x *MemoryMeta) GetAuthor() string {
-	if x != nil {
-		return x.Author
-	}
-	return ""
-}
-
-func (x *MemoryMeta) GetVisibility() string {
-	if x != nil {
-		return x.Visibility
-	}
-	return ""
-}
-
-func (x *MemoryMeta) GetSharedWith() []string {
-	if x != nil {
-		return x.SharedWith
-	}
-	return nil
-}
-
-func (x *MemoryMeta) GetAttachments() []*Attachment {
-	if x != nil {
-		return x.Attachments
-	}
-	return nil
-}
-
-func (x *MemoryMeta) GetCreatedAt() string {
-	if x != nil {
-		return x.CreatedAt
-	}
-	return ""
-}
-
-func (x *MemoryMeta) GetUpdatedAt() string {
-	if x != nil {
-		return x.UpdatedAt
-	}
-	return ""
-}
-
-func (x *MemoryMeta) GetStatus() string {
+func (x *Doc) GetStatus() string {
 	if x != nil {
 		return x.Status
 	}
 	return ""
 }
 
-func (x *MemoryMeta) GetPriority() string {
+func (x *Doc) GetPriority() string {
 	if x != nil {
 		return x.Priority
 	}
 	return ""
 }
 
-type ParsedMemory struct {
+func (x *Doc) GetAssignee() string {
+	if x != nil {
+		return x.Assignee
+	}
+	return ""
+}
+
+func (x *Doc) GetTags() []string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
+func (x *Doc) GetAuthor() string {
+	if x != nil {
+		return x.Author
+	}
+	return ""
+}
+
+func (x *Doc) GetVisibility() string {
+	if x != nil {
+		return x.Visibility
+	}
+	return ""
+}
+
+func (x *Doc) GetSharedWith() []string {
+	if x != nil {
+		return x.SharedWith
+	}
+	return nil
+}
+
+func (x *Doc) GetAttachments() []*Attachment {
+	if x != nil {
+		return x.Attachments
+	}
+	return nil
+}
+
+func (x *Doc) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
+func (x *Doc) GetUpdatedAt() string {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return ""
+}
+
+type DocTreeNode struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Meta          *MemoryMeta            `protobuf:"bytes,1,opt,name=meta,proto3" json:"meta,omitempty"`
-	Summary       string                 `protobuf:"bytes,2,opt,name=summary,proto3" json:"summary,omitempty"`
-	Content       string                 `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
+	Doc           *Doc                   `protobuf:"bytes,1,opt,name=doc,proto3" json:"doc,omitempty"`
+	Children      []*DocTreeNode         `protobuf:"bytes,2,rep,name=children,proto3" json:"children,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ParsedMemory) Reset() {
-	*x = ParsedMemory{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[4]
+func (x *DocTreeNode) Reset() {
+	*x = DocTreeNode{}
+	mi := &file_maze_v1_knowledge_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ParsedMemory) String() string {
+func (x *DocTreeNode) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ParsedMemory) ProtoMessage() {}
+func (*DocTreeNode) ProtoMessage() {}
 
-func (x *ParsedMemory) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[4]
+func (x *DocTreeNode) ProtoReflect() protoreflect.Message {
+	mi := &file_maze_v1_knowledge_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -545,85 +388,26 @@ func (x *ParsedMemory) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ParsedMemory.ProtoReflect.Descriptor instead.
-func (*ParsedMemory) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{4}
+// Deprecated: Use DocTreeNode.ProtoReflect.Descriptor instead.
+func (*DocTreeNode) Descriptor() ([]byte, []int) {
+	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *ParsedMemory) GetMeta() *MemoryMeta {
+func (x *DocTreeNode) GetDoc() *Doc {
 	if x != nil {
-		return x.Meta
+		return x.Doc
 	}
 	return nil
 }
 
-func (x *ParsedMemory) GetSummary() string {
-	if x != nil {
-		return x.Summary
-	}
-	return ""
-}
-
-func (x *ParsedMemory) GetContent() string {
-	if x != nil {
-		return x.Content
-	}
-	return ""
-}
-
-type MemoryTreeNode struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Memory        *Memory                `protobuf:"bytes,1,opt,name=memory,proto3" json:"memory,omitempty"`
-	Children      []*MemoryTreeNode      `protobuf:"bytes,2,rep,name=children,proto3" json:"children,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *MemoryTreeNode) Reset() {
-	*x = MemoryTreeNode{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *MemoryTreeNode) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*MemoryTreeNode) ProtoMessage() {}
-
-func (x *MemoryTreeNode) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use MemoryTreeNode.ProtoReflect.Descriptor instead.
-func (*MemoryTreeNode) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *MemoryTreeNode) GetMemory() *Memory {
-	if x != nil {
-		return x.Memory
-	}
-	return nil
-}
-
-func (x *MemoryTreeNode) GetChildren() []*MemoryTreeNode {
+func (x *DocTreeNode) GetChildren() []*DocTreeNode {
 	if x != nil {
 		return x.Children
 	}
 	return nil
 }
 
-type NeuralLink struct {
+type DocLink struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	SourceId      string                 `protobuf:"bytes,2,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty"`
@@ -636,21 +420,21 @@ type NeuralLink struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *NeuralLink) Reset() {
-	*x = NeuralLink{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[6]
+func (x *DocLink) Reset() {
+	*x = DocLink{}
+	mi := &file_maze_v1_knowledge_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *NeuralLink) String() string {
+func (x *DocLink) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*NeuralLink) ProtoMessage() {}
+func (*DocLink) ProtoMessage() {}
 
-func (x *NeuralLink) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[6]
+func (x *DocLink) ProtoReflect() protoreflect.Message {
+	mi := &file_maze_v1_knowledge_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -661,254 +445,58 @@ func (x *NeuralLink) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use NeuralLink.ProtoReflect.Descriptor instead.
-func (*NeuralLink) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{6}
+// Deprecated: Use DocLink.ProtoReflect.Descriptor instead.
+func (*DocLink) Descriptor() ([]byte, []int) {
+	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *NeuralLink) GetId() string {
+func (x *DocLink) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-func (x *NeuralLink) GetSourceId() string {
+func (x *DocLink) GetSourceId() string {
 	if x != nil {
 		return x.SourceId
 	}
 	return ""
 }
 
-func (x *NeuralLink) GetTargetId() string {
+func (x *DocLink) GetTargetId() string {
 	if x != nil {
 		return x.TargetId
 	}
 	return ""
 }
 
-func (x *NeuralLink) GetRelationType() string {
+func (x *DocLink) GetRelationType() string {
 	if x != nil {
 		return x.RelationType
 	}
 	return ""
 }
 
-func (x *NeuralLink) GetSourceTitle() string {
+func (x *DocLink) GetSourceTitle() string {
 	if x != nil {
 		return x.SourceTitle
 	}
 	return ""
 }
 
-func (x *NeuralLink) GetTargetTitle() string {
+func (x *DocLink) GetTargetTitle() string {
 	if x != nil {
 		return x.TargetTitle
 	}
 	return ""
 }
 
-func (x *NeuralLink) GetCreatedAt() string {
+func (x *DocLink) GetCreatedAt() string {
 	if x != nil {
 		return x.CreatedAt
 	}
 	return ""
-}
-
-type DirectiveRef struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Status        string                 `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
-	Priority      string                 `protobuf:"bytes,4,opt,name=priority,proto3" json:"priority,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *DirectiveRef) Reset() {
-	*x = DirectiveRef{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[7]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DirectiveRef) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DirectiveRef) ProtoMessage() {}
-
-func (x *DirectiveRef) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[7]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DirectiveRef.ProtoReflect.Descriptor instead.
-func (*DirectiveRef) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{7}
-}
-
-func (x *DirectiveRef) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
-}
-
-func (x *DirectiveRef) GetTitle() string {
-	if x != nil {
-		return x.Title
-	}
-	return ""
-}
-
-func (x *DirectiveRef) GetStatus() string {
-	if x != nil {
-		return x.Status
-	}
-	return ""
-}
-
-func (x *DirectiveRef) GetPriority() string {
-	if x != nil {
-		return x.Priority
-	}
-	return ""
-}
-
-type ChatMessage struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Role          string                 `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
-	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
-	Metadata      string                 `protobuf:"bytes,3,opt,name=metadata,proto3" json:"metadata,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ChatMessage) Reset() {
-	*x = ChatMessage{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[8]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ChatMessage) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ChatMessage) ProtoMessage() {}
-
-func (x *ChatMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[8]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ChatMessage.ProtoReflect.Descriptor instead.
-func (*ChatMessage) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{8}
-}
-
-func (x *ChatMessage) GetRole() string {
-	if x != nil {
-		return x.Role
-	}
-	return ""
-}
-
-func (x *ChatMessage) GetContent() string {
-	if x != nil {
-		return x.Content
-	}
-	return ""
-}
-
-func (x *ChatMessage) GetMetadata() string {
-	if x != nil {
-		return x.Metadata
-	}
-	return ""
-}
-
-type Stats struct {
-	state              protoimpl.MessageState `protogen:"open.v1"`
-	TotalMemories      int32                  `protobuf:"varint,1,opt,name=total_memories,json=totalMemories,proto3" json:"total_memories,omitempty"`
-	TotalDirectives    int32                  `protobuf:"varint,2,opt,name=total_directives,json=totalDirectives,proto3" json:"total_directives,omitempty"`
-	DirectivesByStatus map[string]int32       `protobuf:"bytes,3,rep,name=directives_by_status,json=directivesByStatus,proto3" json:"directives_by_status,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
-	RecentMemories     []*Memory              `protobuf:"bytes,4,rep,name=recent_memories,json=recentMemories,proto3" json:"recent_memories,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
-}
-
-func (x *Stats) Reset() {
-	*x = Stats{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[9]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Stats) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Stats) ProtoMessage() {}
-
-func (x *Stats) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[9]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Stats.ProtoReflect.Descriptor instead.
-func (*Stats) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{9}
-}
-
-func (x *Stats) GetTotalMemories() int32 {
-	if x != nil {
-		return x.TotalMemories
-	}
-	return 0
-}
-
-func (x *Stats) GetTotalDirectives() int32 {
-	if x != nil {
-		return x.TotalDirectives
-	}
-	return 0
-}
-
-func (x *Stats) GetDirectivesByStatus() map[string]int32 {
-	if x != nil {
-		return x.DirectivesByStatus
-	}
-	return nil
-}
-
-func (x *Stats) GetRecentMemories() []*Memory {
-	if x != nil {
-		return x.RecentMemories
-	}
-	return nil
 }
 
 type CreateArchiveRequest struct {
@@ -922,7 +510,7 @@ type CreateArchiveRequest struct {
 
 func (x *CreateArchiveRequest) Reset() {
 	*x = CreateArchiveRequest{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[10]
+	mi := &file_maze_v1_knowledge_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -934,7 +522,7 @@ func (x *CreateArchiveRequest) String() string {
 func (*CreateArchiveRequest) ProtoMessage() {}
 
 func (x *CreateArchiveRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[10]
+	mi := &file_maze_v1_knowledge_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -947,7 +535,7 @@ func (x *CreateArchiveRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateArchiveRequest.ProtoReflect.Descriptor instead.
 func (*CreateArchiveRequest) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{10}
+	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *CreateArchiveRequest) GetName() string {
@@ -980,7 +568,7 @@ type GetArchiveRequest struct {
 
 func (x *GetArchiveRequest) Reset() {
 	*x = GetArchiveRequest{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[11]
+	mi := &file_maze_v1_knowledge_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -992,7 +580,7 @@ func (x *GetArchiveRequest) String() string {
 func (*GetArchiveRequest) ProtoMessage() {}
 
 func (x *GetArchiveRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[11]
+	mi := &file_maze_v1_knowledge_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1005,7 +593,7 @@ func (x *GetArchiveRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetArchiveRequest.ProtoReflect.Descriptor instead.
 func (*GetArchiveRequest) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{11}
+	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GetArchiveRequest) GetId() string {
@@ -1023,7 +611,7 @@ type ListArchivesRequest struct {
 
 func (x *ListArchivesRequest) Reset() {
 	*x = ListArchivesRequest{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[12]
+	mi := &file_maze_v1_knowledge_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1035,7 +623,7 @@ func (x *ListArchivesRequest) String() string {
 func (*ListArchivesRequest) ProtoMessage() {}
 
 func (x *ListArchivesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[12]
+	mi := &file_maze_v1_knowledge_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1048,7 +636,7 @@ func (x *ListArchivesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListArchivesRequest.ProtoReflect.Descriptor instead.
 func (*ListArchivesRequest) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{12}
+	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{7}
 }
 
 type ListArchivesResponse struct {
@@ -1060,7 +648,7 @@ type ListArchivesResponse struct {
 
 func (x *ListArchivesResponse) Reset() {
 	*x = ListArchivesResponse{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[13]
+	mi := &file_maze_v1_knowledge_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1072,7 +660,7 @@ func (x *ListArchivesResponse) String() string {
 func (*ListArchivesResponse) ProtoMessage() {}
 
 func (x *ListArchivesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[13]
+	mi := &file_maze_v1_knowledge_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1085,7 +673,7 @@ func (x *ListArchivesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListArchivesResponse.ProtoReflect.Descriptor instead.
 func (*ListArchivesResponse) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{13}
+	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ListArchivesResponse) GetArchives() []*Archive {
@@ -1107,7 +695,7 @@ type UpdateArchiveRequest struct {
 
 func (x *UpdateArchiveRequest) Reset() {
 	*x = UpdateArchiveRequest{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[14]
+	mi := &file_maze_v1_knowledge_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1119,7 +707,7 @@ func (x *UpdateArchiveRequest) String() string {
 func (*UpdateArchiveRequest) ProtoMessage() {}
 
 func (x *UpdateArchiveRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[14]
+	mi := &file_maze_v1_knowledge_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1132,7 +720,7 @@ func (x *UpdateArchiveRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateArchiveRequest.ProtoReflect.Descriptor instead.
 func (*UpdateArchiveRequest) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{14}
+	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *UpdateArchiveRequest) GetId() string {
@@ -1172,7 +760,7 @@ type DeleteArchiveRequest struct {
 
 func (x *DeleteArchiveRequest) Reset() {
 	*x = DeleteArchiveRequest{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[15]
+	mi := &file_maze_v1_knowledge_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1184,7 +772,7 @@ func (x *DeleteArchiveRequest) String() string {
 func (*DeleteArchiveRequest) ProtoMessage() {}
 
 func (x *DeleteArchiveRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[15]
+	mi := &file_maze_v1_knowledge_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1197,7 +785,7 @@ func (x *DeleteArchiveRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteArchiveRequest.ProtoReflect.Descriptor instead.
 func (*DeleteArchiveRequest) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{15}
+	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *DeleteArchiveRequest) GetId() string {
@@ -1207,17 +795,17 @@ func (x *DeleteArchiveRequest) GetId() string {
 	return ""
 }
 
-type CreateMemoryRequest struct {
+type CreateDocRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ArchiveId     string                 `protobuf:"bytes,1,opt,name=archive_id,json=archiveId,proto3" json:"archive_id,omitempty"`
 	ParentId      string                 `protobuf:"bytes,2,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"`
-	Kind          string                 `protobuf:"bytes,3,opt,name=kind,proto3" json:"kind,omitempty"`
-	Title         string                 `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
-	Content       string                 `protobuf:"bytes,5,opt,name=content,proto3" json:"content,omitempty"`
-	Type          string                 `protobuf:"bytes,6,opt,name=type,proto3" json:"type,omitempty"`
-	Summary       string                 `protobuf:"bytes,7,opt,name=summary,proto3" json:"summary,omitempty"`
-	Tags          []string               `protobuf:"bytes,8,rep,name=tags,proto3" json:"tags,omitempty"`
-	Author        string                 `protobuf:"bytes,9,opt,name=author,proto3" json:"author,omitempty"`
+	Title         string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
+	Content       string                 `protobuf:"bytes,4,opt,name=content,proto3" json:"content,omitempty"`
+	Summary       string                 `protobuf:"bytes,5,opt,name=summary,proto3" json:"summary,omitempty"`
+	Status        string                 `protobuf:"bytes,6,opt,name=status,proto3" json:"status,omitempty"`
+	Priority      string                 `protobuf:"bytes,7,opt,name=priority,proto3" json:"priority,omitempty"`
+	Assignee      string                 `protobuf:"bytes,8,opt,name=assignee,proto3" json:"assignee,omitempty"`
+	Tags          []string               `protobuf:"bytes,9,rep,name=tags,proto3" json:"tags,omitempty"`
 	Visibility    string                 `protobuf:"bytes,10,opt,name=visibility,proto3" json:"visibility,omitempty"`
 	SharedWith    []string               `protobuf:"bytes,11,rep,name=shared_with,json=sharedWith,proto3" json:"shared_with,omitempty"`
 	Attachments   []*Attachment          `protobuf:"bytes,12,rep,name=attachments,proto3" json:"attachments,omitempty"`
@@ -1225,21 +813,21 @@ type CreateMemoryRequest struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *CreateMemoryRequest) Reset() {
-	*x = CreateMemoryRequest{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[16]
+func (x *CreateDocRequest) Reset() {
+	*x = CreateDocRequest{}
+	mi := &file_maze_v1_knowledge_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *CreateMemoryRequest) String() string {
+func (x *CreateDocRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*CreateMemoryRequest) ProtoMessage() {}
+func (*CreateDocRequest) ProtoMessage() {}
 
-func (x *CreateMemoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[16]
+func (x *CreateDocRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_maze_v1_knowledge_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1250,117 +838,117 @@ func (x *CreateMemoryRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use CreateMemoryRequest.ProtoReflect.Descriptor instead.
-func (*CreateMemoryRequest) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{16}
+// Deprecated: Use CreateDocRequest.ProtoReflect.Descriptor instead.
+func (*CreateDocRequest) Descriptor() ([]byte, []int) {
+	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{11}
 }
 
-func (x *CreateMemoryRequest) GetArchiveId() string {
+func (x *CreateDocRequest) GetArchiveId() string {
 	if x != nil {
 		return x.ArchiveId
 	}
 	return ""
 }
 
-func (x *CreateMemoryRequest) GetParentId() string {
+func (x *CreateDocRequest) GetParentId() string {
 	if x != nil {
 		return x.ParentId
 	}
 	return ""
 }
 
-func (x *CreateMemoryRequest) GetKind() string {
-	if x != nil {
-		return x.Kind
-	}
-	return ""
-}
-
-func (x *CreateMemoryRequest) GetTitle() string {
+func (x *CreateDocRequest) GetTitle() string {
 	if x != nil {
 		return x.Title
 	}
 	return ""
 }
 
-func (x *CreateMemoryRequest) GetContent() string {
+func (x *CreateDocRequest) GetContent() string {
 	if x != nil {
 		return x.Content
 	}
 	return ""
 }
 
-func (x *CreateMemoryRequest) GetType() string {
-	if x != nil {
-		return x.Type
-	}
-	return ""
-}
-
-func (x *CreateMemoryRequest) GetSummary() string {
+func (x *CreateDocRequest) GetSummary() string {
 	if x != nil {
 		return x.Summary
 	}
 	return ""
 }
 
-func (x *CreateMemoryRequest) GetTags() []string {
+func (x *CreateDocRequest) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *CreateDocRequest) GetPriority() string {
+	if x != nil {
+		return x.Priority
+	}
+	return ""
+}
+
+func (x *CreateDocRequest) GetAssignee() string {
+	if x != nil {
+		return x.Assignee
+	}
+	return ""
+}
+
+func (x *CreateDocRequest) GetTags() []string {
 	if x != nil {
 		return x.Tags
 	}
 	return nil
 }
 
-func (x *CreateMemoryRequest) GetAuthor() string {
-	if x != nil {
-		return x.Author
-	}
-	return ""
-}
-
-func (x *CreateMemoryRequest) GetVisibility() string {
+func (x *CreateDocRequest) GetVisibility() string {
 	if x != nil {
 		return x.Visibility
 	}
 	return ""
 }
 
-func (x *CreateMemoryRequest) GetSharedWith() []string {
+func (x *CreateDocRequest) GetSharedWith() []string {
 	if x != nil {
 		return x.SharedWith
 	}
 	return nil
 }
 
-func (x *CreateMemoryRequest) GetAttachments() []*Attachment {
+func (x *CreateDocRequest) GetAttachments() []*Attachment {
 	if x != nil {
 		return x.Attachments
 	}
 	return nil
 }
 
-type GetMemoryRequest struct {
+type GetDocRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetMemoryRequest) Reset() {
-	*x = GetMemoryRequest{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[17]
+func (x *GetDocRequest) Reset() {
+	*x = GetDocRequest{}
+	mi := &file_maze_v1_knowledge_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetMemoryRequest) String() string {
+func (x *GetDocRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetMemoryRequest) ProtoMessage() {}
+func (*GetDocRequest) ProtoMessage() {}
 
-func (x *GetMemoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[17]
+func (x *GetDocRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_maze_v1_knowledge_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1371,48 +959,46 @@ func (x *GetMemoryRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetMemoryRequest.ProtoReflect.Descriptor instead.
-func (*GetMemoryRequest) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{17}
+// Deprecated: Use GetDocRequest.ProtoReflect.Descriptor instead.
+func (*GetDocRequest) Descriptor() ([]byte, []int) {
+	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{12}
 }
 
-func (x *GetMemoryRequest) GetId() string {
+func (x *GetDocRequest) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-type ListMemoriesRequest struct {
+type ListDocsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ArchiveId     string                 `protobuf:"bytes,1,opt,name=archive_id,json=archiveId,proto3" json:"archive_id,omitempty"`
 	ParentId      string                 `protobuf:"bytes,2,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"`
-	Kind          string                 `protobuf:"bytes,3,opt,name=kind,proto3" json:"kind,omitempty"`
-	Type          string                 `protobuf:"bytes,4,opt,name=type,proto3" json:"type,omitempty"`
-	Tag           string                 `protobuf:"bytes,5,opt,name=tag,proto3" json:"tag,omitempty"`
-	Visibility    string                 `protobuf:"bytes,6,opt,name=visibility,proto3" json:"visibility,omitempty"`
-	Author        string                 `protobuf:"bytes,7,opt,name=author,proto3" json:"author,omitempty"`
-	Limit         int32                  `protobuf:"varint,8,opt,name=limit,proto3" json:"limit,omitempty"`
-	Offset        int32                  `protobuf:"varint,9,opt,name=offset,proto3" json:"offset,omitempty"`
+	Status        string                 `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
+	Visibility    string                 `protobuf:"bytes,4,opt,name=visibility,proto3" json:"visibility,omitempty"`
+	Author        string                 `protobuf:"bytes,5,opt,name=author,proto3" json:"author,omitempty"`
+	Limit         int32                  `protobuf:"varint,6,opt,name=limit,proto3" json:"limit,omitempty"`
+	Offset        int32                  `protobuf:"varint,7,opt,name=offset,proto3" json:"offset,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ListMemoriesRequest) Reset() {
-	*x = ListMemoriesRequest{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[18]
+func (x *ListDocsRequest) Reset() {
+	*x = ListDocsRequest{}
+	mi := &file_maze_v1_knowledge_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ListMemoriesRequest) String() string {
+func (x *ListDocsRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListMemoriesRequest) ProtoMessage() {}
+func (*ListDocsRequest) ProtoMessage() {}
 
-func (x *ListMemoriesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[18]
+func (x *ListDocsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_maze_v1_knowledge_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1423,97 +1009,83 @@ func (x *ListMemoriesRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListMemoriesRequest.ProtoReflect.Descriptor instead.
-func (*ListMemoriesRequest) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{18}
+// Deprecated: Use ListDocsRequest.ProtoReflect.Descriptor instead.
+func (*ListDocsRequest) Descriptor() ([]byte, []int) {
+	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{13}
 }
 
-func (x *ListMemoriesRequest) GetArchiveId() string {
+func (x *ListDocsRequest) GetArchiveId() string {
 	if x != nil {
 		return x.ArchiveId
 	}
 	return ""
 }
 
-func (x *ListMemoriesRequest) GetParentId() string {
+func (x *ListDocsRequest) GetParentId() string {
 	if x != nil {
 		return x.ParentId
 	}
 	return ""
 }
 
-func (x *ListMemoriesRequest) GetKind() string {
+func (x *ListDocsRequest) GetStatus() string {
 	if x != nil {
-		return x.Kind
+		return x.Status
 	}
 	return ""
 }
 
-func (x *ListMemoriesRequest) GetType() string {
-	if x != nil {
-		return x.Type
-	}
-	return ""
-}
-
-func (x *ListMemoriesRequest) GetTag() string {
-	if x != nil {
-		return x.Tag
-	}
-	return ""
-}
-
-func (x *ListMemoriesRequest) GetVisibility() string {
+func (x *ListDocsRequest) GetVisibility() string {
 	if x != nil {
 		return x.Visibility
 	}
 	return ""
 }
 
-func (x *ListMemoriesRequest) GetAuthor() string {
+func (x *ListDocsRequest) GetAuthor() string {
 	if x != nil {
 		return x.Author
 	}
 	return ""
 }
 
-func (x *ListMemoriesRequest) GetLimit() int32 {
+func (x *ListDocsRequest) GetLimit() int32 {
 	if x != nil {
 		return x.Limit
 	}
 	return 0
 }
 
-func (x *ListMemoriesRequest) GetOffset() int32 {
+func (x *ListDocsRequest) GetOffset() int32 {
 	if x != nil {
 		return x.Offset
 	}
 	return 0
 }
 
-type ListMemoriesResponse struct {
+type ListDocsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Items         []*Memory              `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	Items         []*Doc                 `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
 	Total         int32                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ListMemoriesResponse) Reset() {
-	*x = ListMemoriesResponse{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[19]
+func (x *ListDocsResponse) Reset() {
+	*x = ListDocsResponse{}
+	mi := &file_maze_v1_knowledge_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ListMemoriesResponse) String() string {
+func (x *ListDocsResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ListMemoriesResponse) ProtoMessage() {}
+func (*ListDocsResponse) ProtoMessage() {}
 
-func (x *ListMemoriesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[19]
+func (x *ListDocsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_maze_v1_knowledge_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1524,57 +1096,58 @@ func (x *ListMemoriesResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ListMemoriesResponse.ProtoReflect.Descriptor instead.
-func (*ListMemoriesResponse) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{19}
+// Deprecated: Use ListDocsResponse.ProtoReflect.Descriptor instead.
+func (*ListDocsResponse) Descriptor() ([]byte, []int) {
+	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{14}
 }
 
-func (x *ListMemoriesResponse) GetItems() []*Memory {
+func (x *ListDocsResponse) GetItems() []*Doc {
 	if x != nil {
 		return x.Items
 	}
 	return nil
 }
 
-func (x *ListMemoriesResponse) GetTotal() int32 {
+func (x *ListDocsResponse) GetTotal() int32 {
 	if x != nil {
 		return x.Total
 	}
 	return 0
 }
 
-type UpdateMemoryRequest struct {
+type UpdateDocRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
 	Content       string                 `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
-	Type          string                 `protobuf:"bytes,4,opt,name=type,proto3" json:"type,omitempty"`
-	Summary       string                 `protobuf:"bytes,5,opt,name=summary,proto3" json:"summary,omitempty"`
-	Tags          []string               `protobuf:"bytes,6,rep,name=tags,proto3" json:"tags,omitempty"`
-	Visibility    string                 `protobuf:"bytes,7,opt,name=visibility,proto3" json:"visibility,omitempty"`
-	SharedWith    []string               `protobuf:"bytes,8,rep,name=shared_with,json=sharedWith,proto3" json:"shared_with,omitempty"`
-	Attachments   []*Attachment          `protobuf:"bytes,9,rep,name=attachments,proto3" json:"attachments,omitempty"`
-	ParentId      string                 `protobuf:"bytes,10,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"`
-	Kind          string                 `protobuf:"bytes,11,opt,name=kind,proto3" json:"kind,omitempty"`
+	Summary       string                 `protobuf:"bytes,4,opt,name=summary,proto3" json:"summary,omitempty"`
+	Status        string                 `protobuf:"bytes,5,opt,name=status,proto3" json:"status,omitempty"`
+	Priority      string                 `protobuf:"bytes,6,opt,name=priority,proto3" json:"priority,omitempty"`
+	Assignee      string                 `protobuf:"bytes,7,opt,name=assignee,proto3" json:"assignee,omitempty"`
+	Tags          []string               `protobuf:"bytes,8,rep,name=tags,proto3" json:"tags,omitempty"`
+	Visibility    string                 `protobuf:"bytes,9,opt,name=visibility,proto3" json:"visibility,omitempty"`
+	SharedWith    []string               `protobuf:"bytes,10,rep,name=shared_with,json=sharedWith,proto3" json:"shared_with,omitempty"`
+	Attachments   []*Attachment          `protobuf:"bytes,11,rep,name=attachments,proto3" json:"attachments,omitempty"`
+	ParentId      string                 `protobuf:"bytes,12,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *UpdateMemoryRequest) Reset() {
-	*x = UpdateMemoryRequest{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[20]
+func (x *UpdateDocRequest) Reset() {
+	*x = UpdateDocRequest{}
+	mi := &file_maze_v1_knowledge_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *UpdateMemoryRequest) String() string {
+func (x *UpdateDocRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*UpdateMemoryRequest) ProtoMessage() {}
+func (*UpdateDocRequest) ProtoMessage() {}
 
-func (x *UpdateMemoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[20]
+func (x *UpdateDocRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_maze_v1_knowledge_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1585,110 +1158,117 @@ func (x *UpdateMemoryRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use UpdateMemoryRequest.ProtoReflect.Descriptor instead.
-func (*UpdateMemoryRequest) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{20}
+// Deprecated: Use UpdateDocRequest.ProtoReflect.Descriptor instead.
+func (*UpdateDocRequest) Descriptor() ([]byte, []int) {
+	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{15}
 }
 
-func (x *UpdateMemoryRequest) GetId() string {
+func (x *UpdateDocRequest) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-func (x *UpdateMemoryRequest) GetTitle() string {
+func (x *UpdateDocRequest) GetTitle() string {
 	if x != nil {
 		return x.Title
 	}
 	return ""
 }
 
-func (x *UpdateMemoryRequest) GetContent() string {
+func (x *UpdateDocRequest) GetContent() string {
 	if x != nil {
 		return x.Content
 	}
 	return ""
 }
 
-func (x *UpdateMemoryRequest) GetType() string {
-	if x != nil {
-		return x.Type
-	}
-	return ""
-}
-
-func (x *UpdateMemoryRequest) GetSummary() string {
+func (x *UpdateDocRequest) GetSummary() string {
 	if x != nil {
 		return x.Summary
 	}
 	return ""
 }
 
-func (x *UpdateMemoryRequest) GetTags() []string {
+func (x *UpdateDocRequest) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *UpdateDocRequest) GetPriority() string {
+	if x != nil {
+		return x.Priority
+	}
+	return ""
+}
+
+func (x *UpdateDocRequest) GetAssignee() string {
+	if x != nil {
+		return x.Assignee
+	}
+	return ""
+}
+
+func (x *UpdateDocRequest) GetTags() []string {
 	if x != nil {
 		return x.Tags
 	}
 	return nil
 }
 
-func (x *UpdateMemoryRequest) GetVisibility() string {
+func (x *UpdateDocRequest) GetVisibility() string {
 	if x != nil {
 		return x.Visibility
 	}
 	return ""
 }
 
-func (x *UpdateMemoryRequest) GetSharedWith() []string {
+func (x *UpdateDocRequest) GetSharedWith() []string {
 	if x != nil {
 		return x.SharedWith
 	}
 	return nil
 }
 
-func (x *UpdateMemoryRequest) GetAttachments() []*Attachment {
+func (x *UpdateDocRequest) GetAttachments() []*Attachment {
 	if x != nil {
 		return x.Attachments
 	}
 	return nil
 }
 
-func (x *UpdateMemoryRequest) GetParentId() string {
+func (x *UpdateDocRequest) GetParentId() string {
 	if x != nil {
 		return x.ParentId
 	}
 	return ""
 }
 
-func (x *UpdateMemoryRequest) GetKind() string {
-	if x != nil {
-		return x.Kind
-	}
-	return ""
-}
-
-type DeleteMemoryRequest struct {
+type DeleteDocRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *DeleteMemoryRequest) Reset() {
-	*x = DeleteMemoryRequest{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[21]
+func (x *DeleteDocRequest) Reset() {
+	*x = DeleteDocRequest{}
+	mi := &file_maze_v1_knowledge_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *DeleteMemoryRequest) String() string {
+func (x *DeleteDocRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*DeleteMemoryRequest) ProtoMessage() {}
+func (*DeleteDocRequest) ProtoMessage() {}
 
-func (x *DeleteMemoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[21]
+func (x *DeleteDocRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_maze_v1_knowledge_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1699,19 +1279,19 @@ func (x *DeleteMemoryRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use DeleteMemoryRequest.ProtoReflect.Descriptor instead.
-func (*DeleteMemoryRequest) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{21}
+// Deprecated: Use DeleteDocRequest.ProtoReflect.Descriptor instead.
+func (*DeleteDocRequest) Descriptor() ([]byte, []int) {
+	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{16}
 }
 
-func (x *DeleteMemoryRequest) GetId() string {
+func (x *DeleteDocRequest) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-type SearchMemoriesRequest struct {
+type SearchDocsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Q             string                 `protobuf:"bytes,1,opt,name=q,proto3" json:"q,omitempty"`
 	ArchiveId     string                 `protobuf:"bytes,2,opt,name=archive_id,json=archiveId,proto3" json:"archive_id,omitempty"`
@@ -1721,21 +1301,21 @@ type SearchMemoriesRequest struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SearchMemoriesRequest) Reset() {
-	*x = SearchMemoriesRequest{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[22]
+func (x *SearchDocsRequest) Reset() {
+	*x = SearchDocsRequest{}
+	mi := &file_maze_v1_knowledge_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SearchMemoriesRequest) String() string {
+func (x *SearchDocsRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SearchMemoriesRequest) ProtoMessage() {}
+func (*SearchDocsRequest) ProtoMessage() {}
 
-func (x *SearchMemoriesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[22]
+func (x *SearchDocsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_maze_v1_knowledge_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1746,61 +1326,61 @@ func (x *SearchMemoriesRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SearchMemoriesRequest.ProtoReflect.Descriptor instead.
-func (*SearchMemoriesRequest) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{22}
+// Deprecated: Use SearchDocsRequest.ProtoReflect.Descriptor instead.
+func (*SearchDocsRequest) Descriptor() ([]byte, []int) {
+	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{17}
 }
 
-func (x *SearchMemoriesRequest) GetQ() string {
+func (x *SearchDocsRequest) GetQ() string {
 	if x != nil {
 		return x.Q
 	}
 	return ""
 }
 
-func (x *SearchMemoriesRequest) GetArchiveId() string {
+func (x *SearchDocsRequest) GetArchiveId() string {
 	if x != nil {
 		return x.ArchiveId
 	}
 	return ""
 }
 
-func (x *SearchMemoriesRequest) GetVisibility() string {
+func (x *SearchDocsRequest) GetVisibility() string {
 	if x != nil {
 		return x.Visibility
 	}
 	return ""
 }
 
-func (x *SearchMemoriesRequest) GetAuthor() string {
+func (x *SearchDocsRequest) GetAuthor() string {
 	if x != nil {
 		return x.Author
 	}
 	return ""
 }
 
-type SearchMemoriesResponse struct {
+type SearchDocsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Items         []*Memory              `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	Items         []*Doc                 `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *SearchMemoriesResponse) Reset() {
-	*x = SearchMemoriesResponse{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[23]
+func (x *SearchDocsResponse) Reset() {
+	*x = SearchDocsResponse{}
+	mi := &file_maze_v1_knowledge_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *SearchMemoriesResponse) String() string {
+func (x *SearchDocsResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*SearchMemoriesResponse) ProtoMessage() {}
+func (*SearchDocsResponse) ProtoMessage() {}
 
-func (x *SearchMemoriesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[23]
+func (x *SearchDocsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_maze_v1_knowledge_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1811,19 +1391,19 @@ func (x *SearchMemoriesResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use SearchMemoriesResponse.ProtoReflect.Descriptor instead.
-func (*SearchMemoriesResponse) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{23}
+// Deprecated: Use SearchDocsResponse.ProtoReflect.Descriptor instead.
+func (*SearchDocsResponse) Descriptor() ([]byte, []int) {
+	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{18}
 }
 
-func (x *SearchMemoriesResponse) GetItems() []*Memory {
+func (x *SearchDocsResponse) GetItems() []*Doc {
 	if x != nil {
 		return x.Items
 	}
 	return nil
 }
 
-type GetMemoryTreeRequest struct {
+type GetDocTreeRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ArchiveId     string                 `protobuf:"bytes,1,opt,name=archive_id,json=archiveId,proto3" json:"archive_id,omitempty"`
 	ParentId      string                 `protobuf:"bytes,2,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"`
@@ -1831,21 +1411,21 @@ type GetMemoryTreeRequest struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetMemoryTreeRequest) Reset() {
-	*x = GetMemoryTreeRequest{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[24]
+func (x *GetDocTreeRequest) Reset() {
+	*x = GetDocTreeRequest{}
+	mi := &file_maze_v1_knowledge_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetMemoryTreeRequest) String() string {
+func (x *GetDocTreeRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetMemoryTreeRequest) ProtoMessage() {}
+func (*GetDocTreeRequest) ProtoMessage() {}
 
-func (x *GetMemoryTreeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[24]
+func (x *GetDocTreeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_maze_v1_knowledge_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1856,47 +1436,47 @@ func (x *GetMemoryTreeRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetMemoryTreeRequest.ProtoReflect.Descriptor instead.
-func (*GetMemoryTreeRequest) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{24}
+// Deprecated: Use GetDocTreeRequest.ProtoReflect.Descriptor instead.
+func (*GetDocTreeRequest) Descriptor() ([]byte, []int) {
+	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{19}
 }
 
-func (x *GetMemoryTreeRequest) GetArchiveId() string {
+func (x *GetDocTreeRequest) GetArchiveId() string {
 	if x != nil {
 		return x.ArchiveId
 	}
 	return ""
 }
 
-func (x *GetMemoryTreeRequest) GetParentId() string {
+func (x *GetDocTreeRequest) GetParentId() string {
 	if x != nil {
 		return x.ParentId
 	}
 	return ""
 }
 
-type GetMemoryTreeResponse struct {
+type GetDocTreeResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nodes         []*MemoryTreeNode      `protobuf:"bytes,1,rep,name=nodes,proto3" json:"nodes,omitempty"`
+	Nodes         []*DocTreeNode         `protobuf:"bytes,1,rep,name=nodes,proto3" json:"nodes,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetMemoryTreeResponse) Reset() {
-	*x = GetMemoryTreeResponse{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[25]
+func (x *GetDocTreeResponse) Reset() {
+	*x = GetDocTreeResponse{}
+	mi := &file_maze_v1_knowledge_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetMemoryTreeResponse) String() string {
+func (x *GetDocTreeResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetMemoryTreeResponse) ProtoMessage() {}
+func (*GetDocTreeResponse) ProtoMessage() {}
 
-func (x *GetMemoryTreeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[25]
+func (x *GetDocTreeResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_maze_v1_knowledge_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1907,40 +1487,40 @@ func (x *GetMemoryTreeResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetMemoryTreeResponse.ProtoReflect.Descriptor instead.
-func (*GetMemoryTreeResponse) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{25}
+// Deprecated: Use GetDocTreeResponse.ProtoReflect.Descriptor instead.
+func (*GetDocTreeResponse) Descriptor() ([]byte, []int) {
+	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{20}
 }
 
-func (x *GetMemoryTreeResponse) GetNodes() []*MemoryTreeNode {
+func (x *GetDocTreeResponse) GetNodes() []*DocTreeNode {
 	if x != nil {
 		return x.Nodes
 	}
 	return nil
 }
 
-type GetMemoryAncestorsRequest struct {
+type GetDocAncestorsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetMemoryAncestorsRequest) Reset() {
-	*x = GetMemoryAncestorsRequest{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[26]
+func (x *GetDocAncestorsRequest) Reset() {
+	*x = GetDocAncestorsRequest{}
+	mi := &file_maze_v1_knowledge_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetMemoryAncestorsRequest) String() string {
+func (x *GetDocAncestorsRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetMemoryAncestorsRequest) ProtoMessage() {}
+func (*GetDocAncestorsRequest) ProtoMessage() {}
 
-func (x *GetMemoryAncestorsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[26]
+func (x *GetDocAncestorsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_maze_v1_knowledge_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1951,40 +1531,40 @@ func (x *GetMemoryAncestorsRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetMemoryAncestorsRequest.ProtoReflect.Descriptor instead.
-func (*GetMemoryAncestorsRequest) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{26}
+// Deprecated: Use GetDocAncestorsRequest.ProtoReflect.Descriptor instead.
+func (*GetDocAncestorsRequest) Descriptor() ([]byte, []int) {
+	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{21}
 }
 
-func (x *GetMemoryAncestorsRequest) GetId() string {
+func (x *GetDocAncestorsRequest) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-type GetMemoryAncestorsResponse struct {
+type GetDocAncestorsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Ancestors     []*Memory              `protobuf:"bytes,1,rep,name=ancestors,proto3" json:"ancestors,omitempty"`
+	Ancestors     []*Doc                 `protobuf:"bytes,1,rep,name=ancestors,proto3" json:"ancestors,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetMemoryAncestorsResponse) Reset() {
-	*x = GetMemoryAncestorsResponse{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[27]
+func (x *GetDocAncestorsResponse) Reset() {
+	*x = GetDocAncestorsResponse{}
+	mi := &file_maze_v1_knowledge_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetMemoryAncestorsResponse) String() string {
+func (x *GetDocAncestorsResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetMemoryAncestorsResponse) ProtoMessage() {}
+func (*GetDocAncestorsResponse) ProtoMessage() {}
 
-func (x *GetMemoryAncestorsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[27]
+func (x *GetDocAncestorsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_maze_v1_knowledge_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1995,102 +1575,14 @@ func (x *GetMemoryAncestorsResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetMemoryAncestorsResponse.ProtoReflect.Descriptor instead.
-func (*GetMemoryAncestorsResponse) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{27}
+// Deprecated: Use GetDocAncestorsResponse.ProtoReflect.Descriptor instead.
+func (*GetDocAncestorsResponse) Descriptor() ([]byte, []int) {
+	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{22}
 }
 
-func (x *GetMemoryAncestorsResponse) GetAncestors() []*Memory {
+func (x *GetDocAncestorsResponse) GetAncestors() []*Doc {
 	if x != nil {
 		return x.Ancestors
-	}
-	return nil
-}
-
-type GetMemoryDirectivesRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetMemoryDirectivesRequest) Reset() {
-	*x = GetMemoryDirectivesRequest{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[28]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetMemoryDirectivesRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetMemoryDirectivesRequest) ProtoMessage() {}
-
-func (x *GetMemoryDirectivesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[28]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetMemoryDirectivesRequest.ProtoReflect.Descriptor instead.
-func (*GetMemoryDirectivesRequest) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{28}
-}
-
-func (x *GetMemoryDirectivesRequest) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
-}
-
-type GetMemoryDirectivesResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Directives    []*DirectiveRef        `protobuf:"bytes,1,rep,name=directives,proto3" json:"directives,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetMemoryDirectivesResponse) Reset() {
-	*x = GetMemoryDirectivesResponse{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[29]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetMemoryDirectivesResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetMemoryDirectivesResponse) ProtoMessage() {}
-
-func (x *GetMemoryDirectivesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[29]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetMemoryDirectivesResponse.ProtoReflect.Descriptor instead.
-func (*GetMemoryDirectivesResponse) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{29}
-}
-
-func (x *GetMemoryDirectivesResponse) GetDirectives() []*DirectiveRef {
-	if x != nil {
-		return x.Directives
 	}
 	return nil
 }
@@ -2106,7 +1598,7 @@ type GetLinksRequest struct {
 
 func (x *GetLinksRequest) Reset() {
 	*x = GetLinksRequest{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[30]
+	mi := &file_maze_v1_knowledge_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2118,7 +1610,7 @@ func (x *GetLinksRequest) String() string {
 func (*GetLinksRequest) ProtoMessage() {}
 
 func (x *GetLinksRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[30]
+	mi := &file_maze_v1_knowledge_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2131,7 +1623,7 @@ func (x *GetLinksRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLinksRequest.ProtoReflect.Descriptor instead.
 func (*GetLinksRequest) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{30}
+	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *GetLinksRequest) GetId() string {
@@ -2157,14 +1649,14 @@ func (x *GetLinksRequest) GetRelationType() string {
 
 type GetLinksResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Links         []*NeuralLink          `protobuf:"bytes,1,rep,name=links,proto3" json:"links,omitempty"`
+	Links         []*DocLink             `protobuf:"bytes,1,rep,name=links,proto3" json:"links,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetLinksResponse) Reset() {
 	*x = GetLinksResponse{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[31]
+	mi := &file_maze_v1_knowledge_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2176,7 +1668,7 @@ func (x *GetLinksResponse) String() string {
 func (*GetLinksResponse) ProtoMessage() {}
 
 func (x *GetLinksResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[31]
+	mi := &file_maze_v1_knowledge_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2189,10 +1681,10 @@ func (x *GetLinksResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLinksResponse.ProtoReflect.Descriptor instead.
 func (*GetLinksResponse) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{31}
+	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{24}
 }
 
-func (x *GetLinksResponse) GetLinks() []*NeuralLink {
+func (x *GetLinksResponse) GetLinks() []*DocLink {
 	if x != nil {
 		return x.Links
 	}
@@ -2210,7 +1702,7 @@ type CreateLinkRequest struct {
 
 func (x *CreateLinkRequest) Reset() {
 	*x = CreateLinkRequest{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[32]
+	mi := &file_maze_v1_knowledge_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2222,7 +1714,7 @@ func (x *CreateLinkRequest) String() string {
 func (*CreateLinkRequest) ProtoMessage() {}
 
 func (x *CreateLinkRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[32]
+	mi := &file_maze_v1_knowledge_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2235,7 +1727,7 @@ func (x *CreateLinkRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateLinkRequest.ProtoReflect.Descriptor instead.
 func (*CreateLinkRequest) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{32}
+	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *CreateLinkRequest) GetId() string {
@@ -2269,7 +1761,7 @@ type DeleteLinkRequest struct {
 
 func (x *DeleteLinkRequest) Reset() {
 	*x = DeleteLinkRequest{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[33]
+	mi := &file_maze_v1_knowledge_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2281,7 +1773,7 @@ func (x *DeleteLinkRequest) String() string {
 func (*DeleteLinkRequest) ProtoMessage() {}
 
 func (x *DeleteLinkRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[33]
+	mi := &file_maze_v1_knowledge_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2294,7 +1786,7 @@ func (x *DeleteLinkRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteLinkRequest.ProtoReflect.Descriptor instead.
 func (*DeleteLinkRequest) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{33}
+	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *DeleteLinkRequest) GetId() string {
@@ -2309,86 +1801,6 @@ func (x *DeleteLinkRequest) GetLinkId() string {
 		return x.LinkId
 	}
 	return ""
-}
-
-type GetStatsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetStatsRequest) Reset() {
-	*x = GetStatsRequest{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[34]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetStatsRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetStatsRequest) ProtoMessage() {}
-
-func (x *GetStatsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[34]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetStatsRequest.ProtoReflect.Descriptor instead.
-func (*GetStatsRequest) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{34}
-}
-
-type GetStatsResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Stats         *Stats                 `protobuf:"bytes,1,opt,name=stats,proto3" json:"stats,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetStatsResponse) Reset() {
-	*x = GetStatsResponse{}
-	mi := &file_maze_v1_knowledge_proto_msgTypes[35]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetStatsResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetStatsResponse) ProtoMessage() {}
-
-func (x *GetStatsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_knowledge_proto_msgTypes[35]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetStatsResponse.ProtoReflect.Descriptor instead.
-func (*GetStatsResponse) Descriptor() ([]byte, []int) {
-	return file_maze_v1_knowledge_proto_rawDescGZIP(), []int{35}
-}
-
-func (x *GetStatsResponse) GetStats() *Stats {
-	if x != nil {
-		return x.Stats
-	}
-	return nil
 }
 
 var File_maze_v1_knowledge_proto protoreflect.FileDescriptor
@@ -2412,64 +1824,35 @@ const file_maze_v1_knowledge_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x06 \x01(\tR\tcreatedAt\x12\x1d\n" +
 	"\n" +
-	"updated_at\x18\a \x01(\tR\tupdatedAt\"\xa8\x03\n" +
-	"\x06Memory\x12\x0e\n" +
+	"updated_at\x18\a \x01(\tR\tupdatedAt\"\xcd\x03\n" +
+	"\x03Doc\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
 	"\n" +
 	"archive_id\x18\x02 \x01(\tR\tarchiveId\x12\x1b\n" +
-	"\tparent_id\x18\x03 \x01(\tR\bparentId\x12\x12\n" +
-	"\x04kind\x18\x04 \x01(\tR\x04kind\x12\x14\n" +
-	"\x05title\x18\x05 \x01(\tR\x05title\x12\x18\n" +
-	"\acontent\x18\x06 \x01(\tR\acontent\x12\x12\n" +
-	"\x04type\x18\a \x01(\tR\x04type\x12\x18\n" +
-	"\asummary\x18\b \x01(\tR\asummary\x12\x12\n" +
-	"\x04tags\x18\t \x03(\tR\x04tags\x12\x16\n" +
-	"\x06author\x18\n" +
-	" \x01(\tR\x06author\x12\x1e\n" +
+	"\tparent_id\x18\x03 \x01(\tR\bparentId\x12\x14\n" +
+	"\x05title\x18\x04 \x01(\tR\x05title\x12\x18\n" +
+	"\acontent\x18\x05 \x01(\tR\acontent\x12\x18\n" +
+	"\asummary\x18\x06 \x01(\tR\asummary\x12\x16\n" +
+	"\x06status\x18\a \x01(\tR\x06status\x12\x1a\n" +
+	"\bpriority\x18\b \x01(\tR\bpriority\x12\x1a\n" +
+	"\bassignee\x18\t \x01(\tR\bassignee\x12\x12\n" +
+	"\x04tags\x18\n" +
+	" \x03(\tR\x04tags\x12\x16\n" +
+	"\x06author\x18\v \x01(\tR\x06author\x12\x1e\n" +
 	"\n" +
-	"visibility\x18\v \x01(\tR\n" +
+	"visibility\x18\f \x01(\tR\n" +
 	"visibility\x12\x1f\n" +
-	"\vshared_with\x18\f \x03(\tR\n" +
+	"\vshared_with\x18\r \x03(\tR\n" +
 	"sharedWith\x125\n" +
-	"\vattachments\x18\r \x03(\v2\x13.maze.v1.AttachmentR\vattachments\x12\x1d\n" +
+	"\vattachments\x18\x0e \x03(\v2\x13.maze.v1.AttachmentR\vattachments\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x0e \x01(\tR\tcreatedAt\x12\x1d\n" +
+	"created_at\x18\x0f \x01(\tR\tcreatedAt\x12\x1d\n" +
 	"\n" +
-	"updated_at\x18\x0f \x01(\tR\tupdatedAt\"\xc6\x03\n" +
-	"\n" +
-	"MemoryMeta\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
-	"\n" +
-	"archive_id\x18\x02 \x01(\tR\tarchiveId\x12\x1b\n" +
-	"\tparent_id\x18\x03 \x01(\tR\bparentId\x12\x12\n" +
-	"\x04kind\x18\x04 \x01(\tR\x04kind\x12\x14\n" +
-	"\x05title\x18\x05 \x01(\tR\x05title\x12\x12\n" +
-	"\x04type\x18\x06 \x01(\tR\x04type\x12\x18\n" +
-	"\asummary\x18\a \x01(\tR\asummary\x12\x12\n" +
-	"\x04tags\x18\b \x03(\tR\x04tags\x12\x16\n" +
-	"\x06author\x18\t \x01(\tR\x06author\x12\x1e\n" +
-	"\n" +
-	"visibility\x18\n" +
-	" \x01(\tR\n" +
-	"visibility\x12\x1f\n" +
-	"\vshared_with\x18\v \x03(\tR\n" +
-	"sharedWith\x125\n" +
-	"\vattachments\x18\f \x03(\v2\x13.maze.v1.AttachmentR\vattachments\x12\x1d\n" +
-	"\n" +
-	"created_at\x18\r \x01(\tR\tcreatedAt\x12\x1d\n" +
-	"\n" +
-	"updated_at\x18\x0e \x01(\tR\tupdatedAt\x12\x16\n" +
-	"\x06status\x18\x0f \x01(\tR\x06status\x12\x1a\n" +
-	"\bpriority\x18\x10 \x01(\tR\bpriority\"k\n" +
-	"\fParsedMemory\x12'\n" +
-	"\x04meta\x18\x01 \x01(\v2\x13.maze.v1.MemoryMetaR\x04meta\x12\x18\n" +
-	"\asummary\x18\x02 \x01(\tR\asummary\x12\x18\n" +
-	"\acontent\x18\x03 \x01(\tR\acontent\"n\n" +
-	"\x0eMemoryTreeNode\x12'\n" +
-	"\x06memory\x18\x01 \x01(\v2\x0f.maze.v1.MemoryR\x06memory\x123\n" +
-	"\bchildren\x18\x02 \x03(\v2\x17.maze.v1.MemoryTreeNodeR\bchildren\"\xe0\x01\n" +
-	"\n" +
-	"NeuralLink\x12\x0e\n" +
+	"updated_at\x18\x10 \x01(\tR\tupdatedAt\"_\n" +
+	"\vDocTreeNode\x12\x1e\n" +
+	"\x03doc\x18\x01 \x01(\v2\f.maze.v1.DocR\x03doc\x120\n" +
+	"\bchildren\x18\x02 \x03(\v2\x14.maze.v1.DocTreeNodeR\bchildren\"\xdd\x01\n" +
+	"\aDocLink\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\tsource_id\x18\x02 \x01(\tR\bsourceId\x12\x1b\n" +
 	"\ttarget_id\x18\x03 \x01(\tR\btargetId\x12#\n" +
@@ -2477,24 +1860,7 @@ const file_maze_v1_knowledge_proto_rawDesc = "" +
 	"\fsource_title\x18\x05 \x01(\tR\vsourceTitle\x12!\n" +
 	"\ftarget_title\x18\x06 \x01(\tR\vtargetTitle\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\a \x01(\tR\tcreatedAt\"h\n" +
-	"\fDirectiveRef\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
-	"\x05title\x18\x02 \x01(\tR\x05title\x12\x16\n" +
-	"\x06status\x18\x03 \x01(\tR\x06status\x12\x1a\n" +
-	"\bpriority\x18\x04 \x01(\tR\bpriority\"W\n" +
-	"\vChatMessage\x12\x12\n" +
-	"\x04role\x18\x01 \x01(\tR\x04role\x12\x18\n" +
-	"\acontent\x18\x02 \x01(\tR\acontent\x12\x1a\n" +
-	"\bmetadata\x18\x03 \x01(\tR\bmetadata\"\xb4\x02\n" +
-	"\x05Stats\x12%\n" +
-	"\x0etotal_memories\x18\x01 \x01(\x05R\rtotalMemories\x12)\n" +
-	"\x10total_directives\x18\x02 \x01(\x05R\x0ftotalDirectives\x12X\n" +
-	"\x14directives_by_status\x18\x03 \x03(\v2&.maze.v1.Stats.DirectivesByStatusEntryR\x12directivesByStatus\x128\n" +
-	"\x0frecent_memories\x18\x04 \x03(\v2\x0f.maze.v1.MemoryR\x0erecentMemories\x1aE\n" +
-	"\x17DirectivesByStatusEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x05R\x05value:\x028\x01\"`\n" +
+	"created_at\x18\a \x01(\tR\tcreatedAt\"`\n" +
 	"\x14CreateArchiveRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x12\n" +
@@ -2510,125 +1876,115 @@ const file_maze_v1_knowledge_proto_rawDesc = "" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x12\n" +
 	"\x04icon\x18\x04 \x01(\tR\x04icon\"&\n" +
 	"\x14DeleteArchiveRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\xe7\x02\n" +
-	"\x13CreateMemoryRequest\x12\x1d\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\xf4\x02\n" +
+	"\x10CreateDocRequest\x12\x1d\n" +
 	"\n" +
 	"archive_id\x18\x01 \x01(\tR\tarchiveId\x12\x1b\n" +
-	"\tparent_id\x18\x02 \x01(\tR\bparentId\x12\x12\n" +
-	"\x04kind\x18\x03 \x01(\tR\x04kind\x12\x14\n" +
-	"\x05title\x18\x04 \x01(\tR\x05title\x12\x18\n" +
-	"\acontent\x18\x05 \x01(\tR\acontent\x12\x12\n" +
-	"\x04type\x18\x06 \x01(\tR\x04type\x12\x18\n" +
-	"\asummary\x18\a \x01(\tR\asummary\x12\x12\n" +
-	"\x04tags\x18\b \x03(\tR\x04tags\x12\x16\n" +
-	"\x06author\x18\t \x01(\tR\x06author\x12\x1e\n" +
+	"\tparent_id\x18\x02 \x01(\tR\bparentId\x12\x14\n" +
+	"\x05title\x18\x03 \x01(\tR\x05title\x12\x18\n" +
+	"\acontent\x18\x04 \x01(\tR\acontent\x12\x18\n" +
+	"\asummary\x18\x05 \x01(\tR\asummary\x12\x16\n" +
+	"\x06status\x18\x06 \x01(\tR\x06status\x12\x1a\n" +
+	"\bpriority\x18\a \x01(\tR\bpriority\x12\x1a\n" +
+	"\bassignee\x18\b \x01(\tR\bassignee\x12\x12\n" +
+	"\x04tags\x18\t \x03(\tR\x04tags\x12\x1e\n" +
 	"\n" +
 	"visibility\x18\n" +
 	" \x01(\tR\n" +
 	"visibility\x12\x1f\n" +
 	"\vshared_with\x18\v \x03(\tR\n" +
 	"sharedWith\x125\n" +
-	"\vattachments\x18\f \x03(\v2\x13.maze.v1.AttachmentR\vattachments\"\"\n" +
-	"\x10GetMemoryRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\xf1\x01\n" +
-	"\x13ListMemoriesRequest\x12\x1d\n" +
+	"\vattachments\x18\f \x03(\v2\x13.maze.v1.AttachmentR\vattachments\"\x1f\n" +
+	"\rGetDocRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\xcb\x01\n" +
+	"\x0fListDocsRequest\x12\x1d\n" +
 	"\n" +
 	"archive_id\x18\x01 \x01(\tR\tarchiveId\x12\x1b\n" +
-	"\tparent_id\x18\x02 \x01(\tR\bparentId\x12\x12\n" +
-	"\x04kind\x18\x03 \x01(\tR\x04kind\x12\x12\n" +
-	"\x04type\x18\x04 \x01(\tR\x04type\x12\x10\n" +
-	"\x03tag\x18\x05 \x01(\tR\x03tag\x12\x1e\n" +
+	"\tparent_id\x18\x02 \x01(\tR\bparentId\x12\x16\n" +
+	"\x06status\x18\x03 \x01(\tR\x06status\x12\x1e\n" +
 	"\n" +
-	"visibility\x18\x06 \x01(\tR\n" +
+	"visibility\x18\x04 \x01(\tR\n" +
 	"visibility\x12\x16\n" +
-	"\x06author\x18\a \x01(\tR\x06author\x12\x14\n" +
-	"\x05limit\x18\b \x01(\x05R\x05limit\x12\x16\n" +
-	"\x06offset\x18\t \x01(\x05R\x06offset\"S\n" +
-	"\x14ListMemoriesResponse\x12%\n" +
-	"\x05items\x18\x01 \x03(\v2\x0f.maze.v1.MemoryR\x05items\x12\x14\n" +
-	"\x05total\x18\x02 \x01(\x05R\x05total\"\xc0\x02\n" +
-	"\x13UpdateMemoryRequest\x12\x0e\n" +
+	"\x06author\x18\x05 \x01(\tR\x06author\x12\x14\n" +
+	"\x05limit\x18\x06 \x01(\x05R\x05limit\x12\x16\n" +
+	"\x06offset\x18\a \x01(\x05R\x06offset\"L\n" +
+	"\x10ListDocsResponse\x12\"\n" +
+	"\x05items\x18\x01 \x03(\v2\f.maze.v1.DocR\x05items\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\"\xe5\x02\n" +
+	"\x10UpdateDocRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
-	"\acontent\x18\x03 \x01(\tR\acontent\x12\x12\n" +
-	"\x04type\x18\x04 \x01(\tR\x04type\x12\x18\n" +
-	"\asummary\x18\x05 \x01(\tR\asummary\x12\x12\n" +
-	"\x04tags\x18\x06 \x03(\tR\x04tags\x12\x1e\n" +
+	"\acontent\x18\x03 \x01(\tR\acontent\x12\x18\n" +
+	"\asummary\x18\x04 \x01(\tR\asummary\x12\x16\n" +
+	"\x06status\x18\x05 \x01(\tR\x06status\x12\x1a\n" +
+	"\bpriority\x18\x06 \x01(\tR\bpriority\x12\x1a\n" +
+	"\bassignee\x18\a \x01(\tR\bassignee\x12\x12\n" +
+	"\x04tags\x18\b \x03(\tR\x04tags\x12\x1e\n" +
 	"\n" +
-	"visibility\x18\a \x01(\tR\n" +
+	"visibility\x18\t \x01(\tR\n" +
 	"visibility\x12\x1f\n" +
-	"\vshared_with\x18\b \x03(\tR\n" +
+	"\vshared_with\x18\n" +
+	" \x03(\tR\n" +
 	"sharedWith\x125\n" +
-	"\vattachments\x18\t \x03(\v2\x13.maze.v1.AttachmentR\vattachments\x12\x1b\n" +
-	"\tparent_id\x18\n" +
-	" \x01(\tR\bparentId\x12\x12\n" +
-	"\x04kind\x18\v \x01(\tR\x04kind\"%\n" +
-	"\x13DeleteMemoryRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"|\n" +
-	"\x15SearchMemoriesRequest\x12\f\n" +
+	"\vattachments\x18\v \x03(\v2\x13.maze.v1.AttachmentR\vattachments\x12\x1b\n" +
+	"\tparent_id\x18\f \x01(\tR\bparentId\"\"\n" +
+	"\x10DeleteDocRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"x\n" +
+	"\x11SearchDocsRequest\x12\f\n" +
 	"\x01q\x18\x01 \x01(\tR\x01q\x12\x1d\n" +
 	"\n" +
 	"archive_id\x18\x02 \x01(\tR\tarchiveId\x12\x1e\n" +
 	"\n" +
 	"visibility\x18\x03 \x01(\tR\n" +
 	"visibility\x12\x16\n" +
-	"\x06author\x18\x04 \x01(\tR\x06author\"?\n" +
-	"\x16SearchMemoriesResponse\x12%\n" +
-	"\x05items\x18\x01 \x03(\v2\x0f.maze.v1.MemoryR\x05items\"R\n" +
-	"\x14GetMemoryTreeRequest\x12\x1d\n" +
+	"\x06author\x18\x04 \x01(\tR\x06author\"8\n" +
+	"\x12SearchDocsResponse\x12\"\n" +
+	"\x05items\x18\x01 \x03(\v2\f.maze.v1.DocR\x05items\"O\n" +
+	"\x11GetDocTreeRequest\x12\x1d\n" +
 	"\n" +
 	"archive_id\x18\x01 \x01(\tR\tarchiveId\x12\x1b\n" +
-	"\tparent_id\x18\x02 \x01(\tR\bparentId\"F\n" +
-	"\x15GetMemoryTreeResponse\x12-\n" +
-	"\x05nodes\x18\x01 \x03(\v2\x17.maze.v1.MemoryTreeNodeR\x05nodes\"+\n" +
-	"\x19GetMemoryAncestorsRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"K\n" +
-	"\x1aGetMemoryAncestorsResponse\x12-\n" +
-	"\tancestors\x18\x01 \x03(\v2\x0f.maze.v1.MemoryR\tancestors\",\n" +
-	"\x1aGetMemoryDirectivesRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"T\n" +
-	"\x1bGetMemoryDirectivesResponse\x125\n" +
-	"\n" +
-	"directives\x18\x01 \x03(\v2\x15.maze.v1.DirectiveRefR\n" +
-	"directives\"d\n" +
+	"\tparent_id\x18\x02 \x01(\tR\bparentId\"@\n" +
+	"\x12GetDocTreeResponse\x12*\n" +
+	"\x05nodes\x18\x01 \x03(\v2\x14.maze.v1.DocTreeNodeR\x05nodes\"(\n" +
+	"\x16GetDocAncestorsRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"E\n" +
+	"\x17GetDocAncestorsResponse\x12*\n" +
+	"\tancestors\x18\x01 \x03(\v2\f.maze.v1.DocR\tancestors\"d\n" +
 	"\x0fGetLinksRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1c\n" +
 	"\tdirection\x18\x02 \x01(\tR\tdirection\x12#\n" +
-	"\rrelation_type\x18\x03 \x01(\tR\frelationType\"=\n" +
-	"\x10GetLinksResponse\x12)\n" +
-	"\x05links\x18\x01 \x03(\v2\x13.maze.v1.NeuralLinkR\x05links\"e\n" +
+	"\rrelation_type\x18\x03 \x01(\tR\frelationType\":\n" +
+	"\x10GetLinksResponse\x12&\n" +
+	"\x05links\x18\x01 \x03(\v2\x10.maze.v1.DocLinkR\x05links\"e\n" +
 	"\x11CreateLinkRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\ttarget_id\x18\x02 \x01(\tR\btargetId\x12#\n" +
 	"\rrelation_type\x18\x03 \x01(\tR\frelationType\"<\n" +
 	"\x11DeleteLinkRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
-	"\alink_id\x18\x02 \x01(\tR\x06linkId\"\x11\n" +
-	"\x0fGetStatsRequest\"8\n" +
-	"\x10GetStatsResponse\x12$\n" +
-	"\x05stats\x18\x01 \x01(\v2\x0e.maze.v1.StatsR\x05stats2\xf4\x0e\n" +
+	"\alink_id\x18\x02 \x01(\tR\x06linkId2\x8e\f\n" +
 	"\x10KnowledgeService\x12]\n" +
 	"\rCreateArchive\x12\x1d.maze.v1.CreateArchiveRequest\x1a\x10.maze.v1.Archive\"\x1b\x82\xd3\xe4\x93\x02\x15:\x01*\"\x10/api/v1/archives\x12Y\n" +
 	"\n" +
 	"GetArchive\x12\x1a.maze.v1.GetArchiveRequest\x1a\x10.maze.v1.Archive\"\x1d\x82\xd3\xe4\x93\x02\x17\x12\x15/api/v1/archives/{id}\x12e\n" +
 	"\fListArchives\x12\x1c.maze.v1.ListArchivesRequest\x1a\x1d.maze.v1.ListArchivesResponse\"\x18\x82\xd3\xe4\x93\x02\x12\x12\x10/api/v1/archives\x12b\n" +
 	"\rUpdateArchive\x12\x1d.maze.v1.UpdateArchiveRequest\x1a\x10.maze.v1.Archive\" \x82\xd3\xe4\x93\x02\x1a:\x01*\x1a\x15/api/v1/archives/{id}\x12e\n" +
-	"\rDeleteArchive\x12\x1d.maze.v1.DeleteArchiveRequest\x1a\x16.google.protobuf.Empty\"\x1d\x82\xd3\xe4\x93\x02\x17*\x15/api/v1/archives/{id}\x12Z\n" +
-	"\fCreateMemory\x12\x1c.maze.v1.CreateMemoryRequest\x1a\x0f.maze.v1.Memory\"\x1b\x82\xd3\xe4\x93\x02\x15:\x01*\"\x10/api/v1/memories\x12\\\n" +
-	"\tGetMemory\x12\x19.maze.v1.GetMemoryRequest\x1a\x15.maze.v1.ParsedMemory\"\x1d\x82\xd3\xe4\x93\x02\x17\x12\x15/api/v1/memories/{id}\x12e\n" +
-	"\fListMemories\x12\x1c.maze.v1.ListMemoriesRequest\x1a\x1d.maze.v1.ListMemoriesResponse\"\x18\x82\xd3\xe4\x93\x02\x12\x12\x10/api/v1/memories\x12_\n" +
-	"\fUpdateMemory\x12\x1c.maze.v1.UpdateMemoryRequest\x1a\x0f.maze.v1.Memory\" \x82\xd3\xe4\x93\x02\x1a:\x01*\x1a\x15/api/v1/memories/{id}\x12c\n" +
-	"\fDeleteMemory\x12\x1c.maze.v1.DeleteMemoryRequest\x1a\x16.google.protobuf.Empty\"\x1d\x82\xd3\xe4\x93\x02\x17*\x15/api/v1/memories/{id}\x12r\n" +
-	"\x0eSearchMemories\x12\x1e.maze.v1.SearchMemoriesRequest\x1a\x1f.maze.v1.SearchMemoriesResponse\"\x1f\x82\xd3\xe4\x93\x02\x19\x12\x17/api/v1/memories:search\x12m\n" +
-	"\rGetMemoryTree\x12\x1d.maze.v1.GetMemoryTreeRequest\x1a\x1e.maze.v1.GetMemoryTreeResponse\"\x1d\x82\xd3\xe4\x93\x02\x17\x12\x15/api/v1/memories:tree\x12\x86\x01\n" +
-	"\x12GetMemoryAncestors\x12\".maze.v1.GetMemoryAncestorsRequest\x1a#.maze.v1.GetMemoryAncestorsResponse\"'\x82\xd3\xe4\x93\x02!\x12\x1f/api/v1/memories/{id}/ancestors\x12\x8a\x01\n" +
-	"\x13GetMemoryDirectives\x12#.maze.v1.GetMemoryDirectivesRequest\x1a$.maze.v1.GetMemoryDirectivesResponse\"(\x82\xd3\xe4\x93\x02\"\x12 /api/v1/memories/{id}/directives\x12d\n" +
-	"\bGetLinks\x12\x18.maze.v1.GetLinksRequest\x1a\x19.maze.v1.GetLinksResponse\"#\x82\xd3\xe4\x93\x02\x1d\x12\x1b/api/v1/memories/{id}/links\x12e\n" +
+	"\rDeleteArchive\x12\x1d.maze.v1.DeleteArchiveRequest\x1a\x16.google.protobuf.Empty\"\x1d\x82\xd3\xe4\x93\x02\x17*\x15/api/v1/archives/{id}\x12M\n" +
+	"\tCreateDoc\x12\x19.maze.v1.CreateDocRequest\x1a\f.maze.v1.Doc\"\x17\x82\xd3\xe4\x93\x02\x11:\x01*\"\f/api/v1/docs\x12I\n" +
+	"\x06GetDoc\x12\x16.maze.v1.GetDocRequest\x1a\f.maze.v1.Doc\"\x19\x82\xd3\xe4\x93\x02\x13\x12\x11/api/v1/docs/{id}\x12U\n" +
+	"\bListDocs\x12\x18.maze.v1.ListDocsRequest\x1a\x19.maze.v1.ListDocsResponse\"\x14\x82\xd3\xe4\x93\x02\x0e\x12\f/api/v1/docs\x12R\n" +
+	"\tUpdateDoc\x12\x19.maze.v1.UpdateDocRequest\x1a\f.maze.v1.Doc\"\x1c\x82\xd3\xe4\x93\x02\x16:\x01*\x1a\x11/api/v1/docs/{id}\x12Y\n" +
+	"\tDeleteDoc\x12\x19.maze.v1.DeleteDocRequest\x1a\x16.google.protobuf.Empty\"\x19\x82\xd3\xe4\x93\x02\x13*\x11/api/v1/docs/{id}\x12b\n" +
 	"\n" +
-	"CreateLink\x12\x1a.maze.v1.CreateLinkRequest\x1a\x13.maze.v1.NeuralLink\"&\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/api/v1/memories/{id}/links\x12o\n" +
+	"SearchDocs\x12\x1a.maze.v1.SearchDocsRequest\x1a\x1b.maze.v1.SearchDocsResponse\"\x1b\x82\xd3\xe4\x93\x02\x15\x12\x13/api/v1/docs:search\x12`\n" +
 	"\n" +
-	"DeleteLink\x12\x1a.maze.v1.DeleteLinkRequest\x1a\x16.google.protobuf.Empty\"-\x82\xd3\xe4\x93\x02'*%/api/v1/memories/{id}/links/{link_id}\x12V\n" +
-	"\bGetStats\x12\x18.maze.v1.GetStatsRequest\x1a\x19.maze.v1.GetStatsResponse\"\x15\x82\xd3\xe4\x93\x02\x0f\x12\r/api/v1/statsB\x9e\x01\n" +
+	"GetDocTree\x12\x1a.maze.v1.GetDocTreeRequest\x1a\x1b.maze.v1.GetDocTreeResponse\"\x19\x82\xd3\xe4\x93\x02\x13\x12\x11/api/v1/docs:tree\x12y\n" +
+	"\x0fGetDocAncestors\x12\x1f.maze.v1.GetDocAncestorsRequest\x1a .maze.v1.GetDocAncestorsResponse\"#\x82\xd3\xe4\x93\x02\x1d\x12\x1b/api/v1/docs/{id}/ancestors\x12`\n" +
+	"\bGetLinks\x12\x18.maze.v1.GetLinksRequest\x1a\x19.maze.v1.GetLinksResponse\"\x1f\x82\xd3\xe4\x93\x02\x19\x12\x17/api/v1/docs/{id}/links\x12^\n" +
+	"\n" +
+	"CreateLink\x12\x1a.maze.v1.CreateLinkRequest\x1a\x10.maze.v1.DocLink\"\"\x82\xd3\xe4\x93\x02\x1c:\x01*\"\x17/api/v1/docs/{id}/links\x12k\n" +
+	"\n" +
+	"DeleteLink\x12\x1a.maze.v1.DeleteLinkRequest\x1a\x16.google.protobuf.Empty\")\x82\xd3\xe4\x93\x02#*!/api/v1/docs/{id}/links/{link_id}B\x9e\x01\n" +
 	"\vcom.maze.v1B\x0eKnowledgeProtoP\x01ZBgithub.com/charviki/maze/fabrication/cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
 
 var (
@@ -2643,106 +1999,86 @@ func file_maze_v1_knowledge_proto_rawDescGZIP() []byte {
 	return file_maze_v1_knowledge_proto_rawDescData
 }
 
-var file_maze_v1_knowledge_proto_msgTypes = make([]protoimpl.MessageInfo, 37)
+var file_maze_v1_knowledge_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
 var file_maze_v1_knowledge_proto_goTypes = []any{
-	(*Attachment)(nil),                  // 0: maze.v1.Attachment
-	(*Archive)(nil),                     // 1: maze.v1.Archive
-	(*Memory)(nil),                      // 2: maze.v1.Memory
-	(*MemoryMeta)(nil),                  // 3: maze.v1.MemoryMeta
-	(*ParsedMemory)(nil),                // 4: maze.v1.ParsedMemory
-	(*MemoryTreeNode)(nil),              // 5: maze.v1.MemoryTreeNode
-	(*NeuralLink)(nil),                  // 6: maze.v1.NeuralLink
-	(*DirectiveRef)(nil),                // 7: maze.v1.DirectiveRef
-	(*ChatMessage)(nil),                 // 8: maze.v1.ChatMessage
-	(*Stats)(nil),                       // 9: maze.v1.Stats
-	(*CreateArchiveRequest)(nil),        // 10: maze.v1.CreateArchiveRequest
-	(*GetArchiveRequest)(nil),           // 11: maze.v1.GetArchiveRequest
-	(*ListArchivesRequest)(nil),         // 12: maze.v1.ListArchivesRequest
-	(*ListArchivesResponse)(nil),        // 13: maze.v1.ListArchivesResponse
-	(*UpdateArchiveRequest)(nil),        // 14: maze.v1.UpdateArchiveRequest
-	(*DeleteArchiveRequest)(nil),        // 15: maze.v1.DeleteArchiveRequest
-	(*CreateMemoryRequest)(nil),         // 16: maze.v1.CreateMemoryRequest
-	(*GetMemoryRequest)(nil),            // 17: maze.v1.GetMemoryRequest
-	(*ListMemoriesRequest)(nil),         // 18: maze.v1.ListMemoriesRequest
-	(*ListMemoriesResponse)(nil),        // 19: maze.v1.ListMemoriesResponse
-	(*UpdateMemoryRequest)(nil),         // 20: maze.v1.UpdateMemoryRequest
-	(*DeleteMemoryRequest)(nil),         // 21: maze.v1.DeleteMemoryRequest
-	(*SearchMemoriesRequest)(nil),       // 22: maze.v1.SearchMemoriesRequest
-	(*SearchMemoriesResponse)(nil),      // 23: maze.v1.SearchMemoriesResponse
-	(*GetMemoryTreeRequest)(nil),        // 24: maze.v1.GetMemoryTreeRequest
-	(*GetMemoryTreeResponse)(nil),       // 25: maze.v1.GetMemoryTreeResponse
-	(*GetMemoryAncestorsRequest)(nil),   // 26: maze.v1.GetMemoryAncestorsRequest
-	(*GetMemoryAncestorsResponse)(nil),  // 27: maze.v1.GetMemoryAncestorsResponse
-	(*GetMemoryDirectivesRequest)(nil),  // 28: maze.v1.GetMemoryDirectivesRequest
-	(*GetMemoryDirectivesResponse)(nil), // 29: maze.v1.GetMemoryDirectivesResponse
-	(*GetLinksRequest)(nil),             // 30: maze.v1.GetLinksRequest
-	(*GetLinksResponse)(nil),            // 31: maze.v1.GetLinksResponse
-	(*CreateLinkRequest)(nil),           // 32: maze.v1.CreateLinkRequest
-	(*DeleteLinkRequest)(nil),           // 33: maze.v1.DeleteLinkRequest
-	(*GetStatsRequest)(nil),             // 34: maze.v1.GetStatsRequest
-	(*GetStatsResponse)(nil),            // 35: maze.v1.GetStatsResponse
-	nil,                                 // 36: maze.v1.Stats.DirectivesByStatusEntry
-	(*emptypb.Empty)(nil),               // 37: google.protobuf.Empty
+	(*Attachment)(nil),              // 0: maze.v1.Attachment
+	(*Archive)(nil),                 // 1: maze.v1.Archive
+	(*Doc)(nil),                     // 2: maze.v1.Doc
+	(*DocTreeNode)(nil),             // 3: maze.v1.DocTreeNode
+	(*DocLink)(nil),                 // 4: maze.v1.DocLink
+	(*CreateArchiveRequest)(nil),    // 5: maze.v1.CreateArchiveRequest
+	(*GetArchiveRequest)(nil),       // 6: maze.v1.GetArchiveRequest
+	(*ListArchivesRequest)(nil),     // 7: maze.v1.ListArchivesRequest
+	(*ListArchivesResponse)(nil),    // 8: maze.v1.ListArchivesResponse
+	(*UpdateArchiveRequest)(nil),    // 9: maze.v1.UpdateArchiveRequest
+	(*DeleteArchiveRequest)(nil),    // 10: maze.v1.DeleteArchiveRequest
+	(*CreateDocRequest)(nil),        // 11: maze.v1.CreateDocRequest
+	(*GetDocRequest)(nil),           // 12: maze.v1.GetDocRequest
+	(*ListDocsRequest)(nil),         // 13: maze.v1.ListDocsRequest
+	(*ListDocsResponse)(nil),        // 14: maze.v1.ListDocsResponse
+	(*UpdateDocRequest)(nil),        // 15: maze.v1.UpdateDocRequest
+	(*DeleteDocRequest)(nil),        // 16: maze.v1.DeleteDocRequest
+	(*SearchDocsRequest)(nil),       // 17: maze.v1.SearchDocsRequest
+	(*SearchDocsResponse)(nil),      // 18: maze.v1.SearchDocsResponse
+	(*GetDocTreeRequest)(nil),       // 19: maze.v1.GetDocTreeRequest
+	(*GetDocTreeResponse)(nil),      // 20: maze.v1.GetDocTreeResponse
+	(*GetDocAncestorsRequest)(nil),  // 21: maze.v1.GetDocAncestorsRequest
+	(*GetDocAncestorsResponse)(nil), // 22: maze.v1.GetDocAncestorsResponse
+	(*GetLinksRequest)(nil),         // 23: maze.v1.GetLinksRequest
+	(*GetLinksResponse)(nil),        // 24: maze.v1.GetLinksResponse
+	(*CreateLinkRequest)(nil),       // 25: maze.v1.CreateLinkRequest
+	(*DeleteLinkRequest)(nil),       // 26: maze.v1.DeleteLinkRequest
+	(*emptypb.Empty)(nil),           // 27: google.protobuf.Empty
 }
 var file_maze_v1_knowledge_proto_depIdxs = []int32{
-	0,  // 0: maze.v1.Memory.attachments:type_name -> maze.v1.Attachment
-	0,  // 1: maze.v1.MemoryMeta.attachments:type_name -> maze.v1.Attachment
-	3,  // 2: maze.v1.ParsedMemory.meta:type_name -> maze.v1.MemoryMeta
-	2,  // 3: maze.v1.MemoryTreeNode.memory:type_name -> maze.v1.Memory
-	5,  // 4: maze.v1.MemoryTreeNode.children:type_name -> maze.v1.MemoryTreeNode
-	36, // 5: maze.v1.Stats.directives_by_status:type_name -> maze.v1.Stats.DirectivesByStatusEntry
-	2,  // 6: maze.v1.Stats.recent_memories:type_name -> maze.v1.Memory
-	1,  // 7: maze.v1.ListArchivesResponse.archives:type_name -> maze.v1.Archive
-	0,  // 8: maze.v1.CreateMemoryRequest.attachments:type_name -> maze.v1.Attachment
-	2,  // 9: maze.v1.ListMemoriesResponse.items:type_name -> maze.v1.Memory
-	0,  // 10: maze.v1.UpdateMemoryRequest.attachments:type_name -> maze.v1.Attachment
-	2,  // 11: maze.v1.SearchMemoriesResponse.items:type_name -> maze.v1.Memory
-	5,  // 12: maze.v1.GetMemoryTreeResponse.nodes:type_name -> maze.v1.MemoryTreeNode
-	2,  // 13: maze.v1.GetMemoryAncestorsResponse.ancestors:type_name -> maze.v1.Memory
-	7,  // 14: maze.v1.GetMemoryDirectivesResponse.directives:type_name -> maze.v1.DirectiveRef
-	6,  // 15: maze.v1.GetLinksResponse.links:type_name -> maze.v1.NeuralLink
-	9,  // 16: maze.v1.GetStatsResponse.stats:type_name -> maze.v1.Stats
-	10, // 17: maze.v1.KnowledgeService.CreateArchive:input_type -> maze.v1.CreateArchiveRequest
-	11, // 18: maze.v1.KnowledgeService.GetArchive:input_type -> maze.v1.GetArchiveRequest
-	12, // 19: maze.v1.KnowledgeService.ListArchives:input_type -> maze.v1.ListArchivesRequest
-	14, // 20: maze.v1.KnowledgeService.UpdateArchive:input_type -> maze.v1.UpdateArchiveRequest
-	15, // 21: maze.v1.KnowledgeService.DeleteArchive:input_type -> maze.v1.DeleteArchiveRequest
-	16, // 22: maze.v1.KnowledgeService.CreateMemory:input_type -> maze.v1.CreateMemoryRequest
-	17, // 23: maze.v1.KnowledgeService.GetMemory:input_type -> maze.v1.GetMemoryRequest
-	18, // 24: maze.v1.KnowledgeService.ListMemories:input_type -> maze.v1.ListMemoriesRequest
-	20, // 25: maze.v1.KnowledgeService.UpdateMemory:input_type -> maze.v1.UpdateMemoryRequest
-	21, // 26: maze.v1.KnowledgeService.DeleteMemory:input_type -> maze.v1.DeleteMemoryRequest
-	22, // 27: maze.v1.KnowledgeService.SearchMemories:input_type -> maze.v1.SearchMemoriesRequest
-	24, // 28: maze.v1.KnowledgeService.GetMemoryTree:input_type -> maze.v1.GetMemoryTreeRequest
-	26, // 29: maze.v1.KnowledgeService.GetMemoryAncestors:input_type -> maze.v1.GetMemoryAncestorsRequest
-	28, // 30: maze.v1.KnowledgeService.GetMemoryDirectives:input_type -> maze.v1.GetMemoryDirectivesRequest
-	30, // 31: maze.v1.KnowledgeService.GetLinks:input_type -> maze.v1.GetLinksRequest
-	32, // 32: maze.v1.KnowledgeService.CreateLink:input_type -> maze.v1.CreateLinkRequest
-	33, // 33: maze.v1.KnowledgeService.DeleteLink:input_type -> maze.v1.DeleteLinkRequest
-	34, // 34: maze.v1.KnowledgeService.GetStats:input_type -> maze.v1.GetStatsRequest
-	1,  // 35: maze.v1.KnowledgeService.CreateArchive:output_type -> maze.v1.Archive
-	1,  // 36: maze.v1.KnowledgeService.GetArchive:output_type -> maze.v1.Archive
-	13, // 37: maze.v1.KnowledgeService.ListArchives:output_type -> maze.v1.ListArchivesResponse
-	1,  // 38: maze.v1.KnowledgeService.UpdateArchive:output_type -> maze.v1.Archive
-	37, // 39: maze.v1.KnowledgeService.DeleteArchive:output_type -> google.protobuf.Empty
-	2,  // 40: maze.v1.KnowledgeService.CreateMemory:output_type -> maze.v1.Memory
-	4,  // 41: maze.v1.KnowledgeService.GetMemory:output_type -> maze.v1.ParsedMemory
-	19, // 42: maze.v1.KnowledgeService.ListMemories:output_type -> maze.v1.ListMemoriesResponse
-	2,  // 43: maze.v1.KnowledgeService.UpdateMemory:output_type -> maze.v1.Memory
-	37, // 44: maze.v1.KnowledgeService.DeleteMemory:output_type -> google.protobuf.Empty
-	23, // 45: maze.v1.KnowledgeService.SearchMemories:output_type -> maze.v1.SearchMemoriesResponse
-	25, // 46: maze.v1.KnowledgeService.GetMemoryTree:output_type -> maze.v1.GetMemoryTreeResponse
-	27, // 47: maze.v1.KnowledgeService.GetMemoryAncestors:output_type -> maze.v1.GetMemoryAncestorsResponse
-	29, // 48: maze.v1.KnowledgeService.GetMemoryDirectives:output_type -> maze.v1.GetMemoryDirectivesResponse
-	31, // 49: maze.v1.KnowledgeService.GetLinks:output_type -> maze.v1.GetLinksResponse
-	6,  // 50: maze.v1.KnowledgeService.CreateLink:output_type -> maze.v1.NeuralLink
-	37, // 51: maze.v1.KnowledgeService.DeleteLink:output_type -> google.protobuf.Empty
-	35, // 52: maze.v1.KnowledgeService.GetStats:output_type -> maze.v1.GetStatsResponse
-	35, // [35:53] is the sub-list for method output_type
-	17, // [17:35] is the sub-list for method input_type
-	17, // [17:17] is the sub-list for extension type_name
-	17, // [17:17] is the sub-list for extension extendee
-	0,  // [0:17] is the sub-list for field type_name
+	0,  // 0: maze.v1.Doc.attachments:type_name -> maze.v1.Attachment
+	2,  // 1: maze.v1.DocTreeNode.doc:type_name -> maze.v1.Doc
+	3,  // 2: maze.v1.DocTreeNode.children:type_name -> maze.v1.DocTreeNode
+	1,  // 3: maze.v1.ListArchivesResponse.archives:type_name -> maze.v1.Archive
+	0,  // 4: maze.v1.CreateDocRequest.attachments:type_name -> maze.v1.Attachment
+	2,  // 5: maze.v1.ListDocsResponse.items:type_name -> maze.v1.Doc
+	0,  // 6: maze.v1.UpdateDocRequest.attachments:type_name -> maze.v1.Attachment
+	2,  // 7: maze.v1.SearchDocsResponse.items:type_name -> maze.v1.Doc
+	3,  // 8: maze.v1.GetDocTreeResponse.nodes:type_name -> maze.v1.DocTreeNode
+	2,  // 9: maze.v1.GetDocAncestorsResponse.ancestors:type_name -> maze.v1.Doc
+	4,  // 10: maze.v1.GetLinksResponse.links:type_name -> maze.v1.DocLink
+	5,  // 11: maze.v1.KnowledgeService.CreateArchive:input_type -> maze.v1.CreateArchiveRequest
+	6,  // 12: maze.v1.KnowledgeService.GetArchive:input_type -> maze.v1.GetArchiveRequest
+	7,  // 13: maze.v1.KnowledgeService.ListArchives:input_type -> maze.v1.ListArchivesRequest
+	9,  // 14: maze.v1.KnowledgeService.UpdateArchive:input_type -> maze.v1.UpdateArchiveRequest
+	10, // 15: maze.v1.KnowledgeService.DeleteArchive:input_type -> maze.v1.DeleteArchiveRequest
+	11, // 16: maze.v1.KnowledgeService.CreateDoc:input_type -> maze.v1.CreateDocRequest
+	12, // 17: maze.v1.KnowledgeService.GetDoc:input_type -> maze.v1.GetDocRequest
+	13, // 18: maze.v1.KnowledgeService.ListDocs:input_type -> maze.v1.ListDocsRequest
+	15, // 19: maze.v1.KnowledgeService.UpdateDoc:input_type -> maze.v1.UpdateDocRequest
+	16, // 20: maze.v1.KnowledgeService.DeleteDoc:input_type -> maze.v1.DeleteDocRequest
+	17, // 21: maze.v1.KnowledgeService.SearchDocs:input_type -> maze.v1.SearchDocsRequest
+	19, // 22: maze.v1.KnowledgeService.GetDocTree:input_type -> maze.v1.GetDocTreeRequest
+	21, // 23: maze.v1.KnowledgeService.GetDocAncestors:input_type -> maze.v1.GetDocAncestorsRequest
+	23, // 24: maze.v1.KnowledgeService.GetLinks:input_type -> maze.v1.GetLinksRequest
+	25, // 25: maze.v1.KnowledgeService.CreateLink:input_type -> maze.v1.CreateLinkRequest
+	26, // 26: maze.v1.KnowledgeService.DeleteLink:input_type -> maze.v1.DeleteLinkRequest
+	1,  // 27: maze.v1.KnowledgeService.CreateArchive:output_type -> maze.v1.Archive
+	1,  // 28: maze.v1.KnowledgeService.GetArchive:output_type -> maze.v1.Archive
+	8,  // 29: maze.v1.KnowledgeService.ListArchives:output_type -> maze.v1.ListArchivesResponse
+	1,  // 30: maze.v1.KnowledgeService.UpdateArchive:output_type -> maze.v1.Archive
+	27, // 31: maze.v1.KnowledgeService.DeleteArchive:output_type -> google.protobuf.Empty
+	2,  // 32: maze.v1.KnowledgeService.CreateDoc:output_type -> maze.v1.Doc
+	2,  // 33: maze.v1.KnowledgeService.GetDoc:output_type -> maze.v1.Doc
+	14, // 34: maze.v1.KnowledgeService.ListDocs:output_type -> maze.v1.ListDocsResponse
+	2,  // 35: maze.v1.KnowledgeService.UpdateDoc:output_type -> maze.v1.Doc
+	27, // 36: maze.v1.KnowledgeService.DeleteDoc:output_type -> google.protobuf.Empty
+	18, // 37: maze.v1.KnowledgeService.SearchDocs:output_type -> maze.v1.SearchDocsResponse
+	20, // 38: maze.v1.KnowledgeService.GetDocTree:output_type -> maze.v1.GetDocTreeResponse
+	22, // 39: maze.v1.KnowledgeService.GetDocAncestors:output_type -> maze.v1.GetDocAncestorsResponse
+	24, // 40: maze.v1.KnowledgeService.GetLinks:output_type -> maze.v1.GetLinksResponse
+	4,  // 41: maze.v1.KnowledgeService.CreateLink:output_type -> maze.v1.DocLink
+	27, // 42: maze.v1.KnowledgeService.DeleteLink:output_type -> google.protobuf.Empty
+	27, // [27:43] is the sub-list for method output_type
+	11, // [11:27] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_maze_v1_knowledge_proto_init() }
@@ -2756,7 +2092,7 @@ func file_maze_v1_knowledge_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_maze_v1_knowledge_proto_rawDesc), len(file_maze_v1_knowledge_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   37,
+			NumMessages:   27,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

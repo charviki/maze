@@ -206,9 +206,9 @@ func local_request_KnowledgeService_DeleteArchive_0(ctx context.Context, marshal
 	return msg, metadata, err
 }
 
-func request_KnowledgeService_CreateMemory_0(ctx context.Context, marshaler runtime.Marshaler, client KnowledgeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_KnowledgeService_CreateDoc_0(ctx context.Context, marshaler runtime.Marshaler, client KnowledgeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq CreateMemoryRequest
+		protoReq CreateDocRequest
 		metadata runtime.ServerMetadata
 	)
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
@@ -217,25 +217,25 @@ func request_KnowledgeService_CreateMemory_0(ctx context.Context, marshaler runt
 	if req.Body != nil {
 		_, _ = io.Copy(io.Discard, req.Body)
 	}
-	msg, err := client.CreateMemory(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.CreateDoc(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 }
 
-func local_request_KnowledgeService_CreateMemory_0(ctx context.Context, marshaler runtime.Marshaler, server KnowledgeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_KnowledgeService_CreateDoc_0(ctx context.Context, marshaler runtime.Marshaler, server KnowledgeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq CreateMemoryRequest
+		protoReq CreateDocRequest
 		metadata runtime.ServerMetadata
 	)
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	msg, err := server.CreateMemory(ctx, &protoReq)
+	msg, err := server.CreateDoc(ctx, &protoReq)
 	return msg, metadata, err
 }
 
-func request_KnowledgeService_GetMemory_0(ctx context.Context, marshaler runtime.Marshaler, client KnowledgeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_KnowledgeService_GetDoc_0(ctx context.Context, marshaler runtime.Marshaler, client KnowledgeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq GetMemoryRequest
+		protoReq GetDocRequest
 		metadata runtime.ServerMetadata
 		err      error
 	)
@@ -250,13 +250,13 @@ func request_KnowledgeService_GetMemory_0(ctx context.Context, marshaler runtime
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
 	}
-	msg, err := client.GetMemory(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.GetDoc(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 }
 
-func local_request_KnowledgeService_GetMemory_0(ctx context.Context, marshaler runtime.Marshaler, server KnowledgeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_KnowledgeService_GetDoc_0(ctx context.Context, marshaler runtime.Marshaler, server KnowledgeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq GetMemoryRequest
+		protoReq GetDocRequest
 		metadata runtime.ServerMetadata
 		err      error
 	)
@@ -268,15 +268,15 @@ func local_request_KnowledgeService_GetMemory_0(ctx context.Context, marshaler r
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
 	}
-	msg, err := server.GetMemory(ctx, &protoReq)
+	msg, err := server.GetDoc(ctx, &protoReq)
 	return msg, metadata, err
 }
 
-var filter_KnowledgeService_ListMemories_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+var filter_KnowledgeService_ListDocs_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
 
-func request_KnowledgeService_ListMemories_0(ctx context.Context, marshaler runtime.Marshaler, client KnowledgeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_KnowledgeService_ListDocs_0(ctx context.Context, marshaler runtime.Marshaler, client KnowledgeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq ListMemoriesRequest
+		protoReq ListDocsRequest
 		metadata runtime.ServerMetadata
 	)
 	if req.Body != nil {
@@ -285,61 +285,40 @@ func request_KnowledgeService_ListMemories_0(ctx context.Context, marshaler runt
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_KnowledgeService_ListMemories_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_KnowledgeService_ListDocs_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	msg, err := client.ListMemories(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.ListDocs(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 }
 
-func local_request_KnowledgeService_ListMemories_0(ctx context.Context, marshaler runtime.Marshaler, server KnowledgeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_KnowledgeService_ListDocs_0(ctx context.Context, marshaler runtime.Marshaler, server KnowledgeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq ListMemoriesRequest
+		protoReq ListDocsRequest
 		metadata runtime.ServerMetadata
 	)
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_KnowledgeService_ListMemories_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_KnowledgeService_ListDocs_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	msg, err := server.ListMemories(ctx, &protoReq)
+	msg, err := server.ListDocs(ctx, &protoReq)
 	return msg, metadata, err
 }
 
-func request_KnowledgeService_UpdateMemory_0(ctx context.Context, marshaler runtime.Marshaler, client KnowledgeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_KnowledgeService_UpdateDoc_0(ctx context.Context, marshaler runtime.Marshaler, client KnowledgeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq UpdateMemoryRequest
-		metadata runtime.ServerMetadata
-		err      error
-	)
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
-	val, ok := pathParams["id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "id")
-	}
-	protoReq.Id, err = runtime.String(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
-	}
-	msg, err := client.UpdateMemory(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
-}
-
-func local_request_KnowledgeService_UpdateMemory_0(ctx context.Context, marshaler runtime.Marshaler, server KnowledgeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var (
-		protoReq UpdateMemoryRequest
+		protoReq UpdateDocRequest
 		metadata runtime.ServerMetadata
 		err      error
 	)
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
 	val, ok := pathParams["id"]
 	if !ok {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "id")
@@ -348,13 +327,34 @@ func local_request_KnowledgeService_UpdateMemory_0(ctx context.Context, marshale
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
 	}
-	msg, err := server.UpdateMemory(ctx, &protoReq)
+	msg, err := client.UpdateDoc(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 }
 
-func request_KnowledgeService_DeleteMemory_0(ctx context.Context, marshaler runtime.Marshaler, client KnowledgeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_KnowledgeService_UpdateDoc_0(ctx context.Context, marshaler runtime.Marshaler, server KnowledgeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq DeleteMemoryRequest
+		protoReq UpdateDocRequest
+		metadata runtime.ServerMetadata
+		err      error
+	)
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && !errors.Is(err, io.EOF) {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	val, ok := pathParams["id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "id")
+	}
+	protoReq.Id, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
+	}
+	msg, err := server.UpdateDoc(ctx, &protoReq)
+	return msg, metadata, err
+}
+
+func request_KnowledgeService_DeleteDoc_0(ctx context.Context, marshaler runtime.Marshaler, client KnowledgeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq DeleteDocRequest
 		metadata runtime.ServerMetadata
 		err      error
 	)
@@ -369,13 +369,13 @@ func request_KnowledgeService_DeleteMemory_0(ctx context.Context, marshaler runt
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
 	}
-	msg, err := client.DeleteMemory(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.DeleteDoc(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 }
 
-func local_request_KnowledgeService_DeleteMemory_0(ctx context.Context, marshaler runtime.Marshaler, server KnowledgeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_KnowledgeService_DeleteDoc_0(ctx context.Context, marshaler runtime.Marshaler, server KnowledgeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq DeleteMemoryRequest
+		protoReq DeleteDocRequest
 		metadata runtime.ServerMetadata
 		err      error
 	)
@@ -387,50 +387,15 @@ func local_request_KnowledgeService_DeleteMemory_0(ctx context.Context, marshale
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
 	}
-	msg, err := server.DeleteMemory(ctx, &protoReq)
+	msg, err := server.DeleteDoc(ctx, &protoReq)
 	return msg, metadata, err
 }
 
-var filter_KnowledgeService_SearchMemories_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+var filter_KnowledgeService_SearchDocs_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
 
-func request_KnowledgeService_SearchMemories_0(ctx context.Context, marshaler runtime.Marshaler, client KnowledgeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_KnowledgeService_SearchDocs_0(ctx context.Context, marshaler runtime.Marshaler, client KnowledgeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq SearchMemoriesRequest
-		metadata runtime.ServerMetadata
-	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_KnowledgeService_SearchMemories_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	msg, err := client.SearchMemories(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
-}
-
-func local_request_KnowledgeService_SearchMemories_0(ctx context.Context, marshaler runtime.Marshaler, server KnowledgeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var (
-		protoReq SearchMemoriesRequest
-		metadata runtime.ServerMetadata
-	)
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_KnowledgeService_SearchMemories_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	msg, err := server.SearchMemories(ctx, &protoReq)
-	return msg, metadata, err
-}
-
-var filter_KnowledgeService_GetMemoryTree_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
-
-func request_KnowledgeService_GetMemoryTree_0(ctx context.Context, marshaler runtime.Marshaler, client KnowledgeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var (
-		protoReq GetMemoryTreeRequest
+		protoReq SearchDocsRequest
 		metadata runtime.ServerMetadata
 	)
 	if req.Body != nil {
@@ -439,31 +404,66 @@ func request_KnowledgeService_GetMemoryTree_0(ctx context.Context, marshaler run
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_KnowledgeService_GetMemoryTree_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_KnowledgeService_SearchDocs_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	msg, err := client.GetMemoryTree(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.SearchDocs(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 }
 
-func local_request_KnowledgeService_GetMemoryTree_0(ctx context.Context, marshaler runtime.Marshaler, server KnowledgeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_KnowledgeService_SearchDocs_0(ctx context.Context, marshaler runtime.Marshaler, server KnowledgeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq GetMemoryTreeRequest
+		protoReq SearchDocsRequest
 		metadata runtime.ServerMetadata
 	)
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_KnowledgeService_GetMemoryTree_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_KnowledgeService_SearchDocs_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	msg, err := server.GetMemoryTree(ctx, &protoReq)
+	msg, err := server.SearchDocs(ctx, &protoReq)
 	return msg, metadata, err
 }
 
-func request_KnowledgeService_GetMemoryAncestors_0(ctx context.Context, marshaler runtime.Marshaler, client KnowledgeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+var filter_KnowledgeService_GetDocTree_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+
+func request_KnowledgeService_GetDocTree_0(ctx context.Context, marshaler runtime.Marshaler, client KnowledgeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq GetMemoryAncestorsRequest
+		protoReq GetDocTreeRequest
+		metadata runtime.ServerMetadata
+	)
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_KnowledgeService_GetDocTree_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	msg, err := client.GetDocTree(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+}
+
+func local_request_KnowledgeService_GetDocTree_0(ctx context.Context, marshaler runtime.Marshaler, server KnowledgeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq GetDocTreeRequest
+		metadata runtime.ServerMetadata
+	)
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_KnowledgeService_GetDocTree_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	msg, err := server.GetDocTree(ctx, &protoReq)
+	return msg, metadata, err
+}
+
+func request_KnowledgeService_GetDocAncestors_0(ctx context.Context, marshaler runtime.Marshaler, client KnowledgeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq GetDocAncestorsRequest
 		metadata runtime.ServerMetadata
 		err      error
 	)
@@ -478,13 +478,13 @@ func request_KnowledgeService_GetMemoryAncestors_0(ctx context.Context, marshale
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
 	}
-	msg, err := client.GetMemoryAncestors(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.GetDocAncestors(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 }
 
-func local_request_KnowledgeService_GetMemoryAncestors_0(ctx context.Context, marshaler runtime.Marshaler, server KnowledgeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_KnowledgeService_GetDocAncestors_0(ctx context.Context, marshaler runtime.Marshaler, server KnowledgeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var (
-		protoReq GetMemoryAncestorsRequest
+		protoReq GetDocAncestorsRequest
 		metadata runtime.ServerMetadata
 		err      error
 	)
@@ -496,46 +496,7 @@ func local_request_KnowledgeService_GetMemoryAncestors_0(ctx context.Context, ma
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
 	}
-	msg, err := server.GetMemoryAncestors(ctx, &protoReq)
-	return msg, metadata, err
-}
-
-func request_KnowledgeService_GetMemoryDirectives_0(ctx context.Context, marshaler runtime.Marshaler, client KnowledgeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var (
-		protoReq GetMemoryDirectivesRequest
-		metadata runtime.ServerMetadata
-		err      error
-	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
-	val, ok := pathParams["id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "id")
-	}
-	protoReq.Id, err = runtime.String(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
-	}
-	msg, err := client.GetMemoryDirectives(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
-}
-
-func local_request_KnowledgeService_GetMemoryDirectives_0(ctx context.Context, marshaler runtime.Marshaler, server KnowledgeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var (
-		protoReq GetMemoryDirectivesRequest
-		metadata runtime.ServerMetadata
-		err      error
-	)
-	val, ok := pathParams["id"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "id")
-	}
-	protoReq.Id, err = runtime.String(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
-	}
-	msg, err := server.GetMemoryDirectives(ctx, &protoReq)
+	msg, err := server.GetDocAncestors(ctx, &protoReq)
 	return msg, metadata, err
 }
 
@@ -692,27 +653,6 @@ func local_request_KnowledgeService_DeleteLink_0(ctx context.Context, marshaler 
 	return msg, metadata, err
 }
 
-func request_KnowledgeService_GetStats_0(ctx context.Context, marshaler runtime.Marshaler, client KnowledgeServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var (
-		protoReq GetStatsRequest
-		metadata runtime.ServerMetadata
-	)
-	if req.Body != nil {
-		_, _ = io.Copy(io.Discard, req.Body)
-	}
-	msg, err := client.GetStats(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
-}
-
-func local_request_KnowledgeService_GetStats_0(ctx context.Context, marshaler runtime.Marshaler, server KnowledgeServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var (
-		protoReq GetStatsRequest
-		metadata runtime.ServerMetadata
-	)
-	msg, err := server.GetStats(ctx, &protoReq)
-	return msg, metadata, err
-}
-
 // RegisterKnowledgeServiceHandlerServer registers the http handlers for service KnowledgeService to "mux".
 // UnaryRPC     :call KnowledgeServiceServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
@@ -819,185 +759,165 @@ func RegisterKnowledgeServiceHandlerServer(ctx context.Context, mux *runtime.Ser
 		}
 		forward_KnowledgeService_DeleteArchive_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodPost, pattern_KnowledgeService_CreateMemory_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_KnowledgeService_CreateDoc_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/maze.v1.KnowledgeService/CreateMemory", runtime.WithHTTPPathPattern("/api/v1/memories"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/maze.v1.KnowledgeService/CreateDoc", runtime.WithHTTPPathPattern("/api/v1/docs"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_KnowledgeService_CreateMemory_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_KnowledgeService_CreateDoc_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_KnowledgeService_CreateMemory_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_KnowledgeService_CreateDoc_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodGet, pattern_KnowledgeService_GetMemory_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_KnowledgeService_GetDoc_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/maze.v1.KnowledgeService/GetMemory", runtime.WithHTTPPathPattern("/api/v1/memories/{id}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/maze.v1.KnowledgeService/GetDoc", runtime.WithHTTPPathPattern("/api/v1/docs/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_KnowledgeService_GetMemory_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_KnowledgeService_GetDoc_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_KnowledgeService_GetMemory_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_KnowledgeService_GetDoc_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodGet, pattern_KnowledgeService_ListMemories_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_KnowledgeService_ListDocs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/maze.v1.KnowledgeService/ListMemories", runtime.WithHTTPPathPattern("/api/v1/memories"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/maze.v1.KnowledgeService/ListDocs", runtime.WithHTTPPathPattern("/api/v1/docs"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_KnowledgeService_ListMemories_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_KnowledgeService_ListDocs_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_KnowledgeService_ListMemories_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_KnowledgeService_ListDocs_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodPut, pattern_KnowledgeService_UpdateMemory_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPut, pattern_KnowledgeService_UpdateDoc_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/maze.v1.KnowledgeService/UpdateMemory", runtime.WithHTTPPathPattern("/api/v1/memories/{id}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/maze.v1.KnowledgeService/UpdateDoc", runtime.WithHTTPPathPattern("/api/v1/docs/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_KnowledgeService_UpdateMemory_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_KnowledgeService_UpdateDoc_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_KnowledgeService_UpdateMemory_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_KnowledgeService_UpdateDoc_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodDelete, pattern_KnowledgeService_DeleteMemory_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodDelete, pattern_KnowledgeService_DeleteDoc_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/maze.v1.KnowledgeService/DeleteMemory", runtime.WithHTTPPathPattern("/api/v1/memories/{id}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/maze.v1.KnowledgeService/DeleteDoc", runtime.WithHTTPPathPattern("/api/v1/docs/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_KnowledgeService_DeleteMemory_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_KnowledgeService_DeleteDoc_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_KnowledgeService_DeleteMemory_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_KnowledgeService_DeleteDoc_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodGet, pattern_KnowledgeService_SearchMemories_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_KnowledgeService_SearchDocs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/maze.v1.KnowledgeService/SearchMemories", runtime.WithHTTPPathPattern("/api/v1/memories:search"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/maze.v1.KnowledgeService/SearchDocs", runtime.WithHTTPPathPattern("/api/v1/docs:search"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_KnowledgeService_SearchMemories_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_KnowledgeService_SearchDocs_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_KnowledgeService_SearchMemories_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_KnowledgeService_SearchDocs_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodGet, pattern_KnowledgeService_GetMemoryTree_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_KnowledgeService_GetDocTree_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/maze.v1.KnowledgeService/GetMemoryTree", runtime.WithHTTPPathPattern("/api/v1/memories:tree"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/maze.v1.KnowledgeService/GetDocTree", runtime.WithHTTPPathPattern("/api/v1/docs:tree"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_KnowledgeService_GetMemoryTree_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_KnowledgeService_GetDocTree_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_KnowledgeService_GetMemoryTree_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_KnowledgeService_GetDocTree_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodGet, pattern_KnowledgeService_GetMemoryAncestors_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_KnowledgeService_GetDocAncestors_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/maze.v1.KnowledgeService/GetMemoryAncestors", runtime.WithHTTPPathPattern("/api/v1/memories/{id}/ancestors"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/maze.v1.KnowledgeService/GetDocAncestors", runtime.WithHTTPPathPattern("/api/v1/docs/{id}/ancestors"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_KnowledgeService_GetMemoryAncestors_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_KnowledgeService_GetDocAncestors_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_KnowledgeService_GetMemoryAncestors_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-	})
-	mux.Handle(http.MethodGet, pattern_KnowledgeService_GetMemoryDirectives_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		var stream runtime.ServerTransportStream
-		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/maze.v1.KnowledgeService/GetMemoryDirectives", runtime.WithHTTPPathPattern("/api/v1/memories/{id}/directives"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := local_request_KnowledgeService_GetMemoryDirectives_0(annotatedContext, inboundMarshaler, server, req, pathParams)
-		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
-		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
-		if err != nil {
-			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		forward_KnowledgeService_GetMemoryDirectives_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_KnowledgeService_GetDocAncestors_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
 	mux.Handle(http.MethodGet, pattern_KnowledgeService_GetLinks_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
@@ -1005,7 +925,7 @@ func RegisterKnowledgeServiceHandlerServer(ctx context.Context, mux *runtime.Ser
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/maze.v1.KnowledgeService/GetLinks", runtime.WithHTTPPathPattern("/api/v1/memories/{id}/links"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/maze.v1.KnowledgeService/GetLinks", runtime.WithHTTPPathPattern("/api/v1/docs/{id}/links"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1025,7 +945,7 @@ func RegisterKnowledgeServiceHandlerServer(ctx context.Context, mux *runtime.Ser
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/maze.v1.KnowledgeService/CreateLink", runtime.WithHTTPPathPattern("/api/v1/memories/{id}/links"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/maze.v1.KnowledgeService/CreateLink", runtime.WithHTTPPathPattern("/api/v1/docs/{id}/links"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1045,7 +965,7 @@ func RegisterKnowledgeServiceHandlerServer(ctx context.Context, mux *runtime.Ser
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/maze.v1.KnowledgeService/DeleteLink", runtime.WithHTTPPathPattern("/api/v1/memories/{id}/links/{link_id}"))
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/maze.v1.KnowledgeService/DeleteLink", runtime.WithHTTPPathPattern("/api/v1/docs/{id}/links/{link_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1058,26 +978,6 @@ func RegisterKnowledgeServiceHandlerServer(ctx context.Context, mux *runtime.Ser
 			return
 		}
 		forward_KnowledgeService_DeleteLink_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-	})
-	mux.Handle(http.MethodGet, pattern_KnowledgeService_GetStats_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		var stream runtime.ServerTransportStream
-		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/maze.v1.KnowledgeService/GetStats", runtime.WithHTTPPathPattern("/api/v1/stats"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := local_request_KnowledgeService_GetStats_0(annotatedContext, inboundMarshaler, server, req, pathParams)
-		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
-		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
-		if err != nil {
-			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		forward_KnowledgeService_GetStats_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
 
 	return nil
@@ -1204,164 +1104,147 @@ func RegisterKnowledgeServiceHandlerClient(ctx context.Context, mux *runtime.Ser
 		}
 		forward_KnowledgeService_DeleteArchive_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodPost, pattern_KnowledgeService_CreateMemory_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPost, pattern_KnowledgeService_CreateDoc_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/maze.v1.KnowledgeService/CreateMemory", runtime.WithHTTPPathPattern("/api/v1/memories"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/maze.v1.KnowledgeService/CreateDoc", runtime.WithHTTPPathPattern("/api/v1/docs"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_KnowledgeService_CreateMemory_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_KnowledgeService_CreateDoc_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_KnowledgeService_CreateMemory_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_KnowledgeService_CreateDoc_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodGet, pattern_KnowledgeService_GetMemory_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_KnowledgeService_GetDoc_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/maze.v1.KnowledgeService/GetMemory", runtime.WithHTTPPathPattern("/api/v1/memories/{id}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/maze.v1.KnowledgeService/GetDoc", runtime.WithHTTPPathPattern("/api/v1/docs/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_KnowledgeService_GetMemory_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_KnowledgeService_GetDoc_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_KnowledgeService_GetMemory_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_KnowledgeService_GetDoc_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodGet, pattern_KnowledgeService_ListMemories_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_KnowledgeService_ListDocs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/maze.v1.KnowledgeService/ListMemories", runtime.WithHTTPPathPattern("/api/v1/memories"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/maze.v1.KnowledgeService/ListDocs", runtime.WithHTTPPathPattern("/api/v1/docs"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_KnowledgeService_ListMemories_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_KnowledgeService_ListDocs_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_KnowledgeService_ListMemories_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_KnowledgeService_ListDocs_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodPut, pattern_KnowledgeService_UpdateMemory_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodPut, pattern_KnowledgeService_UpdateDoc_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/maze.v1.KnowledgeService/UpdateMemory", runtime.WithHTTPPathPattern("/api/v1/memories/{id}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/maze.v1.KnowledgeService/UpdateDoc", runtime.WithHTTPPathPattern("/api/v1/docs/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_KnowledgeService_UpdateMemory_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_KnowledgeService_UpdateDoc_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_KnowledgeService_UpdateMemory_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_KnowledgeService_UpdateDoc_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodDelete, pattern_KnowledgeService_DeleteMemory_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodDelete, pattern_KnowledgeService_DeleteDoc_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/maze.v1.KnowledgeService/DeleteMemory", runtime.WithHTTPPathPattern("/api/v1/memories/{id}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/maze.v1.KnowledgeService/DeleteDoc", runtime.WithHTTPPathPattern("/api/v1/docs/{id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_KnowledgeService_DeleteMemory_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_KnowledgeService_DeleteDoc_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_KnowledgeService_DeleteMemory_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_KnowledgeService_DeleteDoc_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodGet, pattern_KnowledgeService_SearchMemories_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_KnowledgeService_SearchDocs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/maze.v1.KnowledgeService/SearchMemories", runtime.WithHTTPPathPattern("/api/v1/memories:search"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/maze.v1.KnowledgeService/SearchDocs", runtime.WithHTTPPathPattern("/api/v1/docs:search"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_KnowledgeService_SearchMemories_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_KnowledgeService_SearchDocs_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_KnowledgeService_SearchMemories_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_KnowledgeService_SearchDocs_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodGet, pattern_KnowledgeService_GetMemoryTree_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_KnowledgeService_GetDocTree_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/maze.v1.KnowledgeService/GetMemoryTree", runtime.WithHTTPPathPattern("/api/v1/memories:tree"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/maze.v1.KnowledgeService/GetDocTree", runtime.WithHTTPPathPattern("/api/v1/docs:tree"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_KnowledgeService_GetMemoryTree_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_KnowledgeService_GetDocTree_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_KnowledgeService_GetMemoryTree_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_KnowledgeService_GetDocTree_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodGet, pattern_KnowledgeService_GetMemoryAncestors_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle(http.MethodGet, pattern_KnowledgeService_GetDocAncestors_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/maze.v1.KnowledgeService/GetMemoryAncestors", runtime.WithHTTPPathPattern("/api/v1/memories/{id}/ancestors"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/maze.v1.KnowledgeService/GetDocAncestors", runtime.WithHTTPPathPattern("/api/v1/docs/{id}/ancestors"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_KnowledgeService_GetMemoryAncestors_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_KnowledgeService_GetDocAncestors_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		forward_KnowledgeService_GetMemoryAncestors_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-	})
-	mux.Handle(http.MethodGet, pattern_KnowledgeService_GetMemoryDirectives_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/maze.v1.KnowledgeService/GetMemoryDirectives", runtime.WithHTTPPathPattern("/api/v1/memories/{id}/directives"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := request_KnowledgeService_GetMemoryDirectives_0(annotatedContext, inboundMarshaler, client, req, pathParams)
-		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
-		if err != nil {
-			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		forward_KnowledgeService_GetMemoryDirectives_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_KnowledgeService_GetDocAncestors_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
 	mux.Handle(http.MethodGet, pattern_KnowledgeService_GetLinks_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/maze.v1.KnowledgeService/GetLinks", runtime.WithHTTPPathPattern("/api/v1/memories/{id}/links"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/maze.v1.KnowledgeService/GetLinks", runtime.WithHTTPPathPattern("/api/v1/docs/{id}/links"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1378,7 +1261,7 @@ func RegisterKnowledgeServiceHandlerClient(ctx context.Context, mux *runtime.Ser
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/maze.v1.KnowledgeService/CreateLink", runtime.WithHTTPPathPattern("/api/v1/memories/{id}/links"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/maze.v1.KnowledgeService/CreateLink", runtime.WithHTTPPathPattern("/api/v1/docs/{id}/links"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1395,7 +1278,7 @@ func RegisterKnowledgeServiceHandlerClient(ctx context.Context, mux *runtime.Ser
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/maze.v1.KnowledgeService/DeleteLink", runtime.WithHTTPPathPattern("/api/v1/memories/{id}/links/{link_id}"))
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/maze.v1.KnowledgeService/DeleteLink", runtime.WithHTTPPathPattern("/api/v1/docs/{id}/links/{link_id}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -1408,64 +1291,43 @@ func RegisterKnowledgeServiceHandlerClient(ctx context.Context, mux *runtime.Ser
 		}
 		forward_KnowledgeService_DeleteLink_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
-	mux.Handle(http.MethodGet, pattern_KnowledgeService_GetStats_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
-		ctx, cancel := context.WithCancel(req.Context())
-		defer cancel()
-		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/maze.v1.KnowledgeService/GetStats", runtime.WithHTTPPathPattern("/api/v1/stats"))
-		if err != nil {
-			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		resp, md, err := request_KnowledgeService_GetStats_0(annotatedContext, inboundMarshaler, client, req, pathParams)
-		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
-		if err != nil {
-			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
-			return
-		}
-		forward_KnowledgeService_GetStats_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-	})
 	return nil
 }
 
 var (
-	pattern_KnowledgeService_CreateArchive_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "archives"}, ""))
-	pattern_KnowledgeService_GetArchive_0          = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "archives", "id"}, ""))
-	pattern_KnowledgeService_ListArchives_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "archives"}, ""))
-	pattern_KnowledgeService_UpdateArchive_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "archives", "id"}, ""))
-	pattern_KnowledgeService_DeleteArchive_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "archives", "id"}, ""))
-	pattern_KnowledgeService_CreateMemory_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "memories"}, ""))
-	pattern_KnowledgeService_GetMemory_0           = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "memories", "id"}, ""))
-	pattern_KnowledgeService_ListMemories_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "memories"}, ""))
-	pattern_KnowledgeService_UpdateMemory_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "memories", "id"}, ""))
-	pattern_KnowledgeService_DeleteMemory_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "memories", "id"}, ""))
-	pattern_KnowledgeService_SearchMemories_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "memories"}, "search"))
-	pattern_KnowledgeService_GetMemoryTree_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "memories"}, "tree"))
-	pattern_KnowledgeService_GetMemoryAncestors_0  = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "memories", "id", "ancestors"}, ""))
-	pattern_KnowledgeService_GetMemoryDirectives_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "memories", "id", "directives"}, ""))
-	pattern_KnowledgeService_GetLinks_0            = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "memories", "id", "links"}, ""))
-	pattern_KnowledgeService_CreateLink_0          = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "memories", "id", "links"}, ""))
-	pattern_KnowledgeService_DeleteLink_0          = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"api", "v1", "memories", "id", "links", "link_id"}, ""))
-	pattern_KnowledgeService_GetStats_0            = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "stats"}, ""))
+	pattern_KnowledgeService_CreateArchive_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "archives"}, ""))
+	pattern_KnowledgeService_GetArchive_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "archives", "id"}, ""))
+	pattern_KnowledgeService_ListArchives_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "archives"}, ""))
+	pattern_KnowledgeService_UpdateArchive_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "archives", "id"}, ""))
+	pattern_KnowledgeService_DeleteArchive_0   = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "archives", "id"}, ""))
+	pattern_KnowledgeService_CreateDoc_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "docs"}, ""))
+	pattern_KnowledgeService_GetDoc_0          = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "docs", "id"}, ""))
+	pattern_KnowledgeService_ListDocs_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "docs"}, ""))
+	pattern_KnowledgeService_UpdateDoc_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "docs", "id"}, ""))
+	pattern_KnowledgeService_DeleteDoc_0       = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"api", "v1", "docs", "id"}, ""))
+	pattern_KnowledgeService_SearchDocs_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "docs"}, "search"))
+	pattern_KnowledgeService_GetDocTree_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "docs"}, "tree"))
+	pattern_KnowledgeService_GetDocAncestors_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "docs", "id", "ancestors"}, ""))
+	pattern_KnowledgeService_GetLinks_0        = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "docs", "id", "links"}, ""))
+	pattern_KnowledgeService_CreateLink_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"api", "v1", "docs", "id", "links"}, ""))
+	pattern_KnowledgeService_DeleteLink_0      = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4, 1, 0, 4, 1, 5, 5}, []string{"api", "v1", "docs", "id", "links", "link_id"}, ""))
 )
 
 var (
-	forward_KnowledgeService_CreateArchive_0       = runtime.ForwardResponseMessage
-	forward_KnowledgeService_GetArchive_0          = runtime.ForwardResponseMessage
-	forward_KnowledgeService_ListArchives_0        = runtime.ForwardResponseMessage
-	forward_KnowledgeService_UpdateArchive_0       = runtime.ForwardResponseMessage
-	forward_KnowledgeService_DeleteArchive_0       = runtime.ForwardResponseMessage
-	forward_KnowledgeService_CreateMemory_0        = runtime.ForwardResponseMessage
-	forward_KnowledgeService_GetMemory_0           = runtime.ForwardResponseMessage
-	forward_KnowledgeService_ListMemories_0        = runtime.ForwardResponseMessage
-	forward_KnowledgeService_UpdateMemory_0        = runtime.ForwardResponseMessage
-	forward_KnowledgeService_DeleteMemory_0        = runtime.ForwardResponseMessage
-	forward_KnowledgeService_SearchMemories_0      = runtime.ForwardResponseMessage
-	forward_KnowledgeService_GetMemoryTree_0       = runtime.ForwardResponseMessage
-	forward_KnowledgeService_GetMemoryAncestors_0  = runtime.ForwardResponseMessage
-	forward_KnowledgeService_GetMemoryDirectives_0 = runtime.ForwardResponseMessage
-	forward_KnowledgeService_GetLinks_0            = runtime.ForwardResponseMessage
-	forward_KnowledgeService_CreateLink_0          = runtime.ForwardResponseMessage
-	forward_KnowledgeService_DeleteLink_0          = runtime.ForwardResponseMessage
-	forward_KnowledgeService_GetStats_0            = runtime.ForwardResponseMessage
+	forward_KnowledgeService_CreateArchive_0   = runtime.ForwardResponseMessage
+	forward_KnowledgeService_GetArchive_0      = runtime.ForwardResponseMessage
+	forward_KnowledgeService_ListArchives_0    = runtime.ForwardResponseMessage
+	forward_KnowledgeService_UpdateArchive_0   = runtime.ForwardResponseMessage
+	forward_KnowledgeService_DeleteArchive_0   = runtime.ForwardResponseMessage
+	forward_KnowledgeService_CreateDoc_0       = runtime.ForwardResponseMessage
+	forward_KnowledgeService_GetDoc_0          = runtime.ForwardResponseMessage
+	forward_KnowledgeService_ListDocs_0        = runtime.ForwardResponseMessage
+	forward_KnowledgeService_UpdateDoc_0       = runtime.ForwardResponseMessage
+	forward_KnowledgeService_DeleteDoc_0       = runtime.ForwardResponseMessage
+	forward_KnowledgeService_SearchDocs_0      = runtime.ForwardResponseMessage
+	forward_KnowledgeService_GetDocTree_0      = runtime.ForwardResponseMessage
+	forward_KnowledgeService_GetDocAncestors_0 = runtime.ForwardResponseMessage
+	forward_KnowledgeService_GetLinks_0        = runtime.ForwardResponseMessage
+	forward_KnowledgeService_CreateLink_0      = runtime.ForwardResponseMessage
+	forward_KnowledgeService_DeleteLink_0      = runtime.ForwardResponseMessage
 )

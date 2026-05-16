@@ -1,10 +1,14 @@
-.PHONY: build build-director-core build-web build-agent build-deps update-director-core update-web update-agent update-all
+.PHONY: build build-director-core build-the-forge build-web build-agent build-deps update-director-core update-the-forge update-web update-agent update-all
 
-build: build-deps build-director-core build-web build-agent ## 构建全部 Docker 镜像
+build: build-deps build-director-core build-the-forge build-web build-agent ## 构建全部 Docker 镜像
 
 build-director-core: ## 构建 Director Core 镜像
 	@echo "\033[0;32m[INFO]\033[0m Building Director Core image..."
 	@docker build -f $(DIRECTOR_CORE_DOCKERFILE) -t $(DIRECTOR_CORE_IMAGE) $(PROJECT_ROOT)
+
+build-the-forge: ## 构建 The Forge 镜像
+	@echo "\033[0;32m[INFO]\033[0m Building The Forge image..."
+	@docker build -f $(THE_FORGE_DOCKERFILE) -t $(THE_FORGE_IMAGE) $(PROJECT_ROOT)
 
 build-web: ## 构建 Web Nginx 镜像
 	@echo "\033[0;32m[INFO]\033[0m Building Web Nginx image..."
@@ -29,6 +33,18 @@ else ifeq ($(PLATFORM),kubernetes)
 	@kubectl rollout status deployment/director-core -n $(K8S_NAMESPACE) --timeout=120s
 endif
 
+update-the-forge: build-the-forge ## 重建 The Forge 镜像 + 重启
+ifeq ($(PLATFORM),docker)
+	@$(DOCKER_COMPOSE) up -d the-forge
+else ifeq ($(PLATFORM),kubernetes)
+	@if kubectl get deployment/the-forge -n $(K8S_NAMESPACE) >/dev/null 2>&1; then \
+		kubectl rollout restart deployment/the-forge -n $(K8S_NAMESPACE); \
+		kubectl rollout status deployment/the-forge -n $(K8S_NAMESPACE) --timeout=120s; \
+	else \
+		echo "\033[0;32m[INFO]\033[0m Skip the-forge restart: deployment/the-forge not managed by overlay $(K8S_OVERLAY)."; \
+	fi
+endif
+
 update-web: build-web ## 重建 Web 镜像 + 重启（若当前环境不存在 web，则自动跳过）
 ifeq ($(PLATFORM),docker)
 	@$(DOCKER_COMPOSE) up -d web
@@ -44,12 +60,16 @@ endif
 update-agent: build-agent ## 重建 Agent 基础镜像
 	@echo "\033[0;32m[INFO]\033[0m Agent base image updated. New Hosts will use the updated image."
 
-update-all: build-director-core build-web build-agent ## 全部更新：重建所有镜像 + 重启
+update-all: build-director-core build-the-forge build-web build-agent ## 全部更新：重建所有镜像 + 重启
 ifeq ($(PLATFORM),docker)
 	@$(DOCKER_COMPOSE) up -d
 else ifeq ($(PLATFORM),kubernetes)
 	@kubectl rollout restart deployment/director-core -n $(K8S_NAMESPACE)
 	@kubectl rollout status deployment/director-core -n $(K8S_NAMESPACE) --timeout=120s
+	@if kubectl get deployment/the-forge -n $(K8S_NAMESPACE) >/dev/null 2>&1; then \
+		kubectl rollout restart deployment/the-forge -n $(K8S_NAMESPACE); \
+		kubectl rollout status deployment/the-forge -n $(K8S_NAMESPACE) --timeout=120s; \
+	fi
 	@if kubectl get deployment/web -n $(K8S_NAMESPACE) >/dev/null 2>&1; then \
 		kubectl rollout restart deployment/web -n $(K8S_NAMESPACE); \
 		kubectl rollout status deployment/web -n $(K8S_NAMESPACE) --timeout=120s; \

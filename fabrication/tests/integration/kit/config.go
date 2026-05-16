@@ -17,6 +17,7 @@ import (
 // TestConfig 集成测试运行参数，从环境变量加载。
 type TestConfig struct {
 	DirectorCoreURL     string
+	TheForgeURL         string
 	Env                 string
 	Namespace           string
 	DataDir             string
@@ -34,6 +35,7 @@ type TestConfig struct {
 func LoadTestConfig() *TestConfig {
 	cfg := &TestConfig{
 		DirectorCoreURL:     getEnv("MAZE_TEST_DIRECTOR_CORE_URL", "http://localhost:9090"),
+		TheForgeURL:         getEnv("MAZE_TEST_THE_FORGE_URL", "http://localhost:9091"),
 		Env:                 getEnv("MAZE_TEST_ENV", "docker"),
 		Namespace:           getEnv("MAZE_TEST_NAMESPACE", "maze-test"),
 		DataDir:             getEnv("MAZE_TEST_DATA_DIR", os.Getenv("HOME")+"/.maze-test"),

@@ -44,6 +44,14 @@ else ifeq ($(PLATFORM),kubernetes)
 	else \
 		echo "\033[0;32m[INFO]\033[0m Skip web rollout wait: deployment/web not managed by overlay $(K8S_OVERLAY)."; \
 	fi
+	@if kubectl get deployment/the-forge -n $(K8S_NAMESPACE) >/dev/null 2>&1; then \
+		kubectl rollout status deployment/the-forge -n $(K8S_NAMESPACE) --timeout=180s || \
+			(echo "\033[1;33m[WARN]\033[0m the-forge rollout timed out." && kubectl get pods -n $(K8S_NAMESPACE) && exit 1); \
+		kubectl wait --for=condition=ready pod -l app=the-forge --timeout=180s -n $(K8S_NAMESPACE) || \
+			(echo "\033[1;33m[WARN]\033[0m the-forge pod not ready." && kubectl get pods -n $(K8S_NAMESPACE) && exit 1); \
+	else \
+		echo "\033[0;32m[INFO]\033[0m Skip the-forge rollout wait: deployment/the-forge not managed by overlay $(K8S_OVERLAY)."; \
+	fi
 	@echo ""
 	@echo "\033[0;32m[INFO]\033[0m Maze is running on Kubernetes! ($(ENV))"
 	@echo "  Next: make proxy PLATFORM=$(PLATFORM) ENV=$(ENV)"
@@ -61,6 +69,7 @@ else ifeq ($(PLATFORM),kubernetes)
 	@echo "\033[0;32m[INFO]\033[0m Removing Kubernetes application resources while preserving PostgreSQL data..."
 	@kubectl delete deployment,service -l app=maze-agent -n $(K8S_NAMESPACE) --ignore-not-found=true
 	@kubectl delete deployment/director-core service/director-core configmap/director-core-config -n $(K8S_NAMESPACE) --ignore-not-found=true
+	@kubectl delete deployment/the-forge service/the-forge secret/the-forge-secret -n $(K8S_NAMESPACE) --ignore-not-found=true
 	@kubectl delete deployment/web service/web configmap/web-nginx-config ingress/web -n $(K8S_NAMESPACE) --ignore-not-found=true
 	@echo "\033[0;32m[INFO]\033[0m PostgreSQL deployment, service, config and data were preserved in namespace $(K8S_NAMESPACE)."
 endif
@@ -174,6 +183,7 @@ else ifeq ($(PLATFORM),kubernetes)
 		}; \
 		start_pf web $(PORT_WEB):80 "Web:            http://localhost:$(PORT_WEB)"; \
 		start_pf director-core $(PORT_DIRECTOR_CORE):8080 "Director Core:  http://localhost:$(PORT_DIRECTOR_CORE)/health"; \
+		start_pf the-forge $(PORT_THE_FORGE):8080 "The Forge:      http://localhost:$(PORT_THE_FORGE)/health"; \
 		start_pf postgresql $(PORT_POSTGRES):5432 "Postgres:       postgresql://localhost:$(PORT_POSTGRES)"; \
 		if [ "$$PF_STARTED" -ne 1 ]; then \
 			echo "No services available for proxy in namespace $(K8S_NAMESPACE)."; \

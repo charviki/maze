@@ -2,15 +2,17 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"io/fs"
 	"time"
 
-	gwruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/grpc"
 
 	"github.com/charviki/maze/fabrication/cradle/db"
+	"github.com/charviki/maze/fabrication/cradle/gatewayutil"
 	"github.com/charviki/maze/fabrication/cradle/grpcutil"
 	"github.com/charviki/maze/fabrication/cradle/lifecycle"
-	"github.com/charviki/maze/fabrication/cradle/llmutil"
 	"github.com/charviki/maze/fabrication/cradle/logutil"
 
 	"github.com/charviki/maze/the-mesa/the-forge/internal/config"
@@ -18,8 +20,6 @@ import (
 	"github.com/charviki/maze/the-mesa/the-forge/internal/service"
 	"github.com/charviki/maze/the-mesa/the-forge/internal/transport"
 )
-
-const defaultGRPCAddr = ":9090"
 
 func main() {
 	logger := logutil.New("the-forge")
@@ -29,62 +29,52 @@ func main() {
 		logger.Fatalf("load config: %v", err)
 	}
 
-	// PostgreSQL 连接池
-	pool, err := db.NewPool(context.Background(), db.PoolConfig{
-		Host:     cfg.Database.Host,
-		Port:     cfg.Database.Port,
-		Name:     cfg.Database.Name,
-		User:     cfg.Database.User,
-		Password: cfg.Database.Password,
-	})
+	// PostgreSQL 连接池（带重试）
+	pool, err := newPoolWithRetry(context.Background(), cfg, logger)
 	if err != nil {
 		logger.Fatalf("connect db: %v", err)
 	}
 	defer pool.Close()
 
 	// Migration
-	if err := db.RunMigrations(pool, postgres.MigrationsFS); err != nil {
+	migrationsFS, fsErr := fs.Sub(postgres.MigrationsFS, "migrations")
+	if fsErr != nil {
+		logger.Fatalf("create migrations sub FS: %v", fsErr)
+	}
+	if err := db.RunMigrations(pool, migrationsFS); err != nil {
 		logger.Fatalf("run migrations: %v", err)
 	}
 	logger.Info("database migrations applied")
 
 	// Repository
-	knowledgeRepo := postgres.NewKnowledgeRepository(pool)
-	taskRepo := postgres.NewTaskRepository(pool)
-	chatRepo := postgres.NewChatRepository(pool)
-	fileRepo := postgres.NewFileRepository(cfg.File.StoragePath)
+	txm := postgres.NewTxManager(pool)
+	docRepo := postgres.NewDocRepository(pool, txm, logger)
 
 	// Service
-	knowledgeSvc := service.NewKnowledgeService(knowledgeRepo)
-	taskSvc := service.NewTaskService(taskRepo)
-	chatSvc := service.NewChatService(chatRepo, newLLMProvider(cfg))
-	fileSvc := service.NewFileService(fileRepo)
+	docSvc := service.NewDocService(docRepo)
 
 	// gRPC server
-	grpcCore := grpc.NewServer()
-	knowledgeTransport := transport.NewKnowledgeGRPCTransport(knowledgeSvc, taskSvc)
-	directiveTransport := transport.NewDirectiveGRPCTransport(taskSvc)
-	knowledgeTransport.RegisterGRPC(grpcCore)
-	directiveTransport.RegisterGRPC(grpcCore)
-	managedGRPC := grpcutil.NewManagedGRPCServer(grpcAddr(cfg), grpcCore, logger)
+	grpcCore := grpc.NewServer(grpc.ChainUnaryInterceptor(
+		gatewayutil.UnaryAuthInterceptor(cfg.Server.JWTSecret),
+	))
+	docTransport := transport.NewServer(docSvc)
+	docTransport.RegisterGRPC(grpcCore)
+	managedGRPC := grpcutil.NewManagedGRPCServer(cfg.Server.GRPCAddr, grpcCore, logger)
 
 	// grpc-gateway
-	gwMux := gwruntime.NewServeMux()
-	gwCtx, gwCancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer gwCancel()
-	if err := transport.RegisterGatewayHandlers(gwCtx, gwMux, grpcAddr(cfg)); err != nil {
+	gwMux := gatewayutil.NewServeMux()
+	if err := transport.RegisterGatewayHandlers(context.Background(), transport.GatewayRegistrationParams{
+		GWMux:    gwMux,
+		GRPCAddr: cfg.Server.GRPCAddr,
+	}); err != nil {
 		logger.Fatalf("register gateway: %v", err)
 	}
 
 	// HTTP server
-	healthService := service.NewHealthService()
-	httpServer := transport.NewHTTPServer(transport.HTTPServerParams{
-		Config:        cfg,
-		HealthService: healthService,
-		ChatHandler:   transport.NewChatHandler(chatSvc, logger),
-		FileHandler:   transport.NewFileHandler(fileSvc),
-		GWMux:         gwMux,
-		Logger:        logger,
+	httpServer := transport.NewHTTPServer(transport.HTTPHandlerParams{
+		Config: cfg,
+		GWMux:  gwMux,
+		Logger: logger,
 	})
 
 	// Lifecycle
@@ -95,31 +85,42 @@ func main() {
 	manager.Add(httpServer)
 	manager.Add(managedGRPC)
 
+	logger.Infof("the-forge started on %s (grpc %s)", cfg.Server.ListenAddr, cfg.Server.GRPCAddr)
+
 	if err := manager.Run(context.Background()); err != nil {
 		logger.Fatalf("run lifecycle: %v", err)
 	}
 }
 
-func grpcAddr(cfg *config.Config) string {
-	if cfg.Server.GRPCAddr == "" {
-		return defaultGRPCAddr
+// newPoolWithRetry 尝试连接数据库，最多重试 30 次（每次间隔 1 秒）。
+func newPoolWithRetry(ctx context.Context, cfg *config.Config, logger logutil.Logger) (*pgxpool.Pool, error) {
+	poolCfg := db.PoolConfig{
+		Host:     cfg.Database.Host,
+		Port:     cfg.Database.Port,
+		Name:     cfg.Database.Name,
+		User:     cfg.Database.User,
+		Password: cfg.Database.Password,
 	}
-	return cfg.Server.GRPCAddr
-}
-
-func newLLMProvider(cfg *config.Config) llmutil.LLMProvider {
-	providerCfg := llmutil.ProviderConfig{
-		APIKey:  cfg.LLM.APIKey,
-		BaseURL: cfg.LLM.BaseURL,
-		Model:   cfg.LLM.Model,
+	const maxAttempts = 30
+	var lastErr error
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		pool, err := db.NewPool(ctx, poolCfg)
+		if err == nil {
+			if attempt > 1 {
+				logger.Infof("database became ready after %d attempts", attempt)
+			}
+			return pool, nil
+		}
+		lastErr = err
+		if attempt == maxAttempts {
+			break
+		}
+		logger.Warnf("database not ready (attempt %d/%d): %v", attempt, maxAttempts, err)
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(time.Second):
+		}
 	}
-	switch cfg.LLM.Provider {
-	case "anthropic":
-		return llmutil.NewAnthropicProvider(providerCfg)
-	case "openai":
-		return llmutil.NewOpenAIProvider(providerCfg)
-	default:
-		// 默认使用 OpenAI 兼容接口
-		return llmutil.NewOpenAIProvider(providerCfg)
-	}
+	return nil, fmt.Errorf("database not ready after %d attempts: %w", maxAttempts, lastErr)
 }

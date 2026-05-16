@@ -51,3 +51,23 @@ services:
       DIRECTOR_CORE_AUTHZ_ENABLED: 'true'
       DIRECTOR_CORE_AUTHZ_ADMIN_SUBJECT_KEY: user:admin
       DIRECTOR_CORE_AUTHZ_ADMIN_DISPLAY_NAME: admin
+
+  the-forge:
+    build:
+      context: ../../..
+      dockerfile: the-mesa/the-forge/Dockerfile
+    container_name: maze-test-the-forge
+    ports:
+      - '${PORT_THE_FORGE:-9091}:8080'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      THE_FORGE_SERVER_JWT_SECRET: test-jwt-secret
+      THE_FORGE_SERVER_LISTEN_ADDR: ':8080'
+      THE_FORGE_SERVER_GRPC_ADDR: ':9090'
+      THE_FORGE_DATABASE_HOST: postgres
+      THE_FORGE_DATABASE_PORT: '5432'
+      THE_FORGE_DATABASE_NAME: maze_forge
+      THE_FORGE_DATABASE_USER: maze
+      THE_FORGE_DATABASE_PASSWORD: maze

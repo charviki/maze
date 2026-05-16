@@ -19,7 +19,7 @@ var _ MappedNullable = &V1GetLinksResponse{}
 
 // V1GetLinksResponse struct for V1GetLinksResponse
 type V1GetLinksResponse struct {
-	Links []V1NeuralLink `json:"links,omitempty"`
+	Links []V1DocLink `json:"links,omitempty"`
 }
 
 // NewV1GetLinksResponse instantiates a new V1GetLinksResponse object
@@ -40,9 +40,9 @@ func NewV1GetLinksResponseWithDefaults() *V1GetLinksResponse {
 }
 
 // GetLinks returns the Links field value if set, zero value otherwise.
-func (o *V1GetLinksResponse) GetLinks() []V1NeuralLink {
+func (o *V1GetLinksResponse) GetLinks() []V1DocLink {
 	if o == nil || IsNil(o.Links) {
-		var ret []V1NeuralLink
+		var ret []V1DocLink
 		return ret
 	}
 	return o.Links
@@ -50,7 +50,7 @@ func (o *V1GetLinksResponse) GetLinks() []V1NeuralLink {
 
 // GetLinksOk returns a tuple with the Links field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *V1GetLinksResponse) GetLinksOk() ([]V1NeuralLink, bool) {
+func (o *V1GetLinksResponse) GetLinksOk() ([]V1DocLink, bool) {
 	if o == nil || IsNil(o.Links) {
 		return nil, false
 	}
@@ -66,8 +66,8 @@ func (o *V1GetLinksResponse) HasLinks() bool {
 	return false
 }
 
-// SetLinks gets a reference to the given []V1NeuralLink and assigns it to the Links field.
-func (o *V1GetLinksResponse) SetLinks(v []V1NeuralLink) {
+// SetLinks gets a reference to the given []V1DocLink and assigns it to the Links field.
+func (o *V1GetLinksResponse) SetLinks(v []V1DocLink) {
 	o.Links = v
 }
 

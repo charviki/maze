@@ -10,7 +10,6 @@ resources:
   - director-core-service.yaml
   - director-core-pvc.yaml
   - the-forge-secret.yaml
-  - the-forge-pvc.yaml
   - the-forge-deployment.yaml
   - the-forge-service.yaml
   - web-configmap.yaml

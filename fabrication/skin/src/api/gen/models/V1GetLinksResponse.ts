@@ -14,13 +14,13 @@
  */
 
 import { mapValues } from '../runtime';
-import type { V1NeuralLink } from './V1NeuralLink';
+import type { V1DocLink } from './V1DocLink';
 import {
-    V1NeuralLinkFromJSON,
-    V1NeuralLinkFromJSONTyped,
-    V1NeuralLinkToJSON,
-    V1NeuralLinkToJSONTyped,
-} from './V1NeuralLink';
+    V1DocLinkFromJSON,
+    V1DocLinkFromJSONTyped,
+    V1DocLinkToJSON,
+    V1DocLinkToJSONTyped,
+} from './V1DocLink';
 
 /**
  * 
@@ -30,10 +30,10 @@ import {
 export interface V1GetLinksResponse {
     /**
      * 
-     * @type {Array<V1NeuralLink>}
+     * @type {Array<V1DocLink>}
      * @memberof V1GetLinksResponse
      */
-    links?: Array<V1NeuralLink>;
+    links?: Array<V1DocLink>;
 }
 
 /**
@@ -53,7 +53,7 @@ export function V1GetLinksResponseFromJSONTyped(json: any, ignoreDiscriminator: 
     }
     return {
         
-        'links': json['links'] == null ? undefined : ((json['links'] as Array<any>).map(V1NeuralLinkFromJSON)),
+        'links': json['links'] == null ? undefined : ((json['links'] as Array<any>).map(V1DocLinkFromJSON)),
     };
 }
 
@@ -68,7 +68,7 @@ export function V1GetLinksResponseToJSONTyped(value?: V1GetLinksResponse | null,
 
     return {
         
-        'links': value['links'] == null ? undefined : ((value['links'] as Array<any>).map(V1NeuralLinkToJSON)),
+        'links': value['links'] == null ? undefined : ((value['links'] as Array<any>).map(V1DocLinkToJSON)),
     };
 }
 

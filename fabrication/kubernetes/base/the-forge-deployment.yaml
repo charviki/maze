@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: the-forge
-          image: the-forge:latest
+          image: maze-the-forge:latest
           imagePullPolicy: Never
           ports:
             - containerPort: 8080
@@ -27,7 +27,7 @@ spec:
                   name: the-forge-secret
                   key: THE_FORGE_SERVER_JWT_SECRET
             - name: THE_FORGE_DATABASE_HOST
-              value: postgres
+              value: postgresql
             - name: THE_FORGE_DATABASE_PORT
               value: '5432'
             - name: THE_FORGE_DATABASE_NAME
@@ -42,8 +42,6 @@ spec:
                 secretKeyRef:
                   name: the-forge-secret
                   key: DATABASE_PASSWORD
-            - name: THE_FORGE_FILE_STORAGE_PATH
-              value: /data/files
           readinessProbe:
             httpGet:
               path: /health
@@ -63,10 +61,3 @@ spec:
             requests:
               cpu: '0.1'
               memory: 128Mi
-          volumeMounts:
-            - name: forge-data
-              mountPath: /data
-      volumes:
-        - name: forge-data
-          persistentVolumeClaim:
-            claimName: the-forge-data

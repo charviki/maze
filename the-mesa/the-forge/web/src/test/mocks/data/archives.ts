@@ -1,12 +1,4 @@
-export interface Archive {
-  id: string;
-  name: string;
-  description?: string;
-  icon?: string;
-  author: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { Archive } from '@/api';
 
 export const archives: Archive[] = [
   {

@@ -20,6 +20,7 @@ vi.mock('@maze/fabrication', () => ({
   Button: ({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) => (
     <button onClick={onClick}>{children}</button>
   ),
+  fetchWithAuth: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, init),
 }));
 
 function renderSidebar() {
@@ -39,7 +40,6 @@ describe('Sidebar', () => {
     });
 
     expect(screen.getByText('DASHBOARD')).toBeInTheDocument();
-    expect(screen.getByText('DIRECTIVES')).toBeInTheDocument();
   });
 
   it('renders archive list from API', async () => {
@@ -60,7 +60,7 @@ describe('Sidebar', () => {
       expect(screen.getByText('THE FORGE')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('ARCHIVES')).toBeInTheDocument();
+    expect(screen.getByTitle('Create archive')).toBeInTheDocument();
   });
 
   it('displays username', async () => {

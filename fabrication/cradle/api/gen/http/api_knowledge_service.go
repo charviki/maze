@@ -139,54 +139,50 @@ func (a *KnowledgeServiceAPIService) KnowledgeServiceCreateArchiveExecute(r ApiK
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiKnowledgeServiceCreateLinkRequest struct {
+type ApiKnowledgeServiceCreateDocRequest struct {
 	ctx context.Context
 	ApiService *KnowledgeServiceAPIService
-	id string
-	body *KnowledgeServiceCreateLinkBody
+	body *V1CreateDocRequest
 }
 
-func (r ApiKnowledgeServiceCreateLinkRequest) Body(body KnowledgeServiceCreateLinkBody) ApiKnowledgeServiceCreateLinkRequest {
+func (r ApiKnowledgeServiceCreateDocRequest) Body(body V1CreateDocRequest) ApiKnowledgeServiceCreateDocRequest {
 	r.body = &body
 	return r
 }
 
-func (r ApiKnowledgeServiceCreateLinkRequest) Execute() (*V1NeuralLink, *http.Response, error) {
-	return r.ApiService.KnowledgeServiceCreateLinkExecute(r)
+func (r ApiKnowledgeServiceCreateDocRequest) Execute() (*V1Doc, *http.Response, error) {
+	return r.ApiService.KnowledgeServiceCreateDocExecute(r)
 }
 
 /*
-KnowledgeServiceCreateLink Method for KnowledgeServiceCreateLink
+KnowledgeServiceCreateDoc Method for KnowledgeServiceCreateDoc
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @param id
- @return ApiKnowledgeServiceCreateLinkRequest
+ @return ApiKnowledgeServiceCreateDocRequest
 */
-func (a *KnowledgeServiceAPIService) KnowledgeServiceCreateLink(ctx context.Context, id string) ApiKnowledgeServiceCreateLinkRequest {
-	return ApiKnowledgeServiceCreateLinkRequest{
+func (a *KnowledgeServiceAPIService) KnowledgeServiceCreateDoc(ctx context.Context) ApiKnowledgeServiceCreateDocRequest {
+	return ApiKnowledgeServiceCreateDocRequest{
 		ApiService: a,
 		ctx: ctx,
-		id: id,
 	}
 }
 
 // Execute executes the request
-//  @return V1NeuralLink
-func (a *KnowledgeServiceAPIService) KnowledgeServiceCreateLinkExecute(r ApiKnowledgeServiceCreateLinkRequest) (*V1NeuralLink, *http.Response, error) {
+//  @return V1Doc
+func (a *KnowledgeServiceAPIService) KnowledgeServiceCreateDocExecute(r ApiKnowledgeServiceCreateDocRequest) (*V1Doc, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
 		formFiles            []formFile
-		localVarReturnValue  *V1NeuralLink
+		localVarReturnValue  *V1Doc
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "KnowledgeServiceAPIService.KnowledgeServiceCreateLink")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "KnowledgeServiceAPIService.KnowledgeServiceCreateDoc")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/v1/memories/{id}/links"
-	localVarPath = strings.Replace(localVarPath, "{"+"id"+"}", url.PathEscape(parameterValueToString(r.id, "id")), -1)
+	localVarPath := localBasePath + "/api/v1/docs"
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
@@ -259,50 +255,54 @@ func (a *KnowledgeServiceAPIService) KnowledgeServiceCreateLinkExecute(r ApiKnow
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiKnowledgeServiceCreateMemoryRequest struct {
+type ApiKnowledgeServiceCreateLinkRequest struct {
 	ctx context.Context
 	ApiService *KnowledgeServiceAPIService
-	body *V1CreateMemoryRequest
+	id string
+	body *KnowledgeServiceCreateLinkBody
 }
 
-func (r ApiKnowledgeServiceCreateMemoryRequest) Body(body V1CreateMemoryRequest) ApiKnowledgeServiceCreateMemoryRequest {
+func (r ApiKnowledgeServiceCreateLinkRequest) Body(body KnowledgeServiceCreateLinkBody) ApiKnowledgeServiceCreateLinkRequest {
 	r.body = &body
 	return r
 }
 
-func (r ApiKnowledgeServiceCreateMemoryRequest) Execute() (*V1Memory, *http.Response, error) {
-	return r.ApiService.KnowledgeServiceCreateMemoryExecute(r)
+func (r ApiKnowledgeServiceCreateLinkRequest) Execute() (*V1DocLink, *http.Response, error) {
+	return r.ApiService.KnowledgeServiceCreateLinkExecute(r)
 }
 
 /*
-KnowledgeServiceCreateMemory Method for KnowledgeServiceCreateMemory
+KnowledgeServiceCreateLink Method for KnowledgeServiceCreateLink
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiKnowledgeServiceCreateMemoryRequest
+ @param id
+ @return ApiKnowledgeServiceCreateLinkRequest
 */
-func (a *KnowledgeServiceAPIService) KnowledgeServiceCreateMemory(ctx context.Context) ApiKnowledgeServiceCreateMemoryRequest {
-	return ApiKnowledgeServiceCreateMemoryRequest{
+func (a *KnowledgeServiceAPIService) KnowledgeServiceCreateLink(ctx context.Context, id string) ApiKnowledgeServiceCreateLinkRequest {
+	return ApiKnowledgeServiceCreateLinkRequest{
 		ApiService: a,
 		ctx: ctx,
+		id: id,
 	}
 }
 
 // Execute executes the request
-//  @return V1Memory
-func (a *KnowledgeServiceAPIService) KnowledgeServiceCreateMemoryExecute(r ApiKnowledgeServiceCreateMemoryRequest) (*V1Memory, *http.Response, error) {
+//  @return V1DocLink
+func (a *KnowledgeServiceAPIService) KnowledgeServiceCreateLinkExecute(r ApiKnowledgeServiceCreateLinkRequest) (*V1DocLink, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPost
 		localVarPostBody     interface{}
 		formFiles            []formFile
-		localVarReturnValue  *V1Memory
+		localVarReturnValue  *V1DocLink
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "KnowledgeServiceAPIService.KnowledgeServiceCreateMemory")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "KnowledgeServiceAPIService.KnowledgeServiceCreateLink")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/v1/memories"
+	localVarPath := localBasePath + "/api/v1/docs/{id}/links"
+	localVarPath = strings.Replace(localVarPath, "{"+"id"+"}", url.PathEscape(parameterValueToString(r.id, "id")), -1)
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
@@ -484,37 +484,34 @@ func (a *KnowledgeServiceAPIService) KnowledgeServiceDeleteArchiveExecute(r ApiK
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiKnowledgeServiceDeleteLinkRequest struct {
+type ApiKnowledgeServiceDeleteDocRequest struct {
 	ctx context.Context
 	ApiService *KnowledgeServiceAPIService
 	id string
-	linkId string
 }
 
-func (r ApiKnowledgeServiceDeleteLinkRequest) Execute() (map[string]interface{}, *http.Response, error) {
-	return r.ApiService.KnowledgeServiceDeleteLinkExecute(r)
+func (r ApiKnowledgeServiceDeleteDocRequest) Execute() (map[string]interface{}, *http.Response, error) {
+	return r.ApiService.KnowledgeServiceDeleteDocExecute(r)
 }
 
 /*
-KnowledgeServiceDeleteLink Method for KnowledgeServiceDeleteLink
+KnowledgeServiceDeleteDoc Method for KnowledgeServiceDeleteDoc
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param id
- @param linkId
- @return ApiKnowledgeServiceDeleteLinkRequest
+ @return ApiKnowledgeServiceDeleteDocRequest
 */
-func (a *KnowledgeServiceAPIService) KnowledgeServiceDeleteLink(ctx context.Context, id string, linkId string) ApiKnowledgeServiceDeleteLinkRequest {
-	return ApiKnowledgeServiceDeleteLinkRequest{
+func (a *KnowledgeServiceAPIService) KnowledgeServiceDeleteDoc(ctx context.Context, id string) ApiKnowledgeServiceDeleteDocRequest {
+	return ApiKnowledgeServiceDeleteDocRequest{
 		ApiService: a,
 		ctx: ctx,
 		id: id,
-		linkId: linkId,
 	}
 }
 
 // Execute executes the request
 //  @return map[string]interface{}
-func (a *KnowledgeServiceAPIService) KnowledgeServiceDeleteLinkExecute(r ApiKnowledgeServiceDeleteLinkRequest) (map[string]interface{}, *http.Response, error) {
+func (a *KnowledgeServiceAPIService) KnowledgeServiceDeleteDocExecute(r ApiKnowledgeServiceDeleteDocRequest) (map[string]interface{}, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodDelete
 		localVarPostBody     interface{}
@@ -522,14 +519,13 @@ func (a *KnowledgeServiceAPIService) KnowledgeServiceDeleteLinkExecute(r ApiKnow
 		localVarReturnValue  map[string]interface{}
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "KnowledgeServiceAPIService.KnowledgeServiceDeleteLink")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "KnowledgeServiceAPIService.KnowledgeServiceDeleteDoc")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/v1/memories/{id}/links/{linkId}"
+	localVarPath := localBasePath + "/api/v1/docs/{id}"
 	localVarPath = strings.Replace(localVarPath, "{"+"id"+"}", url.PathEscape(parameterValueToString(r.id, "id")), -1)
-	localVarPath = strings.Replace(localVarPath, "{"+"linkId"+"}", url.PathEscape(parameterValueToString(r.linkId, "linkId")), -1)
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
@@ -597,34 +593,37 @@ func (a *KnowledgeServiceAPIService) KnowledgeServiceDeleteLinkExecute(r ApiKnow
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiKnowledgeServiceDeleteMemoryRequest struct {
+type ApiKnowledgeServiceDeleteLinkRequest struct {
 	ctx context.Context
 	ApiService *KnowledgeServiceAPIService
 	id string
+	linkId string
 }
 
-func (r ApiKnowledgeServiceDeleteMemoryRequest) Execute() (map[string]interface{}, *http.Response, error) {
-	return r.ApiService.KnowledgeServiceDeleteMemoryExecute(r)
+func (r ApiKnowledgeServiceDeleteLinkRequest) Execute() (map[string]interface{}, *http.Response, error) {
+	return r.ApiService.KnowledgeServiceDeleteLinkExecute(r)
 }
 
 /*
-KnowledgeServiceDeleteMemory Method for KnowledgeServiceDeleteMemory
+KnowledgeServiceDeleteLink Method for KnowledgeServiceDeleteLink
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param id
- @return ApiKnowledgeServiceDeleteMemoryRequest
+ @param linkId
+ @return ApiKnowledgeServiceDeleteLinkRequest
 */
-func (a *KnowledgeServiceAPIService) KnowledgeServiceDeleteMemory(ctx context.Context, id string) ApiKnowledgeServiceDeleteMemoryRequest {
-	return ApiKnowledgeServiceDeleteMemoryRequest{
+func (a *KnowledgeServiceAPIService) KnowledgeServiceDeleteLink(ctx context.Context, id string, linkId string) ApiKnowledgeServiceDeleteLinkRequest {
+	return ApiKnowledgeServiceDeleteLinkRequest{
 		ApiService: a,
 		ctx: ctx,
 		id: id,
+		linkId: linkId,
 	}
 }
 
 // Execute executes the request
 //  @return map[string]interface{}
-func (a *KnowledgeServiceAPIService) KnowledgeServiceDeleteMemoryExecute(r ApiKnowledgeServiceDeleteMemoryRequest) (map[string]interface{}, *http.Response, error) {
+func (a *KnowledgeServiceAPIService) KnowledgeServiceDeleteLinkExecute(r ApiKnowledgeServiceDeleteLinkRequest) (map[string]interface{}, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodDelete
 		localVarPostBody     interface{}
@@ -632,13 +631,14 @@ func (a *KnowledgeServiceAPIService) KnowledgeServiceDeleteMemoryExecute(r ApiKn
 		localVarReturnValue  map[string]interface{}
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "KnowledgeServiceAPIService.KnowledgeServiceDeleteMemory")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "KnowledgeServiceAPIService.KnowledgeServiceDeleteLink")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/v1/memories/{id}"
+	localVarPath := localBasePath + "/api/v1/docs/{id}/links/{linkId}"
 	localVarPath = strings.Replace(localVarPath, "{"+"id"+"}", url.PathEscape(parameterValueToString(r.id, "id")), -1)
+	localVarPath = strings.Replace(localVarPath, "{"+"linkId"+"}", url.PathEscape(parameterValueToString(r.linkId, "linkId")), -1)
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
@@ -815,37 +815,25 @@ func (a *KnowledgeServiceAPIService) KnowledgeServiceGetArchiveExecute(r ApiKnow
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiKnowledgeServiceGetLinksRequest struct {
+type ApiKnowledgeServiceGetDocRequest struct {
 	ctx context.Context
 	ApiService *KnowledgeServiceAPIService
 	id string
-	direction *string
-	relationType *string
 }
 
-func (r ApiKnowledgeServiceGetLinksRequest) Direction(direction string) ApiKnowledgeServiceGetLinksRequest {
-	r.direction = &direction
-	return r
-}
-
-func (r ApiKnowledgeServiceGetLinksRequest) RelationType(relationType string) ApiKnowledgeServiceGetLinksRequest {
-	r.relationType = &relationType
-	return r
-}
-
-func (r ApiKnowledgeServiceGetLinksRequest) Execute() (*V1GetLinksResponse, *http.Response, error) {
-	return r.ApiService.KnowledgeServiceGetLinksExecute(r)
+func (r ApiKnowledgeServiceGetDocRequest) Execute() (*V1Doc, *http.Response, error) {
+	return r.ApiService.KnowledgeServiceGetDocExecute(r)
 }
 
 /*
-KnowledgeServiceGetLinks Method for KnowledgeServiceGetLinks
+KnowledgeServiceGetDoc Method for KnowledgeServiceGetDoc
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param id
- @return ApiKnowledgeServiceGetLinksRequest
+ @return ApiKnowledgeServiceGetDocRequest
 */
-func (a *KnowledgeServiceAPIService) KnowledgeServiceGetLinks(ctx context.Context, id string) ApiKnowledgeServiceGetLinksRequest {
-	return ApiKnowledgeServiceGetLinksRequest{
+func (a *KnowledgeServiceAPIService) KnowledgeServiceGetDoc(ctx context.Context, id string) ApiKnowledgeServiceGetDocRequest {
+	return ApiKnowledgeServiceGetDocRequest{
 		ApiService: a,
 		ctx: ctx,
 		id: id,
@@ -853,136 +841,21 @@ func (a *KnowledgeServiceAPIService) KnowledgeServiceGetLinks(ctx context.Contex
 }
 
 // Execute executes the request
-//  @return V1GetLinksResponse
-func (a *KnowledgeServiceAPIService) KnowledgeServiceGetLinksExecute(r ApiKnowledgeServiceGetLinksRequest) (*V1GetLinksResponse, *http.Response, error) {
+//  @return V1Doc
+func (a *KnowledgeServiceAPIService) KnowledgeServiceGetDocExecute(r ApiKnowledgeServiceGetDocRequest) (*V1Doc, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
 		formFiles            []formFile
-		localVarReturnValue  *V1GetLinksResponse
+		localVarReturnValue  *V1Doc
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "KnowledgeServiceAPIService.KnowledgeServiceGetLinks")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "KnowledgeServiceAPIService.KnowledgeServiceGetDoc")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/v1/memories/{id}/links"
-	localVarPath = strings.Replace(localVarPath, "{"+"id"+"}", url.PathEscape(parameterValueToString(r.id, "id")), -1)
-
-	localVarHeaderParams := make(map[string]string)
-	localVarQueryParams := url.Values{}
-	localVarFormParams := url.Values{}
-
-	if r.direction != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "direction", r.direction, "", "")
-	}
-	if r.relationType != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "relationType", r.relationType, "", "")
-	}
-	// to determine the Content-Type header
-	localVarHTTPContentTypes := []string{}
-
-	// set Content-Type header
-	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
-	if localVarHTTPContentType != "" {
-		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
-	}
-
-	// to determine the Accept header
-	localVarHTTPHeaderAccepts := []string{"application/json"}
-
-	// set Accept header
-	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
-	if localVarHTTPHeaderAccept != "" {
-		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
-	}
-	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
-	if err != nil {
-		return localVarReturnValue, nil, err
-	}
-
-	localVarHTTPResponse, err := a.client.callAPI(req)
-	if err != nil || localVarHTTPResponse == nil {
-		return localVarReturnValue, localVarHTTPResponse, err
-	}
-
-	localVarBody, err := io.ReadAll(localVarHTTPResponse.Body)
-	localVarHTTPResponse.Body.Close()
-	localVarHTTPResponse.Body = io.NopCloser(bytes.NewBuffer(localVarBody))
-	if err != nil {
-		return localVarReturnValue, localVarHTTPResponse, err
-	}
-
-	if localVarHTTPResponse.StatusCode >= 300 {
-		newErr := &GenericOpenAPIError{
-			body:  localVarBody,
-			error: localVarHTTPResponse.Status,
-		}
-			var v RpcStatus
-			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
-			if err != nil {
-				newErr.error = err.Error()
-				return localVarReturnValue, localVarHTTPResponse, newErr
-			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
-		return localVarReturnValue, localVarHTTPResponse, newErr
-	}
-
-	err = a.client.decode(&localVarReturnValue, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
-	if err != nil {
-		newErr := &GenericOpenAPIError{
-			body:  localVarBody,
-			error: err.Error(),
-		}
-		return localVarReturnValue, localVarHTTPResponse, newErr
-	}
-
-	return localVarReturnValue, localVarHTTPResponse, nil
-}
-
-type ApiKnowledgeServiceGetMemoryRequest struct {
-	ctx context.Context
-	ApiService *KnowledgeServiceAPIService
-	id string
-}
-
-func (r ApiKnowledgeServiceGetMemoryRequest) Execute() (*V1ParsedMemory, *http.Response, error) {
-	return r.ApiService.KnowledgeServiceGetMemoryExecute(r)
-}
-
-/*
-KnowledgeServiceGetMemory Method for KnowledgeServiceGetMemory
-
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @param id
- @return ApiKnowledgeServiceGetMemoryRequest
-*/
-func (a *KnowledgeServiceAPIService) KnowledgeServiceGetMemory(ctx context.Context, id string) ApiKnowledgeServiceGetMemoryRequest {
-	return ApiKnowledgeServiceGetMemoryRequest{
-		ApiService: a,
-		ctx: ctx,
-		id: id,
-	}
-}
-
-// Execute executes the request
-//  @return V1ParsedMemory
-func (a *KnowledgeServiceAPIService) KnowledgeServiceGetMemoryExecute(r ApiKnowledgeServiceGetMemoryRequest) (*V1ParsedMemory, *http.Response, error) {
-	var (
-		localVarHTTPMethod   = http.MethodGet
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  *V1ParsedMemory
-	)
-
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "KnowledgeServiceAPIService.KnowledgeServiceGetMemory")
-	if err != nil {
-		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
-	}
-
-	localVarPath := localBasePath + "/api/v1/memories/{id}"
+	localVarPath := localBasePath + "/api/v1/docs/{id}"
 	localVarPath = strings.Replace(localVarPath, "{"+"id"+"}", url.PathEscape(parameterValueToString(r.id, "id")), -1)
 
 	localVarHeaderParams := make(map[string]string)
@@ -1051,25 +924,25 @@ func (a *KnowledgeServiceAPIService) KnowledgeServiceGetMemoryExecute(r ApiKnowl
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiKnowledgeServiceGetMemoryAncestorsRequest struct {
+type ApiKnowledgeServiceGetDocAncestorsRequest struct {
 	ctx context.Context
 	ApiService *KnowledgeServiceAPIService
 	id string
 }
 
-func (r ApiKnowledgeServiceGetMemoryAncestorsRequest) Execute() (*V1GetMemoryAncestorsResponse, *http.Response, error) {
-	return r.ApiService.KnowledgeServiceGetMemoryAncestorsExecute(r)
+func (r ApiKnowledgeServiceGetDocAncestorsRequest) Execute() (*V1GetDocAncestorsResponse, *http.Response, error) {
+	return r.ApiService.KnowledgeServiceGetDocAncestorsExecute(r)
 }
 
 /*
-KnowledgeServiceGetMemoryAncestors Method for KnowledgeServiceGetMemoryAncestors
+KnowledgeServiceGetDocAncestors Method for KnowledgeServiceGetDocAncestors
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param id
- @return ApiKnowledgeServiceGetMemoryAncestorsRequest
+ @return ApiKnowledgeServiceGetDocAncestorsRequest
 */
-func (a *KnowledgeServiceAPIService) KnowledgeServiceGetMemoryAncestors(ctx context.Context, id string) ApiKnowledgeServiceGetMemoryAncestorsRequest {
-	return ApiKnowledgeServiceGetMemoryAncestorsRequest{
+func (a *KnowledgeServiceAPIService) KnowledgeServiceGetDocAncestors(ctx context.Context, id string) ApiKnowledgeServiceGetDocAncestorsRequest {
+	return ApiKnowledgeServiceGetDocAncestorsRequest{
 		ApiService: a,
 		ctx: ctx,
 		id: id,
@@ -1077,21 +950,21 @@ func (a *KnowledgeServiceAPIService) KnowledgeServiceGetMemoryAncestors(ctx cont
 }
 
 // Execute executes the request
-//  @return V1GetMemoryAncestorsResponse
-func (a *KnowledgeServiceAPIService) KnowledgeServiceGetMemoryAncestorsExecute(r ApiKnowledgeServiceGetMemoryAncestorsRequest) (*V1GetMemoryAncestorsResponse, *http.Response, error) {
+//  @return V1GetDocAncestorsResponse
+func (a *KnowledgeServiceAPIService) KnowledgeServiceGetDocAncestorsExecute(r ApiKnowledgeServiceGetDocAncestorsRequest) (*V1GetDocAncestorsResponse, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
 		formFiles            []formFile
-		localVarReturnValue  *V1GetMemoryAncestorsResponse
+		localVarReturnValue  *V1GetDocAncestorsResponse
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "KnowledgeServiceAPIService.KnowledgeServiceGetMemoryAncestors")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "KnowledgeServiceAPIService.KnowledgeServiceGetDocAncestors")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/v1/memories/{id}/ancestors"
+	localVarPath := localBasePath + "/api/v1/docs/{id}/ancestors"
 	localVarPath = strings.Replace(localVarPath, "{"+"id"+"}", url.PathEscape(parameterValueToString(r.id, "id")), -1)
 
 	localVarHeaderParams := make(map[string]string)
@@ -1160,165 +1033,56 @@ func (a *KnowledgeServiceAPIService) KnowledgeServiceGetMemoryAncestorsExecute(r
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiKnowledgeServiceGetMemoryDirectivesRequest struct {
-	ctx context.Context
-	ApiService *KnowledgeServiceAPIService
-	id string
-}
-
-func (r ApiKnowledgeServiceGetMemoryDirectivesRequest) Execute() (*V1GetMemoryDirectivesResponse, *http.Response, error) {
-	return r.ApiService.KnowledgeServiceGetMemoryDirectivesExecute(r)
-}
-
-/*
-KnowledgeServiceGetMemoryDirectives Method for KnowledgeServiceGetMemoryDirectives
-
- @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @param id
- @return ApiKnowledgeServiceGetMemoryDirectivesRequest
-*/
-func (a *KnowledgeServiceAPIService) KnowledgeServiceGetMemoryDirectives(ctx context.Context, id string) ApiKnowledgeServiceGetMemoryDirectivesRequest {
-	return ApiKnowledgeServiceGetMemoryDirectivesRequest{
-		ApiService: a,
-		ctx: ctx,
-		id: id,
-	}
-}
-
-// Execute executes the request
-//  @return V1GetMemoryDirectivesResponse
-func (a *KnowledgeServiceAPIService) KnowledgeServiceGetMemoryDirectivesExecute(r ApiKnowledgeServiceGetMemoryDirectivesRequest) (*V1GetMemoryDirectivesResponse, *http.Response, error) {
-	var (
-		localVarHTTPMethod   = http.MethodGet
-		localVarPostBody     interface{}
-		formFiles            []formFile
-		localVarReturnValue  *V1GetMemoryDirectivesResponse
-	)
-
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "KnowledgeServiceAPIService.KnowledgeServiceGetMemoryDirectives")
-	if err != nil {
-		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
-	}
-
-	localVarPath := localBasePath + "/api/v1/memories/{id}/directives"
-	localVarPath = strings.Replace(localVarPath, "{"+"id"+"}", url.PathEscape(parameterValueToString(r.id, "id")), -1)
-
-	localVarHeaderParams := make(map[string]string)
-	localVarQueryParams := url.Values{}
-	localVarFormParams := url.Values{}
-
-	// to determine the Content-Type header
-	localVarHTTPContentTypes := []string{}
-
-	// set Content-Type header
-	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
-	if localVarHTTPContentType != "" {
-		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
-	}
-
-	// to determine the Accept header
-	localVarHTTPHeaderAccepts := []string{"application/json"}
-
-	// set Accept header
-	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
-	if localVarHTTPHeaderAccept != "" {
-		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
-	}
-	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
-	if err != nil {
-		return localVarReturnValue, nil, err
-	}
-
-	localVarHTTPResponse, err := a.client.callAPI(req)
-	if err != nil || localVarHTTPResponse == nil {
-		return localVarReturnValue, localVarHTTPResponse, err
-	}
-
-	localVarBody, err := io.ReadAll(localVarHTTPResponse.Body)
-	localVarHTTPResponse.Body.Close()
-	localVarHTTPResponse.Body = io.NopCloser(bytes.NewBuffer(localVarBody))
-	if err != nil {
-		return localVarReturnValue, localVarHTTPResponse, err
-	}
-
-	if localVarHTTPResponse.StatusCode >= 300 {
-		newErr := &GenericOpenAPIError{
-			body:  localVarBody,
-			error: localVarHTTPResponse.Status,
-		}
-			var v RpcStatus
-			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
-			if err != nil {
-				newErr.error = err.Error()
-				return localVarReturnValue, localVarHTTPResponse, newErr
-			}
-					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
-					newErr.model = v
-		return localVarReturnValue, localVarHTTPResponse, newErr
-	}
-
-	err = a.client.decode(&localVarReturnValue, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
-	if err != nil {
-		newErr := &GenericOpenAPIError{
-			body:  localVarBody,
-			error: err.Error(),
-		}
-		return localVarReturnValue, localVarHTTPResponse, newErr
-	}
-
-	return localVarReturnValue, localVarHTTPResponse, nil
-}
-
-type ApiKnowledgeServiceGetMemoryTreeRequest struct {
+type ApiKnowledgeServiceGetDocTreeRequest struct {
 	ctx context.Context
 	ApiService *KnowledgeServiceAPIService
 	archiveId *string
 	parentId *string
 }
 
-func (r ApiKnowledgeServiceGetMemoryTreeRequest) ArchiveId(archiveId string) ApiKnowledgeServiceGetMemoryTreeRequest {
+func (r ApiKnowledgeServiceGetDocTreeRequest) ArchiveId(archiveId string) ApiKnowledgeServiceGetDocTreeRequest {
 	r.archiveId = &archiveId
 	return r
 }
 
-func (r ApiKnowledgeServiceGetMemoryTreeRequest) ParentId(parentId string) ApiKnowledgeServiceGetMemoryTreeRequest {
+func (r ApiKnowledgeServiceGetDocTreeRequest) ParentId(parentId string) ApiKnowledgeServiceGetDocTreeRequest {
 	r.parentId = &parentId
 	return r
 }
 
-func (r ApiKnowledgeServiceGetMemoryTreeRequest) Execute() (*V1GetMemoryTreeResponse, *http.Response, error) {
-	return r.ApiService.KnowledgeServiceGetMemoryTreeExecute(r)
+func (r ApiKnowledgeServiceGetDocTreeRequest) Execute() (*V1GetDocTreeResponse, *http.Response, error) {
+	return r.ApiService.KnowledgeServiceGetDocTreeExecute(r)
 }
 
 /*
-KnowledgeServiceGetMemoryTree Method for KnowledgeServiceGetMemoryTree
+KnowledgeServiceGetDocTree Method for KnowledgeServiceGetDocTree
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiKnowledgeServiceGetMemoryTreeRequest
+ @return ApiKnowledgeServiceGetDocTreeRequest
 */
-func (a *KnowledgeServiceAPIService) KnowledgeServiceGetMemoryTree(ctx context.Context) ApiKnowledgeServiceGetMemoryTreeRequest {
-	return ApiKnowledgeServiceGetMemoryTreeRequest{
+func (a *KnowledgeServiceAPIService) KnowledgeServiceGetDocTree(ctx context.Context) ApiKnowledgeServiceGetDocTreeRequest {
+	return ApiKnowledgeServiceGetDocTreeRequest{
 		ApiService: a,
 		ctx: ctx,
 	}
 }
 
 // Execute executes the request
-//  @return V1GetMemoryTreeResponse
-func (a *KnowledgeServiceAPIService) KnowledgeServiceGetMemoryTreeExecute(r ApiKnowledgeServiceGetMemoryTreeRequest) (*V1GetMemoryTreeResponse, *http.Response, error) {
+//  @return V1GetDocTreeResponse
+func (a *KnowledgeServiceAPIService) KnowledgeServiceGetDocTreeExecute(r ApiKnowledgeServiceGetDocTreeRequest) (*V1GetDocTreeResponse, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
 		formFiles            []formFile
-		localVarReturnValue  *V1GetMemoryTreeResponse
+		localVarReturnValue  *V1GetDocTreeResponse
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "KnowledgeServiceAPIService.KnowledgeServiceGetMemoryTree")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "KnowledgeServiceAPIService.KnowledgeServiceGetDocTree")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/v1/memories:tree"
+	localVarPath := localBasePath + "/api/v1/docs:tree"
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
@@ -1392,49 +1156,71 @@ func (a *KnowledgeServiceAPIService) KnowledgeServiceGetMemoryTreeExecute(r ApiK
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiKnowledgeServiceGetStatsRequest struct {
+type ApiKnowledgeServiceGetLinksRequest struct {
 	ctx context.Context
 	ApiService *KnowledgeServiceAPIService
+	id string
+	direction *string
+	relationType *string
 }
 
-func (r ApiKnowledgeServiceGetStatsRequest) Execute() (*V1GetStatsResponse, *http.Response, error) {
-	return r.ApiService.KnowledgeServiceGetStatsExecute(r)
+func (r ApiKnowledgeServiceGetLinksRequest) Direction(direction string) ApiKnowledgeServiceGetLinksRequest {
+	r.direction = &direction
+	return r
+}
+
+func (r ApiKnowledgeServiceGetLinksRequest) RelationType(relationType string) ApiKnowledgeServiceGetLinksRequest {
+	r.relationType = &relationType
+	return r
+}
+
+func (r ApiKnowledgeServiceGetLinksRequest) Execute() (*V1GetLinksResponse, *http.Response, error) {
+	return r.ApiService.KnowledgeServiceGetLinksExecute(r)
 }
 
 /*
-KnowledgeServiceGetStats Method for KnowledgeServiceGetStats
+KnowledgeServiceGetLinks Method for KnowledgeServiceGetLinks
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiKnowledgeServiceGetStatsRequest
+ @param id
+ @return ApiKnowledgeServiceGetLinksRequest
 */
-func (a *KnowledgeServiceAPIService) KnowledgeServiceGetStats(ctx context.Context) ApiKnowledgeServiceGetStatsRequest {
-	return ApiKnowledgeServiceGetStatsRequest{
+func (a *KnowledgeServiceAPIService) KnowledgeServiceGetLinks(ctx context.Context, id string) ApiKnowledgeServiceGetLinksRequest {
+	return ApiKnowledgeServiceGetLinksRequest{
 		ApiService: a,
 		ctx: ctx,
+		id: id,
 	}
 }
 
 // Execute executes the request
-//  @return V1GetStatsResponse
-func (a *KnowledgeServiceAPIService) KnowledgeServiceGetStatsExecute(r ApiKnowledgeServiceGetStatsRequest) (*V1GetStatsResponse, *http.Response, error) {
+//  @return V1GetLinksResponse
+func (a *KnowledgeServiceAPIService) KnowledgeServiceGetLinksExecute(r ApiKnowledgeServiceGetLinksRequest) (*V1GetLinksResponse, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
 		formFiles            []formFile
-		localVarReturnValue  *V1GetStatsResponse
+		localVarReturnValue  *V1GetLinksResponse
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "KnowledgeServiceAPIService.KnowledgeServiceGetStats")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "KnowledgeServiceAPIService.KnowledgeServiceGetLinks")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/v1/stats"
+	localVarPath := localBasePath + "/api/v1/docs/{id}/links"
+	localVarPath = strings.Replace(localVarPath, "{"+"id"+"}", url.PathEscape(parameterValueToString(r.id, "id")), -1)
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
 	localVarFormParams := url.Values{}
 
+	if r.direction != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "direction", r.direction, "", "")
+	}
+	if r.relationType != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "relationType", r.relationType, "", "")
+	}
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}
 
@@ -1602,98 +1388,86 @@ func (a *KnowledgeServiceAPIService) KnowledgeServiceListArchivesExecute(r ApiKn
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiKnowledgeServiceListMemoriesRequest struct {
+type ApiKnowledgeServiceListDocsRequest struct {
 	ctx context.Context
 	ApiService *KnowledgeServiceAPIService
 	archiveId *string
 	parentId *string
-	kind *string
-	type_ *string
-	tag *string
+	status *string
 	visibility *string
 	author *string
 	limit *int32
 	offset *int32
 }
 
-func (r ApiKnowledgeServiceListMemoriesRequest) ArchiveId(archiveId string) ApiKnowledgeServiceListMemoriesRequest {
+func (r ApiKnowledgeServiceListDocsRequest) ArchiveId(archiveId string) ApiKnowledgeServiceListDocsRequest {
 	r.archiveId = &archiveId
 	return r
 }
 
-func (r ApiKnowledgeServiceListMemoriesRequest) ParentId(parentId string) ApiKnowledgeServiceListMemoriesRequest {
+func (r ApiKnowledgeServiceListDocsRequest) ParentId(parentId string) ApiKnowledgeServiceListDocsRequest {
 	r.parentId = &parentId
 	return r
 }
 
-func (r ApiKnowledgeServiceListMemoriesRequest) Kind(kind string) ApiKnowledgeServiceListMemoriesRequest {
-	r.kind = &kind
+func (r ApiKnowledgeServiceListDocsRequest) Status(status string) ApiKnowledgeServiceListDocsRequest {
+	r.status = &status
 	return r
 }
 
-func (r ApiKnowledgeServiceListMemoriesRequest) Type_(type_ string) ApiKnowledgeServiceListMemoriesRequest {
-	r.type_ = &type_
-	return r
-}
-
-func (r ApiKnowledgeServiceListMemoriesRequest) Tag(tag string) ApiKnowledgeServiceListMemoriesRequest {
-	r.tag = &tag
-	return r
-}
-
-func (r ApiKnowledgeServiceListMemoriesRequest) Visibility(visibility string) ApiKnowledgeServiceListMemoriesRequest {
+func (r ApiKnowledgeServiceListDocsRequest) Visibility(visibility string) ApiKnowledgeServiceListDocsRequest {
 	r.visibility = &visibility
 	return r
 }
 
-func (r ApiKnowledgeServiceListMemoriesRequest) Author(author string) ApiKnowledgeServiceListMemoriesRequest {
+func (r ApiKnowledgeServiceListDocsRequest) Author(author string) ApiKnowledgeServiceListDocsRequest {
 	r.author = &author
 	return r
 }
 
-func (r ApiKnowledgeServiceListMemoriesRequest) Limit(limit int32) ApiKnowledgeServiceListMemoriesRequest {
+func (r ApiKnowledgeServiceListDocsRequest) Limit(limit int32) ApiKnowledgeServiceListDocsRequest {
 	r.limit = &limit
 	return r
 }
 
-func (r ApiKnowledgeServiceListMemoriesRequest) Offset(offset int32) ApiKnowledgeServiceListMemoriesRequest {
+func (r ApiKnowledgeServiceListDocsRequest) Offset(offset int32) ApiKnowledgeServiceListDocsRequest {
 	r.offset = &offset
 	return r
 }
 
-func (r ApiKnowledgeServiceListMemoriesRequest) Execute() (*V1ListMemoriesResponse, *http.Response, error) {
-	return r.ApiService.KnowledgeServiceListMemoriesExecute(r)
+func (r ApiKnowledgeServiceListDocsRequest) Execute() (*V1ListDocsResponse, *http.Response, error) {
+	return r.ApiService.KnowledgeServiceListDocsExecute(r)
 }
 
 /*
-KnowledgeServiceListMemories Method for KnowledgeServiceListMemories
+KnowledgeServiceListDocs Method for KnowledgeServiceListDocs
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiKnowledgeServiceListMemoriesRequest
+ @return ApiKnowledgeServiceListDocsRequest
 */
-func (a *KnowledgeServiceAPIService) KnowledgeServiceListMemories(ctx context.Context) ApiKnowledgeServiceListMemoriesRequest {
-	return ApiKnowledgeServiceListMemoriesRequest{
+func (a *KnowledgeServiceAPIService) KnowledgeServiceListDocs(ctx context.Context) ApiKnowledgeServiceListDocsRequest {
+	return ApiKnowledgeServiceListDocsRequest{
 		ApiService: a,
 		ctx: ctx,
 	}
 }
 
 // Execute executes the request
-//  @return V1ListMemoriesResponse
-func (a *KnowledgeServiceAPIService) KnowledgeServiceListMemoriesExecute(r ApiKnowledgeServiceListMemoriesRequest) (*V1ListMemoriesResponse, *http.Response, error) {
+//  @return V1ListDocsResponse
+func (a *KnowledgeServiceAPIService) KnowledgeServiceListDocsExecute(r ApiKnowledgeServiceListDocsRequest) (*V1ListDocsResponse, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
 		formFiles            []formFile
-		localVarReturnValue  *V1ListMemoriesResponse
+		localVarReturnValue  *V1ListDocsResponse
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "KnowledgeServiceAPIService.KnowledgeServiceListMemories")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "KnowledgeServiceAPIService.KnowledgeServiceListDocs")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/v1/memories"
+	localVarPath := localBasePath + "/api/v1/docs"
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
@@ -1705,14 +1479,8 @@ func (a *KnowledgeServiceAPIService) KnowledgeServiceListMemoriesExecute(r ApiKn
 	if r.parentId != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "parentId", r.parentId, "", "")
 	}
-	if r.kind != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "kind", r.kind, "", "")
-	}
-	if r.type_ != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "type", r.type_, "", "")
-	}
-	if r.tag != nil {
-		parameterAddToHeaderOrQuery(localVarQueryParams, "tag", r.tag, "", "")
+	if r.status != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "status", r.status, "", "")
 	}
 	if r.visibility != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "visibility", r.visibility, "", "")
@@ -1788,7 +1556,7 @@ func (a *KnowledgeServiceAPIService) KnowledgeServiceListMemoriesExecute(r ApiKn
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiKnowledgeServiceSearchMemoriesRequest struct {
+type ApiKnowledgeServiceSearchDocsRequest struct {
 	ctx context.Context
 	ApiService *KnowledgeServiceAPIService
 	q *string
@@ -1797,59 +1565,59 @@ type ApiKnowledgeServiceSearchMemoriesRequest struct {
 	author *string
 }
 
-func (r ApiKnowledgeServiceSearchMemoriesRequest) Q(q string) ApiKnowledgeServiceSearchMemoriesRequest {
+func (r ApiKnowledgeServiceSearchDocsRequest) Q(q string) ApiKnowledgeServiceSearchDocsRequest {
 	r.q = &q
 	return r
 }
 
-func (r ApiKnowledgeServiceSearchMemoriesRequest) ArchiveId(archiveId string) ApiKnowledgeServiceSearchMemoriesRequest {
+func (r ApiKnowledgeServiceSearchDocsRequest) ArchiveId(archiveId string) ApiKnowledgeServiceSearchDocsRequest {
 	r.archiveId = &archiveId
 	return r
 }
 
-func (r ApiKnowledgeServiceSearchMemoriesRequest) Visibility(visibility string) ApiKnowledgeServiceSearchMemoriesRequest {
+func (r ApiKnowledgeServiceSearchDocsRequest) Visibility(visibility string) ApiKnowledgeServiceSearchDocsRequest {
 	r.visibility = &visibility
 	return r
 }
 
-func (r ApiKnowledgeServiceSearchMemoriesRequest) Author(author string) ApiKnowledgeServiceSearchMemoriesRequest {
+func (r ApiKnowledgeServiceSearchDocsRequest) Author(author string) ApiKnowledgeServiceSearchDocsRequest {
 	r.author = &author
 	return r
 }
 
-func (r ApiKnowledgeServiceSearchMemoriesRequest) Execute() (*V1SearchMemoriesResponse, *http.Response, error) {
-	return r.ApiService.KnowledgeServiceSearchMemoriesExecute(r)
+func (r ApiKnowledgeServiceSearchDocsRequest) Execute() (*V1SearchDocsResponse, *http.Response, error) {
+	return r.ApiService.KnowledgeServiceSearchDocsExecute(r)
 }
 
 /*
-KnowledgeServiceSearchMemories Method for KnowledgeServiceSearchMemories
+KnowledgeServiceSearchDocs Method for KnowledgeServiceSearchDocs
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
- @return ApiKnowledgeServiceSearchMemoriesRequest
+ @return ApiKnowledgeServiceSearchDocsRequest
 */
-func (a *KnowledgeServiceAPIService) KnowledgeServiceSearchMemories(ctx context.Context) ApiKnowledgeServiceSearchMemoriesRequest {
-	return ApiKnowledgeServiceSearchMemoriesRequest{
+func (a *KnowledgeServiceAPIService) KnowledgeServiceSearchDocs(ctx context.Context) ApiKnowledgeServiceSearchDocsRequest {
+	return ApiKnowledgeServiceSearchDocsRequest{
 		ApiService: a,
 		ctx: ctx,
 	}
 }
 
 // Execute executes the request
-//  @return V1SearchMemoriesResponse
-func (a *KnowledgeServiceAPIService) KnowledgeServiceSearchMemoriesExecute(r ApiKnowledgeServiceSearchMemoriesRequest) (*V1SearchMemoriesResponse, *http.Response, error) {
+//  @return V1SearchDocsResponse
+func (a *KnowledgeServiceAPIService) KnowledgeServiceSearchDocsExecute(r ApiKnowledgeServiceSearchDocsRequest) (*V1SearchDocsResponse, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodGet
 		localVarPostBody     interface{}
 		formFiles            []formFile
-		localVarReturnValue  *V1SearchMemoriesResponse
+		localVarReturnValue  *V1SearchDocsResponse
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "KnowledgeServiceAPIService.KnowledgeServiceSearchMemories")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "KnowledgeServiceAPIService.KnowledgeServiceSearchDocs")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/v1/memories:search"
+	localVarPath := localBasePath + "/api/v1/docs:search"
 
 	localVarHeaderParams := make(map[string]string)
 	localVarQueryParams := url.Values{}
@@ -2049,31 +1817,31 @@ func (a *KnowledgeServiceAPIService) KnowledgeServiceUpdateArchiveExecute(r ApiK
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
-type ApiKnowledgeServiceUpdateMemoryRequest struct {
+type ApiKnowledgeServiceUpdateDocRequest struct {
 	ctx context.Context
 	ApiService *KnowledgeServiceAPIService
 	id string
-	body *KnowledgeServiceUpdateMemoryBody
+	body *KnowledgeServiceUpdateDocBody
 }
 
-func (r ApiKnowledgeServiceUpdateMemoryRequest) Body(body KnowledgeServiceUpdateMemoryBody) ApiKnowledgeServiceUpdateMemoryRequest {
+func (r ApiKnowledgeServiceUpdateDocRequest) Body(body KnowledgeServiceUpdateDocBody) ApiKnowledgeServiceUpdateDocRequest {
 	r.body = &body
 	return r
 }
 
-func (r ApiKnowledgeServiceUpdateMemoryRequest) Execute() (*V1Memory, *http.Response, error) {
-	return r.ApiService.KnowledgeServiceUpdateMemoryExecute(r)
+func (r ApiKnowledgeServiceUpdateDocRequest) Execute() (*V1Doc, *http.Response, error) {
+	return r.ApiService.KnowledgeServiceUpdateDocExecute(r)
 }
 
 /*
-KnowledgeServiceUpdateMemory Method for KnowledgeServiceUpdateMemory
+KnowledgeServiceUpdateDoc Method for KnowledgeServiceUpdateDoc
 
  @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
  @param id
- @return ApiKnowledgeServiceUpdateMemoryRequest
+ @return ApiKnowledgeServiceUpdateDocRequest
 */
-func (a *KnowledgeServiceAPIService) KnowledgeServiceUpdateMemory(ctx context.Context, id string) ApiKnowledgeServiceUpdateMemoryRequest {
-	return ApiKnowledgeServiceUpdateMemoryRequest{
+func (a *KnowledgeServiceAPIService) KnowledgeServiceUpdateDoc(ctx context.Context, id string) ApiKnowledgeServiceUpdateDocRequest {
+	return ApiKnowledgeServiceUpdateDocRequest{
 		ApiService: a,
 		ctx: ctx,
 		id: id,
@@ -2081,21 +1849,21 @@ func (a *KnowledgeServiceAPIService) KnowledgeServiceUpdateMemory(ctx context.Co
 }
 
 // Execute executes the request
-//  @return V1Memory
-func (a *KnowledgeServiceAPIService) KnowledgeServiceUpdateMemoryExecute(r ApiKnowledgeServiceUpdateMemoryRequest) (*V1Memory, *http.Response, error) {
+//  @return V1Doc
+func (a *KnowledgeServiceAPIService) KnowledgeServiceUpdateDocExecute(r ApiKnowledgeServiceUpdateDocRequest) (*V1Doc, *http.Response, error) {
 	var (
 		localVarHTTPMethod   = http.MethodPut
 		localVarPostBody     interface{}
 		formFiles            []formFile
-		localVarReturnValue  *V1Memory
+		localVarReturnValue  *V1Doc
 	)
 
-	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "KnowledgeServiceAPIService.KnowledgeServiceUpdateMemory")
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "KnowledgeServiceAPIService.KnowledgeServiceUpdateDoc")
 	if err != nil {
 		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
 	}
 
-	localVarPath := localBasePath + "/api/v1/memories/{id}"
+	localVarPath := localBasePath + "/api/v1/docs/{id}"
 	localVarPath = strings.Replace(localVarPath, "{"+"id"+"}", url.PathEscape(parameterValueToString(r.id, "id")), -1)
 
 	localVarHeaderParams := make(map[string]string)

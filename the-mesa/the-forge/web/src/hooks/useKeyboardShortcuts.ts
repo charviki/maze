@@ -40,15 +40,9 @@ export function useKeyboardShortcuts(callbacks: ShortcutCallbacks = {}) {
         return;
       }
 
-      if (mod && e.shiftKey && e.key === 'N') {
-        e.preventDefault();
-        void navigate('/tasks/new');
-        return;
-      }
-
       if (mod && !e.shiftKey && e.key === 'n') {
         e.preventDefault();
-        void navigate('/knowledge/new');
+        void navigate('/');
         return;
       }
 

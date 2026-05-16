@@ -5,7 +5,6 @@ export * from './AgentServiceApi';
 export * from './AuditServiceApi';
 export * from './AuthServiceApi';
 export * from './ConfigServiceApi';
-export * from './DirectiveServiceApi';
 export * from './HostServiceApi';
 export * from './KnowledgeServiceApi';
 export * from './NodeServiceApi';

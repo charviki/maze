@@ -1,24 +1,22 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide } from 'd3-force';
-import type { Link } from '@/api';
+import type { DocLink } from '@/api';
 
 interface GraphNode {
   id: string;
   title: string;
   x: number;
   y: number;
-  vx: number;
-  vy: number;
 }
 
-interface GraphLink {
-  source: string | GraphNode;
-  target: string | GraphNode;
+interface GraphLinkRender {
+  source: GraphNode;
+  target: GraphNode;
   relationType: string;
 }
 
 interface KnowledgeGraphProps {
-  links: Link[];
+  links: DocLink[];
   currentId?: string;
   width?: number;
   height?: number;
@@ -39,51 +37,58 @@ export default function KnowledgeGraph({
   height = 400,
   onNodeClick,
 }: KnowledgeGraphProps) {
-  const svgRef = useRef<SVGSVGElement>(null);
+  const [nodes, setNodes] = useState<GraphNode[]>([]);
+  const [graphLinks, setGraphLinks] = useState<GraphLinkRender[]>([]);
   const simulationRef = useRef<ReturnType<typeof forceSimulation<GraphNode>> | null>(null);
 
   useEffect(() => {
-    if (!svgRef.current || graphLinksProp.length === 0) return;
+    if (graphLinksProp.length === 0) return;
+
+    const validLinks = graphLinksProp.filter((l) => l.sourceId && l.targetId);
+    if (validLinks.length === 0) return;
 
     const nodeMap = new Map<string, GraphNode>();
-    graphLinksProp.forEach((link) => {
-      if (!nodeMap.has(link.sourceId)) {
-        nodeMap.set(link.sourceId, {
-          id: link.sourceId,
-          title: link.sourceTitle || link.sourceId,
+    validLinks.forEach((link) => {
+      const srcId = link.sourceId!;
+      const tgtId = link.targetId!;
+      if (!nodeMap.has(srcId)) {
+        nodeMap.set(srcId, {
+          id: srcId,
+          title: link.sourceTitle || srcId,
           x: width / 2 + (Math.random() - 0.5) * 100,
           y: height / 2 + (Math.random() - 0.5) * 100,
-          vx: 0,
-          vy: 0,
         });
       }
-      if (!nodeMap.has(link.targetId)) {
-        nodeMap.set(link.targetId, {
-          id: link.targetId,
-          title: link.targetTitle || link.targetId,
+      if (!nodeMap.has(tgtId)) {
+        nodeMap.set(tgtId, {
+          id: tgtId,
+          title: link.targetTitle || tgtId,
           x: width / 2 + (Math.random() - 0.5) * 100,
           y: height / 2 + (Math.random() - 0.5) * 100,
-          vx: 0,
-          vy: 0,
         });
       }
     });
 
-    const nodes = Array.from(nodeMap.values());
-    const graphLinks: GraphLink[] = graphLinksProp.map((link) => ({
-      source: link.sourceId,
-      target: link.targetId,
-      relationType: link.relationType,
+    const simNodes = Array.from(nodeMap.values());
+    interface SimLink {
+      source: string | GraphNode;
+      target: string | GraphNode;
+      relationType: string;
+    }
+    const simLinks: SimLink[] = validLinks.map((link) => ({
+      source: link.sourceId!,
+      target: link.targetId!,
+      relationType: link.relationType || 'relates_to',
     }));
 
     if (simulationRef.current) {
       simulationRef.current.stop();
     }
 
-    const simulation = forceSimulation<GraphNode>(nodes)
+    const simulation = forceSimulation<GraphNode>(simNodes)
       .force(
         'link',
-        forceLink<GraphNode, GraphLink>(graphLinks)
+        forceLink<GraphNode, SimLink>(simLinks)
           .id((d) => d.id)
           .distance(80),
       )
@@ -93,74 +98,21 @@ export default function KnowledgeGraph({
 
     simulationRef.current = simulation;
 
-    const svg = svgRef.current;
-    const g = (svg.querySelector('g.graph-container') as SVGGElement) || svg;
-
-    while (g.firstChild) g.removeChild(g.firstChild);
-
-    const linkElements = graphLinks.map((link) => {
-      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      line.setAttribute('stroke', linkColorMap[link.relationType] || '#60a5fa');
-      line.setAttribute('stroke-opacity', '0.4');
-      line.setAttribute('stroke-width', '1');
-      g.appendChild(line);
-      return line;
-    });
-
-    const nodeGroups = nodes.map((node) => {
-      const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      group.style.cursor = 'pointer';
-
-      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      const isCurrent = node.id === currentId;
-      circle.setAttribute('r', isCurrent ? '6' : '4');
-      circle.setAttribute(
-        'fill',
-        isCurrent ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))',
-      );
-      circle.setAttribute('stroke', isCurrent ? 'hsl(var(--primary))' : 'none');
-      circle.setAttribute('stroke-width', isCurrent ? '2' : '0');
-
-      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      text.textContent = node.title.length > 12 ? node.title.substring(0, 12) + '...' : node.title;
-      text.setAttribute('fill', 'hsl(var(--muted-foreground))');
-      text.setAttribute('font-size', '8');
-      text.setAttribute('font-family', 'monospace');
-      text.setAttribute('text-anchor', 'middle');
-      text.setAttribute('dy', '-10');
-
-      group.appendChild(circle);
-      group.appendChild(text);
-
-      if (onNodeClick) {
-        group.addEventListener('click', () => onNodeClick(node.id));
-      }
-
-      g.appendChild(group);
-      return { group, node };
-    });
-
     simulation.on('tick', () => {
-      linkElements.forEach((line, i) => {
-        const link = graphLinks[i];
-        const source = link.source as GraphNode;
-        const target = link.target as GraphNode;
-        line.setAttribute('x1', String(source.x));
-        line.setAttribute('y1', String(source.y));
-        line.setAttribute('x2', String(target.x));
-        line.setAttribute('y2', String(target.y));
-      });
-
-      nodeGroups.forEach(({ group, node }) => {
-        group.setAttribute('transform', `translate(${node.x},${node.y})`);
-      });
+      const renderedLinks: GraphLinkRender[] = simLinks.map((l) => ({
+        source: l.source as GraphNode,
+        target: l.target as GraphNode,
+        relationType: l.relationType,
+      }));
+      setNodes([...simNodes]);
+      setGraphLinks(renderedLinks);
     });
 
     return () => {
       simulation.stop();
       simulation.on('tick', null);
     };
-  }, [graphLinksProp, currentId, width, height, onNodeClick]);
+  }, [graphLinksProp, currentId, width, height]);
 
   if (graphLinksProp.length === 0) {
     return (
@@ -171,13 +123,47 @@ export default function KnowledgeGraph({
   }
 
   return (
-    <svg
-      ref={svgRef}
-      width={width}
-      height={height}
-      className="bg-background border border-border rounded"
-    >
-      <g className="graph-container" />
+    <svg width={width} height={height} className="bg-background border border-border rounded">
+      {graphLinks.map((link, i) => (
+        <line
+          key={i}
+          x1={link.source.x}
+          y1={link.source.y}
+          x2={link.target.x}
+          y2={link.target.y}
+          stroke={linkColorMap[link.relationType] || '#60a5fa'}
+          strokeOpacity={0.4}
+          strokeWidth={1}
+        />
+      ))}
+      {nodes.map((node) => {
+        const isCurrent = node.id === currentId;
+        const displayTitle = node.title.length > 12 ? node.title.slice(0, 12) + '...' : node.title;
+        return (
+          <g
+            key={node.id}
+            transform={`translate(${node.x},${node.y})`}
+            style={{ cursor: 'pointer' }}
+            onClick={() => onNodeClick?.(node.id)}
+          >
+            <circle
+              r={isCurrent ? 6 : 4}
+              fill={isCurrent ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))'}
+              stroke={isCurrent ? 'hsl(var(--primary))' : 'none'}
+              strokeWidth={isCurrent ? 2 : 0}
+            />
+            <text
+              fill="hsl(var(--muted-foreground))"
+              fontSize={8}
+              fontFamily="monospace"
+              textAnchor="middle"
+              dy={-10}
+            >
+              {displayTitle}
+            </text>
+          </g>
+        );
+      })}
     </svg>
   );
 }

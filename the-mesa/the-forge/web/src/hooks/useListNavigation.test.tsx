@@ -11,7 +11,7 @@ describe('useListNavigation', () => {
   it('returns expected values', () => {
     const items = [{ id: '1' }, { id: '2' }, { id: '3' }];
 
-    const { result } = renderHook(() => useListNavigation({ items, basePath: '/knowledge' }), {
+    const { result } = renderHook(() => useListNavigation({ items, basePath: '/docs' }), {
       wrapper,
     });
 
@@ -21,7 +21,7 @@ describe('useListNavigation', () => {
   });
 
   it('returns -1 focusedIndex for empty items', () => {
-    const { result } = renderHook(() => useListNavigation({ items: [], basePath: '/knowledge' }), {
+    const { result } = renderHook(() => useListNavigation({ items: [], basePath: '/docs' }), {
       wrapper,
     });
 
@@ -31,7 +31,7 @@ describe('useListNavigation', () => {
   it('updates focusedIndex on ArrowDown', () => {
     const items = [{ id: '1' }, { id: '2' }];
 
-    const { result } = renderHook(() => useListNavigation({ items, basePath: '/knowledge' }), {
+    const { result } = renderHook(() => useListNavigation({ items, basePath: '/docs' }), {
       wrapper,
     });
 
@@ -48,7 +48,7 @@ describe('useListNavigation', () => {
   it('wraps to 0 on ArrowDown at end of list', () => {
     const items = [{ id: '1' }, { id: '2' }];
 
-    const { result } = renderHook(() => useListNavigation({ items, basePath: '/knowledge' }), {
+    const { result } = renderHook(() => useListNavigation({ items, basePath: '/docs' }), {
       wrapper,
     });
 
@@ -77,7 +77,7 @@ describe('useListNavigation', () => {
   it('updates focusedIndex on ArrowUp', () => {
     const items = [{ id: '1' }, { id: '2' }];
 
-    const { result } = renderHook(() => useListNavigation({ items, basePath: '/knowledge' }), {
+    const { result } = renderHook(() => useListNavigation({ items, basePath: '/docs' }), {
       wrapper,
     });
 

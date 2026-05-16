@@ -83,8 +83,5 @@ services:
       THE_FORGE_DATABASE_NAME: 'maze_forge'
       THE_FORGE_DATABASE_USER: '${POSTGRES_USER:-maze}'
       THE_FORGE_DATABASE_PASSWORD: '${POSTGRES_PASSWORD:-maze}'
-    volumes:
-      - ${HOST_DATA_DIR:-~/.maze-prod}/forge-files:/tmp/the-forge/files
-
 volumes:
   director-core-postgres-data:

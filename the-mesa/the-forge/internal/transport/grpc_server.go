@@ -2,9 +2,12 @@ package transport
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"math"
 	"time"
 
+	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -15,50 +18,54 @@ import (
 	"github.com/charviki/maze/the-mesa/the-forge/internal/service"
 )
 
-// KnowledgeGRPCTransport 实现 KnowledgeService gRPC 服务。
-type KnowledgeGRPCTransport struct {
+const defaultPageSize int32 = 50
+
+// Server 实现 KnowledgeService gRPC 服务。
+type Server struct {
 	pb.UnimplementedKnowledgeServiceServer
 
-	knowledgeSvc *service.KnowledgeService
-	taskSvc      *service.TaskService
+	docSvc *service.DocService
 }
 
-// NewKnowledgeGRPCTransport 创建 KnowledgeService gRPC transport。
-func NewKnowledgeGRPCTransport(knowledgeSvc *service.KnowledgeService, taskSvc *service.TaskService) *KnowledgeGRPCTransport {
-	return &KnowledgeGRPCTransport{knowledgeSvc: knowledgeSvc, taskSvc: taskSvc}
+// NewServer 创建 KnowledgeService gRPC transport。
+func NewServer(docSvc *service.DocService) *Server {
+	return &Server{docSvc: docSvc}
 }
 
-// RegisterGRPC 注册 KnowledgeService 和 Health 服务到 gRPC server。
-func (t *KnowledgeGRPCTransport) RegisterGRPC(server *grpc.Server) {
+// RegisterGRPC 注册 KnowledgeService 到 gRPC server。
+func (t *Server) RegisterGRPC(server *grpc.Server) {
 	pb.RegisterKnowledgeServiceServer(server, t)
 }
 
 // --- Archive ---
 
 // CreateArchive implements KnowledgeServiceServer.
-func (t *KnowledgeGRPCTransport) CreateArchive(ctx context.Context, req *pb.CreateArchiveRequest) (*pb.Archive, error) {
+func (t *Server) CreateArchive(ctx context.Context, req *pb.CreateArchiveRequest) (*pb.Archive, error) {
 	author := extractAuthor(ctx)
-	archive, err := t.knowledgeSvc.CreateArchive(ctx, req.GetName(), req.GetDescription(), req.GetIcon(), author)
+	archive, err := t.docSvc.CreateArchive(ctx, req.GetName(), req.GetDescription(), req.GetIcon(), author)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "create archive: %v", err)
+		return nil, toStatusError(err)
 	}
 	return archiveToProto(archive), nil
 }
 
 // GetArchive implements KnowledgeServiceServer.
-func (t *KnowledgeGRPCTransport) GetArchive(ctx context.Context, req *pb.GetArchiveRequest) (*pb.Archive, error) {
-	archive, err := t.knowledgeSvc.GetArchive(ctx, req.GetId())
+func (t *Server) GetArchive(ctx context.Context, req *pb.GetArchiveRequest) (*pb.Archive, error) {
+	if err := validateUUID("id", req.GetId()); err != nil {
+		return nil, err
+	}
+	archive, err := t.docSvc.GetArchive(ctx, req.GetId())
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "get archive: %v", err)
+		return nil, toStatusError(err)
 	}
 	return archiveToProto(archive), nil
 }
 
 // ListArchives implements KnowledgeServiceServer.
-func (t *KnowledgeGRPCTransport) ListArchives(ctx context.Context, req *pb.ListArchivesRequest) (*pb.ListArchivesResponse, error) {
-	archives, err := t.knowledgeSvc.ListArchives(ctx)
+func (t *Server) ListArchives(ctx context.Context, req *pb.ListArchivesRequest) (*pb.ListArchivesResponse, error) {
+	archives, err := t.docSvc.ListArchives(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "list archives: %v", err)
+		return nil, toStatusError(err)
 	}
 	pbArchives := make([]*pb.Archive, len(archives))
 	for i := range archives {
@@ -68,56 +75,77 @@ func (t *KnowledgeGRPCTransport) ListArchives(ctx context.Context, req *pb.ListA
 }
 
 // UpdateArchive implements KnowledgeServiceServer.
-func (t *KnowledgeGRPCTransport) UpdateArchive(ctx context.Context, req *pb.UpdateArchiveRequest) (*pb.Archive, error) {
-	archive, err := t.knowledgeSvc.UpdateArchive(ctx, req.GetId(), req.GetName(), req.GetDescription(), req.GetIcon())
+func (t *Server) UpdateArchive(ctx context.Context, req *pb.UpdateArchiveRequest) (*pb.Archive, error) {
+	if err := validateUUID("id", req.GetId()); err != nil {
+		return nil, err
+	}
+	archive, err := t.docSvc.UpdateArchive(ctx, req.GetId(), req.GetName(), req.GetDescription(), req.GetIcon())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "update archive: %v", err)
+		return nil, toStatusError(err)
 	}
 	return archiveToProto(archive), nil
 }
 
 // DeleteArchive implements KnowledgeServiceServer.
-func (t *KnowledgeGRPCTransport) DeleteArchive(ctx context.Context, req *pb.DeleteArchiveRequest) (*emptypb.Empty, error) {
-	if err := t.knowledgeSvc.DeleteArchive(ctx, req.GetId()); err != nil {
-		return nil, status.Errorf(codes.Internal, "delete archive: %v", err)
+func (t *Server) DeleteArchive(ctx context.Context, req *pb.DeleteArchiveRequest) (*emptypb.Empty, error) {
+	if err := validateUUID("id", req.GetId()); err != nil {
+		return nil, err
+	}
+	if err := t.docSvc.DeleteArchive(ctx, req.GetId()); err != nil {
+		return nil, toStatusError(err)
 	}
 	return &emptypb.Empty{}, nil
 }
 
-// --- Memory ---
+// --- Doc ---
 
-// CreateMemory implements KnowledgeServiceServer.
-func (t *KnowledgeGRPCTransport) CreateMemory(ctx context.Context, req *pb.CreateMemoryRequest) (*pb.Memory, error) {
+// CreateDoc implements KnowledgeServiceServer.
+func (t *Server) CreateDoc(ctx context.Context, req *pb.CreateDocRequest) (*pb.Doc, error) {
+	if err := validateUUID("archive_id", req.GetArchiveId()); err != nil {
+		return nil, err
+	}
 	var parentID *string
 	if req.GetParentId() != "" {
 		pid := req.GetParentId()
 		parentID = &pid
 	}
-	attachments := protoToAttachments(req.GetAttachments())
 	author := extractAuthor(ctx)
 
-	memory, err := t.knowledgeSvc.CreateMemory(ctx,
-		req.GetArchiveId(), parentID, req.GetKind(), req.GetTitle(),
-		req.GetContent(), req.GetType(), req.GetTags(), author,
-		req.GetVisibility(), req.GetSharedWith(), attachments,
-	)
+	doc, err := t.docSvc.CreateDoc(ctx, service.CreateDocParams{
+		ArchiveID:   req.GetArchiveId(),
+		ParentID:    parentID,
+		Title:       req.GetTitle(),
+		Content:     req.GetContent(),
+		Summary:     req.GetSummary(),
+		Status:      strPtrOrNil(req.GetStatus()),
+		Priority:    strPtrOrNil(req.GetPriority()),
+		Assignee:    req.GetAssignee(),
+		Tags:        req.GetTags(),
+		Author:      author,
+		Visibility:  req.GetVisibility(),
+		SharedWith:  req.GetSharedWith(),
+		Attachments: protoToAttachments(req.GetAttachments()),
+	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "create memory: %v", err)
+		return nil, toStatusError(err)
 	}
-	return memoryToProto(memory), nil
+	return docToProto(doc), nil
 }
 
-// GetMemory implements KnowledgeServiceServer.
-func (t *KnowledgeGRPCTransport) GetMemory(ctx context.Context, req *pb.GetMemoryRequest) (*pb.ParsedMemory, error) {
-	parsed, err := t.knowledgeSvc.GetMemory(ctx, req.GetId())
-	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "get memory: %v", err)
+// GetDoc implements KnowledgeServiceServer.
+func (t *Server) GetDoc(ctx context.Context, req *pb.GetDocRequest) (*pb.Doc, error) {
+	if err := validateUUID("id", req.GetId()); err != nil {
+		return nil, err
 	}
-	return parsedMemoryToProto(parsed), nil
+	doc, err := t.docSvc.GetDoc(ctx, req.GetId())
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	return docToProto(doc), nil
 }
 
-// ListMemories implements KnowledgeServiceServer.
-func (t *KnowledgeGRPCTransport) ListMemories(ctx context.Context, req *pb.ListMemoriesRequest) (*pb.ListMemoriesResponse, error) {
+// ListDocs implements KnowledgeServiceServer.
+func (t *Server) ListDocs(ctx context.Context, req *pb.ListDocsRequest) (*pb.ListDocsResponse, error) {
 	var archiveID *string
 	if req.GetArchiveId() != "" {
 		aid := req.GetArchiveId()
@@ -131,26 +159,43 @@ func (t *KnowledgeGRPCTransport) ListMemories(ctx context.Context, req *pb.ListM
 
 	limit := req.GetLimit()
 	if limit <= 0 {
-		limit = 50
+		limit = defaultPageSize
 	}
 
-	items, total, err := t.knowledgeSvc.ListMemories(ctx, archiveID, parentID, req.GetKind(), req.GetType(), req.GetVisibility(), req.GetAuthor(), limit, req.GetOffset())
+	items, total, err := t.docSvc.ListDocs(ctx, archiveID, parentID, req.GetStatus(), req.GetStatus() != "", req.GetVisibility(), req.GetAuthor(), limit, req.GetOffset())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "list memories: %v", err)
+		return nil, toStatusError(err)
 	}
-	pbItems := make([]*pb.Memory, len(items))
+	pbItems := make([]*pb.Doc, len(items))
 	for i := range items {
-		pbItems[i] = memoryToProto(&items[i])
+		pbItems[i] = docToProto(&items[i])
 	}
-	return &pb.ListMemoriesResponse{Items: pbItems, Total: safeInt32(total)}, nil
+	return &pb.ListDocsResponse{Items: pbItems, Total: safeInt32(total)}, nil
 }
 
-// UpdateMemory implements KnowledgeServiceServer.
-func (t *KnowledgeGRPCTransport) UpdateMemory(ctx context.Context, req *pb.UpdateMemoryRequest) (*pb.Memory, error) {
-	params := service.UpdateMemoryParams{
-		Tags:        req.GetTags(),
-		SharedWith:  req.GetSharedWith(),
-		Attachments: protoToAttachments(req.GetAttachments()),
+// UpdateDoc implements KnowledgeServiceServer.
+func (t *Server) UpdateDoc(ctx context.Context, req *pb.UpdateDocRequest) (*pb.Doc, error) {
+	if err := validateUUID("id", req.GetId()); err != nil {
+		return nil, err
+	}
+
+	// Only serialize slice fields when explicitly provided (non-empty),
+	// so that COALESCE preserves existing values when not set.
+	params := service.UpdateDocParams{
+		ClearStatus:   false,
+		ClearPriority: false,
+	}
+	if tags := req.GetTags(); len(tags) > 0 {
+		tagsJSON, _ := json.Marshal(tags)
+		params.Tags = tagsJSON
+	}
+	if shared := req.GetSharedWith(); len(shared) > 0 {
+		sharedJSON, _ := json.Marshal(shared)
+		params.SharedWith = sharedJSON
+	}
+	if attachments := protoToAttachments(req.GetAttachments()); len(attachments) > 0 {
+		attachJSON, _ := json.Marshal(attachments)
+		params.Attachments = attachJSON
 	}
 	if req.GetTitle() != "" {
 		params.Title = strPtr(req.GetTitle())
@@ -158,242 +203,12 @@ func (t *KnowledgeGRPCTransport) UpdateMemory(ctx context.Context, req *pb.Updat
 	if req.GetContent() != "" {
 		params.Content = strPtr(req.GetContent())
 	}
-	if req.GetType() != "" {
-		params.Type = strPtr(req.GetType())
-	}
 	if req.GetSummary() != "" {
 		params.Summary = strPtr(req.GetSummary())
 	}
-	if req.GetVisibility() != "" {
-		params.Visibility = strPtr(req.GetVisibility())
-	}
-	if req.GetParentId() != "" {
-		params.ParentID = strPtr(req.GetParentId())
-	}
-	if req.GetKind() != "" {
-		params.Kind = strPtr(req.GetKind())
-	}
-
-	memory, err := t.knowledgeSvc.UpdateMemory(ctx, req.GetId(), params)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "update memory: %v", err)
-	}
-	return memoryToProto(memory), nil
-}
-
-// DeleteMemory implements KnowledgeServiceServer.
-func (t *KnowledgeGRPCTransport) DeleteMemory(ctx context.Context, req *pb.DeleteMemoryRequest) (*emptypb.Empty, error) {
-	if err := t.knowledgeSvc.DeleteMemory(ctx, req.GetId()); err != nil {
-		return nil, status.Errorf(codes.Internal, "delete memory: %v", err)
-	}
-	return &emptypb.Empty{}, nil
-}
-
-// SearchMemories implements KnowledgeServiceServer.
-func (t *KnowledgeGRPCTransport) SearchMemories(ctx context.Context, req *pb.SearchMemoriesRequest) (*pb.SearchMemoriesResponse, error) {
-	var archiveID *string
-	if req.GetArchiveId() != "" {
-		aid := req.GetArchiveId()
-		archiveID = &aid
-	}
-	items, err := t.knowledgeSvc.SearchMemories(ctx, req.GetQ(), archiveID, req.GetVisibility(), req.GetAuthor())
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "search memories: %v", err)
-	}
-	pbItems := make([]*pb.Memory, len(items))
-	for i := range items {
-		pbItems[i] = memoryToProto(&items[i])
-	}
-	return &pb.SearchMemoriesResponse{Items: pbItems}, nil
-}
-
-// --- Tree & Ancestors ---
-
-// GetMemoryTree implements KnowledgeServiceServer.
-func (t *KnowledgeGRPCTransport) GetMemoryTree(ctx context.Context, req *pb.GetMemoryTreeRequest) (*pb.GetMemoryTreeResponse, error) {
-	var parentID *string
-	if req.GetParentId() != "" {
-		pid := req.GetParentId()
-		parentID = &pid
-	}
-	memories, err := t.knowledgeSvc.GetMemoryTree(ctx, req.GetArchiveId(), parentID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "get memory tree: %v", err)
-	}
-	nodes := make([]*pb.MemoryTreeNode, len(memories))
-	for i := range memories {
-		nodes[i] = &pb.MemoryTreeNode{Memory: memoryToProto(&memories[i])}
-	}
-	return &pb.GetMemoryTreeResponse{Nodes: nodes}, nil
-}
-
-// GetMemoryAncestors implements KnowledgeServiceServer.
-func (t *KnowledgeGRPCTransport) GetMemoryAncestors(ctx context.Context, req *pb.GetMemoryAncestorsRequest) (*pb.GetMemoryAncestorsResponse, error) {
-	ancestors, err := t.knowledgeSvc.GetMemoryAncestors(ctx, req.GetId())
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "get ancestors: %v", err)
-	}
-	pbAncestors := make([]*pb.Memory, len(ancestors))
-	for i := range ancestors {
-		pbAncestors[i] = memoryToProto(&ancestors[i])
-	}
-	return &pb.GetMemoryAncestorsResponse{Ancestors: pbAncestors}, nil
-}
-
-// GetMemoryDirectives implements KnowledgeServiceServer.
-func (t *KnowledgeGRPCTransport) GetMemoryDirectives(ctx context.Context, req *pb.GetMemoryDirectivesRequest) (*pb.GetMemoryDirectivesResponse, error) {
-	directives, err := t.knowledgeSvc.GetMemoryDirectives(ctx, req.GetId(), t.taskSvc.Repo())
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "get memory directives: %v", err)
-	}
-	pbDirectives := make([]*pb.DirectiveRef, len(directives))
-	for i := range directives {
-		pbDirectives[i] = &pb.DirectiveRef{
-			Id:       directives[i].ID,
-			Title:    directives[i].Title,
-			Status:   directives[i].Status,
-			Priority: directives[i].Priority,
-		}
-	}
-	return &pb.GetMemoryDirectivesResponse{Directives: pbDirectives}, nil
-}
-
-// --- Neural Links ---
-
-// GetLinks implements KnowledgeServiceServer.
-func (t *KnowledgeGRPCTransport) GetLinks(ctx context.Context, req *pb.GetLinksRequest) (*pb.GetLinksResponse, error) {
-	links, err := t.knowledgeSvc.GetLinks(ctx, req.GetId(), req.GetDirection(), req.GetRelationType())
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "get links: %v", err)
-	}
-	pbLinks := make([]*pb.NeuralLink, len(links))
-	for i := range links {
-		pbLinks[i] = neuralLinkToProto(&links[i])
-	}
-	return &pb.GetLinksResponse{Links: pbLinks}, nil
-}
-
-// CreateLink implements KnowledgeServiceServer.
-func (t *KnowledgeGRPCTransport) CreateLink(ctx context.Context, req *pb.CreateLinkRequest) (*pb.NeuralLink, error) {
-	link, err := t.knowledgeSvc.CreateLink(ctx, req.GetId(), req.GetTargetId(), req.GetRelationType())
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "create link: %v", err)
-	}
-	return neuralLinkToProto(link), nil
-}
-
-// DeleteLink implements KnowledgeServiceServer.
-func (t *KnowledgeGRPCTransport) DeleteLink(ctx context.Context, req *pb.DeleteLinkRequest) (*emptypb.Empty, error) {
-	if err := t.knowledgeSvc.DeleteLink(ctx, req.GetLinkId()); err != nil {
-		return nil, status.Errorf(codes.Internal, "delete link: %v", err)
-	}
-	return &emptypb.Empty{}, nil
-}
-
-// --- Stats ---
-
-// GetStats implements KnowledgeServiceServer.
-func (t *KnowledgeGRPCTransport) GetStats(ctx context.Context, req *pb.GetStatsRequest) (*pb.GetStatsResponse, error) {
-	stats, err := t.knowledgeSvc.GetStats(ctx, t.taskSvc.Repo())
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "get stats: %v", err)
-	}
-
-	byStatus := make(map[string]int32, len(stats.DirectivesByStatus))
-	for k, v := range stats.DirectivesByStatus {
-		byStatus[k] = safeInt32FromInt(v)
-	}
-
-	pbRecent := make([]*pb.Memory, len(stats.RecentMemories))
-	for i := range stats.RecentMemories {
-		pbRecent[i] = memoryToProto(&stats.RecentMemories[i])
-	}
-
-	return &pb.GetStatsResponse{
-		Stats: &pb.Stats{
-			TotalMemories:      safeInt32FromInt(stats.TotalMemories),
-			TotalDirectives:    safeInt32FromInt(stats.TotalDirectives),
-			DirectivesByStatus: byStatus,
-			RecentMemories:     pbRecent,
-		},
-	}, nil
-}
-
-// --- DirectiveGRPCTransport ---
-
-// DirectiveGRPCTransport 实现 DirectiveService gRPC 服务。
-type DirectiveGRPCTransport struct {
-	pb.UnimplementedDirectiveServiceServer
-
-	taskSvc *service.TaskService
-}
-
-// NewDirectiveGRPCTransport 创建 DirectiveService gRPC transport。
-func NewDirectiveGRPCTransport(taskSvc *service.TaskService) *DirectiveGRPCTransport {
-	return &DirectiveGRPCTransport{taskSvc: taskSvc}
-}
-
-// RegisterGRPC 注册 DirectiveService 到 gRPC server。
-func (t *DirectiveGRPCTransport) RegisterGRPC(server *grpc.Server) {
-	pb.RegisterDirectiveServiceServer(server, t)
-}
-
-// CreateDirective implements DirectiveServiceServer.
-func (t *DirectiveGRPCTransport) CreateDirective(ctx context.Context, req *pb.CreateDirectiveRequest) (*pb.Directive, error) {
-	author := extractAuthor(ctx)
-	var archiveID *string
-	if req.GetArchiveId() != "" {
-		aid := req.GetArchiveId()
-		archiveID = &aid
-	}
-	directive, err := t.taskSvc.CreateDirective(ctx,
-		req.GetTitle(), req.GetDescription(), req.GetStatus(), req.GetPriority(),
-		req.GetAssignee(), author, req.GetRequireDocIds(), req.GetNarrativeId(),
-		archiveID, req.GetVisibility(),
-	)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "create directive: %v", err)
-	}
-	return directiveToProto(directive), nil
-}
-
-// GetDirective implements DirectiveServiceServer.
-func (t *DirectiveGRPCTransport) GetDirective(ctx context.Context, req *pb.GetDirectiveRequest) (*pb.Directive, error) {
-	directive, err := t.taskSvc.GetDirective(ctx, req.GetId())
-	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "get directive: %v", err)
-	}
-	return directiveToProto(directive), nil
-}
-
-// ListDirectives implements DirectiveServiceServer.
-func (t *DirectiveGRPCTransport) ListDirectives(ctx context.Context, req *pb.ListDirectivesRequest) (*pb.ListDirectivesResponse, error) {
-	limit := req.GetLimit()
-	if limit <= 0 {
-		limit = 50
-	}
-	items, total, err := t.taskSvc.ListDirectives(ctx, req.GetStatus(), req.GetAssignee(), req.GetPriority(), req.GetVisibility(), limit, req.GetOffset())
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "list directives: %v", err)
-	}
-	pbItems := make([]*pb.Directive, len(items))
-	for i := range items {
-		pbItems[i] = directiveToProto(&items[i])
-	}
-	return &pb.ListDirectivesResponse{Items: pbItems, Total: safeInt32(total)}, nil
-}
-
-// UpdateDirective implements DirectiveServiceServer.
-func (t *DirectiveGRPCTransport) UpdateDirective(ctx context.Context, req *pb.UpdateDirectiveRequest) (*pb.Directive, error) {
-	params := service.UpdateDirectiveParams{
-		RequireDocIDs: req.GetRequireDocIds(),
-	}
-	if req.GetTitle() != "" {
-		params.Title = strPtr(req.GetTitle())
-	}
-	if req.GetDescription() != "" {
-		params.Description = strPtr(req.GetDescription())
-	}
+	// Status: proto3 can't distinguish empty from unset.
+	// We use ClearStatus when client explicitly wants to clear.
+	// For now: non-empty sets, empty does nothing (backward compatible).
 	if req.GetStatus() != "" {
 		params.Status = strPtr(req.GetStatus())
 	}
@@ -403,32 +218,206 @@ func (t *DirectiveGRPCTransport) UpdateDirective(ctx context.Context, req *pb.Up
 	if req.GetAssignee() != "" {
 		params.Assignee = strPtr(req.GetAssignee())
 	}
-	if req.GetAuthor() != "" {
-		params.Author = strPtr(req.GetAuthor())
-	}
-	if req.GetNarrativeId() != "" {
-		params.NarrativeID = strPtr(req.GetNarrativeId())
-	}
-	if req.GetArchiveId() != "" {
-		params.ArchiveID = strPtr(req.GetArchiveId())
-	}
 	if req.GetVisibility() != "" {
 		params.Visibility = strPtr(req.GetVisibility())
 	}
-
-	directive, err := t.taskSvc.UpdateDirective(ctx, req.GetId(), params)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "update directive: %v", err)
+	if req.GetParentId() != "" {
+		params.ParentID = strPtr(req.GetParentId())
 	}
-	return directiveToProto(directive), nil
+
+	doc, err := t.docSvc.UpdateDoc(ctx, req.GetId(), params)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	return docToProto(doc), nil
 }
 
-// DeleteDirective implements DirectiveServiceServer.
-func (t *DirectiveGRPCTransport) DeleteDirective(ctx context.Context, req *pb.DeleteDirectiveRequest) (*emptypb.Empty, error) {
-	if err := t.taskSvc.DeleteDirective(ctx, req.GetId()); err != nil {
-		return nil, status.Errorf(codes.Internal, "delete directive: %v", err)
+// DeleteDoc implements KnowledgeServiceServer.
+func (t *Server) DeleteDoc(ctx context.Context, req *pb.DeleteDocRequest) (*emptypb.Empty, error) {
+	if err := validateUUID("id", req.GetId()); err != nil {
+		return nil, err
+	}
+	if err := t.docSvc.DeleteDoc(ctx, req.GetId()); err != nil {
+		return nil, toStatusError(err)
 	}
 	return &emptypb.Empty{}, nil
+}
+
+// SearchDocs implements KnowledgeServiceServer.
+func (t *Server) SearchDocs(ctx context.Context, req *pb.SearchDocsRequest) (*pb.SearchDocsResponse, error) {
+	if req.GetQ() == "" {
+		return nil, status.Error(codes.InvalidArgument, "q is required")
+	}
+	var archiveID *string
+	if req.GetArchiveId() != "" {
+		aid := req.GetArchiveId()
+		archiveID = &aid
+	}
+	items, err := t.docSvc.SearchDocs(ctx, req.GetQ(), archiveID, req.GetVisibility(), req.GetAuthor())
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	pbItems := make([]*pb.Doc, len(items))
+	for i := range items {
+		pbItems[i] = docToProto(&items[i])
+	}
+	return &pb.SearchDocsResponse{Items: pbItems}, nil
+}
+
+// --- Tree & Ancestors ---
+
+// GetDocTree implements KnowledgeServiceServer.
+func (t *Server) GetDocTree(ctx context.Context, req *pb.GetDocTreeRequest) (*pb.GetDocTreeResponse, error) {
+	if err := validateUUID("archive_id", req.GetArchiveId()); err != nil {
+		return nil, err
+	}
+	var parentID *string
+	if req.GetParentId() != "" {
+		pid := req.GetParentId()
+		parentID = &pid
+	}
+	docs, err := t.docSvc.GetDocTree(ctx, req.GetArchiveId(), parentID)
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
+	// 有 parentId 时返回 flat 列表（懒加载子节点）
+	if parentID != nil {
+		nodes := make([]*pb.DocTreeNode, len(docs))
+		for i := range docs {
+			nodes[i] = &pb.DocTreeNode{Doc: docToProto(&docs[i])}
+		}
+		return &pb.GetDocTreeResponse{Nodes: nodes}, nil
+	}
+
+	// 无 parentId 时构建完整嵌套树
+	return &pb.GetDocTreeResponse{Nodes: buildTree(docs)}, nil
+}
+
+// buildTree 将 flat doc 列表构建为嵌套 DocTreeNode 树。
+func buildTree(flatDocs []service.Doc) []*pb.DocTreeNode {
+	childrenMap := make(map[string][]*service.Doc)
+	var roots []*service.Doc
+
+	for i := range flatDocs {
+		d := &flatDocs[i]
+		if d.ParentID != nil {
+			childrenMap[*d.ParentID] = append(childrenMap[*d.ParentID], d)
+		} else {
+			roots = append(roots, d)
+		}
+	}
+
+	const maxTreeDepth = 100
+	var buildNodes func(docs []*service.Doc, depth int) []*pb.DocTreeNode
+	buildNodes = func(docs []*service.Doc, depth int) []*pb.DocTreeNode {
+		if depth > maxTreeDepth {
+			return nil
+		}
+		nodes := make([]*pb.DocTreeNode, 0, len(docs))
+		for _, d := range docs {
+			node := &pb.DocTreeNode{Doc: docToProto(d)}
+			if children, ok := childrenMap[d.ID]; ok {
+				node.Children = buildNodes(children, depth+1)
+			}
+			nodes = append(nodes, node)
+		}
+		return nodes
+	}
+
+	return buildNodes(roots, 0)
+}
+
+// GetDocAncestors implements KnowledgeServiceServer.
+func (t *Server) GetDocAncestors(ctx context.Context, req *pb.GetDocAncestorsRequest) (*pb.GetDocAncestorsResponse, error) {
+	if err := validateUUID("id", req.GetId()); err != nil {
+		return nil, err
+	}
+	ancestors, err := t.docSvc.GetDocAncestors(ctx, req.GetId())
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	pbAncestors := make([]*pb.Doc, len(ancestors))
+	for i := range ancestors {
+		pbAncestors[i] = docToProto(&ancestors[i])
+	}
+	return &pb.GetDocAncestorsResponse{Ancestors: pbAncestors}, nil
+}
+
+// --- Doc Links ---
+
+// GetLinks implements KnowledgeServiceServer.
+func (t *Server) GetLinks(ctx context.Context, req *pb.GetLinksRequest) (*pb.GetLinksResponse, error) {
+	if err := validateUUID("id", req.GetId()); err != nil {
+		return nil, err
+	}
+	links, err := t.docSvc.GetLinks(ctx, req.GetId(), req.GetDirection(), req.GetRelationType())
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	pbLinks := make([]*pb.DocLink, len(links))
+	for i := range links {
+		pbLinks[i] = docLinkToProto(&links[i])
+	}
+	return &pb.GetLinksResponse{Links: pbLinks}, nil
+}
+
+// CreateLink implements KnowledgeServiceServer.
+func (t *Server) CreateLink(ctx context.Context, req *pb.CreateLinkRequest) (*pb.DocLink, error) {
+	if err := validateUUID("id", req.GetId()); err != nil {
+		return nil, err
+	}
+	if err := validateUUID("target_id", req.GetTargetId()); err != nil {
+		return nil, err
+	}
+	link, err := t.docSvc.CreateLink(ctx, req.GetId(), req.GetTargetId(), req.GetRelationType())
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	return docLinkToProto(link), nil
+}
+
+// DeleteLink implements KnowledgeServiceServer.
+func (t *Server) DeleteLink(ctx context.Context, req *pb.DeleteLinkRequest) (*emptypb.Empty, error) {
+	if err := validateUUID("link_id", req.GetLinkId()); err != nil {
+		return nil, err
+	}
+	if err := t.docSvc.DeleteLink(ctx, req.GetLinkId()); err != nil {
+		return nil, toStatusError(err)
+	}
+	return &emptypb.Empty{}, nil
+}
+
+// --- Error mapping ---
+
+func toStatusError(err error) error {
+	var ve *service.ValidationError
+	switch {
+	case err == nil:
+		return nil
+	case status.Code(err) != codes.Unknown:
+		return err
+	case errors.As(err, &ve):
+		return status.Error(codes.InvalidArgument, err.Error())
+	case errors.Is(err, service.ErrArchiveNotFound),
+		errors.Is(err, service.ErrDocNotFound),
+		errors.Is(err, service.ErrLinkNotFound):
+		return status.Error(codes.NotFound, err.Error())
+	case errors.Is(err, service.ErrAlreadyExists):
+		return status.Error(codes.AlreadyExists, err.Error())
+	default:
+		return status.Error(codes.Internal, err.Error())
+	}
+}
+
+func validateUUID(field, value string) error {
+	if value == "" {
+		return status.Errorf(codes.InvalidArgument, "%s is required", field)
+	}
+	if _, err := uuid.Parse(value); err != nil {
+		return status.Errorf(codes.InvalidArgument, "invalid %s: %v", field, err)
+	}
+	return nil
 }
 
 // --- Conversion helpers ---
@@ -445,51 +434,29 @@ func archiveToProto(a *service.Archive) *pb.Archive {
 	}
 }
 
-func memoryToProto(m *service.Memory) *pb.Memory {
-	return &pb.Memory{
-		Id:          m.ID,
-		ArchiveId:   m.ArchiveID,
-		ParentId:    strValue(m.ParentID),
-		Kind:        m.Kind,
-		Title:       m.Title,
-		Content:     m.Content,
-		Type:        m.Type,
-		Summary:     m.Summary,
-		Tags:        m.Tags,
-		Author:      m.Author,
-		Visibility:  m.Visibility,
-		SharedWith:  m.SharedWith,
-		Attachments: attachmentsToProto(m.Attachments),
-		CreatedAt:   m.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:   m.UpdatedAt.Format(time.RFC3339),
+func docToProto(d *service.Doc) *pb.Doc {
+	return &pb.Doc{
+		Id:          d.ID,
+		ArchiveId:   d.ArchiveID,
+		ParentId:    strValue(d.ParentID),
+		Title:       d.Title,
+		Content:     d.Content,
+		Summary:     d.Summary,
+		Status:      strValue(d.Status),
+		Priority:    strValue(d.Priority),
+		Assignee:    d.Assignee,
+		Tags:        d.Tags,
+		Author:      d.Author,
+		Visibility:  d.Visibility,
+		SharedWith:  d.SharedWith,
+		Attachments: attachmentsToProto(d.Attachments),
+		CreatedAt:   d.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:   d.UpdatedAt.Format(time.RFC3339),
 	}
 }
 
-func parsedMemoryToProto(m *service.ParsedMemory) *pb.ParsedMemory {
-	return &pb.ParsedMemory{
-		Meta: &pb.MemoryMeta{
-			Id:          m.Meta.ID,
-			ArchiveId:   m.Meta.ArchiveID,
-			ParentId:    strValue(m.Meta.ParentID),
-			Kind:        m.Meta.Kind,
-			Title:       m.Meta.Title,
-			Type:        m.Meta.Type,
-			Summary:     m.Meta.Summary,
-			Tags:        m.Meta.Tags,
-			Author:      m.Meta.Author,
-			Visibility:  m.Meta.Visibility,
-			SharedWith:  m.Meta.SharedWith,
-			Attachments: attachmentsToProto(m.Meta.Attachments),
-			CreatedAt:   m.Meta.CreatedAt.Format(time.RFC3339),
-			UpdatedAt:   m.Meta.UpdatedAt.Format(time.RFC3339),
-		},
-		Summary: m.Summary,
-		Content: m.Content,
-	}
-}
-
-func neuralLinkToProto(l *service.NeuralLink) *pb.NeuralLink {
-	return &pb.NeuralLink{
+func docLinkToProto(l *service.DocLink) *pb.DocLink {
+	return &pb.DocLink{
 		Id:           l.ID,
 		SourceId:     l.SourceID,
 		TargetId:     l.TargetID,
@@ -497,24 +464,6 @@ func neuralLinkToProto(l *service.NeuralLink) *pb.NeuralLink {
 		SourceTitle:  l.SourceTitle,
 		TargetTitle:  l.TargetTitle,
 		CreatedAt:    l.CreatedAt.Format(time.RFC3339),
-	}
-}
-
-func directiveToProto(d *service.Directive) *pb.Directive {
-	return &pb.Directive{
-		Id:            d.ID,
-		Title:         d.Title,
-		Description:   d.Description,
-		Status:        d.Status,
-		Priority:      d.Priority,
-		Assignee:      d.Assignee,
-		Author:        d.Author,
-		RequireDocIds: d.RequireDocIDs,
-		NarrativeId:   d.NarrativeID,
-		ArchiveId:     strValue(d.ArchiveID),
-		Visibility:    d.Visibility,
-		CreatedAt:     d.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:     d.UpdatedAt.Format(time.RFC3339),
 	}
 }
 
@@ -562,6 +511,13 @@ func extractAuthor(ctx context.Context) string {
 
 func strPtr(s string) *string { return &s }
 
+func strPtrOrNil(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
 func strValue(s *string) string {
 	if s == nil {
 		return ""
@@ -579,12 +535,4 @@ func safeInt32(n int64) int32 {
 	return int32(n)
 }
 
-func safeInt32FromInt(n int) int32 {
-	if n > math.MaxInt32 {
-		return math.MaxInt32
-	}
-	if n < math.MinInt32 {
-		return math.MinInt32
-	}
-	return int32(n)
-}
+var _ pb.KnowledgeServiceServer = (*Server)(nil)
