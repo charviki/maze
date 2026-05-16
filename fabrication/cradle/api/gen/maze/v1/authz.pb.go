@@ -7,6 +7,7 @@
 package mazev1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -829,32 +830,32 @@ var File_maze_v1_authz_proto protoreflect.FileDescriptor
 
 const file_maze_v1_authz_proto_rawDesc = "" +
 	"\n" +
-	"\x13maze/v1/authz.proto\x12\amaze.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"F\n" +
-	"\x10PermissionTarget\x12\x1a\n" +
-	"\bresource\x18\x01 \x01(\tR\bresource\x12\x16\n" +
-	"\x06action\x18\x02 \x01(\tR\x06action\"\xcd\x01\n" +
-	"\"CreatePermissionApplicationRequest\x12\x1f\n" +
-	"\vsubject_key\x18\x01 \x01(\tR\n" +
-	"subjectKey\x123\n" +
-	"\atargets\x18\x02 \x03(\v2\x19.maze.v1.PermissionTargetR\atargets\x12\x16\n" +
-	"\x06reason\x18\x03 \x01(\tR\x06reason\x129\n" +
+	"\x13maze/v1/authz.proto\x12\amaze.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"X\n" +
+	"\x10PermissionTarget\x12#\n" +
+	"\bresource\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\bresource\x12\x1f\n" +
+	"\x06action\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x06action\"\xe9\x01\n" +
+	"\"CreatePermissionApplicationRequest\x12(\n" +
+	"\vsubject_key\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\n" +
+	"subjectKey\x12=\n" +
+	"\atargets\x18\x02 \x03(\v2\x19.maze.v1.PermissionTargetB\b\xbaH\x05\x92\x01\x02\b\x01R\atargets\x12\x1f\n" +
+	"\x06reason\x18\x03 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x06reason\x129\n" +
 	"\n" +
 	"expires_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\"l\n" +
 	"!ListPermissionApplicationsRequest\x12\x16\n" +
 	"\x06status\x18\x01 \x01(\tR\x06status\x12\x12\n" +
 	"\x04page\x18\x02 \x01(\x05R\x04page\x12\x1b\n" +
-	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\"]\n" +
-	"\x1fGetPermissionApplicationRequest\x12:\n" +
-	"\x19permission_application_id\x18\x01 \x01(\tR\x17permissionApplicationId\"\xa3\x01\n" +
-	"\"ReviewPermissionApplicationRequest\x12:\n" +
-	"\x19permission_application_id\x18\x01 \x01(\tR\x17permissionApplicationId\x12\x1a\n" +
+	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\"f\n" +
+	"\x1fGetPermissionApplicationRequest\x12C\n" +
+	"\x19permission_application_id\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x17permissionApplicationId\"\xac\x01\n" +
+	"\"ReviewPermissionApplicationRequest\x12C\n" +
+	"\x19permission_application_id\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x17permissionApplicationId\x12\x1a\n" +
 	"\bapproved\x18\x02 \x01(\bR\bapproved\x12%\n" +
-	"\x0ereview_comment\x18\x03 \x01(\tR\rreviewComment\"\x85\x01\n" +
-	"\"RevokePermissionApplicationRequest\x12:\n" +
-	"\x19permission_application_id\x18\x01 \x01(\tR\x17permissionApplicationId\x12#\n" +
-	"\rrevoke_reason\x18\x02 \x01(\tR\frevokeReason\"@\n" +
-	"\x1dListSubjectPermissionsRequest\x12\x1f\n" +
-	"\vsubject_key\x18\x01 \x01(\tR\n" +
+	"\x0ereview_comment\x18\x03 \x01(\tR\rreviewComment\"\x8e\x01\n" +
+	"\"RevokePermissionApplicationRequest\x12C\n" +
+	"\x19permission_application_id\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x17permissionApplicationId\x12#\n" +
+	"\rrevoke_reason\x18\x02 \x01(\tR\frevokeReason\"I\n" +
+	"\x1dListSubjectPermissionsRequest\x12(\n" +
+	"\vsubject_key\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\n" +
 	"subjectKey\"\xcc\x03\n" +
 	"\x15PermissionApplication\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +

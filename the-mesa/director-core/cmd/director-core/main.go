@@ -65,7 +65,12 @@ func main() {
 	proxySvc := agentclient.NewProxy(resources.Registry, resources.ConnMgr, cfg.Server.JWTSecret)
 
 	// 构建 gRPC interceptor chain
+	validationInterceptor, err := gatewayutil.NewValidationInterceptor()
+	if err != nil {
+		logger.Fatalf("create validation interceptor: %v", err)
+	}
 	interceptors := []grpc.UnaryServerInterceptor{
+		validationInterceptor,
 		gatewayutil.UnaryAuthInterceptor(cfg.Server.JWTSecret),
 		gatewayutil.UnaryHostTokenInterceptor(cfg.Server.JWTSecret, resources.Registry),
 	}

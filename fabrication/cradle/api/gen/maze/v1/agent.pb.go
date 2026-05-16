@@ -7,6 +7,7 @@
 package mazev1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -552,7 +553,7 @@ var File_maze_v1_agent_proto protoreflect.FileDescriptor
 
 const file_maze_v1_agent_proto_rawDesc = "" +
 	"\n" +
-	"\x13maze/v1/agent.proto\x12\amaze.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x14maze/v1/config.proto\"}\n" +
+	"\x13maze/v1/agent.proto\x12\amaze.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x14maze/v1/config.proto\"}\n" +
 	"\x11AgentCapabilities\x12/\n" +
 	"\x13supported_templates\x18\x01 \x03(\tR\x12supportedTemplates\x12!\n" +
 	"\fmax_sessions\x18\x02 \x01(\x05R\vmaxSessions\x12\x14\n" +
@@ -574,10 +575,10 @@ const file_maze_v1_agent_proto_rawDesc = "" +
 	"\aversion\x18\x01 \x01(\tR\aversion\x12\x1a\n" +
 	"\bhostname\x18\x02 \x01(\tR\bhostname\x12\x1d\n" +
 	"\n" +
-	"started_at\x18\x03 \x01(\tR\tstartedAt\"\xa9\x02\n" +
-	"\x0fRegisterRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
-	"\aaddress\x18\x02 \x01(\tR\aaddress\x12#\n" +
+	"started_at\x18\x03 \x01(\tR\tstartedAt\"\xbb\x02\n" +
+	"\x0fRegisterRequest\x12\x1b\n" +
+	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\x12!\n" +
+	"\aaddress\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\aaddress\x12#\n" +
 	"\rexternal_addr\x18\x03 \x01(\tR\fexternalAddr\x12!\n" +
 	"\fgrpc_address\x18\a \x01(\tR\vgrpcAddress\x12>\n" +
 	"\fcapabilities\x18\x04 \x01(\v2\x1a.maze.v1.AgentCapabilitiesR\fcapabilities\x12,\n" +
@@ -585,9 +586,9 @@ const file_maze_v1_agent_proto_rawDesc = "" +
 	"\bmetadata\x18\x06 \x01(\v2\x16.maze.v1.AgentMetadataR\bmetadata\">\n" +
 	"\x10RegisterResponse\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
-	"\x06status\x18\x02 \x01(\tR\x06status\"T\n" +
-	"\x10HeartbeatRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12,\n" +
+	"\x06status\x18\x02 \x01(\tR\x06status\"]\n" +
+	"\x10HeartbeatRequest\x12\x1b\n" +
+	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\x12,\n" +
 	"\x06status\x18\x02 \x01(\v2\x14.maze.v1.AgentStatusR\x06status\"?\n" +
 	"\x11HeartbeatResponse\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +

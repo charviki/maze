@@ -7,6 +7,7 @@
 package mazev1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -320,7 +321,7 @@ var File_maze_v1_node_proto protoreflect.FileDescriptor
 
 const file_maze_v1_node_proto_rawDesc = "" +
 	"\n" +
-	"\x12maze/v1/node.proto\x12\amaze.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x13maze/v1/agent.proto\"\xb0\x03\n" +
+	"\x12maze/v1/node.proto\x12\amaze.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x13maze/v1/agent.proto\"\xb0\x03\n" +
 	"\bNodeInfo\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
 	"\aaddress\x18\x02 \x01(\tR\aaddress\x12#\n" +
@@ -337,11 +338,11 @@ const file_maze_v1_node_proto_rawDesc = "" +
 	" \x01(\v2\x16.maze.v1.AgentMetadataR\bmetadata\"\x12\n" +
 	"\x10ListNodesRequest\"<\n" +
 	"\x11ListNodesResponse\x12'\n" +
-	"\x05nodes\x18\x01 \x03(\v2\x11.maze.v1.NodeInfoR\x05nodes\"$\n" +
-	"\x0eGetNodeRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\"'\n" +
-	"\x11DeleteNodeRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name2\x9d\x02\n" +
+	"\x05nodes\x18\x01 \x03(\v2\x11.maze.v1.NodeInfoR\x05nodes\"-\n" +
+	"\x0eGetNodeRequest\x12\x1b\n" +
+	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\"0\n" +
+	"\x11DeleteNodeRequest\x12\x1b\n" +
+	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name2\x9d\x02\n" +
 	"\vNodeService\x12Y\n" +
 	"\tListNodes\x12\x19.maze.v1.ListNodesRequest\x1a\x1a.maze.v1.ListNodesResponse\"\x15\x82\xd3\xe4\x93\x02\x0f\x12\r/api/v1/nodes\x12S\n" +
 	"\aGetNode\x12\x17.maze.v1.GetNodeRequest\x1a\x11.maze.v1.NodeInfo\"\x1c\x82\xd3\xe4\x93\x02\x16\x12\x14/api/v1/nodes/{name}\x12^\n" +

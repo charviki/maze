@@ -7,6 +7,7 @@
 package mazev1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -967,7 +968,7 @@ var File_maze_v1_host_proto protoreflect.FileDescriptor
 
 const file_maze_v1_host_proto_rawDesc = "" +
 	"\n" +
-	"\x12maze/v1/host.proto\x12\amaze.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\"\xc1\x02\n" +
+	"\x12maze/v1/host.proto\x12\amaze.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\"\xc1\x02\n" +
 	"\bHostSpec\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x14\n" +
@@ -1017,27 +1018,27 @@ const file_maze_v1_host_proto_rawDesc = "" +
 	"\aaddress\x18\n" +
 	" \x01(\tR\aaddress\x12#\n" +
 	"\rsession_count\x18\v \x01(\x05R\fsessionCount\x12%\n" +
-	"\x0elast_heartbeat\x18\f \x01(\tR\rlastHeartbeat\"\x97\x01\n" +
-	"\x11CreateHostRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
-	"\x05tools\x18\x02 \x03(\tR\x05tools\x12!\n" +
+	"\x0elast_heartbeat\x18\f \x01(\tR\rlastHeartbeat\"\xaa\x01\n" +
+	"\x11CreateHostRequest\x12\x1b\n" +
+	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\x12\x1e\n" +
+	"\x05tools\x18\x02 \x03(\tB\b\xbaH\x05\x92\x01\x02\b\x01R\x05tools\x12!\n" +
 	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\x125\n" +
 	"\tresources\x18\x04 \x01(\v2\x17.maze.v1.ResourceLimitsR\tresources\"\x12\n" +
 	"\x10ListHostsRequest\"<\n" +
 	"\x11ListHostsResponse\x12'\n" +
-	"\x05hosts\x18\x01 \x03(\v2\x11.maze.v1.HostInfoR\x05hosts\"$\n" +
-	"\x0eGetHostRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\"'\n" +
-	"\x11DeleteHostRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\".\n" +
+	"\x05hosts\x18\x01 \x03(\v2\x11.maze.v1.HostInfoR\x05hosts\"-\n" +
+	"\x0eGetHostRequest\x12\x1b\n" +
+	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\"0\n" +
+	"\x11DeleteHostRequest\x12\x1b\n" +
+	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\".\n" +
 	"\x12DeleteHostResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\"(\n" +
-	"\x12GetBuildLogRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\"'\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"1\n" +
+	"\x12GetBuildLogRequest\x12\x1b\n" +
+	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\"'\n" +
 	"\x13GetBuildLogResponse\x12\x10\n" +
-	"\x03log\x18\x01 \x01(\tR\x03log\"*\n" +
-	"\x14GetRuntimeLogRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\")\n" +
+	"\x03log\x18\x01 \x01(\tR\x03log\"3\n" +
+	"\x14GetRuntimeLogRequest\x12\x1b\n" +
+	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\")\n" +
 	"\x15GetRuntimeLogResponse\x12\x10\n" +
 	"\x03log\x18\x01 \x01(\tR\x03log\"\x12\n" +
 	"\x10ListToolsRequest\">\n" +

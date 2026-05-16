@@ -7,7 +7,6 @@ import (
 	"math"
 	"time"
 
-	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -51,9 +50,6 @@ func (t *Server) CreateArchive(ctx context.Context, req *pb.CreateArchiveRequest
 
 // GetArchive implements KnowledgeServiceServer.
 func (t *Server) GetArchive(ctx context.Context, req *pb.GetArchiveRequest) (*pb.Archive, error) {
-	if err := validateUUID("id", req.GetId()); err != nil {
-		return nil, err
-	}
 	archive, err := t.docSvc.GetArchive(ctx, req.GetId())
 	if err != nil {
 		return nil, toStatusError(err)
@@ -76,9 +72,6 @@ func (t *Server) ListArchives(ctx context.Context, req *pb.ListArchivesRequest) 
 
 // UpdateArchive implements KnowledgeServiceServer.
 func (t *Server) UpdateArchive(ctx context.Context, req *pb.UpdateArchiveRequest) (*pb.Archive, error) {
-	if err := validateUUID("id", req.GetId()); err != nil {
-		return nil, err
-	}
 	archive, err := t.docSvc.UpdateArchive(ctx, req.GetId(), req.GetName(), req.GetDescription(), req.GetIcon())
 	if err != nil {
 		return nil, toStatusError(err)
@@ -88,9 +81,6 @@ func (t *Server) UpdateArchive(ctx context.Context, req *pb.UpdateArchiveRequest
 
 // DeleteArchive implements KnowledgeServiceServer.
 func (t *Server) DeleteArchive(ctx context.Context, req *pb.DeleteArchiveRequest) (*emptypb.Empty, error) {
-	if err := validateUUID("id", req.GetId()); err != nil {
-		return nil, err
-	}
 	if err := t.docSvc.DeleteArchive(ctx, req.GetId()); err != nil {
 		return nil, toStatusError(err)
 	}
@@ -101,9 +91,6 @@ func (t *Server) DeleteArchive(ctx context.Context, req *pb.DeleteArchiveRequest
 
 // CreateDoc implements KnowledgeServiceServer.
 func (t *Server) CreateDoc(ctx context.Context, req *pb.CreateDocRequest) (*pb.Doc, error) {
-	if err := validateUUID("archive_id", req.GetArchiveId()); err != nil {
-		return nil, err
-	}
 	var parentID *string
 	if req.GetParentId() != "" {
 		pid := req.GetParentId()
@@ -134,9 +121,6 @@ func (t *Server) CreateDoc(ctx context.Context, req *pb.CreateDocRequest) (*pb.D
 
 // GetDoc implements KnowledgeServiceServer.
 func (t *Server) GetDoc(ctx context.Context, req *pb.GetDocRequest) (*pb.Doc, error) {
-	if err := validateUUID("id", req.GetId()); err != nil {
-		return nil, err
-	}
 	doc, err := t.docSvc.GetDoc(ctx, req.GetId())
 	if err != nil {
 		return nil, toStatusError(err)
@@ -175,10 +159,6 @@ func (t *Server) ListDocs(ctx context.Context, req *pb.ListDocsRequest) (*pb.Lis
 
 // UpdateDoc implements KnowledgeServiceServer.
 func (t *Server) UpdateDoc(ctx context.Context, req *pb.UpdateDocRequest) (*pb.Doc, error) {
-	if err := validateUUID("id", req.GetId()); err != nil {
-		return nil, err
-	}
-
 	// Only serialize slice fields when explicitly provided (non-empty),
 	// so that COALESCE preserves existing values when not set.
 	params := service.UpdateDocParams{
@@ -234,9 +214,6 @@ func (t *Server) UpdateDoc(ctx context.Context, req *pb.UpdateDocRequest) (*pb.D
 
 // DeleteDoc implements KnowledgeServiceServer.
 func (t *Server) DeleteDoc(ctx context.Context, req *pb.DeleteDocRequest) (*emptypb.Empty, error) {
-	if err := validateUUID("id", req.GetId()); err != nil {
-		return nil, err
-	}
 	if err := t.docSvc.DeleteDoc(ctx, req.GetId()); err != nil {
 		return nil, toStatusError(err)
 	}
@@ -245,9 +222,6 @@ func (t *Server) DeleteDoc(ctx context.Context, req *pb.DeleteDocRequest) (*empt
 
 // SearchDocs implements KnowledgeServiceServer.
 func (t *Server) SearchDocs(ctx context.Context, req *pb.SearchDocsRequest) (*pb.SearchDocsResponse, error) {
-	if req.GetQ() == "" {
-		return nil, status.Error(codes.InvalidArgument, "q is required")
-	}
 	var archiveID *string
 	if req.GetArchiveId() != "" {
 		aid := req.GetArchiveId()
@@ -268,9 +242,6 @@ func (t *Server) SearchDocs(ctx context.Context, req *pb.SearchDocsRequest) (*pb
 
 // GetDocTree implements KnowledgeServiceServer.
 func (t *Server) GetDocTree(ctx context.Context, req *pb.GetDocTreeRequest) (*pb.GetDocTreeResponse, error) {
-	if err := validateUUID("archive_id", req.GetArchiveId()); err != nil {
-		return nil, err
-	}
 	var parentID *string
 	if req.GetParentId() != "" {
 		pid := req.GetParentId()
@@ -330,9 +301,6 @@ func buildTree(flatDocs []service.Doc) []*pb.DocTreeNode {
 
 // GetDocAncestors implements KnowledgeServiceServer.
 func (t *Server) GetDocAncestors(ctx context.Context, req *pb.GetDocAncestorsRequest) (*pb.GetDocAncestorsResponse, error) {
-	if err := validateUUID("id", req.GetId()); err != nil {
-		return nil, err
-	}
 	ancestors, err := t.docSvc.GetDocAncestors(ctx, req.GetId())
 	if err != nil {
 		return nil, toStatusError(err)
@@ -348,9 +316,6 @@ func (t *Server) GetDocAncestors(ctx context.Context, req *pb.GetDocAncestorsReq
 
 // GetLinks implements KnowledgeServiceServer.
 func (t *Server) GetLinks(ctx context.Context, req *pb.GetLinksRequest) (*pb.GetLinksResponse, error) {
-	if err := validateUUID("id", req.GetId()); err != nil {
-		return nil, err
-	}
 	links, err := t.docSvc.GetLinks(ctx, req.GetId(), req.GetDirection(), req.GetRelationType())
 	if err != nil {
 		return nil, toStatusError(err)
@@ -364,12 +329,6 @@ func (t *Server) GetLinks(ctx context.Context, req *pb.GetLinksRequest) (*pb.Get
 
 // CreateLink implements KnowledgeServiceServer.
 func (t *Server) CreateLink(ctx context.Context, req *pb.CreateLinkRequest) (*pb.DocLink, error) {
-	if err := validateUUID("id", req.GetId()); err != nil {
-		return nil, err
-	}
-	if err := validateUUID("target_id", req.GetTargetId()); err != nil {
-		return nil, err
-	}
 	link, err := t.docSvc.CreateLink(ctx, req.GetId(), req.GetTargetId(), req.GetRelationType())
 	if err != nil {
 		return nil, toStatusError(err)
@@ -379,9 +338,6 @@ func (t *Server) CreateLink(ctx context.Context, req *pb.CreateLinkRequest) (*pb
 
 // DeleteLink implements KnowledgeServiceServer.
 func (t *Server) DeleteLink(ctx context.Context, req *pb.DeleteLinkRequest) (*emptypb.Empty, error) {
-	if err := validateUUID("link_id", req.GetLinkId()); err != nil {
-		return nil, err
-	}
 	if err := t.docSvc.DeleteLink(ctx, req.GetLinkId()); err != nil {
 		return nil, toStatusError(err)
 	}
@@ -408,16 +364,6 @@ func toStatusError(err error) error {
 	default:
 		return status.Error(codes.Internal, err.Error())
 	}
-}
-
-func validateUUID(field, value string) error {
-	if value == "" {
-		return status.Errorf(codes.InvalidArgument, "%s is required", field)
-	}
-	if _, err := uuid.Parse(value); err != nil {
-		return status.Errorf(codes.InvalidArgument, "invalid %s: %v", field, err)
-	}
-	return nil
 }
 
 // --- Conversion helpers ---

@@ -245,20 +245,6 @@ func TestDocService_CreateArchive(t *testing.T) {
 	}
 }
 
-func TestDocService_CreateArchive_EmptyName(t *testing.T) {
-	repo := &mockDocRepo{}
-	svc := NewDocService(repo)
-
-	_, err := svc.CreateArchive(context.Background(), "", "desc", "library", "user1")
-	if err == nil {
-		t.Fatal("expected error for empty name")
-	}
-	var ve *ValidationError
-	if !errors.As(err, &ve) {
-		t.Errorf("err = %T, want *ValidationError", err)
-	}
-}
-
 func TestDocService_ListArchives(t *testing.T) {
 	repo := &mockDocRepo{}
 	svc := NewDocService(repo)
@@ -295,40 +281,6 @@ func TestDocService_CreateDoc(t *testing.T) {
 	}
 	if doc.Tags == nil {
 		t.Error("Tags should be initialized to empty slice, not nil")
-	}
-}
-
-func TestDocService_CreateDoc_EmptyTitle(t *testing.T) {
-	repo := &mockDocRepo{}
-	svc := NewDocService(repo)
-
-	_, err := svc.CreateDoc(context.Background(), CreateDocParams{
-		ArchiveID: "archive-1",
-		Title:     "",
-	})
-	if err == nil {
-		t.Fatal("expected error for empty title")
-	}
-	var ve *ValidationError
-	if !errors.As(err, &ve) {
-		t.Errorf("err = %T, want *ValidationError", err)
-	}
-}
-
-func TestDocService_CreateDoc_EmptyArchiveID(t *testing.T) {
-	repo := &mockDocRepo{}
-	svc := NewDocService(repo)
-
-	_, err := svc.CreateDoc(context.Background(), CreateDocParams{
-		ArchiveID: "",
-		Title:     "Test",
-	})
-	if err == nil {
-		t.Fatal("expected error for empty archive_id")
-	}
-	var ve *ValidationError
-	if !errors.As(err, &ve) {
-		t.Errorf("err = %T, want *ValidationError", err)
 	}
 }
 
@@ -414,26 +366,6 @@ func TestDocService_CreateLink_SameSourceTarget(t *testing.T) {
 	}
 }
 
-func TestDocService_CreateLink_EmptySourceID(t *testing.T) {
-	repo := &mockDocRepo{}
-	svc := NewDocService(repo)
-
-	_, err := svc.CreateLink(context.Background(), "", "doc-2", "references")
-	if err == nil {
-		t.Fatal("expected error for empty source_id")
-	}
-}
-
-func TestDocService_CreateLink_EmptyTargetID(t *testing.T) {
-	repo := &mockDocRepo{}
-	svc := NewDocService(repo)
-
-	_, err := svc.CreateLink(context.Background(), "doc-1", "", "references")
-	if err == nil {
-		t.Fatal("expected error for empty target_id")
-	}
-}
-
 func TestDocService_GetLinks(t *testing.T) {
 	repo := &mockDocRepo{links: []DocLink{
 		{ID: "link-1", SourceID: "doc-1", TargetID: "doc-2"},
@@ -507,20 +439,6 @@ func TestDocService_EnsureDefaultArchive(t *testing.T) {
 	}
 }
 
-func TestDocService_SearchDocs_EmptyQuery(t *testing.T) {
-	repo := &mockDocRepo{}
-	svc := NewDocService(repo)
-
-	_, err := svc.SearchDocs(context.Background(), "", nil, "", "")
-	if err == nil {
-		t.Fatal("expected error for empty query")
-	}
-	var ve *ValidationError
-	if !errors.As(err, &ve) {
-		t.Errorf("err = %T, want *ValidationError", err)
-	}
-}
-
 func TestSentinelErrors(t *testing.T) {
 	if ErrArchiveNotFound == nil {
 		t.Error("ErrArchiveNotFound should not be nil")
@@ -574,19 +492,6 @@ func TestDocService_UpdateDoc_NotFound(t *testing.T) {
 	_, err := svc.UpdateDoc(context.Background(), "nonexistent", UpdateDocParams{Title: &title})
 	if !errors.Is(err, ErrDocNotFound) {
 		t.Errorf("err = %v, want ErrDocNotFound", err)
-	}
-}
-
-func TestDocService_CreateLink_EmptyRelationType(t *testing.T) {
-	repo := &mockDocRepo{}
-	svc := NewDocService(repo)
-	_, err := svc.CreateLink(context.Background(), "doc-1", "doc-2", "")
-	if err == nil {
-		t.Fatal("expected error for empty relation_type")
-	}
-	var ve *ValidationError
-	if !errors.As(err, &ve) {
-		t.Errorf("err = %T, want *ValidationError", err)
 	}
 }
 

@@ -4,6 +4,7 @@ package maze.v1;
 
 option go_package = "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1";
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 
@@ -11,9 +12,9 @@ import "google/protobuf/timestamp.proto";
 // 当前授权模型固定为 Casbin 三元组 sub,obj,act，这里对应 obj + act。
 message PermissionTarget {
   // resource 是稳定的授权资源名，按 Manager 当前能力边界命名。
-  string resource = 1;
+  string resource = 1 [(buf.validate.field).string = { min_len: 1 }];
   // action 是对 resource 执行的动作，例如 read/create/update/review。
-  string action = 2;
+  string action = 2 [(buf.validate.field).string = { min_len: 1 }];
 }
 
 // PermissionApplicationStatus 表示权限申请单的生命周期状态。
@@ -34,11 +35,11 @@ enum PermissionApplicationStatus {
 // CreatePermissionApplicationRequest 创建一张新的权限申请单。
 message CreatePermissionApplicationRequest {
   // subject_key 是外部稳定主体标识，格式固定为 <type>:<name>。
-  string subject_key = 1;
+  string subject_key = 1 [(buf.validate.field).string = { min_len: 1 }];
   // targets 是本次申请希望获得的一组资源动作。
-  repeated PermissionTarget targets = 2;
+  repeated PermissionTarget targets = 2 [(buf.validate.field).repeated = { min_items: 1 }];
   // reason 记录申请理由，供审批与审计使用。
-  string reason = 3;
+  string reason = 3 [(buf.validate.field).string = { min_len: 1 }];
   // expires_at 为可选过期时间；为空表示不设置 TTL。
   google.protobuf.Timestamp expires_at = 4;
 }
@@ -54,13 +55,13 @@ message ListPermissionApplicationsRequest {
 // GetPermissionApplicationRequest 根据业务主键读取单个申请单。
 // permission_application_id 是业务资源 ID，不是 trace/request id。
 message GetPermissionApplicationRequest {
-  string permission_application_id = 1;
+  string permission_application_id = 1 [(buf.validate.field).string = { min_len: 1 }];
 }
 
 // ReviewPermissionApplicationRequest 审批一张申请单。
 message ReviewPermissionApplicationRequest {
   // permission_application_id 是待审批申请单的业务主键。
-  string permission_application_id = 1;
+  string permission_application_id = 1 [(buf.validate.field).string = { min_len: 1 }];
   // approved=true 表示批准；false 表示拒绝。
   bool approved = 2;
   // review_comment 记录审批意见；拒绝时应提供原因。
@@ -70,14 +71,14 @@ message ReviewPermissionApplicationRequest {
 // RevokePermissionApplicationRequest 撤销一张已批准申请对应的授权结果。
 message RevokePermissionApplicationRequest {
   // permission_application_id 是待撤销申请单的业务主键。
-  string permission_application_id = 1;
+  string permission_application_id = 1 [(buf.validate.field).string = { min_len: 1 }];
   // revoke_reason 记录撤销原因，供审计与排障使用。
   string revoke_reason = 2;
 }
 
 // ListSubjectPermissionsRequest 查询主体当前生效的 grant。
 message ListSubjectPermissionsRequest {
-  string subject_key = 1;
+  string subject_key = 1 [(buf.validate.field).string = { min_len: 1 }];
 }
 
 // PermissionApplication 表示一张权限申请单。

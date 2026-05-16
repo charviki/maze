@@ -500,37 +500,3 @@ func TestUpdateConfig_ReadOnlyWorkingDir(t *testing.T) {
 		t.Errorf("code = %v, 期望 InvalidArgument", st.Code())
 	}
 }
-
-func TestSendInput_EmptyCommand(t *testing.T) {
-	mock := &mockTmuxService{}
-	srv := newTestServer(t, mock)
-
-	_, err := srv.SendInput(context.Background(), &pb.SendInputRequest{
-		Id:      "s1",
-		Command: "",
-	})
-	st, ok := status.FromError(err)
-	if !ok {
-		t.Fatal("应返回 gRPC status")
-	}
-	if st.Code() != codes.InvalidArgument {
-		t.Errorf("code = %v, 期望 InvalidArgument", st.Code())
-	}
-}
-
-func TestSendSignal_EmptySignal(t *testing.T) {
-	mock := &mockTmuxService{}
-	srv := newTestServer(t, mock)
-
-	_, err := srv.SendSignal(context.Background(), &pb.SendSignalRequest{
-		Id:     "s1",
-		Signal: "",
-	})
-	st, ok := status.FromError(err)
-	if !ok {
-		t.Fatal("应返回 gRPC status")
-	}
-	if st.Code() != codes.InvalidArgument {
-		t.Errorf("code = %v, 期望 InvalidArgument", st.Code())
-	}
-}

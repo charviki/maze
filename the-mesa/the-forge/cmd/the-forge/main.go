@@ -54,7 +54,12 @@ func main() {
 	docSvc := service.NewDocService(docRepo)
 
 	// gRPC server
+	validationInterceptor, err := gatewayutil.NewValidationInterceptor()
+	if err != nil {
+		logger.Fatalf("create validation interceptor: %v", err)
+	}
 	grpcCore := grpc.NewServer(grpc.ChainUnaryInterceptor(
+		validationInterceptor,
 		gatewayutil.UnaryAuthInterceptor(cfg.Server.JWTSecret),
 	))
 	docTransport := transport.NewServer(docSvc)

@@ -4,6 +4,7 @@ package maze.v1;
 
 option go_package = "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1";
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 import "maze/v1/session.proto";
@@ -18,33 +19,33 @@ message ListTemplatesResponse {
 
 message CreateTemplateRequest {
   string node_name = 1;
-  SessionTemplate template = 2;
+  SessionTemplate template = 2 [(buf.validate.field).required = true];
 }
 
 message GetTemplateRequest {
   string node_name = 1;
-  string id = 2;
+  string id = 2 [(buf.validate.field).string = { min_len: 1 }];
 }
 
 message UpdateTemplateRequest {
   string node_name = 1;
-  string id = 2;
+  string id = 2 [(buf.validate.field).string = { min_len: 1 }];
   SessionTemplate template = 3;
 }
 
 message DeleteTemplateRequest {
   string node_name = 1;
-  string id = 2;
+  string id = 2 [(buf.validate.field).string = { min_len: 1 }];
 }
 
 message GetTemplateConfigRequest {
   string node_name = 1;
-  string id = 2;
+  string id = 2 [(buf.validate.field).string = { min_len: 1 }];
 }
 
 message UpdateTemplateConfigRequest {
   string node_name = 1;
-  string id = 2;
+  string id = 2 [(buf.validate.field).string = { min_len: 1 }];
   repeated ConfigFileUpdate files = 3;
 }
 
@@ -86,8 +87,8 @@ message SessionSchema {
 
 // 与 model.SessionTemplate 对齐
 message SessionTemplate {
-  string id = 1;
-  string name = 2;
+  string id = 1 [(buf.validate.field).string = { min_len: 1 }];
+  string name = 2 [(buf.validate.field).string = { min_len: 1 }];
   string command = 3;
   string restore_command = 4;
   string session_file_pattern = 5;

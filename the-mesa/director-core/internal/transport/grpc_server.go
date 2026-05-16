@@ -81,13 +81,6 @@ func (s *Server) RegisterGRPC(grpcServer *grpc.Server) {
 
 // Register Agent 注册 gRPC 接口：校验参数 → 注册到 registry → 异步恢复已保存 session
 func (s *Server) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.RegisterResponse, error) {
-	if req.GetName() == "" {
-		return nil, status.Error(codes.InvalidArgument, "name is required")
-	}
-	if req.GetAddress() == "" {
-		return nil, status.Error(codes.InvalidArgument, "address is required")
-	}
-
 	protoReq := pbRegisterToProtocol(req)
 	node, err := s.registry.Register(ctx, protoReq)
 	if err != nil {
@@ -105,10 +98,6 @@ func (s *Server) Register(ctx context.Context, req *pb.RegisterRequest) (*pb.Reg
 
 // Heartbeat Agent 心跳 gRPC 接口：校验参数 → 更新心跳和状态快照
 func (s *Server) Heartbeat(ctx context.Context, req *pb.HeartbeatRequest) (*pb.HeartbeatResponse, error) {
-	if req.GetName() == "" {
-		return nil, status.Error(codes.InvalidArgument, "name is required")
-	}
-
 	protoReq := pbHeartbeatToProtocol(req)
 	node, err := s.registry.Heartbeat(ctx, protoReq)
 	if err != nil {

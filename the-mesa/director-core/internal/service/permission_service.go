@@ -57,11 +57,8 @@ func NewPermissionService(store PermissionStore, txm AuthTxManager, reload Polic
 
 // CreatePermissionApplication 创建权限申请。
 func (s *PermissionService) CreatePermissionApplication(ctx context.Context, input CreatePermissionApplicationInput) (PermissionApplication, error) {
-	if err := validateSubjectAndTargets(input.SubjectKey, input.Targets); err != nil {
+	if err := validateNoDuplicateTargets(input.Targets); err != nil {
 		return PermissionApplication{}, err
-	}
-	if strings.TrimSpace(input.Reason) == "" {
-		return PermissionApplication{}, NewValidationError("reason is required")
 	}
 	if input.ExpiresAt != nil && !input.ExpiresAt.After(time.Now().UTC()) {
 		// 过期时间必须晚于当前时刻；否则审批成功后授权会立刻进入“应失效但 Casbin 尚未刷新”的不一致窗口。
@@ -122,17 +119,11 @@ func (s *PermissionService) ListPermissionApplications(ctx context.Context, inpu
 
 // GetPermissionApplication 获取单个权限申请。
 func (s *PermissionService) GetPermissionApplication(ctx context.Context, permissionApplicationID string) (PermissionApplication, error) {
-	if strings.TrimSpace(permissionApplicationID) == "" {
-		return PermissionApplication{}, NewValidationError("permission application id is required")
-	}
 	return s.store.GetPermissionApplication(ctx, permissionApplicationID)
 }
 
 // ReviewPermissionApplication 审批权限申请。
 func (s *PermissionService) ReviewPermissionApplication(ctx context.Context, input ReviewPermissionApplicationInput) (PermissionApplication, error) {
-	if strings.TrimSpace(input.PermissionApplicationID) == "" {
-		return PermissionApplication{}, NewValidationError("permission application id is required")
-	}
 	if strings.TrimSpace(input.ReviewerSubjectKey) == "" {
 		return PermissionApplication{}, NewValidationError("reviewer subject key is required")
 	}
@@ -248,9 +239,6 @@ func (s *PermissionService) ReviewPermissionApplication(ctx context.Context, inp
 
 // RevokePermissionApplication 撤销已批准申请对应的权限。
 func (s *PermissionService) RevokePermissionApplication(ctx context.Context, input RevokePermissionApplicationInput) (PermissionApplication, error) {
-	if strings.TrimSpace(input.PermissionApplicationID) == "" {
-		return PermissionApplication{}, NewValidationError("permission application id is required")
-	}
 	if strings.TrimSpace(input.ReviewerSubjectKey) == "" {
 		return PermissionApplication{}, NewValidationError("reviewer subject key is required")
 	}
@@ -316,9 +304,6 @@ func (s *PermissionService) RevokePermissionApplication(ctx context.Context, inp
 
 // ListSubjectPermissions 返回主体当前授权结果。
 func (s *PermissionService) ListSubjectPermissions(ctx context.Context, subjectKey string) ([]PermissionGrant, error) {
-	if strings.TrimSpace(subjectKey) == "" {
-		return nil, NewValidationError("subject key is required")
-	}
 	grants, err := s.store.ListSubjectPermissionGrants(ctx, subjectKey)
 	if err != nil {
 		return nil, err
@@ -393,18 +378,9 @@ func (s *PermissionService) reloadAfterCommit(action string) {
 	log.Printf("permission policy reload failed after committed action=%s: %v", action, err)
 }
 
-func validateSubjectAndTargets(subjectKey string, targets []PermissionTarget) error {
-	if strings.TrimSpace(subjectKey) == "" {
-		return NewValidationError("subject key is required")
-	}
-	if len(targets) == 0 {
-		return NewValidationError("at least one permission target is required")
-	}
+func validateNoDuplicateTargets(targets []PermissionTarget) error {
 	seen := make(map[string]struct{}, len(targets))
 	for _, target := range targets {
-		if strings.TrimSpace(target.Resource) == "" || strings.TrimSpace(target.Action) == "" {
-			return NewValidationError("permission target resource and action are required")
-		}
 		key := strings.TrimSpace(target.Resource) + "\x00" + strings.TrimSpace(target.Action)
 		if _, ok := seen[key]; ok {
 			return NewValidationError("duplicate permission target is not allowed")
@@ -429,9 +405,6 @@ func filterVisiblePermissionGrants(grants []PermissionGrant, now time.Time) []Pe
 }
 
 func upsertSubject(ctx context.Context, store PermissionStore, subjectKey string, isSystem bool) error {
-	if strings.TrimSpace(subjectKey) == "" {
-		return NewValidationError("subject key is required")
-	}
 	_, err := store.UpsertSubject(ctx, Subject{
 		SubjectKey:  subjectKey,
 		SubjectType: subjectTypeFromKey(subjectKey),

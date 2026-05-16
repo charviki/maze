@@ -28,16 +28,7 @@ func (s *Server) ListTemplates(ctx context.Context, req *pb.ListTemplatesRequest
 
 // CreateTemplate 创建新模板
 func (s *Server) CreateTemplate(ctx context.Context, req *pb.CreateTemplateRequest) (*pb.SessionTemplate, error) {
-	if req.GetTemplate() == nil {
-		return nil, status.Error(codes.InvalidArgument, "template is required")
-	}
 	tpl := protoToModelTemplate(req.GetTemplate())
-	if tpl.ID == "" {
-		return nil, status.Error(codes.InvalidArgument, "id is required")
-	}
-	if tpl.Name == "" {
-		return nil, status.Error(codes.InvalidArgument, "name is required")
-	}
 	if s.templateStore.Get(tpl.ID) != nil {
 		return nil, status.Error(codes.AlreadyExists, fmt.Sprintf("template %s already exists", tpl.ID))
 	}

@@ -3,11 +3,13 @@ module github.com/charviki/maze/fabrication/cradle
 go 1.26.0
 
 require (
+	github.com/anthropics/anthropic-sdk-go v1.41.0
 	github.com/casbin/casbin/v3 v3.10.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0
 	github.com/jackc/pgx/v5 v5.9.2
+	github.com/openai/openai-go v1.12.0
 	github.com/pressly/goose/v3 v3.27.1
 	golang.org/x/sync v0.20.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20260427160629-7cedc36a6bc4
@@ -18,7 +20,6 @@ require (
 )
 
 require (
-	github.com/anthropics/anthropic-sdk-go v1.41.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.6.1 // indirect
 	github.com/buger/jsonparser v1.1.2 // indirect
@@ -32,7 +33,6 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
-	github.com/openai/openai-go v1.12.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect

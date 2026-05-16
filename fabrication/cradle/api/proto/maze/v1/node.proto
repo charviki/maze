@@ -4,6 +4,7 @@ package maze.v1;
 
 option go_package = "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1";
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 import "maze/v1/agent.proto";
@@ -30,11 +31,11 @@ message ListNodesResponse {
 }
 
 message GetNodeRequest {
-  string name = 1;
+  string name = 1 [(buf.validate.field).string = { min_len: 1 }];
 }
 
 message DeleteNodeRequest {
-  string name = 1;
+  string name = 1 [(buf.validate.field).string = { min_len: 1 }];
 }
 
 service NodeService {

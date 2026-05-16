@@ -7,6 +7,7 @@
 package mazev1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -1807,7 +1808,7 @@ var File_maze_v1_knowledge_proto protoreflect.FileDescriptor
 
 const file_maze_v1_knowledge_proto_rawDesc = "" +
 	"\n" +
-	"\x17maze/v1/knowledge.proto\x12\amaze.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\"y\n" +
+	"\x17maze/v1/knowledge.proto\x12\amaze.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\"y\n" +
 	"\n" +
 	"Attachment\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x10\n" +
@@ -1860,28 +1861,28 @@ const file_maze_v1_knowledge_proto_rawDesc = "" +
 	"\fsource_title\x18\x05 \x01(\tR\vsourceTitle\x12!\n" +
 	"\ftarget_title\x18\x06 \x01(\tR\vtargetTitle\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\a \x01(\tR\tcreatedAt\"`\n" +
-	"\x14CreateArchiveRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
+	"created_at\x18\a \x01(\tR\tcreatedAt\"i\n" +
+	"\x14CreateArchiveRequest\x12\x1b\n" +
+	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\x12 \n" +
 	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x12\n" +
-	"\x04icon\x18\x03 \x01(\tR\x04icon\"#\n" +
-	"\x11GetArchiveRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\x15\n" +
+	"\x04icon\x18\x03 \x01(\tR\x04icon\"{\n" +
+	"\x11GetArchiveRequest\x12f\n" +
+	"\x02id\x18\x01 \x01(\tBV\xbaHSrQ\x10\x012M^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$R\x02id\"\x15\n" +
 	"\x13ListArchivesRequest\"D\n" +
 	"\x14ListArchivesResponse\x12,\n" +
-	"\barchives\x18\x01 \x03(\v2\x10.maze.v1.ArchiveR\barchives\"p\n" +
-	"\x14UpdateArchiveRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\barchives\x18\x01 \x03(\v2\x10.maze.v1.ArchiveR\barchives\"\xc8\x01\n" +
+	"\x14UpdateArchiveRequest\x12f\n" +
+	"\x02id\x18\x01 \x01(\tBV\xbaHSrQ\x10\x012M^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$R\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x12\n" +
-	"\x04icon\x18\x04 \x01(\tR\x04icon\"&\n" +
-	"\x14DeleteArchiveRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\xf4\x02\n" +
-	"\x10CreateDocRequest\x12\x1d\n" +
+	"\x04icon\x18\x04 \x01(\tR\x04icon\"~\n" +
+	"\x14DeleteArchiveRequest\x12f\n" +
+	"\x02id\x18\x01 \x01(\tBV\xbaHSrQ\x10\x012M^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$R\x02id\"\xd5\x03\n" +
+	"\x10CreateDocRequest\x12u\n" +
 	"\n" +
-	"archive_id\x18\x01 \x01(\tR\tarchiveId\x12\x1b\n" +
-	"\tparent_id\x18\x02 \x01(\tR\bparentId\x12\x14\n" +
-	"\x05title\x18\x03 \x01(\tR\x05title\x12\x18\n" +
+	"archive_id\x18\x01 \x01(\tBV\xbaHSrQ\x10\x012M^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$R\tarchiveId\x12\x1b\n" +
+	"\tparent_id\x18\x02 \x01(\tR\bparentId\x12\x1d\n" +
+	"\x05title\x18\x03 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x05title\x12\x18\n" +
 	"\acontent\x18\x04 \x01(\tR\acontent\x12\x18\n" +
 	"\asummary\x18\x05 \x01(\tR\asummary\x12\x16\n" +
 	"\x06status\x18\x06 \x01(\tR\x06status\x12\x1a\n" +
@@ -1894,9 +1895,9 @@ const file_maze_v1_knowledge_proto_rawDesc = "" +
 	"visibility\x12\x1f\n" +
 	"\vshared_with\x18\v \x03(\tR\n" +
 	"sharedWith\x125\n" +
-	"\vattachments\x18\f \x03(\v2\x13.maze.v1.AttachmentR\vattachments\"\x1f\n" +
-	"\rGetDocRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\xcb\x01\n" +
+	"\vattachments\x18\f \x03(\v2\x13.maze.v1.AttachmentR\vattachments\"w\n" +
+	"\rGetDocRequest\x12f\n" +
+	"\x02id\x18\x01 \x01(\tBV\xbaHSrQ\x10\x012M^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$R\x02id\"\xcb\x01\n" +
 	"\x0fListDocsRequest\x12\x1d\n" +
 	"\n" +
 	"archive_id\x18\x01 \x01(\tR\tarchiveId\x12\x1b\n" +
@@ -1910,9 +1911,9 @@ const file_maze_v1_knowledge_proto_rawDesc = "" +
 	"\x06offset\x18\a \x01(\x05R\x06offset\"L\n" +
 	"\x10ListDocsResponse\x12\"\n" +
 	"\x05items\x18\x01 \x03(\v2\f.maze.v1.DocR\x05items\x12\x14\n" +
-	"\x05total\x18\x02 \x01(\x05R\x05total\"\xe5\x02\n" +
-	"\x10UpdateDocRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x05R\x05total\"\xbd\x03\n" +
+	"\x10UpdateDocRequest\x12f\n" +
+	"\x02id\x18\x01 \x01(\tBV\xbaHSrQ\x10\x012M^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$R\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
 	"\acontent\x18\x03 \x01(\tR\acontent\x12\x18\n" +
 	"\asummary\x18\x04 \x01(\tR\asummary\x12\x16\n" +
@@ -1927,11 +1928,11 @@ const file_maze_v1_knowledge_proto_rawDesc = "" +
 	" \x03(\tR\n" +
 	"sharedWith\x125\n" +
 	"\vattachments\x18\v \x03(\v2\x13.maze.v1.AttachmentR\vattachments\x12\x1b\n" +
-	"\tparent_id\x18\f \x01(\tR\bparentId\"\"\n" +
-	"\x10DeleteDocRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"x\n" +
-	"\x11SearchDocsRequest\x12\f\n" +
-	"\x01q\x18\x01 \x01(\tR\x01q\x12\x1d\n" +
+	"\tparent_id\x18\f \x01(\tR\bparentId\"z\n" +
+	"\x10DeleteDocRequest\x12f\n" +
+	"\x02id\x18\x01 \x01(\tBV\xbaHSrQ\x10\x012M^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$R\x02id\"\x81\x01\n" +
+	"\x11SearchDocsRequest\x12\x15\n" +
+	"\x01q\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x01q\x12\x1d\n" +
 	"\n" +
 	"archive_id\x18\x02 \x01(\tR\tarchiveId\x12\x1e\n" +
 	"\n" +
@@ -1939,30 +1940,30 @@ const file_maze_v1_knowledge_proto_rawDesc = "" +
 	"visibility\x12\x16\n" +
 	"\x06author\x18\x04 \x01(\tR\x06author\"8\n" +
 	"\x12SearchDocsResponse\x12\"\n" +
-	"\x05items\x18\x01 \x03(\v2\f.maze.v1.DocR\x05items\"O\n" +
-	"\x11GetDocTreeRequest\x12\x1d\n" +
+	"\x05items\x18\x01 \x03(\v2\f.maze.v1.DocR\x05items\"\xa7\x01\n" +
+	"\x11GetDocTreeRequest\x12u\n" +
 	"\n" +
-	"archive_id\x18\x01 \x01(\tR\tarchiveId\x12\x1b\n" +
+	"archive_id\x18\x01 \x01(\tBV\xbaHSrQ\x10\x012M^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$R\tarchiveId\x12\x1b\n" +
 	"\tparent_id\x18\x02 \x01(\tR\bparentId\"@\n" +
 	"\x12GetDocTreeResponse\x12*\n" +
-	"\x05nodes\x18\x01 \x03(\v2\x14.maze.v1.DocTreeNodeR\x05nodes\"(\n" +
-	"\x16GetDocAncestorsRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"E\n" +
+	"\x05nodes\x18\x01 \x03(\v2\x14.maze.v1.DocTreeNodeR\x05nodes\"\x80\x01\n" +
+	"\x16GetDocAncestorsRequest\x12f\n" +
+	"\x02id\x18\x01 \x01(\tBV\xbaHSrQ\x10\x012M^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$R\x02id\"E\n" +
 	"\x17GetDocAncestorsResponse\x12*\n" +
-	"\tancestors\x18\x01 \x03(\v2\f.maze.v1.DocR\tancestors\"d\n" +
-	"\x0fGetLinksRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1c\n" +
+	"\tancestors\x18\x01 \x03(\v2\f.maze.v1.DocR\tancestors\"\xbc\x01\n" +
+	"\x0fGetLinksRequest\x12f\n" +
+	"\x02id\x18\x01 \x01(\tBV\xbaHSrQ\x10\x012M^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$R\x02id\x12\x1c\n" +
 	"\tdirection\x18\x02 \x01(\tR\tdirection\x12#\n" +
 	"\rrelation_type\x18\x03 \x01(\tR\frelationType\":\n" +
 	"\x10GetLinksResponse\x12&\n" +
-	"\x05links\x18\x01 \x03(\v2\x10.maze.v1.DocLinkR\x05links\"e\n" +
-	"\x11CreateLinkRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
-	"\ttarget_id\x18\x02 \x01(\tR\btargetId\x12#\n" +
-	"\rrelation_type\x18\x03 \x01(\tR\frelationType\"<\n" +
+	"\x05links\x18\x01 \x03(\v2\x10.maze.v1.DocLinkR\x05links\"\x9e\x02\n" +
+	"\x11CreateLinkRequest\x12f\n" +
+	"\x02id\x18\x01 \x01(\tBV\xbaHSrQ\x10\x012M^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$R\x02id\x12s\n" +
+	"\ttarget_id\x18\x02 \x01(\tBV\xbaHSrQ\x10\x012M^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$R\btargetId\x12,\n" +
+	"\rrelation_type\x18\x03 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\frelationType\"\x94\x01\n" +
 	"\x11DeleteLinkRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
-	"\alink_id\x18\x02 \x01(\tR\x06linkId2\x8e\f\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12o\n" +
+	"\alink_id\x18\x02 \x01(\tBV\xbaHSrQ\x10\x012M^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$R\x06linkId2\x8e\f\n" +
 	"\x10KnowledgeService\x12]\n" +
 	"\rCreateArchive\x12\x1d.maze.v1.CreateArchiveRequest\x1a\x10.maze.v1.Archive\"\x1b\x82\xd3\xe4\x93\x02\x15:\x01*\"\x10/api/v1/archives\x12Y\n" +
 	"\n" +

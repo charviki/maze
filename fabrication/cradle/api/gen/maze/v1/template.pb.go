@@ -7,6 +7,7 @@
 package mazev1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -920,30 +921,30 @@ var File_maze_v1_template_proto protoreflect.FileDescriptor
 
 const file_maze_v1_template_proto_rawDesc = "" +
 	"\n" +
-	"\x16maze/v1/template.proto\x12\amaze.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x15maze/v1/session.proto\"3\n" +
+	"\x16maze/v1/template.proto\x12\amaze.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x15maze/v1/session.proto\"3\n" +
 	"\x14ListTemplatesRequest\x12\x1b\n" +
 	"\tnode_name\x18\x01 \x01(\tR\bnodeName\"O\n" +
 	"\x15ListTemplatesResponse\x126\n" +
-	"\ttemplates\x18\x01 \x03(\v2\x18.maze.v1.SessionTemplateR\ttemplates\"j\n" +
+	"\ttemplates\x18\x01 \x03(\v2\x18.maze.v1.SessionTemplateR\ttemplates\"r\n" +
 	"\x15CreateTemplateRequest\x12\x1b\n" +
-	"\tnode_name\x18\x01 \x01(\tR\bnodeName\x124\n" +
-	"\btemplate\x18\x02 \x01(\v2\x18.maze.v1.SessionTemplateR\btemplate\"A\n" +
+	"\tnode_name\x18\x01 \x01(\tR\bnodeName\x12<\n" +
+	"\btemplate\x18\x02 \x01(\v2\x18.maze.v1.SessionTemplateB\x06\xbaH\x03\xc8\x01\x01R\btemplate\"J\n" +
 	"\x12GetTemplateRequest\x12\x1b\n" +
-	"\tnode_name\x18\x01 \x01(\tR\bnodeName\x12\x0e\n" +
-	"\x02id\x18\x02 \x01(\tR\x02id\"z\n" +
+	"\tnode_name\x18\x01 \x01(\tR\bnodeName\x12\x17\n" +
+	"\x02id\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x02id\"\x83\x01\n" +
 	"\x15UpdateTemplateRequest\x12\x1b\n" +
-	"\tnode_name\x18\x01 \x01(\tR\bnodeName\x12\x0e\n" +
-	"\x02id\x18\x02 \x01(\tR\x02id\x124\n" +
-	"\btemplate\x18\x03 \x01(\v2\x18.maze.v1.SessionTemplateR\btemplate\"D\n" +
+	"\tnode_name\x18\x01 \x01(\tR\bnodeName\x12\x17\n" +
+	"\x02id\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x02id\x124\n" +
+	"\btemplate\x18\x03 \x01(\v2\x18.maze.v1.SessionTemplateR\btemplate\"M\n" +
 	"\x15DeleteTemplateRequest\x12\x1b\n" +
-	"\tnode_name\x18\x01 \x01(\tR\bnodeName\x12\x0e\n" +
-	"\x02id\x18\x02 \x01(\tR\x02id\"G\n" +
+	"\tnode_name\x18\x01 \x01(\tR\bnodeName\x12\x17\n" +
+	"\x02id\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x02id\"P\n" +
 	"\x18GetTemplateConfigRequest\x12\x1b\n" +
-	"\tnode_name\x18\x01 \x01(\tR\bnodeName\x12\x0e\n" +
-	"\x02id\x18\x02 \x01(\tR\x02id\"{\n" +
+	"\tnode_name\x18\x01 \x01(\tR\bnodeName\x12\x17\n" +
+	"\x02id\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x02id\"\x84\x01\n" +
 	"\x1bUpdateTemplateConfigRequest\x12\x1b\n" +
-	"\tnode_name\x18\x01 \x01(\tR\bnodeName\x12\x0e\n" +
-	"\x02id\x18\x02 \x01(\tR\x02id\x12/\n" +
+	"\tnode_name\x18\x01 \x01(\tR\bnodeName\x12\x17\n" +
+	"\x02id\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x02id\x12/\n" +
 	"\x05files\x18\x03 \x03(\v2\x19.maze.v1.ConfigFileUpdateR\x05files\"~\n" +
 	"\x12TemplateConfigView\x12\x1f\n" +
 	"\vtemplate_id\x18\x01 \x01(\tR\n" +
@@ -973,10 +974,10 @@ const file_maze_v1_template_proto_rawDesc = "" +
 	"\x0fdefault_content\x18\x04 \x01(\tR\x0edefaultContent\"j\n" +
 	"\rSessionSchema\x12*\n" +
 	"\benv_defs\x18\x01 \x03(\v2\x0f.maze.v1.EnvDefR\aenvDefs\x12-\n" +
-	"\tfile_defs\x18\x02 \x03(\v2\x10.maze.v1.FileDefR\bfileDefs\"\xeb\x02\n" +
-	"\x0fSessionTemplate\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
+	"\tfile_defs\x18\x02 \x03(\v2\x10.maze.v1.FileDefR\bfileDefs\"\xfd\x02\n" +
+	"\x0fSessionTemplate\x12\x17\n" +
+	"\x02id\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x02id\x12\x1b\n" +
+	"\x04name\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\x12\x18\n" +
 	"\acommand\x18\x03 \x01(\tR\acommand\x12'\n" +
 	"\x0frestore_command\x18\x04 \x01(\tR\x0erestoreCommand\x120\n" +
 	"\x14session_file_pattern\x18\x05 \x01(\tR\x12sessionFilePattern\x12 \n" +

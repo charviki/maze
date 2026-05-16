@@ -24,16 +24,12 @@ var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	// ErrUserDisabled 用户已被禁用。
 	ErrUserDisabled = errors.New("user is disabled")
-	// ErrRefreshTokenRequired refresh token 为空。
-	ErrRefreshTokenRequired = errors.New("refresh token is required")
 	// ErrRefreshTokenNotFound refresh token 不存在或已被并发消费。
 	ErrRefreshTokenNotFound = errors.New("refresh token not found or already used")
 	// ErrRefreshTokenRevoked refresh token 已被撤销。
 	ErrRefreshTokenRevoked = errors.New("refresh token has been revoked")
 	// ErrRefreshTokenExpired refresh token 已过期。
 	ErrRefreshTokenExpired = errors.New("refresh token has expired")
-	// ErrUsernamePasswordRequired 用户名或密码为空。
-	ErrUsernamePasswordRequired = errors.New("username and password are required")
 )
 
 // AuthService 处理用户认证业务逻辑。
@@ -86,10 +82,6 @@ type LoginResult struct {
 
 // Login 校验用户名密码，签发 access/refresh token 对。
 func (s *AuthService) Login(ctx context.Context, username, password string) (*LoginResult, error) {
-	if username == "" || password == "" {
-		return nil, ErrUsernamePasswordRequired
-	}
-
 	user, err := s.users.GetUserByUsername(ctx, username)
 	if err != nil {
 		return nil, errors.New("internal error during user lookup")
@@ -112,10 +104,6 @@ func (s *AuthService) Login(ctx context.Context, username, password string) (*Lo
 
 // Refresh 使用 refresh token 换发新的令牌对，旧 token 在同一事务中原子消费，防止并发重放。
 func (s *AuthService) Refresh(ctx context.Context, refreshToken string) (*LoginResult, error) {
-	if refreshToken == "" {
-		return nil, ErrRefreshTokenRequired
-	}
-
 	tokenHash := auth.HashToken(refreshToken)
 	var result *LoginResult
 	err := s.txm.WithinTx(ctx, func(txCtx context.Context) error {
@@ -146,10 +134,6 @@ func (s *AuthService) Refresh(ctx context.Context, refreshToken string) (*LoginR
 
 // Logout 仅撤销当前主体自己的 refresh token。
 func (s *AuthService) Logout(ctx context.Context, subjectKey, refreshToken string) error {
-	if refreshToken == "" {
-		return ErrRefreshTokenRequired
-	}
-
 	tokenHash := auth.HashToken(refreshToken)
 	cred, err := s.credentials.GetCredentialByTokenHash(ctx, tokenHash)
 	if err != nil {

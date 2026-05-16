@@ -4,6 +4,7 @@ modules:
     name: buf.build/charviki/maze
 deps:
   - buf.build/googleapis/googleapis
+  - buf.build/bufbuild/protovalidate
 lint:
   use:
     - STANDARD

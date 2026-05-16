@@ -32,10 +32,6 @@ func NewAuthHandler(svc AuthService) *AuthHandler {
 
 // Login 处理用户登录请求。
 func (h *AuthHandler) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
-	if req.GetUsername() == "" || req.GetPassword() == "" {
-		return nil, status.Error(codes.InvalidArgument, "username and password are required")
-	}
-
 	result, err := h.service.Login(ctx, req.GetUsername(), req.GetPassword())
 	if err != nil {
 		return nil, toAuthStatusError(err)
@@ -50,10 +46,6 @@ func (h *AuthHandler) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Logi
 
 // Refresh 处理令牌刷新请求。
 func (h *AuthHandler) Refresh(ctx context.Context, req *pb.RefreshRequest) (*pb.RefreshResponse, error) {
-	if req.GetRefreshToken() == "" {
-		return nil, status.Error(codes.InvalidArgument, "refresh token is required")
-	}
-
 	result, err := h.service.Refresh(ctx, req.GetRefreshToken())
 	if err != nil {
 		return nil, toAuthStatusError(err)
@@ -68,10 +60,6 @@ func (h *AuthHandler) Refresh(ctx context.Context, req *pb.RefreshRequest) (*pb.
 
 // Logout 处理用户登出请求。
 func (h *AuthHandler) Logout(ctx context.Context, req *pb.LogoutRequest) (*emptypb.Empty, error) {
-	if req.GetRefreshToken() == "" {
-		return nil, status.Error(codes.InvalidArgument, "refresh token is required")
-	}
-
 	userInfo := auth.GetUserInfo(ctx)
 	if userInfo == nil || userInfo.SubjectKey == "" {
 		// Logout 应由认证层保证已有主体；这里额外兜底，防止绕过拦截器时退化为匿名撤销。
@@ -95,11 +83,9 @@ func toAuthStatusError(err error) error {
 	switch {
 	case errors.Is(err, service.ErrInvalidCredentials),
 		errors.Is(err, service.ErrUserDisabled),
-		errors.Is(err, service.ErrRefreshTokenRequired),
 		errors.Is(err, service.ErrRefreshTokenNotFound),
 		errors.Is(err, service.ErrRefreshTokenRevoked),
-		errors.Is(err, service.ErrRefreshTokenExpired),
-		errors.Is(err, service.ErrUsernamePasswordRequired):
+		errors.Is(err, service.ErrRefreshTokenExpired):
 		return status.Error(codes.Unauthenticated, err.Error())
 	default:
 		return status.Error(codes.Internal, "internal error")

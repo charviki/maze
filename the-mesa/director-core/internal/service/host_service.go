@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -76,12 +75,6 @@ func (s *HostService) SetCredentialStore(store repository.CredentialStore) {
 
 // CreateHost 校验 → 持久化 HostSpec → 后台异步构建部署
 func (s *HostService) CreateHost(ctx context.Context, req *protocol.CreateHostRequest) (*protocol.HostSpec, error) {
-	if req.Name == "" {
-		return nil, errors.New("name is required")
-	}
-	if len(req.Tools) == 0 {
-		return nil, errors.New("at least one tool is required")
-	}
 	if unknown := hostbuilder.ValidateTools(req.Tools); len(unknown) > 0 {
 		return nil, fmt.Errorf("unknown tools: %s. available: %s",
 			strings.Join(unknown, ", "),
@@ -168,9 +161,6 @@ func (s *HostService) ListHosts(ctx context.Context) ([]*protocol.HostInfo, erro
 
 // GetHost 返回单个 Host 信息
 func (s *HostService) GetHost(ctx context.Context, name string) (*protocol.HostInfo, error) {
-	if name == "" {
-		return nil, errors.New("name is required")
-	}
 	spec, err := s.hostSpecRepo.Get(ctx, name)
 	if err != nil {
 		return nil, fmt.Errorf("get host spec %q: %w", name, err)
@@ -188,10 +178,6 @@ func (s *HostService) GetHost(ctx context.Context, name string) (*protocol.HostI
 
 // DeleteHost 销毁 Host：删除 HostSpec + 清理令牌 + 停止容器 + 审计
 func (s *HostService) DeleteHost(ctx context.Context, name string) error {
-	if name == "" {
-		return errors.New("name is required")
-	}
-
 	if err := s.runtime.RemoveHost(ctx, name); err != nil {
 		// 底层资源没删干净时必须保留控制面记录，避免把"残留资源"伪装成"删除成功"。
 		s.logAuditError(ctx, protocol.AuditLogEntry{
@@ -243,10 +229,6 @@ func (s *HostService) DeleteHost(ctx context.Context, name string) error {
 
 // GetBuildLog 返回构建日志内容
 func (s *HostService) GetBuildLog(ctx context.Context, name string) (string, error) {
-	if name == "" {
-		return "", errors.New("name is required")
-	}
-
 	spec, err := s.hostSpecRepo.Get(ctx, name)
 	if err != nil {
 		return "", fmt.Errorf("get host spec %q: %w", name, err)
@@ -269,9 +251,6 @@ func (s *HostService) GetBuildLog(ctx context.Context, name string) (string, err
 
 // GetRuntimeLog 返回运行时日志
 func (s *HostService) GetRuntimeLog(ctx context.Context, name string) (string, error) {
-	if name == "" {
-		return "", errors.New("name is required")
-	}
 
 	spec, err := s.hostSpecRepo.Get(ctx, name)
 	if err != nil {

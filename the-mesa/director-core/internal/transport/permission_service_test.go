@@ -157,15 +157,6 @@ func TestPermissionServiceServerListPermissionApplicationsMapsRequestAndResponse
 	}
 }
 
-func TestPermissionServiceServerGetPermissionApplicationRequiresID(t *testing.T) {
-	server := NewPermissionServiceServer(&mockPermissionApplicationService{})
-
-	_, err := server.GetPermissionApplication(context.Background(), &pb.GetPermissionApplicationRequest{})
-	if status.Code(err) != codes.InvalidArgument {
-		t.Fatalf("grpc code = %s, want %s", status.Code(err), codes.InvalidArgument)
-	}
-}
-
 func TestPermissionServiceServerGetPermissionApplicationMapsNotFound(t *testing.T) {
 	server := NewPermissionServiceServer(&mockPermissionApplicationService{
 		getPermissionApplication: func(context.Context, string) (service.PermissionApplication, error) {
@@ -196,15 +187,6 @@ func TestPermissionServiceServerGetPermissionApplicationPreservesExistingStatusE
 	}
 }
 
-func TestPermissionServiceServerReviewPermissionApplicationRequiresID(t *testing.T) {
-	server := NewPermissionServiceServer(&mockPermissionApplicationService{})
-
-	_, err := server.ReviewPermissionApplication(context.Background(), &pb.ReviewPermissionApplicationRequest{})
-	if status.Code(err) != codes.InvalidArgument {
-		t.Fatalf("grpc code = %s, want %s", status.Code(err), codes.InvalidArgument)
-	}
-}
-
 func TestPermissionServiceServerReviewPermissionApplicationMapsID(t *testing.T) {
 	var captured service.ReviewPermissionApplicationInput
 	server := NewPermissionServiceServer(&mockPermissionApplicationService{
@@ -216,7 +198,7 @@ func TestPermissionServiceServerReviewPermissionApplicationMapsID(t *testing.T) 
 
 	ctx := auth.WithUserInfo(context.Background(), &auth.UserInfo{SubjectKey: "user:admin"})
 	_, err := server.ReviewPermissionApplication(ctx, &pb.ReviewPermissionApplicationRequest{
-		PermissionApplicationId: " pa_1 ",
+		PermissionApplicationId: "pa_1",
 		Approved:                true,
 		ReviewComment:           "approved",
 	})
@@ -228,15 +210,6 @@ func TestPermissionServiceServerReviewPermissionApplicationMapsID(t *testing.T) 
 	}
 	if captured.ReviewerSubjectKey != "user:admin" {
 		t.Fatalf("reviewer subject key = %q, want user:admin", captured.ReviewerSubjectKey)
-	}
-}
-
-func TestPermissionServiceServerRevokePermissionApplicationRequiresID(t *testing.T) {
-	server := NewPermissionServiceServer(&mockPermissionApplicationService{})
-
-	_, err := server.RevokePermissionApplication(context.Background(), &pb.RevokePermissionApplicationRequest{})
-	if status.Code(err) != codes.InvalidArgument {
-		t.Fatalf("grpc code = %s, want %s", status.Code(err), codes.InvalidArgument)
 	}
 }
 

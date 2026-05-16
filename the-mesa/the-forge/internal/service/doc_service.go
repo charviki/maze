@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"strings"
 )
 
 // DocService manages archives, docs, and links.
@@ -20,9 +19,6 @@ func NewDocService(repo DocRepository) *DocService {
 
 // CreateArchive 创建知识库。
 func (s *DocService) CreateArchive(ctx context.Context, name, description, icon, author string) (*Archive, error) {
-	if strings.TrimSpace(name) == "" {
-		return nil, &ValidationError{Field: "name", Message: "name is required"}
-	}
 	return s.repo.CreateArchive(ctx, name, description, icon, author)
 }
 
@@ -50,12 +46,6 @@ func (s *DocService) DeleteArchive(ctx context.Context, id string) error {
 
 // CreateDoc 创建文档。
 func (s *DocService) CreateDoc(ctx context.Context, params CreateDocParams) (*Doc, error) {
-	if strings.TrimSpace(params.ArchiveID) == "" {
-		return nil, &ValidationError{Field: "archiveId", Message: "archive_id is required"}
-	}
-	if strings.TrimSpace(params.Title) == "" {
-		return nil, &ValidationError{Field: "title", Message: "title is required"}
-	}
 	if params.Tags == nil {
 		params.Tags = []string{}
 	}
@@ -113,9 +103,6 @@ func (s *DocService) DeleteDoc(ctx context.Context, id string) error {
 
 // SearchDocs 全文搜索文档。
 func (s *DocService) SearchDocs(ctx context.Context, query string, archiveID *string, visibility, author string) ([]Doc, error) {
-	if strings.TrimSpace(query) == "" {
-		return nil, &ValidationError{Field: "query", Message: "query is required"}
-	}
 	return s.repo.SearchDocs(ctx, query, archiveID, visibility, author)
 }
 
@@ -136,15 +123,6 @@ func (s *DocService) GetDocAncestors(ctx context.Context, id string) ([]Doc, err
 
 // CreateLink 创建两个文档之间的关联。
 func (s *DocService) CreateLink(ctx context.Context, sourceID, targetID, relationType string) (*DocLink, error) {
-	if strings.TrimSpace(sourceID) == "" {
-		return nil, &ValidationError{Field: "sourceId", Message: "source_id is required"}
-	}
-	if strings.TrimSpace(targetID) == "" {
-		return nil, &ValidationError{Field: "targetId", Message: "target_id is required"}
-	}
-	if strings.TrimSpace(relationType) == "" {
-		return nil, &ValidationError{Field: "relationType", Message: "relation_type is required"}
-	}
 	if sourceID == targetID {
 		return nil, &ValidationError{Field: "sourceId", Message: "source_id and target_id must be different"}
 	}

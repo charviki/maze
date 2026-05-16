@@ -72,24 +72,6 @@ func TestCreateTemplate_DuplicateID(t *testing.T) {
 	}
 }
 
-func TestCreateTemplate_MissingID(t *testing.T) {
-	srv := newTestServer(t, &mockTmuxService{})
-
-	_, err := srv.CreateTemplate(context.Background(), &pb.CreateTemplateRequest{
-		Template: &pb.SessionTemplate{
-			Name:    "No ID",
-			Command: "echo",
-		},
-	})
-	st, ok := status.FromError(err)
-	if !ok {
-		t.Fatal("应返回 gRPC status")
-	}
-	if st.Code() != codes.InvalidArgument {
-		t.Errorf("code = %v, 期望 InvalidArgument", st.Code())
-	}
-}
-
 func TestGetTemplate_Found(t *testing.T) {
 	srv := newTestServer(t, &mockTmuxService{})
 

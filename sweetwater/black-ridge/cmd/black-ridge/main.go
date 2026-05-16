@@ -55,7 +55,12 @@ func main() {
 
 	configFileService := service.NewConfigFileService()
 	grpcServer := transport.NewServer(tmuxService, localConfig, templateStore, configFileService, cfg.Workspace.RootDir, logger)
+	validationInterceptor, err := gatewayutil.NewValidationInterceptor()
+	if err != nil {
+		logger.Fatalf("create validation interceptor: %v", err)
+	}
 	interceptors := []grpc.UnaryServerInterceptor{
+		validationInterceptor,
 		gatewayutil.UnaryAuthInterceptor(cfg.Server.JWTSecret),
 	}
 	grpcCore := grpc.NewServer(grpc.ChainUnaryInterceptor(interceptors...))

@@ -281,21 +281,6 @@ func (r *memoryPermissionRepository) lookupGrant(internalID int64) (PermissionGr
 	return PermissionGrant{}, "", false
 }
 
-func TestPermissionServiceCreatePermissionApplicationRequiresReason(t *testing.T) {
-	repo := newMemoryPermissionRepository()
-	svc := NewPermissionService(repo, repo, nil)
-
-	_, err := svc.CreatePermissionApplication(context.Background(), CreatePermissionApplicationInput{
-		SubjectKey: "host:test",
-		Targets: []PermissionTarget{
-			{Resource: "host/*", Action: "read"},
-		},
-	})
-	if err == nil || !strings.Contains(err.Error(), "reason is required") {
-		t.Fatalf("expected reason validation error, got %v", err)
-	}
-}
-
 func TestPermissionServiceCreatePermissionApplicationRejectsPastExpiry(t *testing.T) {
 	repo := newMemoryPermissionRepository()
 	svc := NewPermissionService(repo, repo, nil)

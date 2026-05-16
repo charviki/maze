@@ -4,6 +4,7 @@ package maze.v1;
 
 option go_package = "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1";
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "maze/v1/config.proto";
 
@@ -43,8 +44,8 @@ message AgentMetadata {
 
 // 与 protocol.RegisterRequest 对齐
 message RegisterRequest {
-  string name = 1;
-  string address = 2;
+  string name = 1 [(buf.validate.field).string = { min_len: 1 }];
+  string address = 2 [(buf.validate.field).string = { min_len: 1 }];
   string external_addr = 3;
   string grpc_address = 7;
   AgentCapabilities capabilities = 4;
@@ -59,7 +60,7 @@ message RegisterResponse {
 
 // 与 protocol.HeartbeatRequest 对齐
 message HeartbeatRequest {
-  string name = 1;
+  string name = 1 [(buf.validate.field).string = { min_len: 1 }];
   AgentStatus status = 2;
 }
 

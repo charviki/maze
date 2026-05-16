@@ -3,7 +3,6 @@ package transport
 import (
 	"context"
 	"errors"
-	"strings"
 	"time"
 
 	pb "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
@@ -87,12 +86,7 @@ func (s *PermissionServiceServer) ListPermissionApplications(ctx context.Context
 
 // GetPermissionApplication 获取单个权限申请单。
 func (s *PermissionServiceServer) GetPermissionApplication(ctx context.Context, req *pb.GetPermissionApplicationRequest) (*pb.PermissionApplication, error) {
-	permissionApplicationID := strings.TrimSpace(req.GetPermissionApplicationId())
-	if permissionApplicationID == "" {
-		return nil, status.Error(codes.InvalidArgument, "permission application id is required")
-	}
-
-	application, err := s.permissionService.GetPermissionApplication(ctx, permissionApplicationID)
+	application, err := s.permissionService.GetPermissionApplication(ctx, req.GetPermissionApplicationId())
 	if err != nil {
 		return nil, toStatusError(err)
 	}
@@ -101,13 +95,8 @@ func (s *PermissionServiceServer) GetPermissionApplication(ctx context.Context, 
 
 // ReviewPermissionApplication 审批权限申请单。
 func (s *PermissionServiceServer) ReviewPermissionApplication(ctx context.Context, req *pb.ReviewPermissionApplicationRequest) (*pb.PermissionApplication, error) {
-	permissionApplicationID := strings.TrimSpace(req.GetPermissionApplicationId())
-	if permissionApplicationID == "" {
-		return nil, status.Error(codes.InvalidArgument, "permission application id is required")
-	}
-
 	application, err := s.permissionService.ReviewPermissionApplication(ctx, service.ReviewPermissionApplicationInput{
-		PermissionApplicationID: permissionApplicationID,
+		PermissionApplicationID: req.GetPermissionApplicationId(),
 		Approved:                req.GetApproved(),
 		ReviewComment:           req.GetReviewComment(),
 		ReviewerSubjectKey:      subjectKeyFromContext(ctx),
@@ -120,13 +109,8 @@ func (s *PermissionServiceServer) ReviewPermissionApplication(ctx context.Contex
 
 // RevokePermissionApplication 撤销权限申请单对应的授权结果。
 func (s *PermissionServiceServer) RevokePermissionApplication(ctx context.Context, req *pb.RevokePermissionApplicationRequest) (*pb.PermissionApplication, error) {
-	permissionApplicationID := strings.TrimSpace(req.GetPermissionApplicationId())
-	if permissionApplicationID == "" {
-		return nil, status.Error(codes.InvalidArgument, "permission application id is required")
-	}
-
 	application, err := s.permissionService.RevokePermissionApplication(ctx, service.RevokePermissionApplicationInput{
-		PermissionApplicationID: permissionApplicationID,
+		PermissionApplicationID: req.GetPermissionApplicationId(),
 		RevokeReason:            req.GetRevokeReason(),
 		ReviewerSubjectKey:      subjectKeyFromContext(ctx),
 	})

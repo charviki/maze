@@ -29,9 +29,6 @@ func (s *NodeService) ListNodes(ctx context.Context) ([]*Node, error) {
 
 // GetNode 返回指定节点信息
 func (s *NodeService) GetNode(ctx context.Context, name string) (*Node, error) {
-	if name == "" {
-		return nil, errors.New("name is required")
-	}
 	node, err := s.registry.Get(ctx, name)
 	if err != nil {
 		return nil, fmt.Errorf("get node %q: %w", name, err)
@@ -44,9 +41,6 @@ func (s *NodeService) GetNode(ctx context.Context, name string) (*Node, error) {
 
 // DeleteNode 从注册表删除指定节点
 func (s *NodeService) DeleteNode(ctx context.Context, name string) error {
-	if name == "" {
-		return errors.New("name is required")
-	}
 	ok, err := s.registry.Delete(ctx, name)
 	if err != nil {
 		return fmt.Errorf("delete node %q: %w", name, err)

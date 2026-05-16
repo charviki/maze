@@ -35,10 +35,6 @@ func (s *Server) ListSessions(ctx context.Context, req *pb.ListSessionsRequest) 
 // CreateSession 创建新的 tmux Session
 func (s *Server) CreateSession(ctx context.Context, req *pb.CreateSessionRequest) (*pb.Session, error) {
 	sessionName := req.GetName()
-	if sessionName == "" {
-		return nil, status.Error(codes.InvalidArgument, "name is required")
-	}
-
 	// working_dir 安全解析：相对路径基于 workspace root 解析为绝对路径
 	resolvedWorkingDir, err := resolveWorkingDir(req.GetWorkingDir(), s.workspaceRootDir)
 	if err != nil {
@@ -245,9 +241,6 @@ func (s *Server) GetOutput(ctx context.Context, req *pb.GetOutputRequest) (*pb.T
 
 // SendInput 发送终端输入
 func (s *Server) SendInput(ctx context.Context, req *pb.SendInputRequest) (*emptypb.Empty, error) {
-	if req.GetCommand() == "" {
-		return nil, status.Error(codes.InvalidArgument, "command is required")
-	}
 	if err := s.tmuxService.SendKeys(req.GetId(), req.GetCommand()); err != nil {
 		return nil, errToStatus(err)
 	}
@@ -256,9 +249,6 @@ func (s *Server) SendInput(ctx context.Context, req *pb.SendInputRequest) (*empt
 
 // SendSignal 发送终端信号
 func (s *Server) SendSignal(ctx context.Context, req *pb.SendSignalRequest) (*emptypb.Empty, error) {
-	if req.GetSignal() == "" {
-		return nil, status.Error(codes.InvalidArgument, "signal is required")
-	}
 	if err := s.tmuxService.SendSignal(req.GetId(), req.GetSignal()); err != nil {
 		return nil, errToStatus(err)
 	}

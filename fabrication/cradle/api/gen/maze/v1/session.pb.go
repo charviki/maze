@@ -7,6 +7,7 @@
 package mazev1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -1464,7 +1465,7 @@ var File_maze_v1_session_proto protoreflect.FileDescriptor
 
 const file_maze_v1_session_proto_rawDesc = "" +
 	"\n" +
-	"\x15maze/v1/session.proto\x12\amaze.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\"\xc9\x01\n" +
+	"\x15maze/v1/session.proto\x12\amaze.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\"\xc9\x01\n" +
 	"\aSession\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x16\n" +
@@ -1480,10 +1481,10 @@ const file_maze_v1_session_proto_rawDesc = "" +
 	"ConfigItem\x12\x12\n" +
 	"\x04type\x18\x01 \x01(\tR\x04type\x12\x10\n" +
 	"\x03key\x18\x02 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x03 \x01(\tR\x05value\"\x88\x02\n" +
+	"\x05value\x18\x03 \x01(\tR\x05value\"\x91\x02\n" +
 	"\x14CreateSessionRequest\x12\x1b\n" +
-	"\tnode_name\x18\x01 \x01(\tR\bnodeName\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
+	"\tnode_name\x18\x01 \x01(\tR\bnodeName\x12\x1b\n" +
+	"\x04name\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\x12\x18\n" +
 	"\acommand\x18\x03 \x01(\tR\acommand\x12\x1f\n" +
 	"\vworking_dir\x18\x04 \x01(\tR\n" +
 	"workingDir\x128\n" +
@@ -1562,15 +1563,15 @@ const file_maze_v1_session_proto_rawDesc = "" +
 	"\x10GetOutputRequest\x12\x1b\n" +
 	"\tnode_name\x18\x01 \x01(\tR\bnodeName\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\tR\x02id\x12\x14\n" +
-	"\x05lines\x18\x03 \x01(\x05R\x05lines\"Y\n" +
+	"\x05lines\x18\x03 \x01(\x05R\x05lines\"b\n" +
 	"\x10SendInputRequest\x12\x1b\n" +
 	"\tnode_name\x18\x01 \x01(\tR\bnodeName\x12\x0e\n" +
-	"\x02id\x18\x02 \x01(\tR\x02id\x12\x18\n" +
-	"\acommand\x18\x03 \x01(\tR\acommand\"X\n" +
+	"\x02id\x18\x02 \x01(\tR\x02id\x12!\n" +
+	"\acommand\x18\x03 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\acommand\"a\n" +
 	"\x11SendSignalRequest\x12\x1b\n" +
 	"\tnode_name\x18\x01 \x01(\tR\bnodeName\x12\x0e\n" +
-	"\x02id\x18\x02 \x01(\tR\x02id\x12\x16\n" +
-	"\x06signal\x18\x03 \x01(\tR\x06signal\"<\n" +
+	"\x02id\x18\x02 \x01(\tR\x02id\x12\x1f\n" +
+	"\x06signal\x18\x03 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x06signal\"<\n" +
 	"\rGetEnvRequest\x12\x1b\n" +
 	"\tnode_name\x18\x01 \x01(\tR\bnodeName\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\tR\x02id\"|\n" +
