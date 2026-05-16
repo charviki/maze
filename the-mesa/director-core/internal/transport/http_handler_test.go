@@ -12,7 +12,7 @@ import (
 )
 
 func TestAccessLogMiddlewarePreservesWebSocketUpgrade(t *testing.T) {
-	handler := chainHTTP(
+	handler := httputil.ChainHTTP(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			conn, err := httputil.NewUpgrader(nil).Upgrade(w, r, nil)
 			if err != nil {
@@ -20,7 +20,7 @@ func TestAccessLogMiddlewarePreservesWebSocketUpgrade(t *testing.T) {
 			}
 			_ = conn.Close()
 		}),
-		accessLogMiddleware(nil),
+		httputil.AccessLogMiddleware(nil),
 	)
 
 	server := httptest.NewServer(handler)

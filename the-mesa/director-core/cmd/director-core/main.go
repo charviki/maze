@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io/fs"
 	"time"
 
@@ -11,7 +10,6 @@ import (
 	casbincasbin "github.com/charviki/maze/fabrication/cradle/auth/casbin"
 	cradleDB "github.com/charviki/maze/fabrication/cradle/db"
 	"github.com/charviki/maze/fabrication/cradle/grpcutil"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/grpc"
 
 	pb "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
@@ -53,7 +51,13 @@ func main() {
 		grpcAddr = ":9090"
 	}
 
-	hostPool, err := newHostPoolWithRetry(context.Background(), cfg, logger)
+	hostPool, err := cradleDB.NewPoolWithRetry(context.Background(), cradleDB.PoolConfig{
+		Host:     cfg.HostDatabase.Host,
+		Port:     cfg.HostDatabase.Port,
+		Name:     cfg.HostDatabase.Name,
+		User:     cfg.HostDatabase.User,
+		Password: cfg.HostDatabase.Password,
+	}, 30, logger)
 	if err != nil {
 		logger.Fatalf("connect host database: %v", err)
 	}
@@ -166,7 +170,13 @@ func initAuthz(cfg *config.Config, logger logutil.Logger) (*transport.Permission
 	}
 	logger.Infof("[authz] connecting to database %s:%d/%s", cfg.AuthDatabase.Host, cfg.AuthDatabase.Port, cfg.AuthDatabase.Name)
 
-	pool, err := newAuthzPoolWithRetry(ctx, cfg, logger)
+	pool, err := cradleDB.NewPoolWithRetry(ctx, cradleDB.PoolConfig{
+		Host:     cfg.AuthDatabase.Host,
+		Port:     cfg.AuthDatabase.Port,
+		Name:     cfg.AuthDatabase.Name,
+		User:     cfg.AuthDatabase.User,
+		Password: cfg.AuthDatabase.Password,
+	}, 30, logger)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
@@ -260,136 +270,9 @@ func initAuthz(cfg *config.Config, logger logutil.Logger) (*transport.Permission
 		return nil, errors.New("unauthorized: no user info in context")
 	}
 
-	resourceMap := map[string]casbincasbin.ResourceAction{
-		pb.HostService_CreateHost_FullMethodName:                        {Resource: "host/*", Action: "create"},
-		pb.HostService_ListHosts_FullMethodName:                         {Resource: "host/*", Action: "read"},
-		pb.HostService_GetHost_FullMethodName:                           {Resource: "host/*", Action: "read"},
-		pb.HostService_DeleteHost_FullMethodName:                        {Resource: "host/*", Action: "delete"},
-		pb.HostService_GetBuildLog_FullMethodName:                       {Resource: "host/*/logs/build", Action: "read"},
-		pb.HostService_GetRuntimeLog_FullMethodName:                     {Resource: "host/*/logs/runtime", Action: "read"},
-		pb.HostService_ListTools_FullMethodName:                         {Resource: "host/tools", Action: "read"},
-		pb.NodeService_ListNodes_FullMethodName:                         {Resource: "node/*", Action: "read"},
-		pb.NodeService_GetNode_FullMethodName:                           {Resource: "node/*", Action: "read"},
-		pb.NodeService_DeleteNode_FullMethodName:                        {Resource: "node/*", Action: "delete"},
-		pb.AuditService_GetAuditLogs_FullMethodName:                     {Resource: "audit/*", Action: "read"},
-		pb.SessionService_ListSessions_FullMethodName:                   {Resource: "session/*", Action: "read"},
-		pb.SessionService_CreateSession_FullMethodName:                  {Resource: "session/*", Action: "create"},
-		pb.SessionService_GetSession_FullMethodName:                     {Resource: "session/*", Action: "read"},
-		pb.SessionService_DeleteSession_FullMethodName:                  {Resource: "session/*", Action: "delete"},
-		pb.SessionService_GetSessionConfig_FullMethodName:               {Resource: "session/*/config", Action: "read"},
-		pb.SessionService_UpdateSessionConfig_FullMethodName:            {Resource: "session/*/config", Action: "update"},
-		pb.SessionService_RestoreSession_FullMethodName:                 {Resource: "session/*", Action: "restore"},
-		pb.SessionService_SaveSessions_FullMethodName:                   {Resource: "session/*", Action: "save"},
-		pb.SessionService_GetSavedSessions_FullMethodName:               {Resource: "session/*", Action: "read"},
-		pb.SessionService_GetOutput_FullMethodName:                      {Resource: "session/*/terminal", Action: "read"},
-		pb.SessionService_SendInput_FullMethodName:                      {Resource: "session/*/terminal", Action: "write"},
-		pb.SessionService_SendSignal_FullMethodName:                     {Resource: "session/*/terminal", Action: "signal"},
-		pb.SessionService_GetEnv_FullMethodName:                         {Resource: "session/*/env", Action: "read"},
-		pb.TemplateService_ListTemplates_FullMethodName:                 {Resource: "template/*", Action: "read"},
-		pb.TemplateService_CreateTemplate_FullMethodName:                {Resource: "template/*", Action: "create"},
-		pb.TemplateService_GetTemplate_FullMethodName:                   {Resource: "template/*", Action: "read"},
-		pb.TemplateService_UpdateTemplate_FullMethodName:                {Resource: "template/*", Action: "update"},
-		pb.TemplateService_DeleteTemplate_FullMethodName:                {Resource: "template/*", Action: "delete"},
-		pb.TemplateService_GetTemplateConfig_FullMethodName:             {Resource: "template/*/config", Action: "read"},
-		pb.TemplateService_UpdateTemplateConfig_FullMethodName:          {Resource: "template/*/config", Action: "update"},
-		pb.ConfigService_GetConfig_FullMethodName:                       {Resource: "config/*", Action: "read"},
-		pb.ConfigService_UpdateConfig_FullMethodName:                    {Resource: "config/*", Action: "update"},
-		pb.PermissionService_CreatePermissionApplication_FullMethodName: {Resource: "permission-application/*", Action: "create"},
-		pb.PermissionService_ListPermissionApplications_FullMethodName:  {Resource: "permission-application/*", Action: "read"},
-		pb.PermissionService_GetPermissionApplication_FullMethodName:    {Resource: "permission-application/*", Action: "read"},
-		pb.PermissionService_ReviewPermissionApplication_FullMethodName: {Resource: "permission-application/*", Action: "review"},
-		pb.PermissionService_RevokePermissionApplication_FullMethodName: {Resource: "permission-application/*", Action: "revoke"},
-		pb.PermissionService_ListSubjectPermissions_FullMethodName:      {Resource: "subject/*/permissions", Action: "read"},
-		pb.SkillService_CreateSkill_FullMethodName:                      {Resource: "skill/*", Action: "create"},
-		pb.SkillService_ListSkills_FullMethodName:                       {Resource: "skill/*", Action: "read"},
-		pb.SkillService_GetSkill_FullMethodName:                         {Resource: "skill/*", Action: "read"},
-		pb.SkillService_UpdateSkill_FullMethodName:                      {Resource: "skill/*", Action: "update"},
-		pb.SkillService_DeleteSkill_FullMethodName:                      {Resource: "skill/*", Action: "delete"},
-		pb.MCPService_CreateMCPServer_FullMethodName:                    {Resource: "mcp-server/*", Action: "create"},
-		pb.MCPService_ListMCPServers_FullMethodName:                     {Resource: "mcp-server/*", Action: "read"},
-		pb.MCPService_GetMCPServer_FullMethodName:                       {Resource: "mcp-server/*", Action: "read"},
-		pb.MCPService_UpdateMCPServer_FullMethodName:                    {Resource: "mcp-server/*", Action: "update"},
-		pb.MCPService_DeleteMCPServer_FullMethodName:                    {Resource: "mcp-server/*", Action: "delete"},
-		pb.RuleService_CreateRule_FullMethodName:                        {Resource: "rule/*", Action: "create"},
-		pb.RuleService_ListRules_FullMethodName:                         {Resource: "rule/*", Action: "read"},
-		pb.RuleService_GetRule_FullMethodName:                           {Resource: "rule/*", Action: "read"},
-		pb.RuleService_UpdateRule_FullMethodName:                        {Resource: "rule/*", Action: "update"},
-		pb.RuleService_DeleteRule_FullMethodName:                        {Resource: "rule/*", Action: "delete"},
-		pb.GitKeyService_CreateGitKey_FullMethodName:                    {Resource: "git-key/*", Action: "create"},
-		pb.GitKeyService_ListGitKeys_FullMethodName:                     {Resource: "git-key/*", Action: "read"},
-		pb.GitKeyService_GetGitKey_FullMethodName:                       {Resource: "git-key/*", Action: "read"},
-		pb.GitKeyService_DeleteGitKey_FullMethodName:                    {Resource: "git-key/*", Action: "delete"},
-	}
+		resourceMap := casbincasbin.DirectorCoreResourceMap()
 
 	casbinInterceptor := casbincasbin.NewUnaryInterceptor(enforcer, extractUser, resourceMap)
 
 	return permissionHandler, authHandler, casbinInterceptor, cleanup, credentialRepo, nil
-}
-
-func newHostPoolWithRetry(ctx context.Context, cfg *config.Config, logger logutil.Logger) (*pgxpool.Pool, error) {
-	poolCfg := cradleDB.PoolConfig{
-		Host:     cfg.HostDatabase.Host,
-		Port:     cfg.HostDatabase.Port,
-		Name:     cfg.HostDatabase.Name,
-		User:     cfg.HostDatabase.User,
-		Password: cfg.HostDatabase.Password,
-	}
-
-	const maxAttempts = 30
-	var lastErr error
-	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		pool, err := cradleDB.NewPool(ctx, poolCfg)
-		if err == nil {
-			if attempt > 1 {
-				logger.Infof("[host] database became ready after %d attempts", attempt)
-			}
-			return pool, nil
-		}
-		lastErr = err
-		if attempt == maxAttempts {
-			break
-		}
-
-		logger.Warnf("[host] database not ready (attempt %d/%d): %v", attempt, maxAttempts, err)
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-time.After(time.Second):
-		}
-	}
-	return nil, fmt.Errorf("host database not ready after %d attempts: %w", maxAttempts, lastErr)
-}
-
-func newAuthzPoolWithRetry(ctx context.Context, cfg *config.Config, logger logutil.Logger) (*pgxpool.Pool, error) {
-	poolCfg := cradleDB.PoolConfig{
-		Host:     cfg.AuthDatabase.Host,
-		Port:     cfg.AuthDatabase.Port,
-		Name:     cfg.AuthDatabase.Name,
-		User:     cfg.AuthDatabase.User,
-		Password: cfg.AuthDatabase.Password,
-	}
-
-	const maxAttempts = 30
-	var lastErr error
-	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		pool, err := cradleDB.NewPool(ctx, poolCfg)
-		if err == nil {
-			if attempt > 1 {
-				logger.Infof("[authz] database became ready after %d attempts", attempt)
-			}
-			return pool, nil
-		}
-		lastErr = err
-		if attempt == maxAttempts {
-			break
-		}
-
-		logger.Warnf("[authz] database not ready (attempt %d/%d): %v", attempt, maxAttempts, err)
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-time.After(time.Second):
-		}
-	}
-	return nil, lastErr
 }

@@ -2,33 +2,16 @@ package main
 
 import (
 	"context"
-	"strings"
 	"time"
 
-	"github.com/charviki/maze/fabrication/cradle/grpcutil"
-	"google.golang.org/grpc"
-
-	pb "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
-	"github.com/charviki/maze/fabrication/cradle/gatewayutil"
 	"github.com/charviki/maze/fabrication/cradle/lifecycle"
 	"github.com/charviki/maze/fabrication/cradle/logutil"
 	"github.com/charviki/sweetwater-black-ridge/internal/config"
 	"github.com/charviki/sweetwater-black-ridge/internal/service"
 	"github.com/charviki/sweetwater-black-ridge/internal/service/provider"
 	"github.com/charviki/sweetwater-black-ridge/internal/transport"
+	"github.com/charviki/sweetwater-black-ridge/internal/webstatic"
 )
-
-const defaultGRPCListenAddr = ":9090"
-
-func grpcListenAddrFor(grpcAddr string) string {
-	if grpcAddr == "" {
-		return defaultGRPCListenAddr
-	}
-	if idx := strings.LastIndex(grpcAddr, ":"); idx >= 0 {
-		return ":" + grpcAddr[idx+1:]
-	}
-	return grpcAddr
-}
 
 func main() {
 	logger := logutil.New("agent")
@@ -47,35 +30,19 @@ func main() {
 
 	tmuxService := service.NewTmuxService(&cfg.Tmux, cfg.Workspace.StateDir, logger, registry)
 	localConfig := service.NewLocalConfigStore(cfg.Workspace.RootDir, logger)
-	gwmux := gatewayutil.NewServeMux()
-	httpServer, templateStore := newHTTPServer(cfg, tmuxService, logger, gwmux)
-
-	grpcAddr := cfg.Server.GRPCAddr
-	grpcListenAddr := grpcListenAddrFor(grpcAddr)
-
 	configFileService := service.NewConfigFileService()
-	grpcServer := transport.NewServer(tmuxService, localConfig, templateStore, configFileService, cfg.Workspace.RootDir, logger)
-	validationInterceptor, err := gatewayutil.NewValidationInterceptor()
-	if err != nil {
-		logger.Fatalf("create validation interceptor: %v", err)
-	}
-	interceptors := []grpc.UnaryServerInterceptor{
-		validationInterceptor,
-		gatewayutil.UnaryAuthInterceptor(cfg.Server.JWTSecret),
-	}
-	grpcCore := grpc.NewServer(grpc.ChainUnaryInterceptor(interceptors...))
-	grpcServer.RegisterGRPC(grpcCore)
-	managedGRPC := grpcutil.NewManagedGRPCServer(grpcListenAddr, grpcCore, logger)
 
-	ctx := context.Background()
-	if err := pb.RegisterSessionServiceHandlerServer(ctx, gwmux, grpcServer); err != nil {
-		logger.Fatalf("register session service to gateway: %v", err)
-	}
-	if err := pb.RegisterTemplateServiceHandlerServer(ctx, gwmux, grpcServer); err != nil {
-		logger.Fatalf("register template service to gateway: %v", err)
-	}
-	if err := pb.RegisterConfigServiceHandlerServer(ctx, gwmux, grpcServer); err != nil {
-		logger.Fatalf("register config service to gateway: %v", err)
+	httpSrv, grpcSrv, _, err := transport.NewGRPCGatewayServer(transport.ServerParams{
+		Config:            cfg,
+		Logger:            logger,
+		TmuxService:       tmuxService,
+		LocalConfig:       localConfig,
+		ConfigFileService: configFileService,
+		WorkspaceRootDir:  cfg.Workspace.RootDir,
+		StaticFiles:       webstatic.Files,
+	})
+	if err != nil {
+		logger.Fatalf("create server: %v", err)
 	}
 
 	heartbeatService, err := service.NewHeartbeatService(cfg, tmuxService, localConfig, registry, logger)
@@ -83,15 +50,15 @@ func main() {
 		logger.Fatalf("create heartbeat service: %v", err)
 	}
 	autoSaveService := service.NewAutoSaveService(tmuxService, cfg.AutoSave.Interval, logger)
-	heartbeatRunner := newBackgroundRunner("heartbeat", logger, heartbeatService.Start)
-	autoSaveRunner := newBackgroundRunner("autosave", logger, autoSaveService.Start)
+	heartbeatRunner := lifecycle.NewBackgroundRunner("heartbeat", logger, heartbeatService.Start)
+	autoSaveRunner := lifecycle.NewBackgroundRunner("autosave", logger, autoSaveService.Start)
 
 	manager := &lifecycle.Manager{
 		ShutdownTimeout: 5 * time.Second,
 		Logger:          logger,
 	}
-	manager.Add(httpServer)
-	manager.Add(managedGRPC)
+	manager.Add(httpSrv)
+	manager.Add(grpcSrv)
 	manager.Add(heartbeatRunner)
 	manager.Add(autoSaveRunner)
 

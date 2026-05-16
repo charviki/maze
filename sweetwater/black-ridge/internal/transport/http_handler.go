@@ -48,7 +48,7 @@ func NewHTTPHandler(params HTTPHandlerParams) (http.Handler, *service.TemplateSt
 		params.AllowedOrigins,
 	)
 
-	apiHandler := chainHTTP(
+	apiHandler := httputil.ChainHTTP(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasPrefix(r.URL.Path, "/api/") {
 				params.GWMux.ServeHTTP(w, r)
@@ -56,13 +56,13 @@ func NewHTTPHandler(params HTTPHandlerParams) (http.Handler, *service.TemplateSt
 			}
 			serveSPA(params.Logger, params.StaticFiles, w, r)
 		}),
-		accessLogMiddleware(params.Logger),
-		corsMiddleware(params.AllowedOrigins),
+		httputil.AccessLogMiddleware(params.Logger),
+		httputil.CORSMiddleware(params.AllowedOrigins),
 	)
-	wsHandler := chainHTTP(
+	wsHandler := httputil.ChainHTTP(
 		http.HandlerFunc(terminalHandler.HandleWs),
-		accessLogMiddleware(params.Logger),
-		corsMiddleware(params.AllowedOrigins),
+		httputil.AccessLogMiddleware(params.Logger),
+		httputil.CORSMiddleware(params.AllowedOrigins),
 		cradlemw.Auth(params.JWTSecret),
 	)
 	mux := http.NewServeMux()
@@ -86,34 +86,6 @@ func NewHTTPServer(params HTTPHandlerParams) (*http.Server, *service.TemplateSto
 		WriteTimeout: httpWriteTimeout,
 		IdleTimeout:  httpIdleTimeout,
 	}, templateStore
-}
-
-func corsMiddleware(origins []string) func(http.Handler) http.Handler {
-	if len(origins) == 0 {
-		return cradlemw.CORS()
-	}
-	return cradlemw.CORSWithOrigins(origins)
-}
-
-func chainHTTP(handler http.Handler, middlewares ...func(http.Handler) http.Handler) http.Handler {
-	wrapped := handler
-	for i := len(middlewares) - 1; i >= 0; i-- {
-		wrapped = middlewares[i](wrapped)
-	}
-	return wrapped
-}
-
-func accessLogMiddleware(logger logutil.Logger) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			recorder := httputil.NewStatusRecorder(w)
-			startedAt := time.Now()
-			next.ServeHTTP(recorder, r)
-			if logger != nil {
-				logger.Infof("[http] %s %s status=%d duration=%s", r.Method, r.URL.Path, recorder.Status(), time.Since(startedAt))
-			}
-		})
-	}
 }
 
 func serveSPA(logger logutil.Logger, staticFiles fs.FS, w http.ResponseWriter, r *http.Request) {

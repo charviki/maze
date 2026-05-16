@@ -19,10 +19,10 @@ import (
 	"github.com/charviki/maze/fabrication/cradle/httputil"
 )
 
-func TestCorsMiddleware_NilOrigins(t *testing.T) {
-	mw := corsMiddleware(nil)
+func TestCORSMiddleware_NilOrigins(t *testing.T) {
+	mw := httputil.CORSMiddleware(nil)
 	if mw == nil {
-		t.Error("corsMiddleware with nil should return a non-nil function")
+		t.Error("CORSMiddleware with nil should return a non-nil function")
 	}
 	handler := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	if handler == nil {
@@ -30,16 +30,16 @@ func TestCorsMiddleware_NilOrigins(t *testing.T) {
 	}
 }
 
-func TestCorsMiddleware_WithOrigins(t *testing.T) {
-	mw := corsMiddleware([]string{"http://localhost:3000"})
+func TestCORSMiddleware_WithOrigins(t *testing.T) {
+	mw := httputil.CORSMiddleware([]string{"http://localhost:3000"})
 	if mw == nil {
-		t.Error("corsMiddleware with origins should return a non-nil function")
+		t.Error("CORSMiddleware with origins should return a non-nil function")
 	}
 }
 
 func TestChainHTTP_NoMiddleware(t *testing.T) {
 	called := false
-	handler := chainHTTP(
+	handler := httputil.ChainHTTP(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			called = true
 		}),
@@ -69,7 +69,7 @@ func TestChainHTTP_MultipleMiddleware(t *testing.T) {
 			order = append(order, "mw2-after")
 		})
 	}
-	handler := chainHTTP(
+	handler := httputil.ChainHTTP(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			order = append(order, "handler")
 		}),
@@ -89,7 +89,7 @@ func TestChainHTTP_MultipleMiddleware(t *testing.T) {
 }
 
 func TestChainHTTP_ResponsePropagation(t *testing.T) {
-	handler := chainHTTP(
+	handler := httputil.ChainHTTP(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusCreated)
 			_, _ = io.WriteString(w, "hello")
@@ -111,7 +111,7 @@ func TestAccessLogMiddleware_LogsStatusAndPath(t *testing.T) {
 	logger := logutil.New("test")
 	logger.SetOutput(&buf)
 
-	handler := accessLogMiddleware(logger)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := httputil.AccessLogMiddleware(logger)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 		_, _ = io.WriteString(w, "ok")
 	}))
@@ -130,7 +130,7 @@ func TestAccessLogMiddleware_LogsStatusAndPath(t *testing.T) {
 }
 
 func TestAccessLogMiddlewarePreservesWebSocketUpgrade(t *testing.T) {
-	handler := chainHTTP(
+	handler := httputil.ChainHTTP(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			conn, err := httputil.NewUpgrader(nil).Upgrade(w, r, nil)
 			if err != nil {
@@ -138,7 +138,7 @@ func TestAccessLogMiddlewarePreservesWebSocketUpgrade(t *testing.T) {
 			}
 			_ = conn.Close()
 		}),
-		accessLogMiddleware(nil),
+		httputil.AccessLogMiddleware(nil),
 	)
 
 	server := httptest.NewServer(handler)
