@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/charviki/maze/fabrication/cradle/auth"
+	"github.com/charviki/maze/fabrication/cradle/errutil"
+	pb "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -105,6 +107,14 @@ func TestHTTPErrorHandler(t *testing.T) {
 			wantMessage:  "duplicate",
 			wantReason:   "",
 		},
+		{
+			name:         "errutil.NewError ARCHIVE_NOT_FOUND → 404",
+			err:          errutil.NewError(codes.NotFound, pb.ErrorReason_ERROR_REASON_ARCHIVE_NOT_FOUND, "archive gone"),
+			wantHTTPCode: http.StatusNotFound,
+			wantGRPCCode: codes.NotFound,
+			wantMessage:  "archive gone",
+			wantReason:   "ARCHIVE_NOT_FOUND",
+		},
 	}
 
 	for _, tt := range tests {
@@ -145,6 +155,109 @@ func TestHTTPErrorHandler(t *testing.T) {
 				t.Errorf("reason = %q, 期望 %q", resp.Reason, tt.wantReason)
 			}
 		})
+	}
+}
+
+func TestHTTPErrorHandler_ValidationError(t *testing.T) {
+	err := errutil.NewValidationError(
+		codes.InvalidArgument,
+		pb.ErrorReason_ERROR_REASON_VALIDATION_FAILED,
+		"bad input",
+		[]errutil.FieldViolation{
+			{Field: "name", Description: "required"},
+			{Field: "email", Description: "invalid format"},
+		},
+	)
+
+	rec := httptest.NewRecorder()
+	mux := runtime.NewServeMux()
+	HTTPErrorHandler(
+		context.TODO(), //nolint:staticcheck
+		mux,
+		&runtime.JSONPb{},
+		rec,
+		httptest.NewRequest("POST", "/test", nil),
+		err,
+	)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("HTTP 状态码 = %d, 期望 %d", rec.Code, http.StatusBadRequest)
+	}
+
+	var resp rpcStatusBody
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("解析响应体失败: %v", err)
+	}
+	if resp.Code != int32(codes.InvalidArgument) {
+		t.Errorf("code = %d, 期望 %d", resp.Code, int32(codes.InvalidArgument))
+	}
+	if resp.Message != "bad input" {
+		t.Errorf("message = %q, 期望 %q", resp.Message, "bad input")
+	}
+	if resp.Reason != "VALIDATION_FAILED" {
+		t.Errorf("reason = %q, 期望 %q", resp.Reason, "VALIDATION_FAILED")
+	}
+	if resp.Details == nil {
+		t.Fatal("details 不应为 nil")
+	}
+	if len(resp.Details.FieldViolations) != 2 {
+		t.Fatalf("fieldViolations 数量 = %d, 期望 2", len(resp.Details.FieldViolations))
+	}
+	if resp.Details.FieldViolations[0].Field != "name" || resp.Details.FieldViolations[0].Description != "required" {
+		t.Errorf("第一个 violation = %+v, 期望 field=name desc=required", resp.Details.FieldViolations[0])
+	}
+	if len(resp.Details.PreconditionViolations) != 0 {
+		t.Errorf("preconditionViolations 应为空, 实际有 %d 个", len(resp.Details.PreconditionViolations))
+	}
+}
+
+func TestHTTPErrorHandler_PreconditionError(t *testing.T) {
+	err := errutil.NewPreconditionError(
+		codes.FailedPrecondition,
+		pb.ErrorReason_ERROR_REASON_CONFIG_CONFLICT,
+		"conflict",
+		[]errutil.PreconditionViolation{
+			{Type: "CONFIG_CONFLICT", Subject: "/etc/app.yaml", Description: "hash mismatch"},
+		},
+	)
+
+	rec := httptest.NewRecorder()
+	mux := runtime.NewServeMux()
+	HTTPErrorHandler(
+		context.TODO(), //nolint:staticcheck
+		mux,
+		&runtime.JSONPb{},
+		rec,
+		httptest.NewRequest("PUT", "/test", nil),
+		err,
+	)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("HTTP 状态码 = %d, 期望 %d", rec.Code, http.StatusBadRequest)
+	}
+
+	var resp rpcStatusBody
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("解析响应体失败: %v", err)
+	}
+	if resp.Code != int32(codes.FailedPrecondition) {
+		t.Errorf("code = %d, 期望 %d", resp.Code, int32(codes.FailedPrecondition))
+	}
+	if resp.Reason != "CONFIG_CONFLICT" {
+		t.Errorf("reason = %q, 期望 %q", resp.Reason, "CONFIG_CONFLICT")
+	}
+	if resp.Details == nil {
+		t.Fatal("details 不应为 nil")
+	}
+	if len(resp.Details.PreconditionViolations) != 1 {
+		t.Fatalf("preconditionViolations 数量 = %d, 期望 1", len(resp.Details.PreconditionViolations))
+	}
+	pv := resp.Details.PreconditionViolations[0]
+	if pv.Type != "CONFIG_CONFLICT" || pv.Subject != "/etc/app.yaml" || pv.Description != "hash mismatch" {
+		t.Errorf("violation = %+v, unexpected", pv)
+	}
+	if len(resp.Details.FieldViolations) != 0 {
+		t.Errorf("fieldViolations 应为空, 实际有 %d 个", len(resp.Details.FieldViolations))
 	}
 }
 
