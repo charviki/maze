@@ -37,6 +37,8 @@ type HostSpec struct {
 	Status        string                 `protobuf:"bytes,8,opt,name=status,proto3" json:"status,omitempty"`
 	ErrorMsg      string                 `protobuf:"bytes,9,opt,name=error_msg,json=errorMsg,proto3" json:"error_msg,omitempty"`
 	RetryCount    int32                  `protobuf:"varint,10,opt,name=retry_count,json=retryCount,proto3" json:"retry_count,omitempty"`
+	Skills        []string               `protobuf:"bytes,11,rep,name=skills,proto3" json:"skills,omitempty"`
+	McpServers    []string               `protobuf:"bytes,12,rep,name=mcp_servers,json=mcpServers,proto3" json:"mcp_servers,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -139,6 +141,20 @@ func (x *HostSpec) GetRetryCount() int32 {
 		return x.RetryCount
 	}
 	return 0
+}
+
+func (x *HostSpec) GetSkills() []string {
+	if x != nil {
+		return x.Skills
+	}
+	return nil
+}
+
+func (x *HostSpec) GetMcpServers() []string {
+	if x != nil {
+		return x.McpServers
+	}
+	return nil
 }
 
 // 与 protocol.ResourceLimits 对齐
@@ -310,6 +326,8 @@ type HostInfo struct {
 	Address       string                 `protobuf:"bytes,10,opt,name=address,proto3" json:"address,omitempty"`
 	SessionCount  int32                  `protobuf:"varint,11,opt,name=session_count,json=sessionCount,proto3" json:"session_count,omitempty"`
 	LastHeartbeat string                 `protobuf:"bytes,12,opt,name=last_heartbeat,json=lastHeartbeat,proto3" json:"last_heartbeat,omitempty"`
+	Skills        []string               `protobuf:"bytes,13,rep,name=skills,proto3" json:"skills,omitempty"`
+	McpServers    []string               `protobuf:"bytes,14,rep,name=mcp_servers,json=mcpServers,proto3" json:"mcp_servers,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -428,12 +446,28 @@ func (x *HostInfo) GetLastHeartbeat() string {
 	return ""
 }
 
+func (x *HostInfo) GetSkills() []string {
+	if x != nil {
+		return x.Skills
+	}
+	return nil
+}
+
+func (x *HostInfo) GetMcpServers() []string {
+	if x != nil {
+		return x.McpServers
+	}
+	return nil
+}
+
 type CreateHostRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Tools         []string               `protobuf:"bytes,2,rep,name=tools,proto3" json:"tools,omitempty"`
 	DisplayName   string                 `protobuf:"bytes,3,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
 	Resources     *ResourceLimits        `protobuf:"bytes,4,opt,name=resources,proto3" json:"resources,omitempty"`
+	Skills        []string               `protobuf:"bytes,5,rep,name=skills,proto3" json:"skills,omitempty"`
+	McpServers    []string               `protobuf:"bytes,6,rep,name=mcp_servers,json=mcpServers,proto3" json:"mcp_servers,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -492,6 +526,20 @@ func (x *CreateHostRequest) GetDisplayName() string {
 func (x *CreateHostRequest) GetResources() *ResourceLimits {
 	if x != nil {
 		return x.Resources
+	}
+	return nil
+}
+
+func (x *CreateHostRequest) GetSkills() []string {
+	if x != nil {
+		return x.Skills
+	}
+	return nil
+}
+
+func (x *CreateHostRequest) GetMcpServers() []string {
+	if x != nil {
+		return x.McpServers
 	}
 	return nil
 }
@@ -968,7 +1016,7 @@ var File_maze_v1_host_proto protoreflect.FileDescriptor
 
 const file_maze_v1_host_proto_rawDesc = "" +
 	"\n" +
-	"\x12maze/v1/host.proto\x12\amaze.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\"\xc1\x02\n" +
+	"\x12maze/v1/host.proto\x12\amaze.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\"\xfa\x02\n" +
 	"\bHostSpec\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x14\n" +
@@ -984,7 +1032,10 @@ const file_maze_v1_host_proto_rawDesc = "" +
 	"\terror_msg\x18\t \x01(\tR\berrorMsg\x12\x1f\n" +
 	"\vretry_count\x18\n" +
 	" \x01(\x05R\n" +
-	"retryCount\"P\n" +
+	"retryCount\x12\x16\n" +
+	"\x06skills\x18\v \x03(\tR\x06skills\x12\x1f\n" +
+	"\vmcp_servers\x18\f \x03(\tR\n" +
+	"mcpServers\"P\n" +
 	"\x0eResourceLimits\x12\x1b\n" +
 	"\tcpu_limit\x18\x01 \x01(\tR\bcpuLimit\x12!\n" +
 	"\fmemory_limit\x18\x02 \x01(\tR\vmemoryLimit\"\xc4\x02\n" +
@@ -1001,7 +1052,7 @@ const file_maze_v1_host_proto_rawDesc = "" +
 	"\bcategory\x18\b \x01(\tR\bcategory\x1a:\n" +
 	"\fEnvVarsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x88\x03\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xc1\x03\n" +
 	"\bHostInfo\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x14\n" +
@@ -1018,12 +1069,18 @@ const file_maze_v1_host_proto_rawDesc = "" +
 	"\aaddress\x18\n" +
 	" \x01(\tR\aaddress\x12#\n" +
 	"\rsession_count\x18\v \x01(\x05R\fsessionCount\x12%\n" +
-	"\x0elast_heartbeat\x18\f \x01(\tR\rlastHeartbeat\"\xaa\x01\n" +
+	"\x0elast_heartbeat\x18\f \x01(\tR\rlastHeartbeat\x12\x16\n" +
+	"\x06skills\x18\r \x03(\tR\x06skills\x12\x1f\n" +
+	"\vmcp_servers\x18\x0e \x03(\tR\n" +
+	"mcpServers\"\xe3\x01\n" +
 	"\x11CreateHostRequest\x12\x1b\n" +
 	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\x12\x1e\n" +
 	"\x05tools\x18\x02 \x03(\tB\b\xbaH\x05\x92\x01\x02\b\x01R\x05tools\x12!\n" +
 	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\x125\n" +
-	"\tresources\x18\x04 \x01(\v2\x17.maze.v1.ResourceLimitsR\tresources\"\x12\n" +
+	"\tresources\x18\x04 \x01(\v2\x17.maze.v1.ResourceLimitsR\tresources\x12\x16\n" +
+	"\x06skills\x18\x05 \x03(\tR\x06skills\x12\x1f\n" +
+	"\vmcp_servers\x18\x06 \x03(\tR\n" +
+	"mcpServers\"\x12\n" +
 	"\x10ListHostsRequest\"<\n" +
 	"\x11ListHostsResponse\x12'\n" +
 	"\x05hosts\x18\x01 \x03(\v2\x11.maze.v1.HostInfoR\x05hosts\"-\n" +

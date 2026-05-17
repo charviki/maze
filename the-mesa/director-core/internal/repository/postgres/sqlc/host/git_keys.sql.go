@@ -12,7 +12,7 @@ import (
 const createGitKey = `-- name: CreateGitKey :one
 INSERT INTO git_keys (name, encrypted_token, token_mask)
 VALUES ($1, $2, $3)
-RETURNING id, name, encrypted_token, token_mask, created_at
+RETURNING id, name, encrypted_token, token_mask, created_at, updated_at
 `
 
 type CreateGitKeyParams struct {
@@ -30,6 +30,7 @@ func (q *Queries) CreateGitKey(ctx context.Context, arg CreateGitKeyParams) (Git
 		&i.EncryptedToken,
 		&i.TokenMask,
 		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
@@ -44,7 +45,7 @@ func (q *Queries) DeleteGitKeyByName(ctx context.Context, name string) error {
 }
 
 const getGitKeyByName = `-- name: GetGitKeyByName :one
-SELECT id, name, encrypted_token, token_mask, created_at FROM git_keys WHERE name = $1
+SELECT id, name, encrypted_token, token_mask, created_at, updated_at FROM git_keys WHERE name = $1
 `
 
 func (q *Queries) GetGitKeyByName(ctx context.Context, name string) (GitKey, error) {
@@ -56,12 +57,13 @@ func (q *Queries) GetGitKeyByName(ctx context.Context, name string) (GitKey, err
 		&i.EncryptedToken,
 		&i.TokenMask,
 		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
 
 const listGitKeys = `-- name: ListGitKeys :many
-SELECT id, name, encrypted_token, token_mask, created_at FROM git_keys ORDER BY name ASC
+SELECT id, name, encrypted_token, token_mask, created_at, updated_at FROM git_keys ORDER BY name ASC
 `
 
 func (q *Queries) ListGitKeys(ctx context.Context) ([]GitKey, error) {
@@ -79,6 +81,7 @@ func (q *Queries) ListGitKeys(ctx context.Context) ([]GitKey, error) {
 			&i.EncryptedToken,
 			&i.TokenMask,
 			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}

@@ -295,6 +295,8 @@ func (s *Server) CreateHost(ctx context.Context, req *pb.CreateHostRequest) (*pb
 		Name:        req.GetName(),
 		Tools:       req.GetTools(),
 		DisplayName: req.GetDisplayName(),
+		Skills:      req.GetSkills(),
+		MCPServers:  req.GetMcpServers(),
 	}
 	if req.GetResources() != nil {
 		protoReq.Resources = protocol.ResourceLimits{
@@ -592,6 +594,8 @@ func hostInfoToProto(info *protocol.HostInfo) *pb.HostInfo {
 		Address:       info.Address,
 		SessionCount:  safeInt32(info.SessionCount),
 		LastHeartbeat: info.LastHeartbeat,
+		Skills:        info.Skills,
+		McpServers:    info.MCPServers,
 	}
 }
 
@@ -636,6 +640,8 @@ func hostSpecToProto(spec *protocol.HostSpec) *pb.HostSpec {
 		Status:      spec.Status,
 		ErrorMsg:    spec.ErrorMsg,
 		RetryCount:  safeInt32(spec.RetryCount),
+		Skills:      spec.Skills,
+		McpServers:  spec.MCPServers,
 	}
 }
 

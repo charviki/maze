@@ -4,6 +4,8 @@ CREATE TABLE host_specs (
     display_name TEXT NOT NULL DEFAULT '',
     tools        JSONB NOT NULL DEFAULT '[]'::jsonb,
     resources    JSONB NOT NULL DEFAULT '{}'::jsonb,
+    skills       JSONB NOT NULL DEFAULT '[]'::jsonb,
+    mcp_servers  JSONB NOT NULL DEFAULT '[]'::jsonb,
     auth_token   TEXT NOT NULL,
     status       TEXT NOT NULL DEFAULT 'pending',
     error_msg    TEXT NOT NULL DEFAULT '',

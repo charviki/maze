@@ -90,6 +90,7 @@ func newHTTPServer(cfg *config.Config, logger logutil.Logger, gwmux *gwruntime.S
 	mcpRepo := postgres.NewMCPServerRepository(hostPool)
 	ruleRepo := postgres.NewRuleRepository(hostPool)
 	gitKeyRepo := postgres.NewGitKeyRepository(hostPool)
+	hostSvc.SetResourceRepos(skillRepo, mcpRepo)
 	skillSvc := service.NewSkillService(skillRepo, logger)
 	mcpSvc := service.NewMCPServerService(mcpRepo, logger)
 	ruleSvc := service.NewRuleService(ruleRepo, logger)

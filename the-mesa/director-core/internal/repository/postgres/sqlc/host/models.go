@@ -35,6 +35,8 @@ type HostSpec struct {
 	DisplayName string             `json:"display_name"`
 	Tools       []byte             `json:"tools"`
 	Resources   []byte             `json:"resources"`
+	Skills      []byte             `json:"skills"`
+	McpServers  []byte             `json:"mcp_servers"`
 	AuthToken   string             `json:"auth_token"`
 	Status      string             `json:"status"`
 	ErrorMsg    string             `json:"error_msg"`

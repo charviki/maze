@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 
 	"github.com/jackc/pgx/v5"
 
@@ -34,11 +35,21 @@ func (r *HostSpecRepository) Create(ctx context.Context, spec *protocol.HostSpec
 	if err != nil {
 		return false, err
 	}
+	skills, err := json.Marshal(spec.Skills)
+	if err != nil {
+		return false, err
+	}
+	mcpServers, err := json.Marshal(spec.MCPServers)
+	if err != nil {
+		return false, err
+	}
 	rowsAffected, err := r.queries(ctx).InsertHostSpec(ctx, hostgen.InsertHostSpecParams{
 		Name:        spec.Name,
 		DisplayName: spec.DisplayName,
 		Tools:       tools,
 		Resources:   resources,
+		Skills:      skills,
+		McpServers:  mcpServers,
 		AuthToken:   spec.AuthToken,
 		Status:      spec.Status,
 	})
@@ -115,17 +126,35 @@ func (r *HostSpecRepository) IncrementRetry(ctx context.Context, name string) (b
 func hostSpecFromRow(row hostgen.HostSpec) protocol.HostSpec {
 	var tools []string
 	if len(row.Tools) > 0 {
-		_ = json.Unmarshal(row.Tools, &tools)
+		if err := json.Unmarshal(row.Tools, &tools); err != nil {
+			slog.Warn("unmarshal host_spec.tools failed", "name", row.Name, "err", err)
+		}
 	}
 	var resources protocol.ResourceLimits
 	if len(row.Resources) > 0 {
-		_ = json.Unmarshal(row.Resources, &resources)
+		if err := json.Unmarshal(row.Resources, &resources); err != nil {
+			slog.Warn("unmarshal host_spec.resources failed", "name", row.Name, "err", err)
+		}
+	}
+	var skills []string
+	if len(row.Skills) > 0 {
+		if err := json.Unmarshal(row.Skills, &skills); err != nil {
+			slog.Warn("unmarshal host_spec.skills failed", "name", row.Name, "err", err)
+		}
+	}
+	var mcpServers []string
+	if len(row.McpServers) > 0 {
+		if err := json.Unmarshal(row.McpServers, &mcpServers); err != nil {
+			slog.Warn("unmarshal host_spec.mcp_servers failed", "name", row.Name, "err", err)
+		}
 	}
 	return protocol.HostSpec{
 		Name:        row.Name,
 		DisplayName: row.DisplayName,
 		Tools:       tools,
 		Resources:   resources,
+		Skills:      skills,
+		MCPServers:  mcpServers,
 		AuthToken:   row.AuthToken,
 		Status:      row.Status,
 		ErrorMsg:    row.ErrorMsg,

@@ -55,6 +55,10 @@ type CreateHostRequest struct {
 	DisplayName string `json:"display_name,omitempty"`
 	// Resources 资源限制（可选）
 	Resources ResourceLimits `json:"resources,omitempty"`
+	// Skills 选配的 Skill 名称列表
+	Skills []string `json:"skills,omitempty"`
+	// MCPServers 选配的 MCP Server 名称列表
+	MCPServers []string `json:"mcp_servers,omitempty"`
 }
 
 // CreateHostResponse 创建 Host 响应
@@ -96,6 +100,8 @@ type HostSpec struct {
 	Status      string         `json:"status"`
 	ErrorMsg    string         `json:"error_msg,omitempty"`
 	RetryCount  int            `json:"retry_count"`
+	Skills      []string       `json:"skills,omitempty"`
+	MCPServers  []string       `json:"mcp_servers,omitempty"`
 }
 
 // HostInfo API 响应的合并视图：HostSpec + NodeRegistry 运行时信息

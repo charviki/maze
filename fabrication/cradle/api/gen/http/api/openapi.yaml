@@ -3376,6 +3376,14 @@ components:
           type: string
         resources:
           $ref: "#/components/schemas/v1ResourceLimits"
+        skills:
+          items:
+            type: string
+          type: array
+        mcpServers:
+          items:
+            type: string
+          type: array
       type: object
     v1CreateMCPServerRequest:
       properties:
@@ -3933,22 +3941,28 @@ components:
       type: object
     v1HostInfo:
       example:
-        createdAt: createdAt
         address: address
         lastHeartbeat: lastHeartbeat
-        sessionCount: 6
         displayName: displayName
         retryCount: 0
-        name: name
         resources:
           cpuLimit: cpuLimit
           memoryLimit: memoryLimit
+        mcpServers:
+        - mcpServers
+        - mcpServers
         tools:
         - tools
         - tools
+        errorMsg: errorMsg
+        skills:
+        - skills
+        - skills
+        createdAt: createdAt
+        sessionCount: 6
+        name: name
         updatedAt: updatedAt
         status: status
-        errorMsg: errorMsg
       properties:
         name:
           type: string
@@ -3978,10 +3992,21 @@ components:
           type: integer
         lastHeartbeat:
           type: string
+        skills:
+          items:
+            type: string
+          type: array
+        mcpServers:
+          items:
+            type: string
+          type: array
       title: 与 protocol.HostInfo 对齐（HostSpec + 运行时状态合并视图）
       type: object
     v1HostSpec:
       example:
+        skills:
+        - skills
+        - skills
         createdAt: createdAt
         displayName: displayName
         retryCount: 0
@@ -3990,6 +4015,9 @@ components:
         resources:
           cpuLimit: cpuLimit
           memoryLimit: memoryLimit
+        mcpServers:
+        - mcpServers
+        - mcpServers
         tools:
         - tools
         - tools
@@ -4020,6 +4048,14 @@ components:
         retryCount:
           format: int32
           type: integer
+        skills:
+          items:
+            type: string
+          type: array
+        mcpServers:
+          items:
+            type: string
+          type: array
       title: 与 protocol.HostSpec 对齐
       type: object
     v1ListArchivesResponse:
@@ -4138,38 +4174,50 @@ components:
     v1ListHostsResponse:
       example:
         hosts:
-        - createdAt: createdAt
-          address: address
+        - address: address
           lastHeartbeat: lastHeartbeat
-          sessionCount: 6
           displayName: displayName
           retryCount: 0
-          name: name
           resources:
             cpuLimit: cpuLimit
             memoryLimit: memoryLimit
+          mcpServers:
+          - mcpServers
+          - mcpServers
           tools:
           - tools
           - tools
+          errorMsg: errorMsg
+          skills:
+          - skills
+          - skills
+          createdAt: createdAt
+          sessionCount: 6
+          name: name
           updatedAt: updatedAt
           status: status
-          errorMsg: errorMsg
-        - createdAt: createdAt
-          address: address
+        - address: address
           lastHeartbeat: lastHeartbeat
-          sessionCount: 6
           displayName: displayName
           retryCount: 0
-          name: name
           resources:
             cpuLimit: cpuLimit
             memoryLimit: memoryLimit
+          mcpServers:
+          - mcpServers
+          - mcpServers
           tools:
           - tools
           - tools
+          errorMsg: errorMsg
+          skills:
+          - skills
+          - skills
+          createdAt: createdAt
+          sessionCount: 6
+          name: name
           updatedAt: updatedAt
           status: status
-          errorMsg: errorMsg
       properties:
         hosts:
           items:

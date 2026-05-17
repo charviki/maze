@@ -23,6 +23,8 @@ type V1CreateHostRequest struct {
 	Tools []string `json:"tools,omitempty"`
 	DisplayName *string `json:"displayName,omitempty"`
 	Resources *V1ResourceLimits `json:"resources,omitempty"`
+	Skills []string `json:"skills,omitempty"`
+	McpServers []string `json:"mcpServers,omitempty"`
 }
 
 // NewV1CreateHostRequest instantiates a new V1CreateHostRequest object
@@ -170,6 +172,70 @@ func (o *V1CreateHostRequest) SetResources(v V1ResourceLimits) {
 	o.Resources = &v
 }
 
+// GetSkills returns the Skills field value if set, zero value otherwise.
+func (o *V1CreateHostRequest) GetSkills() []string {
+	if o == nil || IsNil(o.Skills) {
+		var ret []string
+		return ret
+	}
+	return o.Skills
+}
+
+// GetSkillsOk returns a tuple with the Skills field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *V1CreateHostRequest) GetSkillsOk() ([]string, bool) {
+	if o == nil || IsNil(o.Skills) {
+		return nil, false
+	}
+	return o.Skills, true
+}
+
+// HasSkills returns a boolean if a field has been set.
+func (o *V1CreateHostRequest) HasSkills() bool {
+	if o != nil && !IsNil(o.Skills) {
+		return true
+	}
+
+	return false
+}
+
+// SetSkills gets a reference to the given []string and assigns it to the Skills field.
+func (o *V1CreateHostRequest) SetSkills(v []string) {
+	o.Skills = v
+}
+
+// GetMcpServers returns the McpServers field value if set, zero value otherwise.
+func (o *V1CreateHostRequest) GetMcpServers() []string {
+	if o == nil || IsNil(o.McpServers) {
+		var ret []string
+		return ret
+	}
+	return o.McpServers
+}
+
+// GetMcpServersOk returns a tuple with the McpServers field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *V1CreateHostRequest) GetMcpServersOk() ([]string, bool) {
+	if o == nil || IsNil(o.McpServers) {
+		return nil, false
+	}
+	return o.McpServers, true
+}
+
+// HasMcpServers returns a boolean if a field has been set.
+func (o *V1CreateHostRequest) HasMcpServers() bool {
+	if o != nil && !IsNil(o.McpServers) {
+		return true
+	}
+
+	return false
+}
+
+// SetMcpServers gets a reference to the given []string and assigns it to the McpServers field.
+func (o *V1CreateHostRequest) SetMcpServers(v []string) {
+	o.McpServers = v
+}
+
 func (o V1CreateHostRequest) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -191,6 +257,12 @@ func (o V1CreateHostRequest) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.Resources) {
 		toSerialize["resources"] = o.Resources
+	}
+	if !IsNil(o.Skills) {
+		toSerialize["skills"] = o.Skills
+	}
+	if !IsNil(o.McpServers) {
+		toSerialize["mcpServers"] = o.McpServers
 	}
 	return toSerialize, nil
 }

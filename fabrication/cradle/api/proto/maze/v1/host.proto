@@ -20,6 +20,8 @@ message HostSpec {
   string status = 8;
   string error_msg = 9;
   int32 retry_count = 10;
+  repeated string skills = 11;
+  repeated string mcp_servers = 12;
 }
 
 // 与 protocol.ResourceLimits 对齐
@@ -54,6 +56,8 @@ message HostInfo {
   string address = 10;
   int32 session_count = 11;
   string last_heartbeat = 12;
+  repeated string skills = 13;
+  repeated string mcp_servers = 14;
 }
 
 message CreateHostRequest {
@@ -61,6 +65,8 @@ message CreateHostRequest {
   repeated string tools = 2 [(buf.validate.field).repeated = { min_items: 1 }];
   string display_name = 3;
   ResourceLimits resources = 4;
+  repeated string skills = 5;
+  repeated string mcp_servers = 6;
 }
 
 message ListHostsRequest {}

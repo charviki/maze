@@ -9,14 +9,27 @@ import {
 } from './dialog';
 import { Button } from './button';
 import { Input } from './input';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs';
 import { clipPathHalf } from '../../utils';
-import type { Tool, CreateHostRequest, HostSpec, HostStatus } from '../../types';
-import { Loader2, Cpu, MemoryStick, Wrench, CheckSquare, Square, X } from 'lucide-react';
+import type { Tool, CreateHostRequest, HostSpec, HostStatus, Skill, MCPServer } from '../../types';
+import {
+  Loader2,
+  Cpu,
+  MemoryStick,
+  Wrench,
+  Sparkles,
+  Server,
+  CheckSquare,
+  Square,
+  X,
+} from 'lucide-react';
 
 export interface CreateHostDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tools: Tool[];
+  skills: Skill[];
+  mcpServers: MCPServer[];
   onSubmit: (request: CreateHostRequest) => Promise<HostSpec>;
   onWaitOnline: (hostName: string) => Promise<boolean>;
   getHostBuildLog: (name: string) => Promise<string>;
@@ -34,16 +47,21 @@ export function CreateHostDialog({
   open,
   onOpenChange,
   tools,
+  skills,
+  mcpServers,
   onSubmit,
   onWaitOnline,
   getHostBuildLog,
 }: CreateHostDialogProps) {
   const [name, setName] = useState('');
   const [selectedTools, setSelectedTools] = useState<string[]>([]);
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [selectedMcpServers, setSelectedMcpServers] = useState<string[]>([]);
   const [cpuLimit, setCpuLimit] = useState('2');
   const [memoryLimit, setMemoryLimit] = useState('2g');
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('basic');
 
   const [phase, setPhase] = useState<'form' | 'building' | 'waiting' | 'online' | 'timeout'>(
     'form',
@@ -64,13 +82,28 @@ export function CreateHostDialog({
     setSelectedTools(allSelected ? [] : tools.map((t) => t.id ?? ''));
   };
 
+  const toggleSkill = (skillName: string) => {
+    setSelectedSkills((prev) =>
+      prev.includes(skillName) ? prev.filter((s) => s !== skillName) : [...prev, skillName],
+    );
+  };
+
+  const toggleMcpServer = (serverName: string) => {
+    setSelectedMcpServers((prev) =>
+      prev.includes(serverName) ? prev.filter((s) => s !== serverName) : [...prev, serverName],
+    );
+  };
+
   const resetForm = () => {
     setName('');
     setSelectedTools([]);
+    setSelectedSkills([]);
+    setSelectedMcpServers([]);
     setCpuLimit('2');
     setMemoryLimit('4g');
     setError(null);
     setPhase('form');
+    setActiveTab('basic');
     setCreatedHostName('');
     setElapsedSeconds(0);
     setBuildLog('');
@@ -107,6 +140,8 @@ export function CreateHostDialog({
       const response = await onSubmit({
         name,
         tools: selectedTools,
+        skills: selectedSkills,
+        mcpServers: selectedMcpServers,
         resources: {
           cpuLimit: cpuLimit || undefined,
           memoryLimit: memoryLimit || undefined,
@@ -178,7 +213,7 @@ export function CreateHostDialog({
         onOpenChange(v);
       }}
     >
-      <DialogContent className="max-w-xl border-primary/20 bg-background/95 backdrop-blur-sm">
+      <DialogContent className="max-w-2xl border-primary/20 bg-background/95 backdrop-blur-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-mono uppercase tracking-wider text-primary">
             <Cpu className="w-5 h-5" />
@@ -191,119 +226,240 @@ export function CreateHostDialog({
 
         {/* 表单阶段 */}
         {phase === 'form' && (
-          <div className="space-y-5 max-h-[60vh] overflow-y-auto pr-1">
-            <div className="space-y-2">
-              <label className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">
-                HOST DESIGNATION
-              </label>
-              <Input
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                }}
-                placeholder="e.g. host-alpha-01"
-                className="font-mono rounded-none border-primary/20 bg-card/50 placeholder:text-muted-foreground/40 focus-visible:ring-primary/50"
-              />
-            </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList>
+              <TabsTrigger value="basic">BASIC</TabsTrigger>
+              <TabsTrigger value="tools">
+                TOOLS [{selectedTools.length}/{tools.length}]
+              </TabsTrigger>
+              <TabsTrigger value="skills">SKILLS [{selectedSkills.length}]</TabsTrigger>
+              <TabsTrigger value="mcp-servers">
+                MCP SERVERS [{selectedMcpServers.length}]
+              </TabsTrigger>
+            </TabsList>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">
-                  TOOL SELECTION [{selectedTools.length}/{tools.length}]
-                </label>
-                <button
-                  type="button"
-                  onClick={toggleAll}
-                  className="text-[10px] text-primary/60 hover:text-primary uppercase tracking-widest font-mono transition-colors"
-                >
-                  {allSelected ? 'DESELECT ALL' : 'SELECT ALL'}
-                </button>
-              </div>
-              <div
-                className="border border-primary/20 bg-card/50 p-3 space-y-1 max-h-48 overflow-y-auto"
-                style={{ clipPath: clipPathHalf(8) }}
-              >
-                {tools.length === 0 && (
-                  <div className="text-center text-[10px] text-muted-foreground font-mono uppercase tracking-widest py-4 animate-pulse">
-                    [ LOADING TOOLS... ]
-                  </div>
-                )}
-                {tools.map((tool) => {
-                  const toolId = tool.id ?? '';
-                  const isSelected = selectedTools.includes(toolId);
-                  return (
-                    <button
-                      key={toolId}
-                      type="button"
-                      onClick={() => {
-                        toggleTool(toolId);
-                      }}
-                      className={`
-                      w-full flex items-start gap-3 p-2 transition-all text-left
-                      ${isSelected ? 'bg-primary/10 border-l-2 border-primary' : 'border-l-2 border-transparent hover:bg-primary/5'}
-                    `}
-                    >
-                      {isSelected ? (
-                        <CheckSquare className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-                      ) : (
-                        <Square className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
-                      )}
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <Wrench className="w-3 h-3 text-primary/60 shrink-0" />
-                          <span className="font-mono text-sm text-foreground truncate">
-                            {tool.id}
-                          </span>
-                          <span className="text-[9px] text-muted-foreground/60 font-mono uppercase tracking-wider shrink-0">
-                            [{tool.category}]
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-muted-foreground font-mono mt-0.5 leading-tight truncate">
-                          {tool.description}
-                        </p>
+            <TabsContent value="basic">
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <label className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">
+                    HOST DESIGNATION
+                  </label>
+                  <Input
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                    }}
+                    placeholder="e.g. host-alpha-01"
+                    className="font-mono rounded-none border-primary/20 bg-card/50 placeholder:text-muted-foreground/40 focus-visible:ring-primary/50"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">
+                    RESOURCE LIMITS
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono">
+                        <Cpu className="w-3 h-3" />
+                        CPU LIMIT
                       </div>
-                    </button>
-                  );
-                })}
+                      <Input
+                        value={cpuLimit}
+                        onChange={(e) => {
+                          setCpuLimit(e.target.value);
+                        }}
+                        placeholder="2"
+                        className="font-mono rounded-none border-primary/20 bg-card/50 placeholder:text-muted-foreground/40 focus-visible:ring-primary/50 h-8 text-xs"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono">
+                        <MemoryStick className="w-3 h-3" />
+                        MEMORY LIMIT
+                      </div>
+                      <Input
+                        value={memoryLimit}
+                        onChange={(e) => {
+                          setMemoryLimit(e.target.value);
+                        }}
+                        placeholder="4g"
+                        className="font-mono rounded-none border-primary/20 bg-card/50 placeholder:text-muted-foreground/40 focus-visible:ring-primary/50 h-8 text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            </TabsContent>
 
-            <div className="space-y-2">
-              <label className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">
-                RESOURCE LIMITS
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono">
-                    <Cpu className="w-3 h-3" />
-                    CPU LIMIT
-                  </div>
-                  <Input
-                    value={cpuLimit}
-                    onChange={(e) => {
-                      setCpuLimit(e.target.value);
-                    }}
-                    placeholder="2"
-                    className="font-mono rounded-none border-primary/20 bg-card/50 placeholder:text-muted-foreground/40 focus-visible:ring-primary/50 h-8 text-xs"
-                  />
+            <TabsContent value="tools">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">
+                    TOOL SELECTION [{selectedTools.length}/{tools.length}]
+                  </label>
+                  <button
+                    type="button"
+                    onClick={toggleAll}
+                    className="text-[10px] text-primary/60 hover:text-primary uppercase tracking-widest font-mono transition-colors"
+                  >
+                    {allSelected ? 'DESELECT ALL' : 'SELECT ALL'}
+                  </button>
                 </div>
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono">
-                    <MemoryStick className="w-3 h-3" />
-                    MEMORY LIMIT
-                  </div>
-                  <Input
-                    value={memoryLimit}
-                    onChange={(e) => {
-                      setMemoryLimit(e.target.value);
-                    }}
-                    placeholder="4g"
-                    className="font-mono rounded-none border-primary/20 bg-card/50 placeholder:text-muted-foreground/40 focus-visible:ring-primary/50 h-8 text-xs"
-                  />
+                <div
+                  className="border border-primary/20 bg-card/50 p-3 space-y-1 max-h-48 overflow-y-auto"
+                  style={{ clipPath: clipPathHalf(8) }}
+                >
+                  {tools.length === 0 && (
+                    <div className="text-center text-[10px] text-muted-foreground font-mono uppercase tracking-widest py-4 animate-pulse">
+                      [ LOADING TOOLS... ]
+                    </div>
+                  )}
+                  {tools.map((tool) => {
+                    const toolId = tool.id ?? '';
+                    const isSelected = selectedTools.includes(toolId);
+                    return (
+                      <button
+                        key={toolId}
+                        type="button"
+                        onClick={() => {
+                          toggleTool(toolId);
+                        }}
+                        className={`
+                        w-full flex items-start gap-3 p-2 transition-all text-left
+                        ${isSelected ? 'bg-primary/10 border-l-2 border-primary' : 'border-l-2 border-transparent hover:bg-primary/5'}
+                      `}
+                      >
+                        {isSelected ? (
+                          <CheckSquare className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                        ) : (
+                          <Square className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
+                        )}
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <Wrench className="w-3 h-3 text-primary/60 shrink-0" />
+                            <span className="font-mono text-sm text-foreground truncate">
+                              {tool.id}
+                            </span>
+                            <span className="text-[9px] text-muted-foreground/60 font-mono uppercase tracking-wider shrink-0">
+                              [{tool.category}]
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground font-mono mt-0.5 leading-tight truncate">
+                            {tool.description}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-            </div>
-          </div>
+            </TabsContent>
+
+            <TabsContent value="skills">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">
+                    SKILL SELECTION [{selectedSkills.length}/{skills.length}]
+                  </label>
+                </div>
+                <div
+                  className="border border-primary/20 bg-card/50 p-3 space-y-1 max-h-48 overflow-y-auto"
+                  style={{ clipPath: clipPathHalf(8) }}
+                >
+                  {skills.length === 0 && (
+                    <div className="text-center text-[10px] text-muted-foreground font-mono uppercase tracking-widest py-4 animate-pulse">
+                      [ NO SKILLS AVAILABLE — CREATE ONE IN FABRICATION ]
+                    </div>
+                  )}
+                  {skills.map((skill) => {
+                    const skillName = skill.name ?? '';
+                    const isSelected = selectedSkills.includes(skillName);
+                    return (
+                      <button
+                        key={skillName}
+                        type="button"
+                        onClick={() => toggleSkill(skillName)}
+                        className={`
+                        w-full flex items-start gap-3 p-2 transition-all text-left
+                        ${isSelected ? 'bg-primary/10 border-l-2 border-primary' : 'border-l-2 border-transparent hover:bg-primary/5'}
+                      `}
+                      >
+                        {isSelected ? (
+                          <CheckSquare className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                        ) : (
+                          <Square className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
+                        )}
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="w-3 h-3 text-primary/60 shrink-0" />
+                            <span className="font-mono text-sm text-foreground truncate">
+                              {skill.name}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground font-mono mt-0.5 leading-tight truncate">
+                            {skill.description}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="mcp-servers">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">
+                    MCP SERVER SELECTION [{selectedMcpServers.length}/{mcpServers.length}]
+                  </label>
+                </div>
+                <div
+                  className="border border-primary/20 bg-card/50 p-3 space-y-1 max-h-48 overflow-y-auto"
+                  style={{ clipPath: clipPathHalf(8) }}
+                >
+                  {mcpServers.length === 0 && (
+                    <div className="text-center text-[10px] text-muted-foreground font-mono uppercase tracking-widest py-4 animate-pulse">
+                      [ NO MCP SERVERS AVAILABLE — CREATE ONE IN FABRICATION ]
+                    </div>
+                  )}
+                  {mcpServers.map((mcpServer) => {
+                    const serverName = mcpServer.name ?? '';
+                    const isSelected = selectedMcpServers.includes(serverName);
+                    return (
+                      <button
+                        key={serverName}
+                        type="button"
+                        onClick={() => toggleMcpServer(serverName)}
+                        className={`
+                        w-full flex items-start gap-3 p-2 transition-all text-left
+                        ${isSelected ? 'bg-primary/10 border-l-2 border-primary' : 'border-l-2 border-transparent hover:bg-primary/5'}
+                      `}
+                      >
+                        {isSelected ? (
+                          <CheckSquare className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                        ) : (
+                          <Square className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
+                        )}
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <Server className="w-3 h-3 text-primary/60 shrink-0" />
+                            <span className="font-mono text-sm text-foreground truncate">
+                              {mcpServer.name}
+                            </span>
+                            <span className="text-[9px] text-muted-foreground/60 font-mono uppercase tracking-wider shrink-0">
+                              [{mcpServer.type}]
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
         )}
 
         {/* 等待上线阶段 — Westworld 觉醒动画 + 实时构建日志 */}

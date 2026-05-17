@@ -25,6 +25,8 @@ import (
 type HostService struct {
 	registry      NodeRegistry
 	hostSpecRepo  HostSpecRepository
+	skillRepo     SkillRepo
+	mcpServerRepo MCPServerRepo
 	txm           HostTxManager
 	runtime       runtime.HostRuntime
 	auditLog      AuditLogWriter
@@ -73,6 +75,13 @@ func (s *HostService) SetCredentialStore(store repository.CredentialStore) {
 	})
 }
 
+// SetResourceRepos 延迟注入 SkillRepo 和 MCPServerRepo，用于创建 Host 时校验资源存在性。
+// 必须在服务就绪（接受请求）前调用。
+func (s *HostService) SetResourceRepos(skillRepo SkillRepo, mcpServerRepo MCPServerRepo) {
+	s.skillRepo = skillRepo
+	s.mcpServerRepo = mcpServerRepo
+}
+
 // CreateHost 校验 → 持久化 HostSpec → 后台异步构建部署
 func (s *HostService) CreateHost(ctx context.Context, req *protocol.CreateHostRequest) (*protocol.HostSpec, error) {
 	if unknown := hostbuilder.ValidateTools(req.Tools); len(unknown) > 0 {
@@ -88,6 +97,22 @@ func (s *HostService) CreateHost(ctx context.Context, req *protocol.CreateHostRe
 			}(), ", "))
 	}
 
+	if s.skillRepo != nil {
+		if unknown, err := s.validateSkillsExist(ctx, req.Skills); err != nil {
+			return nil, fmt.Errorf("validate skills: %w", err)
+		} else if len(unknown) > 0 {
+			return nil, fmt.Errorf("unknown skills: %s", strings.Join(unknown, ", "))
+		}
+	}
+
+	if s.mcpServerRepo != nil {
+		if unknown, err := s.validateMCPServersExist(ctx, req.MCPServers); err != nil {
+			return nil, fmt.Errorf("validate mcp_servers: %w", err)
+		} else if len(unknown) > 0 {
+			return nil, fmt.Errorf("unknown mcp_servers: %s", strings.Join(unknown, ", "))
+		}
+	}
+
 	tokenBytes := make([]byte, 32)
 	if _, err := rand.Read(tokenBytes); err != nil {
 		return nil, fmt.Errorf("generate host token: %w", err)
@@ -99,6 +124,8 @@ func (s *HostService) CreateHost(ctx context.Context, req *protocol.CreateHostRe
 		DisplayName: req.DisplayName,
 		Tools:       req.Tools,
 		Resources:   req.Resources,
+		Skills:      req.Skills,
+		MCPServers:  req.MCPServers,
 		AuthToken:   hostToken,
 		Status:      protocol.HostStatusPending,
 	}
@@ -387,4 +414,32 @@ func (s *HostService) revokeHostCredential(ctx context.Context, name string) {
 	if err := s.credentials.RevokeAllBySubject(ctx, "host:"+name); err != nil {
 		s.logger.Errorf("[host] revoke credential for %q in unified store failed: %v", name, err)
 	}
+}
+
+func (s *HostService) validateSkillsExist(ctx context.Context, names []string) ([]string, error) {
+	var unknown []string
+	for _, name := range names {
+		skill, err := s.skillRepo.Get(ctx, name)
+		if err != nil {
+			return nil, fmt.Errorf("check skill %q: %w", name, err)
+		}
+		if skill == nil {
+			unknown = append(unknown, name)
+		}
+	}
+	return unknown, nil
+}
+
+func (s *HostService) validateMCPServersExist(ctx context.Context, names []string) ([]string, error) {
+	var unknown []string
+	for _, name := range names {
+		server, err := s.mcpServerRepo.Get(ctx, name)
+		if err != nil {
+			return nil, fmt.Errorf("check mcp_server %q: %w", name, err)
+		}
+		if server == nil {
+			unknown = append(unknown, name)
+		}
+	}
+	return unknown, nil
 }

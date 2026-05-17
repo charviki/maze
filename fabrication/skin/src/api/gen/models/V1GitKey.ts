@@ -38,6 +38,12 @@ export interface V1GitKey {
      * @memberof V1GitKey
      */
     createdAt?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof V1GitKey
+     */
+    updatedAt?: string;
 }
 
 /**
@@ -60,6 +66,7 @@ export function V1GitKeyFromJSONTyped(json: any, ignoreDiscriminator: boolean): 
         'name': json['name'] == null ? undefined : json['name'],
         'tokenMask': json['tokenMask'] == null ? undefined : json['tokenMask'],
         'createdAt': json['createdAt'] == null ? undefined : json['createdAt'],
+        'updatedAt': json['updatedAt'] == null ? undefined : json['updatedAt'],
     };
 }
 
@@ -77,6 +84,7 @@ export function V1GitKeyToJSONTyped(value?: V1GitKey | null, ignoreDiscriminator
         'name': value['name'],
         'tokenMask': value['tokenMask'],
         'createdAt': value['createdAt'],
+        'updatedAt': value['updatedAt'],
     };
 }
 

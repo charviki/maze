@@ -100,6 +100,18 @@ export interface V1HostInfo {
      * @memberof V1HostInfo
      */
     lastHeartbeat?: string;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof V1HostInfo
+     */
+    skills?: Array<string>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof V1HostInfo
+     */
+    mcpServers?: Array<string>;
 }
 
 /**
@@ -131,6 +143,8 @@ export function V1HostInfoFromJSONTyped(json: any, ignoreDiscriminator: boolean)
         'address': json['address'] == null ? undefined : json['address'],
         'sessionCount': json['sessionCount'] == null ? undefined : json['sessionCount'],
         'lastHeartbeat': json['lastHeartbeat'] == null ? undefined : json['lastHeartbeat'],
+        'skills': json['skills'] == null ? undefined : json['skills'],
+        'mcpServers': json['mcpServers'] == null ? undefined : json['mcpServers'],
     };
 }
 
@@ -157,6 +171,8 @@ export function V1HostInfoToJSONTyped(value?: V1HostInfo | null, ignoreDiscrimin
         'address': value['address'],
         'sessionCount': value['sessionCount'],
         'lastHeartbeat': value['lastHeartbeat'],
+        'skills': value['skills'],
+        'mcpServers': value['mcpServers'],
     };
 }
 

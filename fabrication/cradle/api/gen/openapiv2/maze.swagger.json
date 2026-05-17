@@ -4048,6 +4048,18 @@
         },
         "resources": {
           "$ref": "#/definitions/v1ResourceLimits"
+        },
+        "skills": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mcpServers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -4500,6 +4512,18 @@
         },
         "lastHeartbeat": {
           "type": "string"
+        },
+        "skills": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mcpServers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "title": "与 protocol.HostInfo 对齐（HostSpec + 运行时状态合并视图）"
@@ -4540,6 +4564,18 @@
         "retryCount": {
           "type": "integer",
           "format": "int32"
+        },
+        "skills": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mcpServers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "title": "与 protocol.HostSpec 对齐"

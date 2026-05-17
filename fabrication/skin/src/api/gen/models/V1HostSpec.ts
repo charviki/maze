@@ -88,6 +88,18 @@ export interface V1HostSpec {
      * @memberof V1HostSpec
      */
     retryCount?: number;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof V1HostSpec
+     */
+    skills?: Array<string>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof V1HostSpec
+     */
+    mcpServers?: Array<string>;
 }
 
 /**
@@ -117,6 +129,8 @@ export function V1HostSpecFromJSONTyped(json: any, ignoreDiscriminator: boolean)
         'status': json['status'] == null ? undefined : json['status'],
         'errorMsg': json['errorMsg'] == null ? undefined : json['errorMsg'],
         'retryCount': json['retryCount'] == null ? undefined : json['retryCount'],
+        'skills': json['skills'] == null ? undefined : json['skills'],
+        'mcpServers': json['mcpServers'] == null ? undefined : json['mcpServers'],
     };
 }
 
@@ -141,6 +155,8 @@ export function V1HostSpecToJSONTyped(value?: V1HostSpec | null, ignoreDiscrimin
         'status': value['status'],
         'errorMsg': value['errorMsg'],
         'retryCount': value['retryCount'],
+        'skills': value['skills'],
+        'mcpServers': value['mcpServers'],
     };
 }
 

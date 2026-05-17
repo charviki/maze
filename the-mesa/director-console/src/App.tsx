@@ -17,7 +17,15 @@ import {
   AppNavbar,
   CalibrationMarks,
 } from '@maze/fabrication';
-import type { Host, RadarNode, Tool, CreateHostRequest, HostSpec } from '@maze/fabrication';
+import type {
+  Host,
+  RadarNode,
+  Tool,
+  CreateHostRequest,
+  HostSpec,
+  Skill,
+  MCPServer,
+} from '@maze/fabrication';
 import { Activity, Menu, Settings } from 'lucide-react';
 import './index.css';
 
@@ -31,6 +39,8 @@ function AppContent() {
   const [showAnimSettings, setShowAnimSettings] = useState(false);
   const [showCreateHost, setShowCreateHost] = useState(false);
   const [availableTools, setAvailableTools] = useState<Tool[]>([]);
+  const [availableSkills, setAvailableSkills] = useState<Skill[]>([]);
+  const [availableMcpServers, setAvailableMcpServers] = useState<MCPServer[]>([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [logPanelHost, setLogPanelHost] = useState<string | null>(null);
   const [selectedFabricationItem, setSelectedFabricationItem] = useState<FabricationItem | null>(
@@ -77,14 +87,34 @@ function AppContent() {
 
   const handleOpenCreateHost = useCallback(async () => {
     setShowCreateHost(true);
-    try {
-      const res = await controllerApi.listTools();
+    const [toolsResult, skillsResult, mcpServersResult] = await Promise.allSettled([
+      controllerApi.listTools(),
+      controllerApi.listSkills(),
+      controllerApi.listMCPServers(),
+    ]);
+
+    if (toolsResult.status === 'fulfilled') {
+      const res = toolsResult.value;
       if (res.status === 'ok' && res.data) {
         setAvailableTools(res.data);
       }
-    } catch {
+    } else {
       setAvailableTools([]);
       showToast('error', '工具列表获取失败');
+    }
+
+    if (skillsResult.status === 'fulfilled') {
+      setAvailableSkills(skillsResult.value);
+    } else {
+      setAvailableSkills([]);
+      showToast('error', 'Skill 列表获取失败');
+    }
+
+    if (mcpServersResult.status === 'fulfilled') {
+      setAvailableMcpServers(mcpServersResult.value);
+    } else {
+      setAvailableMcpServers([]);
+      showToast('error', 'MCP Server 列表获取失败');
     }
   }, [showToast]);
 
@@ -238,6 +268,8 @@ function AppContent() {
         open={showCreateHost}
         onOpenChange={setShowCreateHost}
         tools={availableTools}
+        skills={availableSkills}
+        mcpServers={availableMcpServers}
         onSubmit={handleCreateHost}
         onWaitOnline={handleWaitOnline}
         getHostBuildLog={async (name: string) => {
