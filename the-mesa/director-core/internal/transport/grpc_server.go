@@ -15,6 +15,7 @@ import (
 
 	pb "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
 	"github.com/charviki/maze/fabrication/cradle/auth"
+	"github.com/charviki/maze/fabrication/cradle/errutil"
 	"github.com/charviki/maze/fabrication/cradle/logutil"
 	"github.com/charviki/maze/fabrication/cradle/protocol"
 	"github.com/charviki/maze/the-mesa/director-core/internal/agentclient"
@@ -692,10 +693,7 @@ func (s *Server) CreateSkill(ctx context.Context, req *pb.CreateSkillRequest) (*
 	}
 	result, err := s.skillSvc.Create(ctx, skill)
 	if err != nil {
-		if errors.Is(err, service.ErrAlreadyExists) {
-			return nil, status.Error(codes.AlreadyExists, err.Error())
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, toStatusError(err)
 	}
 	return skillToProto(result), nil
 }
@@ -703,7 +701,7 @@ func (s *Server) CreateSkill(ctx context.Context, req *pb.CreateSkillRequest) (*
 // DeleteSkill deletes a skill.
 func (s *Server) DeleteSkill(ctx context.Context, req *pb.DeleteSkillRequest) (*emptypb.Empty, error) {
 	if err := s.skillSvc.Delete(ctx, req.GetName()); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, toStatusError(err)
 	}
 	return &emptypb.Empty{}, nil
 }
@@ -712,7 +710,7 @@ func (s *Server) DeleteSkill(ctx context.Context, req *pb.DeleteSkillRequest) (*
 func (s *Server) ListSkills(ctx context.Context, _ *pb.ListSkillsRequest) (*pb.ListSkillsResponse, error) {
 	skills, err := s.skillSvc.List(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, toStatusError(err)
 	}
 	items := make([]*pb.Skill, 0, len(skills))
 	for _, sk := range skills {
@@ -725,10 +723,7 @@ func (s *Server) ListSkills(ctx context.Context, _ *pb.ListSkillsRequest) (*pb.L
 func (s *Server) GetSkill(ctx context.Context, req *pb.GetSkillRequest) (*pb.Skill, error) {
 	skill, err := s.skillSvc.Get(ctx, req.GetName())
 	if err != nil {
-		if errors.Is(err, service.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, err.Error())
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, toStatusError(err)
 	}
 	return skillToProto(skill), nil
 }
@@ -744,10 +739,7 @@ func (s *Server) UpdateSkill(ctx context.Context, req *pb.UpdateSkillRequest) (*
 	}
 	result, err := s.skillSvc.Update(ctx, skill)
 	if err != nil {
-		if errors.Is(err, service.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, err.Error())
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, toStatusError(err)
 	}
 	return skillToProto(result), nil
 }
@@ -781,13 +773,7 @@ func (s *Server) CreateMCPServer(ctx context.Context, req *pb.CreateMCPServerReq
 	}
 	result, err := s.mcpSvc.Create(ctx, server)
 	if err != nil {
-		if errors.Is(err, service.ErrAlreadyExists) {
-			return nil, status.Error(codes.AlreadyExists, err.Error())
-		}
-		if errors.Is(err, service.ErrInvalidInput) {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, toStatusError(err)
 	}
 	return mcpServerToProto(result), nil
 }
@@ -796,7 +782,7 @@ func (s *Server) CreateMCPServer(ctx context.Context, req *pb.CreateMCPServerReq
 func (s *Server) ListMCPServers(ctx context.Context, _ *pb.ListMCPServersRequest) (*pb.ListMCPServersResponse, error) {
 	servers, err := s.mcpSvc.List(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, toStatusError(err)
 	}
 	items := make([]*pb.MCPServer, 0, len(servers))
 	for _, sv := range servers {
@@ -809,10 +795,7 @@ func (s *Server) ListMCPServers(ctx context.Context, _ *pb.ListMCPServersRequest
 func (s *Server) GetMCPServer(ctx context.Context, req *pb.GetMCPServerRequest) (*pb.MCPServer, error) {
 	server, err := s.mcpSvc.Get(ctx, req.GetName())
 	if err != nil {
-		if errors.Is(err, service.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, err.Error())
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, toStatusError(err)
 	}
 	return mcpServerToProto(server), nil
 }
@@ -831,13 +814,7 @@ func (s *Server) UpdateMCPServer(ctx context.Context, req *pb.UpdateMCPServerReq
 	}
 	result, err := s.mcpSvc.Update(ctx, server)
 	if err != nil {
-		if errors.Is(err, service.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, err.Error())
-		}
-		if errors.Is(err, service.ErrInvalidInput) {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, toStatusError(err)
 	}
 	return mcpServerToProto(result), nil
 }
@@ -845,7 +822,7 @@ func (s *Server) UpdateMCPServer(ctx context.Context, req *pb.UpdateMCPServerReq
 // DeleteMCPServer deletes an MCP server.
 func (s *Server) DeleteMCPServer(ctx context.Context, req *pb.DeleteMCPServerRequest) (*emptypb.Empty, error) {
 	if err := s.mcpSvc.Delete(ctx, req.GetName()); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, toStatusError(err)
 	}
 	return &emptypb.Empty{}, nil
 }
@@ -876,10 +853,7 @@ func (s *Server) CreateRule(ctx context.Context, req *pb.CreateRuleRequest) (*pb
 	}
 	result, err := s.ruleSvc.Create(ctx, rule)
 	if err != nil {
-		if errors.Is(err, service.ErrAlreadyExists) {
-			return nil, status.Error(codes.AlreadyExists, err.Error())
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, toStatusError(err)
 	}
 	return ruleToProto(result), nil
 }
@@ -888,7 +862,7 @@ func (s *Server) CreateRule(ctx context.Context, req *pb.CreateRuleRequest) (*pb
 func (s *Server) ListRules(ctx context.Context, _ *pb.ListRulesRequest) (*pb.ListRulesResponse, error) {
 	rules, err := s.ruleSvc.List(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, toStatusError(err)
 	}
 	items := make([]*pb.Rule, 0, len(rules))
 	for _, r := range rules {
@@ -901,10 +875,7 @@ func (s *Server) ListRules(ctx context.Context, _ *pb.ListRulesRequest) (*pb.Lis
 func (s *Server) GetRule(ctx context.Context, req *pb.GetRuleRequest) (*pb.Rule, error) {
 	rule, err := s.ruleSvc.Get(ctx, req.GetName())
 	if err != nil {
-		if errors.Is(err, service.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, err.Error())
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, toStatusError(err)
 	}
 	return ruleToProto(rule), nil
 }
@@ -917,10 +888,7 @@ func (s *Server) UpdateRule(ctx context.Context, req *pb.UpdateRuleRequest) (*pb
 	}
 	result, err := s.ruleSvc.Update(ctx, rule)
 	if err != nil {
-		if errors.Is(err, service.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, err.Error())
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, toStatusError(err)
 	}
 	return ruleToProto(result), nil
 }
@@ -928,7 +896,7 @@ func (s *Server) UpdateRule(ctx context.Context, req *pb.UpdateRuleRequest) (*pb
 // DeleteRule deletes a rule.
 func (s *Server) DeleteRule(ctx context.Context, req *pb.DeleteRuleRequest) (*emptypb.Empty, error) {
 	if err := s.ruleSvc.Delete(ctx, req.GetName()); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, toStatusError(err)
 	}
 	return &emptypb.Empty{}, nil
 }
@@ -954,10 +922,7 @@ func (s *Server) CreateGitKey(ctx context.Context, req *pb.CreateGitKeyRequest) 
 		Token: req.GetToken(),
 	})
 	if err != nil {
-		if errors.Is(err, service.ErrAlreadyExists) {
-			return nil, status.Error(codes.AlreadyExists, err.Error())
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, toStatusError(err)
 	}
 	return gitKeyToProto(result), nil
 }
@@ -966,7 +931,7 @@ func (s *Server) CreateGitKey(ctx context.Context, req *pb.CreateGitKeyRequest) 
 func (s *Server) ListGitKeys(ctx context.Context, _ *pb.ListGitKeysRequest) (*pb.ListGitKeysResponse, error) {
 	keys, err := s.gitKeySvc.List(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, toStatusError(err)
 	}
 	items := make([]*pb.GitKey, 0, len(keys))
 	for _, k := range keys {
@@ -979,10 +944,7 @@ func (s *Server) ListGitKeys(ctx context.Context, _ *pb.ListGitKeysRequest) (*pb
 func (s *Server) GetGitKey(ctx context.Context, req *pb.GetGitKeyRequest) (*pb.GitKey, error) {
 	key, err := s.gitKeySvc.Get(ctx, req.GetName())
 	if err != nil {
-		if errors.Is(err, service.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, err.Error())
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, toStatusError(err)
 	}
 	return gitKeyToProto(key), nil
 }
@@ -990,7 +952,7 @@ func (s *Server) GetGitKey(ctx context.Context, req *pb.GetGitKeyRequest) (*pb.G
 // DeleteGitKey deletes a git key.
 func (s *Server) DeleteGitKey(ctx context.Context, req *pb.DeleteGitKeyRequest) (*emptypb.Empty, error) {
 	if err := s.gitKeySvc.Delete(ctx, req.GetName()); err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, toStatusError(err)
 	}
 	return &emptypb.Empty{}, nil
 }
@@ -1005,4 +967,78 @@ func gitKeyToProto(key *protocol.GitKey) *pb.GitKey {
 		CreatedAt: key.CreatedAt.Format(time.RFC3339),
 		UpdatedAt: key.UpdatedAt.Format(time.RFC3339),
 	}
+}
+
+// --- Error mapping ---
+
+func toStatusError(err error) error {
+	if err == nil {
+		return nil
+	}
+	if status.Code(err) != codes.Unknown {
+		return err
+	}
+	switch {
+	case errors.Is(err, service.ErrNotFound):
+		return errutil.NewError(codes.NotFound, pb.ErrorReason_ERROR_REASON_RESOURCE_NOT_FOUND, err.Error())
+	case errors.Is(err, service.ErrPermissionApplicationNotFound):
+		return errutil.NewError(codes.NotFound, pb.ErrorReason_ERROR_REASON_PERMISSION_APPLICATION_NOT_FOUND, err.Error())
+	case errors.Is(err, service.ErrPermissionGrantNotFound):
+		return errutil.NewError(codes.NotFound, pb.ErrorReason_ERROR_REASON_PERMISSION_GRANT_NOT_FOUND, err.Error())
+	case errors.Is(err, service.ErrAlreadyExists):
+		return errutil.NewError(codes.AlreadyExists, pb.ErrorReason_ERROR_REASON_ALREADY_EXISTS, err.Error())
+	case errors.Is(err, service.ErrInvalidInput):
+		return errutil.NewError(codes.InvalidArgument, pb.ErrorReason_ERROR_REASON_INVALID_INPUT, err.Error())
+	case errors.Is(err, service.ErrPermissionApplicationStateChanged):
+		return errutil.NewError(codes.FailedPrecondition, pb.ErrorReason_ERROR_REASON_PERMISSION_APPLICATION_STATE_CHANGED, err.Error())
+	case isValidationError(err):
+		return errutil.NewValidationError(
+			codes.InvalidArgument,
+			pb.ErrorReason_ERROR_REASON_VALIDATION_FAILED,
+			err.Error(),
+			extractFieldViolations(err),
+		)
+	case isPreconditionError(err):
+		return errutil.NewPreconditionError(
+			codes.FailedPrecondition,
+			preconditionReason(err),
+			err.Error(),
+			extractPreconditionViolations(err),
+		)
+	default:
+		return errutil.NewError(codes.Internal, pb.ErrorReason_ERROR_REASON_UNSPECIFIED, err.Error())
+	}
+}
+
+func isValidationError(err error) bool {
+	var validationErr service.ValidationError
+	return errors.As(err, &validationErr)
+}
+
+func isPreconditionError(err error) bool {
+	var preconditionErr service.PreconditionError
+	return errors.As(err, &preconditionErr)
+}
+
+func extractFieldViolations(err error) []errutil.FieldViolation {
+	var ve service.ValidationError
+	if !errors.As(err, &ve) {
+		return nil
+	}
+	return []errutil.FieldViolation{{Description: ve.Error()}}
+}
+
+func extractPreconditionViolations(err error) []errutil.PreconditionViolation {
+	var pe service.PreconditionError
+	if !errors.As(err, &pe) {
+		return nil
+	}
+	return []errutil.PreconditionViolation{{Description: pe.Error()}}
+}
+
+func preconditionReason(err error) pb.ErrorReason {
+	if errors.Is(err, service.ErrPermissionApplicationStateChanged) {
+		return pb.ErrorReason_ERROR_REASON_PERMISSION_APPLICATION_STATE_CHANGED
+	}
+	return pb.ErrorReason_ERROR_REASON_PRECONDITION_FAILED
 }

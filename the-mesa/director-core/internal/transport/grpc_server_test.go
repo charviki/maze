@@ -2,6 +2,7 @@ package transport
 
 import (
 	"context"
+	"errors"
 	"math"
 	"path/filepath"
 	"strings"
@@ -10,6 +11,7 @@ import (
 
 	pb "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
 	"github.com/charviki/maze/fabrication/cradle/configutil"
+	"github.com/charviki/maze/fabrication/cradle/errutil"
 	"github.com/charviki/maze/fabrication/cradle/logutil"
 	"github.com/charviki/maze/fabrication/cradle/protocol"
 	"github.com/charviki/maze/the-mesa/director-core/internal/config"
@@ -319,5 +321,110 @@ func TestSafeInt32_ClampsOverflow(t *testing.T) {
 	}
 	if got := safeInt32(math.MinInt32 - 100); got != math.MinInt32 {
 		t.Fatalf("safeInt32(min overflow) = %d, want %d", got, math.MinInt32)
+	}
+}
+
+func TestToStatusError(t *testing.T) {
+	tests := []struct {
+		name       string
+		err        error
+		wantCode   codes.Code
+		wantReason pb.ErrorReason
+	}{
+		{"nil", nil, codes.OK, pb.ErrorReason_ERROR_REASON_UNSPECIFIED},
+		{"not found", service.ErrNotFound, codes.NotFound, pb.ErrorReason_ERROR_REASON_RESOURCE_NOT_FOUND},
+		{"permission application not found", service.ErrPermissionApplicationNotFound, codes.NotFound, pb.ErrorReason_ERROR_REASON_PERMISSION_APPLICATION_NOT_FOUND},
+		{"permission grant not found", service.ErrPermissionGrantNotFound, codes.NotFound, pb.ErrorReason_ERROR_REASON_PERMISSION_GRANT_NOT_FOUND},
+		{"already exists", service.ErrAlreadyExists, codes.AlreadyExists, pb.ErrorReason_ERROR_REASON_ALREADY_EXISTS},
+		{"invalid input", service.ErrInvalidInput, codes.InvalidArgument, pb.ErrorReason_ERROR_REASON_INVALID_INPUT},
+		{"generic error", errors.New("something broke"), codes.Internal, pb.ErrorReason_ERROR_REASON_UNSPECIFIED},
+		{"already gRPC status", status.Error(codes.PermissionDenied, "denied"), codes.PermissionDenied, pb.ErrorReason_ERROR_REASON_UNSPECIFIED},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := toStatusError(tt.err)
+			if tt.err == nil {
+				if result != nil {
+					t.Errorf("toStatusError(nil) = %v, want nil", result)
+				}
+				return
+			}
+			st, ok := status.FromError(result)
+			if !ok {
+				t.Fatalf("expected gRPC status error, got %v", result)
+			}
+			if st.Code() != tt.wantCode {
+				t.Errorf("code = %v, want %v", st.Code(), tt.wantCode)
+			}
+			gotReason := errutil.ReasonFromError(result)
+			if gotReason != tt.wantReason {
+				t.Errorf("reason = %v, want %v", gotReason, tt.wantReason)
+			}
+		})
+	}
+}
+
+func TestToStatusError_ValidationError(t *testing.T) {
+	err := service.NewValidationError("invalid targets")
+	result := toStatusError(err)
+
+	st, ok := status.FromError(result)
+	if !ok {
+		t.Fatalf("expected gRPC status error, got %v", result)
+	}
+	if st.Code() != codes.InvalidArgument {
+		t.Errorf("code = %v, want InvalidArgument", st.Code())
+	}
+	gotReason := errutil.ReasonFromError(result)
+	if gotReason != pb.ErrorReason_ERROR_REASON_VALIDATION_FAILED {
+		t.Errorf("reason = %v, want VALIDATION_FAILED", gotReason)
+	}
+	violations := errutil.FieldViolationsFromError(result)
+	if len(violations) != 1 {
+		t.Fatalf("violations count = %d, want 1", len(violations))
+	}
+	if violations[0].Description != "invalid targets" {
+		t.Errorf("description = %q, want %q", violations[0].Description, "invalid targets")
+	}
+}
+
+func TestToStatusError_PreconditionError(t *testing.T) {
+	err := service.NewPreconditionError("state conflict")
+	result := toStatusError(err)
+
+	st, ok := status.FromError(result)
+	if !ok {
+		t.Fatalf("expected gRPC status error, got %v", result)
+	}
+	if st.Code() != codes.FailedPrecondition {
+		t.Errorf("code = %v, want FailedPrecondition", st.Code())
+	}
+	gotReason := errutil.ReasonFromError(result)
+	if gotReason != pb.ErrorReason_ERROR_REASON_PRECONDITION_FAILED {
+		t.Errorf("reason = %v, want PRECONDITION_FAILED", gotReason)
+	}
+	violations := errutil.PreconditionViolationsFromError(result)
+	if len(violations) != 1 {
+		t.Fatalf("violations count = %d, want 1", len(violations))
+	}
+	if violations[0].Description != "state conflict" {
+		t.Errorf("description = %q, want %q", violations[0].Description, "state conflict")
+	}
+}
+
+func TestToStatusError_PermissionStateChanged(t *testing.T) {
+	err := service.ErrPermissionApplicationStateChanged
+	result := toStatusError(err)
+
+	st, ok := status.FromError(result)
+	if !ok {
+		t.Fatalf("expected gRPC status error, got %v", result)
+	}
+	if st.Code() != codes.FailedPrecondition {
+		t.Errorf("code = %v, want FailedPrecondition", st.Code())
+	}
+	gotReason := errutil.ReasonFromError(result)
+	if gotReason != pb.ErrorReason_ERROR_REASON_PERMISSION_APPLICATION_STATE_CHANGED {
+		t.Errorf("reason = %v, want PERMISSION_APPLICATION_STATE_CHANGED", gotReason)
 	}
 }

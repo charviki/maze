@@ -2,14 +2,11 @@ package transport
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	pb "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
 	"github.com/charviki/maze/fabrication/cradle/auth"
 	"github.com/charviki/maze/the-mesa/director-core/internal/service"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -201,41 +198,6 @@ func subjectKeyFromContext(ctx context.Context) string {
 		return ""
 	}
 	return userInfo.SubjectKey
-}
-
-func toStatusError(err error) error {
-	switch {
-	case err == nil:
-		return nil
-	case status.Code(err) != codes.Unknown:
-		return err
-	case errors.Is(err, service.ErrPermissionApplicationNotFound), errors.Is(err, service.ErrPermissionGrantNotFound):
-		return status.Error(codes.NotFound, err.Error())
-	case isValidationError(err):
-		return status.Error(codes.InvalidArgument, err.Error())
-	case isPreconditionError(err):
-		return status.Error(codes.FailedPrecondition, err.Error())
-	default:
-		return status.Error(codes.Internal, err.Error())
-	}
-}
-
-func isValidationError(err error) bool {
-	var statusErr interface{ GRPCStatus() *status.Status }
-	if errors.As(err, &statusErr) {
-		return false
-	}
-	var validationErr service.ValidationError
-	return errors.As(err, &validationErr)
-}
-
-func isPreconditionError(err error) bool {
-	var statusErr interface{ GRPCStatus() *status.Status }
-	if errors.As(err, &statusErr) {
-		return false
-	}
-	var preconditionErr service.PreconditionError
-	return errors.As(err, &preconditionErr)
 }
 
 func safeCountInt32(n int64) int32 {
