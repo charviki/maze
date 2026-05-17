@@ -7,6 +7,7 @@ import (
 
 	pb "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
 	"github.com/charviki/maze/fabrication/cradle/auth"
+	"github.com/charviki/maze/fabrication/cradle/errutil"
 	"github.com/charviki/maze/the-mesa/director-core/internal/service"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -96,5 +97,37 @@ func TestAuthHandlerKnownAuthErrorReturnsUnauthenticated(t *testing.T) {
 	st := status.Convert(err)
 	if st.Code() != codes.Unauthenticated {
 		t.Fatalf("gRPC code = %s, 期望 %s", st.Code(), codes.Unauthenticated)
+	}
+}
+
+func TestAuthStatusError_ReasonMapping(t *testing.T) {
+	tests := []struct {
+		name       string
+		err        error
+		wantCode   codes.Code
+		wantReason pb.ErrorReason
+	}{
+		{"invalid credentials", service.ErrInvalidCredentials, codes.Unauthenticated, pb.ErrorReason_ERROR_REASON_INVALID_CREDENTIALS},
+		{"user disabled", service.ErrUserDisabled, codes.Unauthenticated, pb.ErrorReason_ERROR_REASON_USER_DISABLED},
+		{"refresh token not found", service.ErrRefreshTokenNotFound, codes.Unauthenticated, pb.ErrorReason_ERROR_REASON_REFRESH_TOKEN_NOT_FOUND},
+		{"refresh token revoked", service.ErrRefreshTokenRevoked, codes.Unauthenticated, pb.ErrorReason_ERROR_REASON_REFRESH_TOKEN_REVOKED},
+		{"refresh token expired", service.ErrRefreshTokenExpired, codes.Unauthenticated, pb.ErrorReason_ERROR_REASON_REFRESH_TOKEN_EXPIRED},
+		{"internal error", errors.New("db connection lost"), codes.Internal, pb.ErrorReason_ERROR_REASON_UNSPECIFIED},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := toAuthStatusError(tt.err)
+			st, ok := status.FromError(result)
+			if !ok {
+				t.Fatalf("expected gRPC status error, got %v", result)
+			}
+			if st.Code() != tt.wantCode {
+				t.Errorf("code = %v, want %v", st.Code(), tt.wantCode)
+			}
+			gotReason := errutil.ReasonFromError(result)
+			if gotReason != tt.wantReason {
+				t.Errorf("reason = %v, want %v", gotReason, tt.wantReason)
+			}
+		})
 	}
 }

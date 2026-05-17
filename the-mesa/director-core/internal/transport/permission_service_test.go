@@ -7,6 +7,7 @@ import (
 
 	pb "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
 	"github.com/charviki/maze/fabrication/cradle/auth"
+	"github.com/charviki/maze/fabrication/cradle/errutil"
 	"github.com/charviki/maze/the-mesa/director-core/internal/service"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -121,6 +122,9 @@ func TestPermissionServiceServerCreatePermissionApplicationMapsValidationError(t
 	if status.Code(err) != codes.InvalidArgument {
 		t.Fatalf("grpc code = %s, want %s", status.Code(err), codes.InvalidArgument)
 	}
+	if gotReason := errutil.ReasonFromError(err); gotReason != pb.ErrorReason_ERROR_REASON_VALIDATION_FAILED {
+		t.Fatalf("reason = %v, want VALIDATION_FAILED", gotReason)
+	}
 }
 
 func TestPermissionServiceServerListPermissionApplicationsMapsRequestAndResponse(t *testing.T) {
@@ -170,6 +174,9 @@ func TestPermissionServiceServerGetPermissionApplicationMapsNotFound(t *testing.
 	if status.Code(err) != codes.NotFound {
 		t.Fatalf("grpc code = %s, want %s", status.Code(err), codes.NotFound)
 	}
+	if gotReason := errutil.ReasonFromError(err); gotReason != pb.ErrorReason_ERROR_REASON_PERMISSION_APPLICATION_NOT_FOUND {
+		t.Fatalf("reason = %v, want PERMISSION_APPLICATION_NOT_FOUND", gotReason)
+	}
 }
 
 func TestPermissionServiceServerGetPermissionApplicationPreservesExistingStatusError(t *testing.T) {
@@ -184,6 +191,9 @@ func TestPermissionServiceServerGetPermissionApplicationPreservesExistingStatusE
 	})
 	if status.Code(err) != codes.PermissionDenied {
 		t.Fatalf("grpc code = %s, want %s", status.Code(err), codes.PermissionDenied)
+	}
+	if gotReason := errutil.ReasonFromError(err); gotReason != pb.ErrorReason_ERROR_REASON_UNSPECIFIED {
+		t.Fatalf("reason = %v, want UNSPECIFIED (preserves existing status)", gotReason)
 	}
 }
 
@@ -255,6 +265,64 @@ func TestPermissionServiceServerListSubjectPermissionsMapsResponse(t *testing.T)
 	}
 	if grant.GetExpiresAt().AsTime() != expiresAt || grant.GetCreatedAt().AsTime() != createdAt || grant.GetUpdatedAt().AsTime() != updatedAt {
 		t.Fatalf("timestamps not mapped correctly: %+v", grant)
+	}
+}
+
+func TestPermissionServiceServerListSubjectPermissionsMapsGrantNotFound(t *testing.T) {
+	server := NewPermissionServiceServer(&mockPermissionApplicationService{
+		listSubjectPermissions: func(context.Context, string) ([]service.PermissionGrant, error) {
+			return nil, service.ErrPermissionGrantNotFound
+		},
+	})
+
+	_, err := server.ListSubjectPermissions(context.Background(), &pb.ListSubjectPermissionsRequest{
+		SubjectKey: "host:test",
+	})
+	if status.Code(err) != codes.NotFound {
+		t.Fatalf("grpc code = %s, want %s", status.Code(err), codes.NotFound)
+	}
+	if gotReason := errutil.ReasonFromError(err); gotReason != pb.ErrorReason_ERROR_REASON_PERMISSION_GRANT_NOT_FOUND {
+		t.Fatalf("reason = %v, want PERMISSION_GRANT_NOT_FOUND", gotReason)
+	}
+}
+
+func TestPermissionServiceServerReviewMapsPreconditionError(t *testing.T) {
+	server := NewPermissionServiceServer(&mockPermissionApplicationService{
+		reviewPermissionApplication: func(context.Context, service.ReviewPermissionApplicationInput) (service.PermissionApplication, error) {
+			return service.PermissionApplication{}, service.NewPreconditionError("cannot review")
+		},
+	})
+
+	ctx := auth.WithUserInfo(context.Background(), &auth.UserInfo{SubjectKey: "user:admin"})
+	_, err := server.ReviewPermissionApplication(ctx, &pb.ReviewPermissionApplicationRequest{
+		PermissionApplicationId: "pa_1",
+		Approved:                true,
+	})
+	if status.Code(err) != codes.FailedPrecondition {
+		t.Fatalf("grpc code = %s, want %s", status.Code(err), codes.FailedPrecondition)
+	}
+	if gotReason := errutil.ReasonFromError(err); gotReason != pb.ErrorReason_ERROR_REASON_PRECONDITION_FAILED {
+		t.Fatalf("reason = %v, want PRECONDITION_FAILED", gotReason)
+	}
+}
+
+func TestPermissionServiceServerReviewMapsStateChanged(t *testing.T) {
+	server := NewPermissionServiceServer(&mockPermissionApplicationService{
+		reviewPermissionApplication: func(context.Context, service.ReviewPermissionApplicationInput) (service.PermissionApplication, error) {
+			return service.PermissionApplication{}, service.ErrPermissionApplicationStateChanged
+		},
+	})
+
+	ctx := auth.WithUserInfo(context.Background(), &auth.UserInfo{SubjectKey: "user:admin"})
+	_, err := server.ReviewPermissionApplication(ctx, &pb.ReviewPermissionApplicationRequest{
+		PermissionApplicationId: "pa_1",
+		Approved:                true,
+	})
+	if status.Code(err) != codes.FailedPrecondition {
+		t.Fatalf("grpc code = %s, want %s", status.Code(err), codes.FailedPrecondition)
+	}
+	if gotReason := errutil.ReasonFromError(err); gotReason != pb.ErrorReason_ERROR_REASON_PERMISSION_APPLICATION_STATE_CHANGED {
+		t.Fatalf("reason = %v, want PERMISSION_APPLICATION_STATE_CHANGED", gotReason)
 	}
 }
 

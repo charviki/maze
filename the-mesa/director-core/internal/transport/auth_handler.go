@@ -6,6 +6,7 @@ import (
 
 	pb "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
 	"github.com/charviki/maze/fabrication/cradle/auth"
+	"github.com/charviki/maze/fabrication/cradle/errutil"
 	"github.com/charviki/maze/the-mesa/director-core/internal/service"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -81,14 +82,18 @@ func toAuthStatusError(err error) error {
 		return st.Err()
 	}
 	switch {
-	case errors.Is(err, service.ErrInvalidCredentials),
-		errors.Is(err, service.ErrUserDisabled),
-		errors.Is(err, service.ErrRefreshTokenNotFound),
-		errors.Is(err, service.ErrRefreshTokenRevoked),
-		errors.Is(err, service.ErrRefreshTokenExpired):
-		return status.Error(codes.Unauthenticated, err.Error())
+	case errors.Is(err, service.ErrInvalidCredentials):
+		return errutil.NewError(codes.Unauthenticated, pb.ErrorReason_ERROR_REASON_INVALID_CREDENTIALS, err.Error())
+	case errors.Is(err, service.ErrUserDisabled):
+		return errutil.NewError(codes.Unauthenticated, pb.ErrorReason_ERROR_REASON_USER_DISABLED, err.Error())
+	case errors.Is(err, service.ErrRefreshTokenNotFound):
+		return errutil.NewError(codes.Unauthenticated, pb.ErrorReason_ERROR_REASON_REFRESH_TOKEN_NOT_FOUND, err.Error())
+	case errors.Is(err, service.ErrRefreshTokenRevoked):
+		return errutil.NewError(codes.Unauthenticated, pb.ErrorReason_ERROR_REASON_REFRESH_TOKEN_REVOKED, err.Error())
+	case errors.Is(err, service.ErrRefreshTokenExpired):
+		return errutil.NewError(codes.Unauthenticated, pb.ErrorReason_ERROR_REASON_REFRESH_TOKEN_EXPIRED, err.Error())
 	default:
-		return status.Error(codes.Internal, "internal error")
+		return errutil.NewError(codes.Internal, pb.ErrorReason_ERROR_REASON_UNSPECIFIED, "internal error")
 	}
 }
 
