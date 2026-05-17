@@ -14,6 +14,7 @@ import (
 
 	pb "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
 	"github.com/charviki/maze/fabrication/cradle/auth"
+	"github.com/charviki/maze/fabrication/cradle/errutil"
 	"github.com/charviki/maze/the-mesa/the-forge/internal/service"
 )
 
@@ -347,22 +348,32 @@ func (t *Server) DeleteLink(ctx context.Context, req *pb.DeleteLinkRequest) (*em
 // --- Error mapping ---
 
 func toStatusError(err error) error {
+	if err == nil {
+		return nil
+	}
+	if status.Code(err) != codes.Unknown {
+		return err
+	}
+
 	var ve *service.ValidationError
 	switch {
-	case err == nil:
-		return nil
-	case status.Code(err) != codes.Unknown:
-		return err
 	case errors.As(err, &ve):
-		return status.Error(codes.InvalidArgument, err.Error())
-	case errors.Is(err, service.ErrArchiveNotFound),
-		errors.Is(err, service.ErrDocNotFound),
-		errors.Is(err, service.ErrLinkNotFound):
-		return status.Error(codes.NotFound, err.Error())
+		return errutil.NewValidationError(
+			codes.InvalidArgument,
+			pb.ErrorReason_ERROR_REASON_VALIDATION_FAILED,
+			err.Error(),
+			[]errutil.FieldViolation{{Field: ve.Field, Description: ve.Message}},
+		)
+	case errors.Is(err, service.ErrArchiveNotFound):
+		return errutil.NewError(codes.NotFound, pb.ErrorReason_ERROR_REASON_ARCHIVE_NOT_FOUND, err.Error())
+	case errors.Is(err, service.ErrDocNotFound):
+		return errutil.NewError(codes.NotFound, pb.ErrorReason_ERROR_REASON_DOC_NOT_FOUND, err.Error())
+	case errors.Is(err, service.ErrLinkNotFound):
+		return errutil.NewError(codes.NotFound, pb.ErrorReason_ERROR_REASON_LINK_NOT_FOUND, err.Error())
 	case errors.Is(err, service.ErrAlreadyExists):
-		return status.Error(codes.AlreadyExists, err.Error())
+		return errutil.NewError(codes.AlreadyExists, pb.ErrorReason_ERROR_REASON_ALREADY_EXISTS, err.Error())
 	default:
-		return status.Error(codes.Internal, err.Error())
+		return errutil.NewError(codes.Internal, pb.ErrorReason_ERROR_REASON_UNSPECIFIED, err.Error())
 	}
 }
 

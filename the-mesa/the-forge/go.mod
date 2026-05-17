@@ -4,7 +4,6 @@ go 1.26.0
 
 require (
 	github.com/charviki/maze/fabrication/cradle v0.0.0
-	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0
 	github.com/jackc/pgx/v5 v5.9.2
 	google.golang.org/grpc v1.80.0

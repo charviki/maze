@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	pb "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
+	"github.com/charviki/maze/fabrication/cradle/errutil"
 	"github.com/charviki/maze/the-mesa/the-forge/internal/service"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -167,17 +169,19 @@ func TestProtoToAttachments(t *testing.T) {
 
 func TestToStatusError(t *testing.T) {
 	tests := []struct {
-		name     string
-		err      error
-		wantCode codes.Code
+		name       string
+		err        error
+		wantCode   codes.Code
+		wantReason pb.ErrorReason
 	}{
-		{"nil", nil, codes.OK},
-		{"archive not found", service.ErrArchiveNotFound, codes.NotFound},
-		{"doc not found", service.ErrDocNotFound, codes.NotFound},
-		{"link not found", service.ErrLinkNotFound, codes.NotFound},
-		{"already exists", service.ErrAlreadyExists, codes.AlreadyExists},
-		{"generic error", errors.New("something broke"), codes.Internal},
-		{"already gRPC status", status.Error(codes.PermissionDenied, "denied"), codes.PermissionDenied},
+		{"nil", nil, codes.OK, pb.ErrorReason_ERROR_REASON_UNSPECIFIED},
+		{"archive not found", service.ErrArchiveNotFound, codes.NotFound, pb.ErrorReason_ERROR_REASON_ARCHIVE_NOT_FOUND},
+		{"doc not found", service.ErrDocNotFound, codes.NotFound, pb.ErrorReason_ERROR_REASON_DOC_NOT_FOUND},
+		{"link not found", service.ErrLinkNotFound, codes.NotFound, pb.ErrorReason_ERROR_REASON_LINK_NOT_FOUND},
+		{"already exists", service.ErrAlreadyExists, codes.AlreadyExists, pb.ErrorReason_ERROR_REASON_ALREADY_EXISTS},
+		{"generic error", errors.New("something broke"), codes.Internal, pb.ErrorReason_ERROR_REASON_UNSPECIFIED},
+		{"already gRPC status", status.Error(codes.PermissionDenied, "denied"), codes.PermissionDenied, pb.ErrorReason_ERROR_REASON_UNSPECIFIED},
+		{"validation error", &service.ValidationError{Field: "name", Message: "name is required"}, codes.InvalidArgument, pb.ErrorReason_ERROR_REASON_VALIDATION_FAILED},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -195,7 +199,24 @@ func TestToStatusError(t *testing.T) {
 			if st.Code() != tt.wantCode {
 				t.Errorf("code = %v, want %v", st.Code(), tt.wantCode)
 			}
+			gotReason := errutil.ReasonFromError(result)
+			if gotReason != tt.wantReason {
+				t.Errorf("reason = %v, want %v", gotReason, tt.wantReason)
+			}
 		})
+	}
+}
+
+func TestToStatusError_ValidationError_FieldViolations(t *testing.T) {
+	ve := &service.ValidationError{Field: "title", Message: "title is required"}
+	result := toStatusError(ve)
+
+	violations := errutil.FieldViolationsFromError(result)
+	if len(violations) != 1 {
+		t.Fatalf("violations count = %d, want 1", len(violations))
+	}
+	if violations[0].Field != "title" || violations[0].Description != "title is required" {
+		t.Errorf("violation = %+v, want field=title desc=title is required", violations[0])
 	}
 }
 
