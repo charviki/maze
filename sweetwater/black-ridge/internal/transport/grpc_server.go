@@ -1,16 +1,15 @@
 package transport
 
 import (
-	"encoding/json"
 	"errors"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	pb "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
+	"github.com/charviki/maze/fabrication/cradle/errutil"
 	"github.com/charviki/maze/fabrication/cradle/logutil"
-	
+
 	"github.com/charviki/sweetwater-black-ridge/internal/service"
 )
 
@@ -63,15 +62,26 @@ func errToStatus(err error) error {
 		return nil
 	}
 	if errors.Is(err, service.ErrSessionNotFound) {
-		return status.Error(codes.NotFound, err.Error())
+		return errutil.NewError(codes.NotFound, pb.ErrorReason_ERROR_REASON_SESSION_NOT_FOUND, err.Error())
 	}
-	// ConfigConflictError 携带冲突详情，映射为 FailedPrecondition
 	var confErr *service.ConfigConflictError
 	if errors.As(err, &confErr) {
-		detail, _ := json.Marshal(confErr.Conflicts)
-		return status.Error(codes.FailedPrecondition, string(detail))
+		violations := make([]errutil.PreconditionViolation, len(confErr.Conflicts))
+		for i, c := range confErr.Conflicts {
+			violations[i] = errutil.PreconditionViolation{
+				Type:        "CONFIG_CONFLICT",
+				Subject:     c.Path,
+				Description: c.CurrentHash,
+			}
+		}
+		return errutil.NewPreconditionError(
+			codes.FailedPrecondition,
+			pb.ErrorReason_ERROR_REASON_CONFIG_CONFLICT,
+			"config conflict",
+			violations,
+		)
 	}
-	return status.Error(codes.Internal, err.Error())
+	return errutil.NewError(codes.Internal, pb.ErrorReason_ERROR_REASON_UNSPECIFIED, err.Error())
 }
 
 // 确保 Server 实现了所有 gRPC 接口

@@ -7,6 +7,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	pb "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
+	"github.com/charviki/maze/fabrication/cradle/errutil"
 	"github.com/charviki/sweetwater-black-ridge/internal/service"
 )
 
@@ -25,24 +27,46 @@ func TestErrToStatus_SessionNotFound(t *testing.T) {
 	if st.Code() != codes.NotFound {
 		t.Errorf("code = %v, 期望 NotFound", st.Code())
 	}
+	if gotReason := errutil.ReasonFromError(err); gotReason != pb.ErrorReason_ERROR_REASON_SESSION_NOT_FOUND {
+		t.Errorf("reason = %v, want SESSION_NOT_FOUND", gotReason)
+	}
 }
 
 func TestErrToStatus_ConfigConflictError(t *testing.T) {
-	conflicts := []service.ConfigConflict{
-		{Path: "test.txt", CurrentHash: "md5:abc"},
+	confErr := &service.ConfigConflictError{
+		Conflicts: []service.ConfigConflict{
+			{Path: "/path/to/file", CurrentHash: "abc123"},
+		},
 	}
-	confErr := &service.ConfigConflictError{Conflicts: conflicts}
-	err := errToStatus(confErr)
-	st, ok := status.FromError(err)
+	result := errToStatus(confErr)
+
+	st, ok := status.FromError(result)
 	if !ok {
 		t.Fatal("应返回 gRPC status")
 	}
 	if st.Code() != codes.FailedPrecondition {
 		t.Errorf("code = %v, 期望 FailedPrecondition", st.Code())
 	}
-	msg := st.Message()
-	if msg == "" {
-		t.Error("消息不应为空")
+	if st.Message() != "config conflict" {
+		t.Errorf("message = %v, want 'config conflict'", st.Message())
+	}
+
+	if gotReason := errutil.ReasonFromError(result); gotReason != pb.ErrorReason_ERROR_REASON_CONFIG_CONFLICT {
+		t.Errorf("reason = %v, want CONFIG_CONFLICT", gotReason)
+	}
+
+	violations := errutil.PreconditionViolationsFromError(result)
+	if len(violations) != 1 {
+		t.Fatalf("violations count = %d, want 1", len(violations))
+	}
+	if violations[0].Type != "CONFIG_CONFLICT" {
+		t.Errorf("type = %v, want CONFIG_CONFLICT", violations[0].Type)
+	}
+	if violations[0].Subject != "/path/to/file" {
+		t.Errorf("subject = %v, want /path/to/file", violations[0].Subject)
+	}
+	if violations[0].Description != "abc123" {
+		t.Errorf("description = %v, want abc123", violations[0].Description)
 	}
 }
 
@@ -54,6 +78,9 @@ func TestErrToStatus_GenericError(t *testing.T) {
 	}
 	if st.Code() != codes.Internal {
 		t.Errorf("code = %v, 期望 Internal", st.Code())
+	}
+	if gotReason := errutil.ReasonFromError(err); gotReason != pb.ErrorReason_ERROR_REASON_UNSPECIFIED {
+		t.Errorf("reason = %v, want UNSPECIFIED", gotReason)
 	}
 }
 
@@ -76,20 +103,5 @@ func TestGRPCListenAddrFor(t *testing.T) {
 				t.Fatalf("GRPCListenAddrFor(%q) = %q, want %q", tt.addr, got, tt.want)
 			}
 		})
-	}
-}
-
-func TestErrToStatus_ConfigConflict(t *testing.T) {
-	conflicts := []service.ConfigConflict{
-		{Path: "CLAUDE.md", CurrentHash: "md5:xyz"},
-	}
-	confErr := &service.ConfigConflictError{Conflicts: conflicts}
-	err := errToStatus(confErr)
-	st, ok := status.FromError(err)
-	if !ok {
-		t.Fatal("应返回 gRPC status")
-	}
-	if st.Code() != codes.FailedPrecondition {
-		t.Errorf("code = %v, 期望 FailedPrecondition", st.Code())
 	}
 }
