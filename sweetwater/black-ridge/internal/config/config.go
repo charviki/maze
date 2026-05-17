@@ -75,7 +75,9 @@ func LoadFromExe(filename ...string) (*Config, error) {
 	if _, err := configutil.LoadFromExe(&cfg, filename...); err != nil {
 		return nil, err
 	}
-	applyEnvOverrides(&cfg)
+	if err := applyEnvOverrides(&cfg); err != nil {
+		return nil, err
+	}
 	validate(&cfg)
 	return &cfg, nil
 }
@@ -86,14 +88,16 @@ func Load(path string) (*Config, error) {
 	if err := configutil.LoadYAML(path, &cfg); err != nil {
 		return nil, err
 	}
-	applyEnvOverrides(&cfg)
+	if err := applyEnvOverrides(&cfg); err != nil {
+		return nil, err
+	}
 	validate(&cfg)
 	return &cfg, nil
 }
 
-func applyEnvOverrides(cfg *Config) {
+func applyEnvOverrides(cfg *Config) error {
 	if err := configutil.ApplyEnvOverrides("AGENT", cfg); err != nil {
-		panic(err)
+		return err
 	}
 	// 以下环境变量是历史兼容别名，不遵循结构路径命名，需显式保留。
 	configutil.ApplyStringOverride(&cfg.Server.GRPCAddr, "AGENT_GRPC_ADDR")
@@ -106,6 +110,7 @@ func applyEnvOverrides(cfg *Config) {
 		// 只要指定 controller 地址，就默认开启注册/心跳，减少部署时的重复开关配置。
 		cfg.Controller.Enabled = true
 	}
+	return nil
 }
 
 // validate 校验配置完整性，对未设置必填字段填充默认值

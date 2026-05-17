@@ -155,7 +155,9 @@ func LoadFromExe(filename ...string) (*Config, error) {
 	if _, err := configutil.LoadFromExe(&cfg, filename...); err != nil {
 		return nil, err
 	}
-	applyEnvOverrides(&cfg)
+	if err := applyEnvOverrides(&cfg); err != nil {
+		return nil, err
+	}
 	if err := validate(&cfg); err != nil {
 		return nil, err
 	}
@@ -168,22 +170,24 @@ func Load(path string) (*Config, error) {
 	if err := configutil.LoadYAML(path, &cfg); err != nil {
 		return nil, err
 	}
-	applyEnvOverrides(&cfg)
+	if err := applyEnvOverrides(&cfg); err != nil {
+		return nil, err
+	}
 	if err := validate(&cfg); err != nil {
 		return nil, err
 	}
 	return &cfg, nil
 }
 
-// 用环境变量覆盖 YAML 配置值
-func applyEnvOverrides(cfg *Config) {
+func applyEnvOverrides(cfg *Config) error {
 	if err := configutil.ApplyEnvOverrides("DIRECTOR_CORE", cfg); err != nil {
-		panic(err)
+		return err
 	}
 	// AllowPrivateNetworks 属于顶层开关，不走 server 子前缀，因此单独覆盖。
 	configutil.ApplyBoolOverride(&cfg.Server.AllowPrivateNetworks, "DIRECTOR_CORE_ALLOW_PRIVATE_NETWORKS")
 	// GitKeyEncryptionKey 使用独立环境变量名，便于密钥管理工具注入。
 	configutil.ApplyStringOverride(&cfg.GitKeyEncryptionKey, "GIT_KEY_ENCRYPTION_KEY")
+	return nil
 }
 
 // validate 校验配置完整性并填充默认值
