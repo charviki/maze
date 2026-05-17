@@ -64,7 +64,7 @@ pre-commit:
         if [ -z "$STAGED" ]; then exit 0; fi
         VALID_FILES=""
         for f in $STAGED; do
-          [ -f "$f" ] && VALID_FILES="$VALID_FILES $f"
+          [ -f "$f" ] && [ ! -L "$f" ] && VALID_FILES="$VALID_FILES $f"
         done
         if [ -z "$VALID_FILES" ]; then exit 0; fi
         pnpm exec prettier --check $VALID_FILES || { echo "\033[0;31m[prettier]\033[0m Format check failed. Run: pnpm run format"; exit 1; }

@@ -46,6 +46,7 @@ The Maze — AI Agent 管理平台。The Mesa 控制面域负责代理网关 + H
 - [docs/makefile-guide.md](docs/makefile-guide.md) — Makefile 命令归属、共享变量、帮助信息与破坏性命令规范
 - [docs/postgresql-guide.md](docs/postgresql-guide.md) — PostgreSQL ownership、migration、repository 分层、事务与部署规范
 - [docs/frontend-testing-guide.md](docs/frontend-testing-guide.md) — 前端测试分层、工具栈、API Mock、组件测试与覆盖率规范
+- [docs/error-handling-guide.md](docs/error-handling-guide.md) — 错误处理分层、ErrorReason 枚举、标准 errdetails 使用与前后端对接规范
 
 ## 文档维护
 

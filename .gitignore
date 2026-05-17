@@ -47,8 +47,6 @@ node_modules
 # Claude Code 本地配置
 .claude/
 # ln -s ../.agents/skills .claude/skills
-# use ln -s AGENTS.md CLAUDE.md
-CLAUDE.md
 
 # Go 编译产物（补充通配规则，覆盖所有模块的 main 包输出）
 **/server/mesa-hub-behavior-panel
