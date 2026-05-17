@@ -8,6 +8,7 @@ import (
 
 	mazev1 "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1"
 	"github.com/charviki/maze/fabrication/cradle/auth"
+	"github.com/charviki/maze/fabrication/cradle/errutil"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -73,7 +74,7 @@ func TestUnaryAuthInterceptor_ExpiredJWT(t *testing.T) {
 		t.Fatal("过期 JWT 应被拒绝，但放行了")
 	}
 	assertGRPCStatus(t, err, codes.Unauthenticated, "unauthorized: token expired")
-	assertErrorReason(t, err, auth.ErrorReasonTokenExpired)
+	assertErrorReason(t, err, mazev1.ErrorReason_ERROR_REASON_TOKEN_EXPIRED)
 }
 
 func TestUnaryAuthInterceptor_InvalidJWT(t *testing.T) {
@@ -82,7 +83,7 @@ func TestUnaryAuthInterceptor_InvalidJWT(t *testing.T) {
 		t.Fatal("无效 JWT 应被拒绝，但放行了")
 	}
 	assertGRPCStatus(t, err, codes.Unauthenticated, "unauthorized: invalid authorization header")
-	assertErrorReason(t, err, auth.ErrorReasonTokenInvalid)
+	assertErrorReason(t, err, mazev1.ErrorReason_ERROR_REASON_TOKEN_INVALID)
 }
 
 func TestUnaryAuthInterceptor_WrongSecret(t *testing.T) {
@@ -92,7 +93,7 @@ func TestUnaryAuthInterceptor_WrongSecret(t *testing.T) {
 		t.Fatal("错误密钥签名的 JWT 应被拒绝，但放行了")
 	}
 	assertGRPCStatus(t, err, codes.Unauthenticated, "unauthorized: invalid authorization header")
-	assertErrorReason(t, err, auth.ErrorReasonTokenInvalid)
+	assertErrorReason(t, err, mazev1.ErrorReason_ERROR_REASON_TOKEN_INVALID)
 }
 
 func TestUnaryAuthInterceptor_MissingHeader(t *testing.T) {
@@ -101,7 +102,7 @@ func TestUnaryAuthInterceptor_MissingHeader(t *testing.T) {
 		t.Fatal("无 Authorization header 应被拒绝，但放行了")
 	}
 	assertGRPCStatus(t, err, codes.Unauthenticated, "unauthorized: missing authorization header")
-	assertErrorReason(t, err, auth.ErrorReasonTokenMissing)
+	assertErrorReason(t, err, mazev1.ErrorReason_ERROR_REASON_TOKEN_MISSING)
 }
 
 func TestUnaryAuthInterceptor_InvalidScheme(t *testing.T) {
@@ -110,7 +111,7 @@ func TestUnaryAuthInterceptor_InvalidScheme(t *testing.T) {
 		t.Fatal("非 Bearer scheme 应被拒绝，但放行了")
 	}
 	assertGRPCStatus(t, err, codes.Unauthenticated, "unauthorized: invalid authorization scheme")
-	assertErrorReason(t, err, auth.ErrorReasonTokenInvalid)
+	assertErrorReason(t, err, mazev1.ErrorReason_ERROR_REASON_TOKEN_INVALID)
 }
 
 func TestUnaryAuthInterceptor_AnonymousAuthMethods(t *testing.T) {
@@ -140,7 +141,7 @@ func TestUnaryAuthInterceptor_LogoutRequiresJWT(t *testing.T) {
 		t.Fatal("Logout 缺少 JWT 应被拒绝，但放行了")
 	}
 	assertGRPCStatus(t, err, codes.Unauthenticated, "unauthorized: missing authorization header")
-	assertErrorReason(t, err, auth.ErrorReasonTokenMissing)
+	assertErrorReason(t, err, mazev1.ErrorReason_ERROR_REASON_TOKEN_MISSING)
 }
 
 func TestUnaryAuthInterceptor_AgentServiceSkipped(t *testing.T) {
@@ -319,9 +320,9 @@ func assertGRPCStatus(t *testing.T, err error, wantCode codes.Code, wantMsg stri
 	}
 }
 
-func assertErrorReason(t *testing.T, err error, want auth.ErrorReason) {
+func assertErrorReason(t *testing.T, err error, want mazev1.ErrorReason) {
 	t.Helper()
-	if got := auth.ErrorReasonFromError(err); got != want {
-		t.Errorf("reason = %q, 期望 %q", got, want)
+	if got := errutil.ReasonFromError(err); got != want {
+		t.Errorf("reason = %v, 期望 %v", got, want)
 	}
 }

@@ -54,18 +54,6 @@ func TestReasonFromError_PlainStatus(t *testing.T) {
 	}
 }
 
-func TestReasonFromError_LegacyAuth(t *testing.T) {
-	st := status.New(codes.Unauthenticated, "legacy")
-	withDetails, err := st.WithDetails(&errdetails.ErrorInfo{Reason: "TOKEN_MISSING"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	reason := ReasonFromError(withDetails.Err())
-	if reason != pb.ErrorReason_ERROR_REASON_TOKEN_MISSING {
-		t.Errorf("reason = %v, want TOKEN_MISSING", reason)
-	}
-}
-
 func TestNewValidationError(t *testing.T) {
 	violations := []FieldViolation{
 		{Field: "name", Description: "required"},

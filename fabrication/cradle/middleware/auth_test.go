@@ -28,7 +28,7 @@ func TestAuth_EmptySecret(t *testing.T) {
 	if rec.Code != http.StatusUnauthorized {
 		t.Errorf("状态码 = %d, 期望 %d", rec.Code, http.StatusUnauthorized)
 	}
-	assertErrorJSON(t, rec, string(auth.ErrorReasonTokenMissing))
+	assertErrorJSON(t, rec, "TOKEN_MISSING")
 }
 
 func TestAuth_ValidJWT(t *testing.T) {
@@ -78,7 +78,7 @@ func TestAuth_ExpiredJWT(t *testing.T) {
 	if rec.Header().Get("X-Token-Expired") != "true" {
 		t.Error("期望 X-Token-Expired: true 头")
 	}
-	assertErrorJSON(t, rec, string(auth.ErrorReasonTokenExpired))
+	assertErrorJSON(t, rec, "TOKEN_EXPIRED")
 }
 
 func TestAuth_InvalidJWT(t *testing.T) {
@@ -94,7 +94,7 @@ func TestAuth_InvalidJWT(t *testing.T) {
 	if rec.Header().Get("X-Token-Expired") != "" {
 		t.Error("不期望 X-Token-Expired 头（非过期场景）")
 	}
-	assertErrorJSON(t, rec, string(auth.ErrorReasonTokenInvalid))
+	assertErrorJSON(t, rec, "TOKEN_INVALID")
 }
 
 func TestAuth_NoHeader(t *testing.T) {
@@ -106,7 +106,7 @@ func TestAuth_NoHeader(t *testing.T) {
 		t.Errorf("状态码 = %d, 期望 401", rec.Code)
 	}
 
-	assertErrorJSON(t, rec, string(auth.ErrorReasonTokenMissing))
+	assertErrorJSON(t, rec, "TOKEN_MISSING")
 }
 
 func TestAuth_QueryParameterToken(t *testing.T) {
@@ -173,7 +173,7 @@ func TestAuth_WrongSecret(t *testing.T) {
 	if rec.Code != 401 {
 		t.Errorf("状态码 = %d, 期望 401", rec.Code)
 	}
-	assertErrorJSON(t, rec, string(auth.ErrorReasonTokenInvalid))
+	assertErrorJSON(t, rec, "TOKEN_INVALID")
 }
 
 type errorResp struct {

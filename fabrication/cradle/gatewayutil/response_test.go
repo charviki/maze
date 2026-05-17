@@ -89,7 +89,7 @@ func TestHTTPErrorHandler(t *testing.T) {
 			wantHTTPCode: http.StatusUnauthorized,
 			wantGRPCCode: codes.Unauthenticated,
 			wantMessage:  "no auth",
-			wantReason:   string(auth.ErrorReasonTokenExpired),
+			wantReason:   errutil.ReasonName(pb.ErrorReason_ERROR_REASON_TOKEN_EXPIRED),
 		},
 		{
 			name:         "PermissionDenied → 403",

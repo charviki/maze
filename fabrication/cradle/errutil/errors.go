@@ -77,7 +77,6 @@ func NewPreconditionError(code codes.Code, reason pb.ErrorReason, msg string, vi
 }
 
 // ReasonFromError extracts the ErrorReason from a gRPC status error.
-// It handles both proto enum names and legacy auth string formats.
 func ReasonFromError(err error) pb.ErrorReason {
 	st, ok := status.FromError(err)
 	if !ok {
@@ -91,9 +90,6 @@ func ReasonFromError(err error) pb.ErrorReason {
 		reason := info.GetReason()
 		if v, ok := pb.ErrorReason_value[reason]; ok {
 			return pb.ErrorReason(v)
-		}
-		if r, ok := legacyAuthReasonMap[reason]; ok {
-			return r
 		}
 	}
 	return pb.ErrorReason_ERROR_REASON_UNSPECIFIED
@@ -153,12 +149,4 @@ func ReasonName(r pb.ErrorReason) string {
 		return ""
 	}
 	return strings.TrimPrefix(r.String(), "ERROR_REASON_")
-}
-
-// legacyAuthReasonMap 将 auth 包旧格式字符串映射到 proto 枚举值。
-// Phase 5 完成 auth 迁移后可在 Phase 6 移除此映射。
-var legacyAuthReasonMap = map[string]pb.ErrorReason{
-	"TOKEN_MISSING": pb.ErrorReason_ERROR_REASON_TOKEN_MISSING,
-	"TOKEN_INVALID": pb.ErrorReason_ERROR_REASON_TOKEN_INVALID,
-	"TOKEN_EXPIRED": pb.ErrorReason_ERROR_REASON_TOKEN_EXPIRED,
 }
