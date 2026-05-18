@@ -91,8 +91,28 @@ export interface ApiResponse<T> {
   status: 'ok' | 'error';
   data?: T;
   message?: string;
+  reason?: string;
+  details?: ErrorDetails;
+  /** @deprecated use reason + details */
   code?: string;
+  /** @deprecated auto-populated from details.preconditionViolations */
   conflicts?: ConfigConflict[];
+}
+
+export interface ErrorDetails {
+  fieldViolations?: FieldViolation[];
+  preconditionViolations?: PreconditionViolation[];
+}
+
+export interface FieldViolation {
+  field: string;
+  description: string;
+}
+
+export interface PreconditionViolation {
+  type: string;
+  subject: string;
+  description: string;
 }
 
 export type PipelinePhase = 'system' | 'template' | 'user';

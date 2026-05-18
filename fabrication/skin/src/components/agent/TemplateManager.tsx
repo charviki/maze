@@ -194,7 +194,7 @@ export function TemplateManager({ open, onClose, apiClient }: TemplateManagerPro
           files: configReq,
         });
         if (configRes.status !== 'ok' || !configRes.data) {
-          if (configRes.code === 'config_conflict') {
+          if (configRes.reason === 'CONFIG_CONFLICT') {
             const conflictPaths = (configRes.conflicts || []).map((item) => item.path).join(', ');
             throw new Error(
               conflictPaths

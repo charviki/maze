@@ -21,6 +21,71 @@ describe('unwrapSdkResponse', () => {
     expect(result.message).toBe('Conflict detected');
   });
 
+  it('should parse reason from structured error response', async () => {
+    const errorResponse = new Response(
+      JSON.stringify({ code: 5, message: 'not found', reason: 'ARCHIVE_NOT_FOUND' }),
+      { status: 404, statusText: 'Not Found' },
+    );
+    const error = new ResponseError(errorResponse, 'Response returned an error code');
+    const result = await unwrapSdkResponse(Promise.reject(error));
+    expect(result.status).toBe('error');
+    expect(result.reason).toBe('ARCHIVE_NOT_FOUND');
+    expect(result.details).toBeUndefined();
+  });
+
+  it('should parse details with fieldViolations', async () => {
+    const errorResponse = new Response(
+      JSON.stringify({
+        code: 3,
+        message: 'invalid',
+        reason: 'VALIDATION_FAILED',
+        details: { fieldViolations: [{ field: 'name', description: 'required' }] },
+      }),
+      { status: 400, statusText: 'Bad Request' },
+    );
+    const error = new ResponseError(errorResponse, 'Response returned an error code');
+    const result = await unwrapSdkResponse(Promise.reject(error));
+    expect(result.status).toBe('error');
+    expect(result.reason).toBe('VALIDATION_FAILED');
+    expect(result.details?.fieldViolations).toEqual([{ field: 'name', description: 'required' }]);
+  });
+
+  it('should parse details with preconditionViolations and auto-fill conflicts', async () => {
+    const errorResponse = new Response(
+      JSON.stringify({
+        code: 9,
+        message: 'conflict',
+        reason: 'CONFIG_CONFLICT',
+        details: {
+          preconditionViolations: [
+            { type: 'CONFIG_CONFLICT', subject: '/foo', description: 'abc' },
+          ],
+        },
+      }),
+      { status: 400, statusText: 'Bad Request' },
+    );
+    const error = new ResponseError(errorResponse, 'Response returned an error code');
+    const result = await unwrapSdkResponse(Promise.reject(error));
+    expect(result.status).toBe('error');
+    expect(result.reason).toBe('CONFIG_CONFLICT');
+    expect(result.details?.preconditionViolations).toEqual([
+      { type: 'CONFIG_CONFLICT', subject: '/foo', description: 'abc' },
+    ]);
+    expect(result.conflicts).toEqual([{ path: '/foo', currentHash: 'abc' }]);
+  });
+
+  it('should handle response without reason or details', async () => {
+    const errorResponse = new Response(JSON.stringify({ code: 13, message: 'internal error' }), {
+      status: 500,
+      statusText: 'Internal Server Error',
+    });
+    const error = new ResponseError(errorResponse, 'Response returned an error code');
+    const result = await unwrapSdkResponse(Promise.reject(error));
+    expect(result.status).toBe('error');
+    expect(result.reason).toBeUndefined();
+    expect(result.details).toBeUndefined();
+  });
+
   it('should handle ResponseError with empty body', async () => {
     const errorResponse = new Response(null, { status: 500, statusText: 'Internal Server Error' });
     const error = new ResponseError(errorResponse, 'Response returned an error code');

@@ -130,7 +130,7 @@ describe('TemplateManager', () => {
     const updateTemplateConfig = vi.fn(() =>
       Promise.resolve({
         status: 'error' as const,
-        code: 'config_conflict',
+        reason: 'CONFIG_CONFLICT',
         message: '配置已变更，请重新加载后再修改',
         conflicts: [{ path: '~/.claude/settings.json', currentHash: 'md5:conflict' }],
       }),

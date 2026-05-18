@@ -1,4 +1,4 @@
-import type { ApiResponse } from '../types';
+import type { ApiResponse, ErrorDetails } from '../types';
 import { fetchWithAuthSession } from '../api/auth-session';
 
 const DEFAULT_TIMEOUT_MS = 30000;
@@ -39,12 +39,26 @@ export function createRequest(baseUrl = '') {
         }
         try {
           const parsed = JSON.parse(text) as Record<string, unknown>;
-          return {
+          const result: ApiResponse<T> = {
             status: 'error' as const,
             message: (parsed.message as string) || `HTTP ${response.status}`,
-            code: parsed.code as string | undefined,
-            conflicts: parsed.conflicts as ApiResponse<T>['conflicts'],
           };
+          if (parsed.reason) {
+            result.reason = parsed.reason as string;
+          }
+          if (parsed.details) {
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+            result.details = parsed.details as ErrorDetails;
+          }
+          if (result.details?.preconditionViolations) {
+            result.conflicts = result.details.preconditionViolations
+              .filter((v) => v.type === 'CONFIG_CONFLICT')
+              .map((v) => ({ path: v.subject, currentHash: v.description }));
+          }
+          if (parsed.code !== undefined) {
+            result.code = parsed.code as string;
+          }
+          return result;
         } catch {
           return { status: 'error', message: `HTTP ${response.status}` };
         }

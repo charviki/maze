@@ -193,14 +193,23 @@ describe('agent API - HTTP 错误', () => {
     expect(result.message).toBe('HTTP 404');
   });
 
-  it('409 应保留 code 和 conflicts', async () => {
+  it('409 应保留 reason 和 conflicts', async () => {
     server.use(
       http.put('*/api/v1/nodes/agent-1/sessions/sess-1/config', () =>
         HttpResponse.json(
           {
-            code: 'config_conflict',
+            code: 9,
             message: '配置已变更',
-            conflicts: [{ path: '.claude/settings.json', currentHash: 'md5:def' }],
+            reason: 'CONFIG_CONFLICT',
+            details: {
+              preconditionViolations: [
+                {
+                  type: 'CONFIG_CONFLICT',
+                  subject: '.claude/settings.json',
+                  description: 'md5:def',
+                },
+              ],
+            },
           },
           { status: 409 },
         ),
@@ -212,7 +221,7 @@ describe('agent API - HTTP 错误', () => {
     });
 
     expect(result.status).toBe('error');
-    expect(result.code).toBe('config_conflict');
+    expect(result.reason).toBe('CONFIG_CONFLICT');
     expect(result.conflicts?.[0].path).toBe('.claude/settings.json');
   });
 });
