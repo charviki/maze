@@ -75,27 +75,40 @@ export default function DocEdit() {
     }
     setSaving(true);
     try {
-      const data: Partial<Doc> = {
-        archiveId,
-        title: title.trim(),
-        content,
-        status: status || undefined,
-        priority: priority || undefined,
-        assignee: assignee || undefined,
-        tags: tags
-          .split(',')
-          .map((t) => t.trim())
-          .filter(Boolean),
-        visibility,
-        summary,
-        parentId: isNew && parentId ? parentId : undefined,
-      };
       if (isNew) {
+        const data: Partial<Doc> = {
+          archiveId,
+          title: title.trim(),
+          content,
+          status: status || undefined,
+          priority: priority || undefined,
+          assignee: assignee || undefined,
+          tags: tags
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean),
+          visibility,
+          summary,
+          parentId: parentId || undefined,
+        };
         const result = await docs.create(data);
         refreshTree();
         showToast('success', 'Document created');
         void navigate(`/docs/${archiveId}/${result.id}`);
       } else if (docId) {
+        const data: Partial<Doc> = {
+          title: title.trim(),
+          content,
+          status: status || undefined,
+          priority: priority || undefined,
+          assignee: assignee || undefined,
+          tags: tags
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean),
+          visibility,
+          summary,
+        };
         await docs.update(docId, data);
         refreshTree();
         showToast('success', 'Document saved');
