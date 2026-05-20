@@ -99,9 +99,18 @@ describe('配置接口', () => {
       http.put('*/api/v1/templates/claude/config', () =>
         HttpResponse.json(
           {
-            code: 'config_conflict',
+            code: 9,
             message: '配置已变更',
-            conflicts: [{ path: '~/.claude/settings.json', currentHash: 'md5:def' }],
+            reason: 'CONFIG_CONFLICT',
+            details: {
+              preconditionViolations: [
+                {
+                  type: 'CONFIG_CONFLICT',
+                  subject: '~/.claude/settings.json',
+                  description: 'md5:def',
+                },
+              ],
+            },
           },
           { status: 409 },
         ),
@@ -114,7 +123,7 @@ describe('配置接口', () => {
     });
 
     expect(result.status).toBe('error');
-    expect(result.code).toBe('config_conflict');
+    expect(result.reason).toBe('CONFIG_CONFLICT');
     expect(result.conflicts?.[0].path).toBe('~/.claude/settings.json');
   });
 });
