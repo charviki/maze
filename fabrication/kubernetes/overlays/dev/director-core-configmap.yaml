@@ -12,7 +12,7 @@ data:
   DIRECTOR_CORE_KUBERNETES_DIRECTOR_CORE_ADDR: 'director-core.maze-dev.svc.cluster.local:8080'
   DIRECTOR_CORE_KUBERNETES_PVC_SIZE: '10Gi'
   DIRECTOR_CORE_KUBERNETES_VOLUME_TYPE: 'hostpath'
-  DIRECTOR_CORE_KUBERNETES_HOST_PATH_BASE: '/tmp/maze-dev/kubernetes/agents'
+  DIRECTOR_CORE_KUBERNETES_HOST_PATH_BASE: '${MAZE_HOST_PATH}/kubernetes/agents'
   # Agent 基础镜像（动态构建 Agent Dockerfile 时的 FROM 基础层）
   DIRECTOR_CORE_DOCKER_AGENT_BASE_IMAGE: 'maze-agent:latest'
   DIRECTOR_CORE_ALLOW_PRIVATE_NETWORKS: 'true'

@@ -17,8 +17,8 @@ test-integration: override HOST_DATA_DIR := $(HOME)/.maze-test
 test-integration: override PORT_DIRECTOR_CORE := 9090
 test-integration: override PORT_WEB := 9080
 test-integration: override PORT_POSTGRES := 5433
-test-integration: override POSTGRES_HOSTPATH := /tmp/maze-test/postgresql/data
-test-integration: override AGENT_HOSTPATH_BASE := /tmp/maze-test/kubernetes/agents
+test-integration: override POSTGRES_HOSTPATH := $(HOST_DATA_DIR)/postgresql/data
+test-integration: override AGENT_HOSTPATH_BASE := $(HOST_DATA_DIR)/kubernetes/agents
 
 test-integration: ## 运行集成测试（PLATFORM=docker 或 PLATFORM=kubernetes，TEST_NAME=TestX 运行单个测试）
 ifeq ($(PLATFORM),docker)
@@ -172,7 +172,7 @@ else ifeq ($(PLATFORM),kubernetes)
 		echo -e "$$INFO [3/5] Deploying test environment to namespace $$NS..."; \
 		echo -e "$$INFO Applying rendered manifests..."; \
 		mkdir -p $(AGENT_HOSTPATH_BASE); \
-		if ! kubectl kustomize "$(K8S_OVERLAY_DIR)" | kubectl apply -f -; then \
+		if ! kubectl kustomize "$(K8S_OVERLAY_DIR)" | MAZE_HOST_PATH=$(HOST_DATA_DIR) envsubst "\$$MAZE_HOST_PATH" | kubectl apply -f -; then \
 			echo -e "$$ERROR Failed to deploy test environment."; \
 			exit 1; \
 		fi; \

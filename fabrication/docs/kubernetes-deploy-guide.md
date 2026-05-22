@@ -2,8 +2,8 @@
 
 Maze 支持在 Kubernetes 上运行，通过 `fabrication/kubernetes/` 中的 Makefile 和 Kustomize overlay 管理部署。内置三种环境配置：
 
-- **dev**（默认）— 开发环境，hostPath 固定挂到 `/tmp/maze-dev`，内置 PostgreSQL，动态构建 Agent 镜像
-- **test** — 集成测试环境，hostPath 固定挂到 `/tmp/maze-test`，内置 PostgreSQL，`make test-integration` 自动管理
+- **dev**（默认）— 开发环境，hostPath 挂到 `HOST_DATA_DIR`（默认 `~/.maze-dev/kubernetes`，通过 envsubst 注入），内置 PostgreSQL，动态构建 Agent 镜像
+- **test** — 集成测试环境，hostPath 挂到 `HOST_DATA_DIR`（默认 `~/.maze-test/kubernetes`，通过 envsubst 注入），内置 PostgreSQL，`make test-integration` 自动管理
 - **production** — 生产环境，PVC 持久化，内置 PostgreSQL，动态构建 Agent 镜像
 
 ## 前置条件
@@ -48,7 +48,7 @@ make test-integration PLATFORM=docker # docker × test
 | ------------- | ------------- | -------------- | -------------- |
 | K8s Namespace | `maze-dev`    | `maze-test`    | `maze-prod`    |
 | Docker 宿主机目录 | `~/.maze-dev` | `~/.maze-test` | `~/.maze-prod` |
-| K8s 宿主机目录 | `/tmp/maze-dev` | `/tmp/maze-test` | `PVC` |
+| K8s 宿主机目录 | `~/.maze-dev/kubernetes` | `~/.maze-test/kubernetes` | `PVC` |
 | PORT_DIRECTOR_CORE  | `7090`        | `9090`         | `8090`         |
 | PORT_GATEWAY  | `7091`        | `9091`         | `8091`         |
 | PORT_WEB      | `7080`        | `9080`         | `10800`        |
@@ -151,35 +151,37 @@ K8s 模式下 **复用 Docker 模式的动态构建逻辑**，不需要提前预
 Maze 的持久化目录按运行时区分：
 
 ```
-~/.maze-dev/                          # 开发环境 Docker 数据 (ENV=dev)
+~/.maze-dev/                          # 开发环境 (ENV=dev)
 ├── docker/                           # Docker Compose 模式
 │   ├── nodes.json                    # Manager 持久化
 │   ├── host_specs.json               # Manager 持久化
 │   ├── audit.log                     # Manager 持久化
 │   ├── host_logs/                    # Manager 运行日志
 │   └── agents/                       # Agent 工作目录
- /tmp/maze-dev/                       # 开发环境 K8s hostPath
-├── kubernetes/
+├── kubernetes/                       # K8s hostPath（envsubst 注入）
 │   ├── nodes.json                    # Manager 持久化
 │   ├── host_specs.json               # Manager 持久化
 │   ├── audit.log                     # Manager 持久化
 │   ├── host_logs/                    # Manager 运行日志
 │   └── agents/                       # Agent 工作目录
+├── postgresql/                       # K8s PostgreSQL 数据（envsubst 注入）
+│   └── data/
 
-~/.maze-test/                         # 集成测试 Docker 数据 (ENV=test)
+~/.maze-test/                         # 集成测试 (ENV=test)
 ├── docker/                           # Docker 集成测试
 │   ├── nodes.json                    # Manager 持久化
 │   ├── host_specs.json               # Manager 持久化
 │   ├── audit.log                     # Manager 持久化
 │   ├── host_logs/                    # Manager 运行日志
 │   └── agents/                       # Agent 工作目录
- /tmp/maze-test/                      # 集成测试 K8s hostPath
-├── kubernetes/
+├── kubernetes/                       # K8s hostPath（envsubst 注入）
 │   ├── nodes.json                    # Manager 持久化
 │   ├── host_specs.json               # Manager 持久化
 │   ├── audit.log                     # Manager 持久化
 │   ├── host_logs/                    # Manager 运行日志
 │   └── agents/                       # Agent 工作目录
+├── postgresql/                       # K8s PostgreSQL 数据（envsubst 注入）
+│   └── data/
 
 ~/.maze-prod/                         # 生产环境 Docker 数据 (ENV=prod)
 ├── docker/                           # Docker 生产
@@ -193,8 +195,8 @@ Maze 的持久化目录按运行时区分：
 
 | ENV  | Manager 数据                        | Agent 数据                                       | 访问方式                       |
 | ---- | ----------------------------------- | ------------------------------------------------ | ------------------------------ |
-| dev  | hostPath `/tmp/maze-dev/kubernetes/`  | hostPath `/tmp/maze-dev/kubernetes/agents/{name}`  | 宿主机直接可见                 |
-| test | hostPath `/tmp/maze-test/kubernetes/` | hostPath `/tmp/maze-test/kubernetes/agents/{name}` | 集成测试自动管理               |
+| dev  | hostPath `~/.maze-dev/kubernetes/`  | hostPath `~/.maze-dev/kubernetes/agents/{name}`  | 宿主机直接可见                 |
+| test | hostPath `~/.maze-test/kubernetes/` | hostPath `~/.maze-test/kubernetes/agents/{name}` | 集成测试自动管理               |
 | prod | PVC `director-core-data`                  | PVC（动态创建）                                  | `kubectl exec` 或 `kubectl cp` |
 
 ## Kustomize Overlay 结构
@@ -236,8 +238,8 @@ fabrication/kubernetes/
 | 配置项          | dev                                               | test                                               | production           |
 | --------------- | ------------------------------------------------- | -------------------------------------------------- | -------------------- |
 | Namespace       | `maze-dev`                                        | `maze-test`                                        | `maze-prod`          |
-| Manager 数据卷  | hostPath (`/tmp/maze-dev/kubernetes/`)              | hostPath (`/tmp/maze-test/kubernetes/`)              | PVC (`director-core-data`) |
-| Agent 数据卷    | hostPath (`/tmp/maze-dev/kubernetes/agents/{name}`) | hostPath (`/tmp/maze-test/kubernetes/agents/{name}`) | PVC（动态创建）      |
+| Manager 数据卷  | hostPath (`~/.maze-dev/kubernetes/`)              | hostPath (`~/.maze-test/kubernetes/`)              | PVC (`director-core-data`) |
+| Agent 数据卷    | hostPath (`~/.maze-dev/kubernetes/agents/{name}`) | hostPath (`~/.maze-test/kubernetes/agents/{name}`) | PVC（动态创建）      |
 | Agent 镜像      | 动态构建（docker build via Docker socket）        | 动态构建                                           | 动态构建（需 Docker socket） |
 | VolumeType      | `hostpath`                                        | `hostpath`                                         | `pvc`                |
 | ImagePullPolicy | `Never`                                           | `Never`                                            | 默认 `Never`，可覆盖 |
@@ -338,7 +340,7 @@ Manager 需要以下 K8s API 权限来动态管理 Agent：
 | 部署方式   | `docker compose up`                       | `make up`                                   | `make up ENV=prod`                      |
 | Agent 构建 | Docker socket 动态构建                    | Docker socket 动态构建（相同）              | Docker socket 动态构建                  |
 | Agent 启动 | `docker run`                              | K8s API 创建 Deployment + Service           | K8s API 创建 Deployment + PVC + Service |
-| 持久化     | bind mount (`~/.maze-dev/docker/agents/`) | hostPath (`/tmp/maze-dev/kubernetes/agents/`) | PVC                                     |
+| 持久化     | bind mount (`~/.maze-dev/docker/agents/`) | hostPath (`~/.maze-dev/kubernetes/agents/`) | PVC                                     |
 | 网络发现   | Docker DNS                                | K8s Service DNS                             | K8s Service DNS                         |
 | 配置注入   | docker-compose.yml                        | ConfigMap + Secret                          | ConfigMap + Secret                      |
 | 更新组件   | `docker compose up -d --build`            | `make update-*`                             | `make update-*`，同时要求 Manager 可访问 Docker daemon |

@@ -51,8 +51,8 @@ ifeq ($(ENV),dev)
   PORT_THE_FORGE := 7091
   PORT_WEB := 7080
   PORT_POSTGRES := 5432
-  POSTGRES_HOSTPATH := /tmp/maze-dev/postgresql/data
-  AGENT_HOSTPATH_BASE := /tmp/maze-dev/kubernetes/agents
+  POSTGRES_HOSTPATH := $(HOST_DATA_DIR)/postgresql/data
+  AGENT_HOSTPATH_BASE := $(HOST_DATA_DIR)/kubernetes/agents
 else ifeq ($(ENV),test)
   K8S_NAMESPACE := maze-test
   K8S_OVERLAY := overlays/test
@@ -62,8 +62,8 @@ else ifeq ($(ENV),test)
   PORT_THE_FORGE := 9091
   PORT_WEB := 9080
   PORT_POSTGRES := 5433
-  POSTGRES_HOSTPATH := /tmp/maze-test/postgresql/data
-  AGENT_HOSTPATH_BASE := /tmp/maze-test/kubernetes/agents
+  POSTGRES_HOSTPATH := $(HOST_DATA_DIR)/postgresql/data
+  AGENT_HOSTPATH_BASE := $(HOST_DATA_DIR)/kubernetes/agents
 else ifeq ($(ENV),prod)
   K8S_NAMESPACE := maze-prod
   K8S_OVERLAY := overlays/production

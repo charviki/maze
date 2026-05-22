@@ -20,7 +20,7 @@ else ifeq ($(PLATFORM),kubernetes)
 	@mkdir -p $(HOST_DATA_DIR)/docker/agents
 	@if [ -n "$(AGENT_HOSTPATH_BASE)" ]; then mkdir -p $(AGENT_HOSTPATH_BASE); fi
 	@kubectl create namespace $(K8S_NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
-	@kubectl kustomize "$(K8S_OVERLAY_DIR)" | kubectl apply -f -
+	@kubectl kustomize "$(K8S_OVERLAY_DIR)" | MAZE_HOST_PATH=$(HOST_DATA_DIR) envsubst "\$$MAZE_HOST_PATH" | kubectl apply -f -
 	@echo "\033[0;32m[INFO]\033[0m Restarting deployments to pick up rebuilt images (required when image tag is unchanged, e.g. latest)..."
 	@if kubectl get deployment/postgresql -n $(K8S_NAMESPACE) >/dev/null 2>&1; then \
 		kubectl rollout restart deployment/postgresql -n $(K8S_NAMESPACE) 2>/dev/null || true; \

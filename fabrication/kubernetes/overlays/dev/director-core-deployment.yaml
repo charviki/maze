@@ -100,7 +100,7 @@ spec:
       volumes:
         - name: data
           hostPath:
-            path: /tmp/maze-dev/kubernetes
+            path: ${MAZE_HOST_PATH}/kubernetes
             type: DirectoryOrCreate
         - name: docker-socket
           hostPath:

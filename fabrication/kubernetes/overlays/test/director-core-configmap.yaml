@@ -11,7 +11,7 @@ data:
   DIRECTOR_CORE_KUBERNETES_DIRECTOR_CORE_ADDR: 'director-core.maze-test.svc.cluster.local:8080'
   DIRECTOR_CORE_KUBERNETES_PVC_SIZE: '5Gi'
   DIRECTOR_CORE_KUBERNETES_VOLUME_TYPE: 'hostpath'
-  DIRECTOR_CORE_KUBERNETES_HOST_PATH_BASE: '/tmp/maze-test/kubernetes/agents'
+  DIRECTOR_CORE_KUBERNETES_HOST_PATH_BASE: '${MAZE_HOST_PATH}/kubernetes/agents'
   DIRECTOR_CORE_DOCKER_AGENT_BASE_IMAGE: 'maze-agent:latest'
   DIRECTOR_CORE_ALLOW_PRIVATE_NETWORKS: 'true'
   DIRECTOR_CORE_AUTH_DATABASE_HOST: 'postgresql.maze-test.svc.cluster.local'

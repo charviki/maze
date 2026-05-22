@@ -81,7 +81,7 @@ spec:
       volumes:
         - name: data
           hostPath:
-            path: /tmp/maze-test/postgresql/data
+            path: ${MAZE_HOST_PATH}/postgresql/data
             type: DirectoryOrCreate
         - name: init-db
           configMap:
