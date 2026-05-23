@@ -29,6 +29,7 @@ patches:
         name: web-nginx-config
       data:
         DIRECTOR_CORE_UPSTREAM: "director-core.maze-dev.svc.cluster.local:8080"
+        THE_FORGE_UPSTREAM: "the-forge.maze-dev.svc.cluster.local:8080"
   - target:
       kind: PersistentVolumeClaim
       name: director-core-data
@@ -65,3 +66,22 @@ patches:
         THE_FORGE_SERVER_JWT_SECRET: 'dev-jwt-secret-change-me'
         DATABASE_USER: 'maze'
         DATABASE_PASSWORD: 'maze'
+  - target:
+      kind: Service
+      name: web
+    patch: |
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: web
+      spec:
+        type: LoadBalancer
+  - target:
+      kind: Ingress
+      name: web
+    patch: |
+      $patch: delete
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: web

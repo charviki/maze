@@ -35,3 +35,23 @@ patches:
         THE_FORGE_SERVER_JWT_SECRET: 'prod-jwt-secret-must-change-before-deploy'
         DATABASE_USER: 'maze'
         DATABASE_PASSWORD: 'maze'
+  - target:
+      kind: Ingress
+      name: web
+    patch: |
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: web
+      spec:
+        rules:
+          - host: maze.example.com
+            http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: web
+                      port:
+                        number: 80

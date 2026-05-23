@@ -25,6 +25,11 @@ spec:
                 configMapKeyRef:
                   name: web-nginx-config
                   key: DIRECTOR_CORE_UPSTREAM
+            - name: THE_FORGE_UPSTREAM
+              valueFrom:
+                configMapKeyRef:
+                  name: web-nginx-config
+                  key: THE_FORGE_UPSTREAM
             - name: WS_TIMEOUT
               valueFrom:
                 configMapKeyRef:

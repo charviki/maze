@@ -10,6 +10,7 @@ ifeq ($(PLATFORM),docker)
 	@echo ""
 	@echo "\033[0;32m[INFO]\033[0m Maze is running on Docker Compose!"
 	@echo "  Web:            http://localhost:$(PORT_WEB)"
+	@echo "  (For domain access: add '127.0.0.1 maze.local' to /etc/hosts)"
 	@echo "  Director Core:  http://localhost:$(PORT_DIRECTOR_CORE)/health"
 	@echo "  Postgres:       postgresql://localhost:$(PORT_POSTGRES)"
 	@echo "  Data policy:    PostgreSQL data is stored in Docker volume director-core-postgres-data"
@@ -67,8 +68,10 @@ else ifeq ($(PLATFORM),kubernetes)
 	fi
 	@echo ""
 	@echo "\033[0;32m[INFO]\033[0m Maze is running on Kubernetes! ($(ENV))"
-	@echo "  Next: make proxy PLATFORM=$(PLATFORM) ENV=$(ENV)"
-	@echo "  Data policy: PostgreSQL deployment and data will be preserved by make down"
+	@echo "  Web:            http://maze.local"
+	@echo "  (Requires 'maze.local' in /etc/hosts — run: sudo bash -c 'echo 127.0.0.1 maze.local >> /etc/hosts')"
+	@echo "  Postgres:       make proxy (optional, for DB GUI tools)"
+	@echo "  Data policy:    PostgreSQL deployment and data will be preserved by make down"
 endif
 
 down: ## 停止服务并默认保留 PostgreSQL 数据（K8s 不删除 namespace）
@@ -157,52 +160,23 @@ else ifeq ($(PLATFORM),kubernetes)
 	@kubectl get pvc -n $(K8S_NAMESPACE) 2>/dev/null || echo "  No PVCs found"
 endif
 
-proxy: ## 启动访问代理（K8s 只代理当前环境真实存在的服务）
+proxy: ## 启动访问代理（K8s 仅代理 PostgreSQL；Docker 显示端口信息）
 ifeq ($(PLATFORM),docker)
 	@echo "\033[0;32m[INFO]\033[0m Docker mode: ports already exposed."
 	@echo "  Web:            http://localhost:$(PORT_WEB)"
 	@echo "  Director Core:  http://localhost:$(PORT_DIRECTOR_CORE)/health"
 	@echo "  Postgres:       postgresql://localhost:$(PORT_POSTGRES)"
 else ifeq ($(PLATFORM),kubernetes)
-	@echo "\033[0;32m[INFO]\033[0m Starting port-forward for services managed by overlay $(K8S_OVERLAY)..."
+	@echo "\033[0;32m[INFO]\033[0m Web/API access: http://maze.local (direct via LoadBalancer)"
+	@echo "\033[0;32m[INFO]\033[0m Starting port-forward for PostgreSQL..."
 	@bash -c '\
 		set -e; \
-		PF_STARTED=0; \
-		PIDS=""; \
-		CLEANED=0; \
-		cleanup() { \
-			if [ "$$CLEANED" -eq 1 ]; then return 0; fi; \
-			CLEANED=1; \
-			echo ""; \
-			echo "\033[0;32m[INFO]\033[0m Stopping port-forward..."; \
-			for pid in $$PIDS; do \
-				kill -TERM $$pid 2>/dev/null || true; \
-			done; \
-			for pid in $$PIDS; do \
-				wait $$pid 2>/dev/null || true; \
-			done; \
-		}; \
-		trap cleanup SIGINT SIGTERM EXIT; \
-		start_pf() { \
-			name="$$1"; ports="$$2"; desc="$$3"; \
-			if kubectl get svc/$$name -n $(K8S_NAMESPACE) >/dev/null 2>&1; then \
-				echo "  $$desc"; \
-				kubectl port-forward svc/$$name $$ports -n $(K8S_NAMESPACE) & \
-				PIDS="$$PIDS $$!"; \
-				PF_STARTED=1; \
-			else \
-				echo "  skip $$name: service not managed by overlay $(K8S_OVERLAY)"; \
-			fi; \
-		}; \
-		start_pf web $(PORT_WEB):80 "Web:            http://localhost:$(PORT_WEB)"; \
-		start_pf director-core $(PORT_DIRECTOR_CORE):8080 "Director Core:  http://localhost:$(PORT_DIRECTOR_CORE)/health"; \
-		start_pf the-forge $(PORT_THE_FORGE):8080 "The Forge:      http://localhost:$(PORT_THE_FORGE)/health"; \
-		start_pf postgresql $(PORT_POSTGRES):5432 "Postgres:       postgresql://localhost:$(PORT_POSTGRES)"; \
-		if [ "$$PF_STARTED" -ne 1 ]; then \
-			echo "No services available for proxy in namespace $(K8S_NAMESPACE)."; \
-			exit 1; \
-		fi; \
-		wait'
+		if kubectl get svc/postgresql -n $(K8S_NAMESPACE) >/dev/null 2>&1; then \
+			echo "  Postgres:       postgresql://localhost:$(PORT_POSTGRES)"; \
+			exec kubectl port-forward svc/postgresql $(PORT_POSTGRES):5432 -n $(K8S_NAMESPACE); \
+		else \
+			echo "  skip postgresql: service not managed by overlay $(K8S_OVERLAY)"; \
+		fi'
 endif
 
 proxy-web: ## 只代理 Web 前端（若当前环境无 web，则提示并退出）
