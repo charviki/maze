@@ -1,17 +1,24 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: postgres-init-db
+  name: postgres-entrypoint
 data:
-  init-db.sh: |
-    #!/bin/bash
+  entrypoint.sh: |
+    #!/bin/sh
     set -e
-    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
-      SELECT 'CREATE DATABASE maze_host'
-      WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'maze_host')\gexec
-      SELECT 'CREATE DATABASE maze_forge'
-      WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'maze_forge')\gexec
-    EOSQL
+    # Docker Desktop VirtioFS 的 fsync 语义弱于原生 Linux，
+    # VM 挂起/重启时 WAL checkpoint 可能被截断导致无法启动。
+    # 在启动前检测并自动修复损坏的 WAL。
+    if [ -f "$PGDATA/PG_VERSION" ] && ! pg_isready -q 2>/dev/null; then
+      echo "[entrypoint] Attempting WAL recovery..."
+      if ! pg_ctl start -w -t 30 -o "-c listen_addresses='' -p 5433" 2>/dev/null; then
+        echo "[entrypoint] WAL recovery failed, resetting WAL with pg_resetwal..."
+        gosu postgres pg_resetwal -f "$PGDATA" 2>&1 || true
+      else
+        pg_ctl stop -m fast -w -t 30 2>/dev/null || true
+      fi
+    fi
+    exec /usr/local/bin/docker-entrypoint.sh postgres
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -26,10 +33,11 @@ spec:
       labels:
         app: postgresql
     spec:
-      terminationGracePeriodSeconds: 60
+      terminationGracePeriodSeconds: 120
       containers:
         - name: postgresql
           image: postgres:17-alpine
+          command: ['/bin/sh', '/scripts/entrypoint.sh']
           ports:
             - containerPort: 5432
           env:
@@ -51,13 +59,17 @@ spec:
                 command:
                   - /bin/sh
                   - -c
-                  - pg_ctl stop -D "$PGDATA" -m fast
+                  - |
+                    sync
+                    pg_ctl stop -D "$PGDATA" -m fast
           volumeMounts:
-            # dev 环境使用 hostPath 保留数据库数据，避免探针重启后丢表。
             - name: data
               mountPath: /var/lib/postgresql/data
             - name: init-db
               mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+            - name: scripts
+              mountPath: /scripts
               readOnly: true
           startupProbe:
             exec:
@@ -65,9 +77,9 @@ spec:
                 - /bin/sh
                 - -c
                 - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
-            periodSeconds: 2
-            timeoutSeconds: 3
-            failureThreshold: 30
+            periodSeconds: 3
+            timeoutSeconds: 5
+            failureThreshold: 60
           readinessProbe:
             exec:
               command:
@@ -94,6 +106,10 @@ spec:
         - name: init-db
           configMap:
             name: postgres-init-db
+            defaultMode: 0755
+        - name: scripts
+          configMap:
+            name: postgres-entrypoint
             defaultMode: 0755
 ---
 apiVersion: v1

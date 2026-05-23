@@ -42,26 +42,16 @@ func (d *DockerRuntime) imageExistsLocally(imageName string) bool {
 	return hostbuilder.ImageExistsLocally(imageName)
 }
 
-// tryTagComboImage 尝试将已存在的工具组合镜像 tag 为 Host 专属镜像。
-// 会校验缓存镜像的 dockerfile-hash label 是否与当前 Dockerfile 一致，
-// 不一致时返回 false 触发重建（供应商镜像更新后自动失效）。
-func (d *DockerRuntime) tryTagComboImage(comboTag, imageTag, expectedHash string) bool {
-	// 优先检查组合缓存镜像
+// checkImageCache 检查工具组合镜像是否已存在且 hash 匹配。
+// 命中时返回 true，调用方直接用 comboTag 启动容器。
+// hash 不匹配时删除旧缓存触发重建（供应商镜像更新后自动失效）。
+func (d *DockerRuntime) checkImageCache(comboTag, expectedHash string) bool {
 	if d.imageExistsLocally(comboTag) {
 		if d.checkDockerfileHash(comboTag, expectedHash) {
-			tagCmd := d.dockerCmd("tag", comboTag, imageTag)
-			return tagCmd.Run() == nil
+			return true
 		}
 		// hash 不匹配，删除旧缓存触发重建
 		_ = d.dockerCmd("rmi", comboTag).Run()
-	}
-	// 检查 Host 专属镜像
-	if d.imageExistsLocally(imageTag) {
-		if d.checkDockerfileHash(imageTag, expectedHash) {
-			return true
-		}
-		// hash 不匹配，删除旧镜像触发重建
-		_ = d.dockerCmd("rmi", imageTag).Run()
 	}
 	return false
 }
@@ -72,14 +62,14 @@ func (d *DockerRuntime) checkDockerfileHash(imageName, expectedHash string) bool
 }
 
 // DeployHost 部署一个 Host：构建镜像 → 创建持久化目录 → 启动容器
+// 镜像按工具集组合标签（comboTag）构建和缓存，同一工具集的多个 Host 共享同一镜像。
 func (d *DockerRuntime) DeployHost(ctx context.Context, spec *protocol.HostDeploySpec, dockerfileContent string) (*protocol.CreateHostResponse, error) {
 	deployStart := time.Now()
-	imageTag := "maze-agent:" + spec.Name
 	comboTag := hostbuilder.ToolsetImageTag(spec.Tools)
 	expectedHash := hostbuilder.ExtractDockerfileHash(dockerfileContent)
 
 	cacheStart := time.Now()
-	cacheHit := d.tryTagComboImage(comboTag, imageTag, expectedHash)
+	cacheHit := d.checkImageCache(comboTag, expectedHash)
 	if cacheHit {
 		d.logger.Infof("[deploy] host=%s cache HIT, combo=%s, took=%v", spec.Name, comboTag, time.Since(cacheStart))
 	} else {
@@ -101,7 +91,7 @@ func (d *DockerRuntime) DeployHost(ctx context.Context, spec *protocol.HostDeplo
 			return nil, fmt.Errorf("write dockerfile: %w", err)
 		}
 
-		buildArgs := []string{"build", "-f", dockerfilePath, "-t", imageTag, tmpDir}
+		buildArgs := []string{"build", "-f", dockerfilePath, "-t", comboTag, tmpDir}
 		buildCmd := d.dockerCmd(buildArgs...)
 		buildCmd.Env = append(os.Environ(), "DOCKER_BUILDKIT=1")
 		var buildOutput strings.Builder
@@ -112,10 +102,6 @@ func (d *DockerRuntime) DeployHost(ctx context.Context, spec *protocol.HostDeplo
 		}
 
 		d.logger.Infof("[deploy] host=%s docker build took=%v", spec.Name, time.Since(buildStart))
-
-		// 构建完成后打上组合标签，供后续相同工具组合的 Host 复用
-		tagCmd := d.dockerCmd("tag", imageTag, comboTag)
-		_ = tagCmd.Run()
 	}
 
 	// 统一目录模型下，workspace 只存放 Director Core 元数据；Agent 数据始终位于 agents/<host>。
@@ -164,7 +150,7 @@ func (d *DockerRuntime) DeployHost(ctx context.Context, spec *protocol.HostDeplo
 		runArgs = append(runArgs, "--memory", spec.Resources.MemoryLimit)
 	}
 
-	runArgs = append(runArgs, imageTag)
+	runArgs = append(runArgs, comboTag)
 
 	runCmd := d.dockerCmd(runArgs...)
 	output, err := runCmd.Output()
@@ -182,7 +168,7 @@ func (d *DockerRuntime) DeployHost(ctx context.Context, spec *protocol.HostDeplo
 	return &protocol.CreateHostResponse{
 		Name:        spec.Name,
 		Tools:       spec.Tools,
-		ImageTag:    imageTag,
+		ImageTag:    comboTag,
 		ContainerID: containerID,
 		Status:      "running",
 	}, nil
@@ -200,13 +186,10 @@ func (d *DockerRuntime) StopHost(ctx context.Context, name string) error {
 	return nil
 }
 
-// RemoveHost 销毁 Host：停止容器 + 清理镜像 + 清理持久化数据
+// RemoveHost 销毁 Host：停止容器 + 清理持久化数据
+// 镜像按工具集组合标签作为缓存保留，供同工具集的后续 Host 复用。
 func (d *DockerRuntime) RemoveHost(ctx context.Context, name string) error {
 	_ = d.StopHost(ctx, name)
-
-	imageTag := "maze-agent:" + name
-	rmiCmd := d.dockerCmd("rmi", "-f", imageTag)
-	_ = rmiCmd.Run()
 
 	// bind mount 的宿主机目录不会随着容器删除自动回收；Director Core 必须显式删除 agents/<host>。
 	hostMountDir := filepath.Join(d.workspace.MountDir, "agents", name)

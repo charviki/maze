@@ -69,38 +69,21 @@ func (k *KubernetesRuntime) checkDockerfileHash(imageName, expectedHash string) 
 }
 
 // buildDockerImage 使用 docker build 从 Dockerfile 内容构建镜像
-// 复用 Docker 模式相同的动态构建逻辑，K8s 模式下只是把 docker run 换成创建 Deployment
+// 镜像按工具集组合标签（comboTag）构建和缓存，同一工具集的多个 Host 共享同一镜像。
 func (k *KubernetesRuntime) buildDockerImage(spec *protocol.HostDeploySpec, dockerfileContent string) (string, error) {
-	imageName := "maze-agent:" + spec.Name
+	comboTag := hostbuilder.ToolsetImageTag(spec.Tools)
 	expectedHash := hostbuilder.ExtractDockerfileHash(dockerfileContent)
 
-	// 优先检查 Host 专属镜像是否已存在且 hash 匹配
-	if k.imageExistsLocally(imageName) {
-		if k.checkDockerfileHash(imageName, expectedHash) {
-			k.logger.Infof("image %s already exists, skip build", imageName)
-			return imageName, nil
-		}
-		// hash 不匹配，删除旧镜像触发重建
-		k.logger.Infof("image %s hash mismatch, rebuilding", imageName)
-		//nolint:gosec
-		_ = exec.CommandContext(context.Background(), "docker", "rmi", imageName).Run()
-	}
-
-	// 检查工具组合镜像是否已存在且 hash 匹配
-	comboTag := hostbuilder.ToolsetImageTag(spec.Tools)
+	// 检查组合缓存镜像是否已存在且 hash 匹配
 	if k.imageExistsLocally(comboTag) {
 		if k.checkDockerfileHash(comboTag, expectedHash) {
-			k.logger.Infof("combo image %s exists, tagging as %s", comboTag, imageName)
-			//nolint:gosec
-			cmd := exec.CommandContext(context.Background(), "docker", "tag", comboTag, imageName)
-			if cmd.Run() == nil {
-				return imageName, nil
-			}
+			k.logger.Infof("image %s already exists, skip build", comboTag)
+			return comboTag, nil
 		}
 		// hash 不匹配，删除旧缓存触发重建
-		k.logger.Infof("combo image %s hash mismatch, rebuilding", comboTag)
+		k.logger.Infof("image %s hash mismatch, rebuilding", comboTag)
 		//nolint:gosec
-		func() { _ = exec.CommandContext(context.Background(), "docker", "rmi", comboTag).Run() }()
+		_ = exec.CommandContext(context.Background(), "docker", "rmi", comboTag).Run()
 	}
 
 	// 获取构建槽位，防止重建风暴
@@ -122,29 +105,16 @@ func (k *KubernetesRuntime) buildDockerImage(spec *protocol.HostDeploySpec, dock
 
 	// 执行 docker build，启用 BuildKit 加速构建
 	//nolint:gosec
-	cmd := exec.CommandContext(context.Background(), "docker", "build", "-f", dockerfilePath, "-t", imageName, "--cache-from", imageName, tmpDir)
+	cmd := exec.CommandContext(context.Background(), "docker", "build", "-f", dockerfilePath, "-t", comboTag, tmpDir)
 	cmd.Env = append(os.Environ(), "DOCKER_BUILDKIT=1")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("docker build failed: %s: %w", string(output), err)
 	}
 
-	k.logger.Infof("built image %s for host %s", imageName, spec.Name)
+	k.logger.Infof("built image %s for host %s", comboTag, spec.Name)
 
-	// 构建完成后打上组合标签，供后续相同组合的 Host 复用
-	//nolint:gosec
-	tagCmd := exec.CommandContext(context.Background(), "docker", "tag", imageName, comboTag)
-	_ = tagCmd.Run()
-
-	return imageName, nil
-}
-
-// removeDockerImage 清理动态构建的 Agent 镜像
-func (k *KubernetesRuntime) removeDockerImage(name string) {
-	imageName := "maze-agent:" + name
-	//nolint:gosec
-	cmd := exec.CommandContext(context.Background(), "docker", "rmi", imageName, "-f")
-	_ = cmd.Run()
+	return comboTag, nil
 }
 
 // DeployHost 部署 Host 到 Kubernetes 集群：docker build → 创建 PVC → Deployment → Service
@@ -411,7 +381,8 @@ func (k *KubernetesRuntime) StopHost(ctx context.Context, name string) error {
 	return nil
 }
 
-// RemoveHost 销毁 Host：停止运行时 + 清理持久化数据 + 清理镜像
+// RemoveHost 销毁 Host：停止运行时 + 清理持久化数据
+// 镜像按工具集组合标签作为缓存保留，供同工具集的后续 Host 复用。
 func (k *KubernetesRuntime) RemoveHost(ctx context.Context, name string) error {
 	if err := k.StopHost(ctx, name); err != nil {
 		return err
@@ -437,8 +408,6 @@ func (k *KubernetesRuntime) RemoveHost(ctx context.Context, name string) error {
 		}
 		k.logger.Infof("removed agent dir %s", agentDir)
 	}
-
-	k.removeDockerImage(name)
 
 	return nil
 }

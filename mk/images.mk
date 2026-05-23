@@ -1,4 +1,5 @@
 .PHONY: build build-director-core build-the-forge build-web build-agent build-deps update-director-core update-the-forge update-web update-agent update-all
+.PHONY: docker-clean docker-clean-images docker-clean-cache docker-clean-volumes
 
 build: build-deps build-director-core build-the-forge build-web build-agent ## 构建全部 Docker 镜像
 
@@ -78,3 +79,14 @@ else ifeq ($(PLATFORM),kubernetes)
 	fi
 endif
 	@echo "\033[0;32m[INFO]\033[0m All services updated."
+
+docker-clean-images: ## 清理超过 7 天的未使用镜像
+	@docker image prune -a --filter "until=168h" -f
+
+docker-clean-cache: ## 清理超过 7 天的构建缓存
+	@docker builder prune --filter "until=168h" -f
+
+docker-clean-volumes: ## 清理无容器挂载的匿名卷
+	@docker volume prune -f
+
+docker-clean: docker-clean-images docker-clean-cache docker-clean-volumes ## 一键清理所有可回收 Docker 资源

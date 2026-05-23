@@ -1,10 +1,10 @@
-FROM public.ecr.aws/docker/library/node:22-bookworm-slim AS arrival-gate-builder
+# ===== 共享依赖安装层 =====
+FROM public.ecr.aws/docker/library/node:22-bookworm-slim AS deps-installer
 
 WORKDIR /app
 
 RUN npm install -g pnpm
 
-# 拆分 COPY — 复制所有 workspace package.json（pnpm 需要完整 workspace 声明）
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY fabrication/skin/package.json fabrication/skin/package.json
 COPY the-mesa/director-console/package.json the-mesa/director-console/package.json
@@ -15,31 +15,17 @@ COPY the-mesa/the-forge/web/package.json the-mesa/the-forge/web/package.json
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     pnpm install
 
-# 复制 Arrival Gate + fabrication 源码
+# ===== Arrival Gate builder =====
+FROM deps-installer AS arrival-gate-builder
+
 COPY fabrication/skin/ fabrication/skin/
 COPY the-mesa/arrival-gate/ the-mesa/arrival-gate/
 
 RUN cd the-mesa/arrival-gate && pnpm run build
 
 # ===== Director Console builder =====
-FROM public.ecr.aws/docker/library/node:22-bookworm-slim AS web-builder
+FROM deps-installer AS web-builder
 
-WORKDIR /app
-
-RUN npm install -g pnpm
-
-# 同样复制所有 workspace package.json
-COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
-COPY fabrication/skin/package.json fabrication/skin/package.json
-COPY the-mesa/director-console/package.json the-mesa/director-console/package.json
-COPY the-mesa/arrival-gate/package.json the-mesa/arrival-gate/package.json
-COPY sweetwater/black-ridge/web/package.json sweetwater/black-ridge/web/package.json
-COPY the-mesa/the-forge/web/package.json the-mesa/the-forge/web/package.json
-
-RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
-    pnpm install
-
-# 复制 Director Console + fabrication 源码
 COPY fabrication/skin/ fabrication/skin/
 COPY the-mesa/director-console/ the-mesa/director-console/
 
@@ -47,21 +33,7 @@ WORKDIR /app/the-mesa/director-console
 RUN pnpm run build
 
 # ===== The Forge builder =====
-FROM public.ecr.aws/docker/library/node:22-bookworm-slim AS the-forge-builder
-
-WORKDIR /app
-
-RUN npm install -g pnpm
-
-COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
-COPY fabrication/skin/package.json fabrication/skin/package.json
-COPY the-mesa/director-console/package.json the-mesa/director-console/package.json
-COPY the-mesa/arrival-gate/package.json the-mesa/arrival-gate/package.json
-COPY sweetwater/black-ridge/web/package.json sweetwater/black-ridge/web/package.json
-COPY the-mesa/the-forge/web/package.json the-mesa/the-forge/web/package.json
-
-RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
-    pnpm install
+FROM deps-installer AS the-forge-builder
 
 COPY fabrication/skin/ fabrication/skin/
 COPY the-mesa/the-forge/web/ the-mesa/the-forge/web/
