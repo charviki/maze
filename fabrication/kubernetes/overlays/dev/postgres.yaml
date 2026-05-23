@@ -26,6 +26,7 @@ spec:
       labels:
         app: postgresql
     spec:
+      terminationGracePeriodSeconds: 60
       containers:
         - name: postgresql
           image: postgres:17-alpine
@@ -44,6 +45,13 @@ spec:
                 secretKeyRef:
                   name: director-core-secret
                   key: DATABASE_PASSWORD
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - pg_ctl stop -D "$PGDATA" -m fast
           volumeMounts:
             # dev 环境使用 hostPath 保留数据库数据，避免探针重启后丢表。
             - name: data
