@@ -33,14 +33,12 @@ const gitKeyApi = {
 };
 
 export function FabricationPanel({ item }: { item: FabricationItem }) {
-  switch (item) {
-    case 'skills':
-      return <SkillList api={skillApi} />;
-    case 'mcp-servers':
-      return <MCPList api={mcpApi} />;
-    case 'rules':
-      return <RuleList api={ruleApi} />;
-    case 'git-keys':
-      return <GitKeyList api={gitKeyApi} />;
-  }
+  return (
+    <div className="flex-1 w-full flex min-w-0">
+      {item === 'skills' && <SkillList api={skillApi} />}
+      {item === 'mcp-servers' && <MCPList api={mcpApi} />}
+      {item === 'rules' && <RuleList api={ruleApi} />}
+      {item === 'git-keys' && <GitKeyList api={gitKeyApi} />}
+    </div>
+  );
 }
