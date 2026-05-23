@@ -1,0 +1,41 @@
+# Version control — largest context contributor
+.git/
+.gitignore
+
+# AI / editor config
+.claude/
+.agents/
+.trae
+.idea/
+.vscode/
+
+# Go test and coverage artifacts
+*.out
+*.test
+coverage.*
+*.coverprofile
+profile.cov
+
+# Go compiled binaries (rebuilt in Docker)
+the-mesa/director-core/director-core
+the-mesa/the-forge/the-forge
+sweetwater/black-ridge/black-ridge
+sweetwater/black-ridge/agent
+
+# Node modules (Docker runs its own pnpm install)
+node_modules
+
+# Frontend build output (rebuilt in Docker)
+web-dist/
+
+# Runtime and OS
+.env
+.DS_Store
+tmp/
+
+# Compressed archives
+*.tgz
+*.tar.gz
+
+# Legacy
+the-forge-old/
