@@ -62,7 +62,7 @@ export function Sidebar({
   };
 
   return (
-    <div className="border-r border-border/50 flex flex-col bg-background/50 relative z-10 overflow-hidden">
+    <div className="w-full border-r border-border/50 flex flex-col bg-background/50 relative z-10 overflow-hidden">
       <div className="absolute right-0 top-0 w-[1px] h-full bg-gradient-to-b from-primary/20 to-transparent" />
 
       {/* HOSTS Section */}
