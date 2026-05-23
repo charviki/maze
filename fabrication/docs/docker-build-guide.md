@@ -87,7 +87,7 @@ fabrication/
   molds/                   ← 模具（供应商 Dockerfile）
     Dockerfile.claude      ← Claude Code CLI
     Dockerfile.codex       ← Codex CLI
-    Dockerfile.go          ← Go 1.24 + 预装工具
+    Dockerfile.go          ← Go 1.26 + 预装工具
     Dockerfile.python      ← Python 3.11 + 预装包
     Dockerfile.node        ← Node.js + pnpm + 预装包
   Dockerfile.host          ← Host 装配镜像（多 target stage）
@@ -113,8 +113,8 @@ docker build -f fabrication/molds/Dockerfile.node -t maze-deps-node .
 # 构建 Host 镜像（预定义组合）
 docker build -f fabrication/Dockerfile.host --target full -t maze-host-full .
 
-# 构建 Host 镜像（动态组合，通过 POC 工具）
-cd fabrication/cmd/build-host-poc && go run . maze-host-agent1 claude,go,python
+# Host 运行时镜像由 Director Core 的 hostbuilder 动态构建
+# 镜像标签按工具集组合命名，如 maze-agent:claude-go
 ```
 
 ### 如何在 Dockerfile 中引用供应商镜像
@@ -175,32 +175,12 @@ docker build -f fabrication/molds/Dockerfile.rust -t maze-deps-rust .
 docker run --rm maze-deps-rust rustc --version
 ```
 
-**步骤 4：在 Dockerfile.host 中添加组合**
+**步骤 4：更新 Makefile 供应商构建**
 
-在 `fabrication/Dockerfile.host` 中添加对应的扩展层和组合层：
+在 `mk/images.mk` 的 `build-deps` 循环中添加新的供应商名称：
 
-```dockerfile
-# 扩展层
-FROM base AS with-rust
-COPY --from=maze-deps-rust:latest /opt/rust /opt/rust
-ENV PATH="/opt/rust/bin:${PATH}"
-
-# 在 full 层中添加
-COPY --from=maze-deps-rust:latest /opt/rust /opt/rust
-```
-
-**步骤 5：更新 POC 工具注册表**
-
-在 `fabrication/cmd/build-host-poc/main.go` 的 `ToolRegistry` 中添加：
-
-```go
-"rust": {
-    Image:      "maze-deps-rust:latest",
-    SourcePath: "/opt/rust",
-    DestPath:   "/opt/rust",
-    BinPaths:   []string{"/opt/rust/bin"},
-    EnvVars:    map[string]string{},
-},
+```makefile
+@for dep in claude codex go python node rust; do \
 ```
 
 ### 如何更新预装依赖

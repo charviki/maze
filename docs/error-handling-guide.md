@@ -35,13 +35,15 @@
 - 定义在 `fabrication/cradle/api/proto/maze/v1/errors.proto`，通过 `buf generate` 生成 Go 类型
 - 枚举值按错误类别分组编号：
 
-| 类别 | 编号范围 | 示例 |
-|------|---------|------|
-| Authentication | 1–8 | TOKEN_MISSING=1, TOKEN_INVALID=2, TOKEN_EXPIRED=3 |
-| NotFound | 10–19 | ARCHIVE_NOT_FOUND=10, HOST_NOT_FOUND=11 |
-| AlreadyExists | 20–21 | HOST_ALREADY_EXISTS=20 |
-| Validation | 30–31 | VALIDATION_FAILED=30 |
-| Precondition | 40–43 | CONFIG_CONFLICT=40 |
+（枚举名省略 `ERROR_REASON_` 前缀）
+
+| 类别 | 编号范围 | 枚举值 |
+|------|---------|--------|
+| Authentication | 1–8 | TOKEN_MISSING=1, TOKEN_INVALID=2, TOKEN_EXPIRED=3, INVALID_CREDENTIALS=4, USER_DISABLED=5, REFRESH_TOKEN_NOT_FOUND=6, REFRESH_TOKEN_REVOKED=7, REFRESH_TOKEN_EXPIRED=8 |
+| NotFound | 10–16 | ARCHIVE_NOT_FOUND=10, DOC_NOT_FOUND=11, LINK_NOT_FOUND=12, RESOURCE_NOT_FOUND=13, PERMISSION_APPLICATION_NOT_FOUND=14, PERMISSION_GRANT_NOT_FOUND=15, SESSION_NOT_FOUND=16 |
+| AlreadyExists | 20–21 | ALREADY_EXISTS=20, DUPLICATE_SESSION=21 |
+| Validation | 30–31 | VALIDATION_FAILED=30, INVALID_INPUT=31 |
+| Precondition | 40–43 | PRECONDITION_FAILED=40, PERMISSION_APPLICATION_STATE_CHANGED=41, WORKSPACE_ROOT_PROTECTED=42, CONFIG_CONFLICT=43 |
 
 - 新增 reason 只需加 proto enum 值，不需改 helper 函数
 

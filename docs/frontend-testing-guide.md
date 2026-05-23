@@ -221,7 +221,7 @@ function createMockApi(overrides: Partial<IAgentApiClient> = {}): IAgentApiClien
 
 ## 覆盖率
 
-- 运行 `make coverage-frontend` 生成 4 个模块的覆盖率报告
+- 运行 `make coverage-frontend` 生成 5 个模块的覆盖率报告
 - 覆盖率报告用于**量化参考**，不设硬性门禁阈值
 - 重点关注意外下降的覆盖率，而非追求 100%
 
