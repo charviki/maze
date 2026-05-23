@@ -2,6 +2,7 @@ package hostbuilder
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"sort"
 	"strings"
@@ -21,7 +22,9 @@ func ToolsetImageTag(toolIDs []string) string {
 // baseImage 是已包含 agent 二进制、entrypoint.sh 和基础运行时的镜像。
 // 在此基础上叠加供应商工具链。
 // 工具列表排序后再生成，确保相同组合产生相同 Dockerfile，最大化 Docker 层缓存命中。
-func GenerateHostDockerfile(toolIDs []string, baseImage string) string {
+// imageDigests 为各引用镜像的 digest，用于计算内容感知的缓存 hash；
+// 传 nil 时退化为纯文本 hash。
+func GenerateHostDockerfile(toolIDs []string, baseImage string, imageDigests map[string]string) string {
 	sorted := make([]string, len(toolIDs))
 	copy(sorted, toolIDs)
 	sort.Strings(sorted)
@@ -69,15 +72,36 @@ func GenerateHostDockerfile(toolIDs []string, baseImage string) string {
 	}
 
 	// 注入 Dockerfile 内容 hash 作为 LABEL，供应商镜像更新时自动触发重建
-	contentHash := DockerfileHash(buf.String())
+	contentHash := ComputeComboHash(buf.String(), imageDigests)
 	fmt.Fprintf(&buf, "LABEL maze.dockerfile-hash=%s\n", contentHash)
 
 	return buf.String()
 }
 
+// ComputeComboHash 计算 Dockerfile 内容与供应商镜像 digest 的组合 hash。
+// imageDigests 为 nil 时退化为纯文本 hash，保持向后兼容。
+// 当 supplier 镜像被重新构建（同 tag 不同内容）时，digest 变化会导致 hash 改变，
+// 从而正确地使缓存失效。
+func ComputeComboHash(content string, imageDigests map[string]string) string {
+	h := sha256.New()
+	h.Write([]byte(content))
+
+	if len(imageDigests) > 0 {
+		keys := make([]string, 0, len(imageDigests))
+		for k := range imageDigests {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			h.Write([]byte(k + ":" + imageDigests[k] + "\n"))
+		}
+	}
+
+	return hex.EncodeToString(h.Sum(nil))[:16]
+}
+
 // DockerfileHash 计算 Dockerfile 内容的短 hash，用于判断是否需要重建。
-// 供应商镜像更新后，COPY --from 的镜像 digest 变化会导致内容不同，
-// 但 hash 基于生成的 Dockerfile 文本，所以需要配合镜像 digest 一起使用。
 func DockerfileHash(content string) string {
-	return fmt.Sprintf("%x", sha256.Sum256([]byte(content)))[:16]
+	sum := sha256.Sum256([]byte(content))
+	return hex.EncodeToString(sum[:])[:16]
 }

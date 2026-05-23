@@ -87,7 +87,7 @@ func TestListAvailableTools_ReturnsAll(t *testing.T) {
 }
 
 func TestGenerateHostDockerfile_SingleTool(t *testing.T) {
-	result := GenerateHostDockerfile([]string{"claude"}, "test-base:latest")
+	result := GenerateHostDockerfile([]string{"claude"}, "test-base:latest", nil)
 
 	if !strings.Contains(result, "FROM test-base:latest") {
 		t.Error("Dockerfile 应包含 FROM test-base:latest")
@@ -101,7 +101,7 @@ func TestGenerateHostDockerfile_SingleTool(t *testing.T) {
 }
 
 func TestGenerateHostDockerfile_MultipleTools(t *testing.T) {
-	result := GenerateHostDockerfile([]string{"claude", "go"}, "test-base:latest")
+	result := GenerateHostDockerfile([]string{"claude", "go"}, "test-base:latest", nil)
 
 	claudeCopyCount := strings.Count(result, "COPY --from=maze-deps-claude:latest")
 	if claudeCopyCount != 1 {
@@ -122,7 +122,7 @@ func TestGenerateHostDockerfile_MultipleTools(t *testing.T) {
 }
 
 func TestGenerateHostDockerfile_GoEnvVars(t *testing.T) {
-	result := GenerateHostDockerfile([]string{"go"}, "test-base:latest")
+	result := GenerateHostDockerfile([]string{"go"}, "test-base:latest", nil)
 
 	if !strings.Contains(result, "ENV GOROOT=/opt/go") {
 		t.Error("Go 工具应设置 GOROOT")
@@ -133,7 +133,7 @@ func TestGenerateHostDockerfile_GoEnvVars(t *testing.T) {
 }
 
 func TestGenerateHostDockerfile_EmptyTools(t *testing.T) {
-	result := GenerateHostDockerfile([]string{}, "test-base:latest")
+	result := GenerateHostDockerfile([]string{}, "test-base:latest", nil)
 
 	if !strings.Contains(result, "FROM test-base:latest") {
 		t.Error("即使无工具也应包含 FROM 指令")
@@ -144,7 +144,7 @@ func TestGenerateHostDockerfile_EmptyTools(t *testing.T) {
 }
 
 func TestGenerateHostDockerfile_UnknownToolSkipped(t *testing.T) {
-	result := GenerateHostDockerfile([]string{"claude", "nonexistent"}, "test-base:latest")
+	result := GenerateHostDockerfile([]string{"claude", "nonexistent"}, "test-base:latest", nil)
 
 	claudeCopyCount := strings.Count(result, "COPY --from=maze-deps-claude:latest")
 	if claudeCopyCount != 1 {
@@ -156,7 +156,7 @@ func TestGenerateHostDockerfile_UnknownToolSkipped(t *testing.T) {
 }
 
 func TestGenerateHostDockerfile_ContainsHashLabel(t *testing.T) {
-	result := GenerateHostDockerfile([]string{"claude"}, "test-base:latest")
+	result := GenerateHostDockerfile([]string{"claude"}, "test-base:latest", nil)
 
 	if !strings.Contains(result, "LABEL maze.dockerfile-hash=") {
 		t.Error("Dockerfile 应包含 maze.dockerfile-hash label")
@@ -164,8 +164,8 @@ func TestGenerateHostDockerfile_ContainsHashLabel(t *testing.T) {
 }
 
 func TestGenerateHostDockerfile_HashChangesWithTools(t *testing.T) {
-	result1 := GenerateHostDockerfile([]string{"claude"}, "test-base:latest")
-	result2 := GenerateHostDockerfile([]string{"go"}, "test-base:latest")
+	result1 := GenerateHostDockerfile([]string{"claude"}, "test-base:latest", nil)
+	result2 := GenerateHostDockerfile([]string{"go"}, "test-base:latest", nil)
 
 	hash1 := extractHashFromDockerfile(result1)
 	hash2 := extractHashFromDockerfile(result2)
@@ -179,8 +179,8 @@ func TestGenerateHostDockerfile_HashChangesWithTools(t *testing.T) {
 }
 
 func TestGenerateHostDockerfile_HashChangesWithBaseImage(t *testing.T) {
-	result1 := GenerateHostDockerfile([]string{"claude"}, "base-v1:latest")
-	result2 := GenerateHostDockerfile([]string{"claude"}, "base-v2:latest")
+	result1 := GenerateHostDockerfile([]string{"claude"}, "base-v1:latest", nil)
+	result2 := GenerateHostDockerfile([]string{"claude"}, "base-v2:latest", nil)
 
 	hash1 := extractHashFromDockerfile(result1)
 	hash2 := extractHashFromDockerfile(result2)
@@ -192,8 +192,8 @@ func TestGenerateHostDockerfile_HashChangesWithBaseImage(t *testing.T) {
 
 func TestGenerateHostDockerfile_SameInputSameHash(t *testing.T) {
 	tools := []string{"claude", "go"}
-	result1 := GenerateHostDockerfile(tools, "test-base:latest")
-	result2 := GenerateHostDockerfile(tools, "test-base:latest")
+	result1 := GenerateHostDockerfile(tools, "test-base:latest", nil)
+	result2 := GenerateHostDockerfile(tools, "test-base:latest", nil)
 
 	hash1 := extractHashFromDockerfile(result1)
 	hash2 := extractHashFromDockerfile(result2)
@@ -237,4 +237,59 @@ func extractHashFromDockerfile(dockerfile string) string {
 		}
 	}
 	return ""
+}
+
+func TestComputeComboHash_NilDigestsFallback(t *testing.T) {
+	content := "FROM test-base:latest\nRUN echo hello"
+	textOnly := DockerfileHash(content)
+	comboWithNil := ComputeComboHash(content, nil)
+
+	if textOnly != comboWithNil {
+		t.Errorf("nil digests should produce same hash as text-only: text=%s combo=%s", textOnly, comboWithNil)
+	}
+}
+
+func TestComputeComboHash_SameTextDifferentDigests(t *testing.T) {
+	content := "FROM test-base:latest\nRUN echo hello"
+
+	hash1 := ComputeComboHash(content, map[string]string{"maze-deps-claude:latest": "sha256:aaa"})
+	hash2 := ComputeComboHash(content, map[string]string{"maze-deps-claude:latest": "sha256:bbb"})
+
+	if hash1 == hash2 {
+		t.Errorf("same text with different digests should produce different hash: %s == %s", hash1, hash2)
+	}
+}
+
+func TestComputeComboHash_SameDigestsSameHash(t *testing.T) {
+	content := "FROM test-base:latest\nRUN echo hello"
+	digests := map[string]string{"maze-deps-claude:latest": "sha256:aaa"}
+
+	hash1 := ComputeComboHash(content, digests)
+	hash2 := ComputeComboHash(content, digests)
+
+	if hash1 != hash2 {
+		t.Errorf("same text and digests should produce same hash: %s != %s", hash1, hash2)
+	}
+}
+
+func TestComputeComboHash_DigestChangesHash(t *testing.T) {
+	tools := []string{"claude"}
+	base := "test-base:latest"
+
+	// Same tools + base but different digests should produce different Dockerfile hashes
+	result1 := GenerateHostDockerfile(tools, base, map[string]string{
+		"maze-deps-claude:latest": "sha256:version1",
+		"test-base:latest":        "sha256:base1",
+	})
+	result2 := GenerateHostDockerfile(tools, base, map[string]string{
+		"maze-deps-claude:latest": "sha256:version2",
+		"test-base:latest":        "sha256:base1",
+	})
+
+	hash1 := extractHashFromDockerfile(result1)
+	hash2 := extractHashFromDockerfile(result2)
+
+	if hash1 == hash2 {
+		t.Errorf("supplier digest change should produce different hash: %s == %s", hash1, hash2)
+	}
 }

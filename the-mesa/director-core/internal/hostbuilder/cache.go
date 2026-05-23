@@ -2,6 +2,7 @@ package hostbuilder
 
 import (
 	"context"
+	"fmt"
 	"os/exec"
 	"strings"
 )
@@ -33,4 +34,31 @@ func ExtractDockerfileHash(dockerfileContent string) string {
 		}
 	}
 	return ""
+}
+
+// ResolveImageDigest 获取本地镜像的唯一标识符。
+// 优先使用 RepoDigest（registry 拉取的镜像），回退到 Image ID（本地构建的镜像）。
+func ResolveImageDigest(imageName string) (string, error) {
+	//nolint:gosec // docker CLI args are internally constructed
+	cmd := exec.CommandContext(context.Background(), "docker", "image", "inspect",
+		"--format", "{{if .RepoDigests}}{{index .RepoDigests 0}}{{end}}", imageName)
+	output, err := cmd.Output()
+	if err == nil {
+		if digest := strings.TrimSpace(string(output)); digest != "" {
+			return digest, nil
+		}
+	}
+
+	// 本地构建的镜像无 RepoDigests，回退到 Image ID
+	//nolint:gosec
+	cmd = exec.CommandContext(context.Background(), "docker", "image", "inspect",
+		"--format", "{{.Id}}", imageName)
+	output, err = cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("resolve digest for %s: image not found", imageName)
+	}
+	if id := strings.TrimSpace(string(output)); id != "" {
+		return id, nil
+	}
+	return "", fmt.Errorf("resolve digest for %s: empty id", imageName)
 }
