@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Panel, Button, Input, DecryptText } from '@maze/fabrication';
+import { Button, Input } from '@maze/fabrication';
 import type { V1MCPServer } from '@maze/fabrication';
 import { Plug, Plus, X } from 'lucide-react';
+import { DetailPanelShell } from '../shared/DetailPanelShell';
+import { FormLabel } from '../shared/FormLabel';
 
 const MCP_TYPES = ['stdio', 'sse', 'streamable-http'] as const;
 
@@ -88,170 +90,124 @@ export function MCPDetailPanel({ server, isCreating, onSubmit, onCancel }: MCPDe
     }
   };
 
-  if (!server && !isCreating) {
-    return (
-      <div className="flex-1 flex items-center justify-center text-primary/40 uppercase tracking-widest text-xs">
-        <div className="text-center space-y-4">
-          <Plug className="w-16 h-16 mx-auto opacity-20" />
-          <DecryptText text="SELECT MCP SERVER TO INSPECT" />
+  return (
+    <DetailPanelShell
+      icon={Plug}
+      emptyText="SELECT MCP SERVER TO INSPECT"
+      createTitle="FABRICATE NEW MCP SERVER"
+      editTitle="MCP SERVER INSPECTION"
+      item={server}
+      isCreating={isCreating}
+      submitting={submitting}
+      canSubmit={!!name.trim() && (type === 'stdio' ? !!command.trim() : !!url.trim())}
+      onCancel={onCancel}
+      onSubmit={handleSubmit}
+    >
+      <div>
+        <FormLabel>SERVER DESIGNATION</FormLabel>
+        <Input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          disabled={!!server}
+          placeholder="mcp-server-name"
+          className="font-mono text-sm rounded-none border-primary/20 bg-card/50"
+        />
+      </div>
+
+      <div>
+        <FormLabel>TRANSPORT TYPE</FormLabel>
+        <div className="flex gap-2">
+          {MCP_TYPES.map((t) => (
+            <button
+              key={t}
+              className={`px-3 py-1.5 text-xs font-mono uppercase tracking-wider border transition-colors rounded-none ${
+                type === t
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-primary/20 text-foreground/50 hover:border-primary/40'
+              }`}
+              onClick={() => setType(t)}
+            >
+              {t}
+            </button>
+          ))}
         </div>
       </div>
-    );
-  }
 
-  return (
-    <div className="flex-1 min-w-0 flex flex-col bg-background relative z-10 overflow-hidden">
-      <Panel className="flex flex-col h-full relative m-2" cornerSize={16}>
-        <div className="pb-4 border-b border-primary/20">
-          <div className="flex items-center gap-2 text-primary">
-            <Plug className="w-4 h-4" />
-            <h2 className="text-xs font-bold uppercase tracking-widest">
-              <DecryptText
-                text={isCreating ? 'FABRICATE NEW MCP SERVER' : 'MCP SERVER INSPECTION'}
-              />
-            </h2>
-          </div>
+      {type === 'stdio' ? (
+        <div>
+          <FormLabel>COMMAND</FormLabel>
+          <Input
+            value={command}
+            onChange={(e) => setCommand(e.target.value)}
+            placeholder="/usr/bin/my-mcp-server"
+            className="font-mono text-sm rounded-none border-primary/20 bg-card/50"
+          />
         </div>
-
-        <div className="flex-1 overflow-y-auto pt-4 space-y-4 px-1">
-          <div>
-            <label className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono mb-1 block">
-              SERVER DESIGNATION
-            </label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              disabled={!!server}
-              placeholder="mcp-server-name"
-              className="font-mono text-sm rounded-none border-primary/20 bg-card/50"
-            />
-          </div>
-
-          <div>
-            <label className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono mb-1 block">
-              TRANSPORT TYPE
-            </label>
-            <div className="flex gap-2">
-              {MCP_TYPES.map((t) => (
-                <button
-                  key={t}
-                  className={`px-3 py-1.5 text-xs font-mono uppercase tracking-wider border transition-colors rounded-none ${
-                    type === t
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-primary/20 text-foreground/50 hover:border-primary/40'
-                  }`}
-                  onClick={() => setType(t)}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {type === 'stdio' ? (
-            <div>
-              <label className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono mb-1 block">
-                COMMAND
-              </label>
-              <Input
-                value={command}
-                onChange={(e) => setCommand(e.target.value)}
-                placeholder="/usr/bin/my-mcp-server"
-                className="font-mono text-sm rounded-none border-primary/20 bg-card/50"
-              />
-            </div>
-          ) : (
-            <div>
-              <label className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono mb-1 block">
-                URL
-              </label>
-              <Input
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="http://localhost:3000/mcp"
-                className="font-mono text-sm rounded-none border-primary/20 bg-card/50"
-              />
-            </div>
-          )}
-
-          <div>
-            <label className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono mb-1 block">
-              ARGS{' '}
-              <span className="normal-case tracking-normal text-foreground/30">
-                (space separated)
-              </span>
-            </label>
-            <Input
-              value={argsText}
-              onChange={(e) => setArgsText(e.target.value)}
-              placeholder="--port 8080 --verbose"
-              className="font-mono text-sm rounded-none border-primary/20 bg-card/50"
-            />
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">
-                ENVIRONMENT
-              </label>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-5 text-[10px] text-primary/60 hover:text-primary uppercase tracking-widest"
-                onClick={addEnvEntry}
-              >
-                <Plus className="w-3 h-3 mr-0.5" />
-                ADD
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {envEntries.map((entry, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <Input
-                    value={entry.key}
-                    onChange={(e) => updateEnvEntry(i, 'key', e.target.value)}
-                    placeholder="KEY"
-                    className="font-mono text-xs flex-1 rounded-none border-primary/20 bg-card/50"
-                  />
-                  <Input
-                    value={entry.value}
-                    onChange={(e) => updateEnvEntry(i, 'value', e.target.value)}
-                    placeholder="value"
-                    className="font-mono text-xs flex-1 rounded-none border-primary/20 bg-card/50"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 shrink-0 text-foreground/30 hover:text-foreground rounded-none"
-                    onClick={() => removeEnvEntry(i)}
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
+      ) : (
+        <div>
+          <FormLabel>URL</FormLabel>
+          <Input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="http://localhost:3000/mcp"
+            className="font-mono text-sm rounded-none border-primary/20 bg-card/50"
+          />
         </div>
+      )}
 
-        <div className="pt-4 border-t border-primary/20 flex justify-end gap-2">
+      <div>
+        <FormLabel>
+          ARGS{' '}
+          <span className="normal-case tracking-normal text-foreground/30">(space separated)</span>
+        </FormLabel>
+        <Input
+          value={argsText}
+          onChange={(e) => setArgsText(e.target.value)}
+          placeholder="--port 8080 --verbose"
+          className="font-mono text-sm rounded-none border-primary/20 bg-card/50"
+        />
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <FormLabel inline>ENVIRONMENT</FormLabel>
           <Button
             variant="ghost"
-            onClick={onCancel}
-            className="font-mono uppercase tracking-widest text-xs rounded-none"
+            size="sm"
+            className="h-5 text-[10px] text-primary/60 hover:text-primary uppercase tracking-widest"
+            onClick={addEnvEntry}
           >
-            CANCEL
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={
-              !name.trim() || submitting || (type === 'stdio' ? !command.trim() : !url.trim())
-            }
-            className="font-mono uppercase tracking-widest text-xs rounded-none bg-primary hover:bg-primary/90 text-primary-foreground"
-          >
-            {submitting ? 'SAVING...' : isCreating ? 'FABRICATE' : 'COMMIT'}
+            <Plus className="w-3 h-3 mr-0.5" />
+            ADD
           </Button>
         </div>
-      </Panel>
-    </div>
+        <div className="space-y-2">
+          {envEntries.map((entry, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <Input
+                value={entry.key}
+                onChange={(e) => updateEnvEntry(i, 'key', e.target.value)}
+                placeholder="KEY"
+                className="font-mono text-xs flex-1 rounded-none border-primary/20 bg-card/50"
+              />
+              <Input
+                value={entry.value}
+                onChange={(e) => updateEnvEntry(i, 'value', e.target.value)}
+                placeholder="value"
+                className="font-mono text-xs flex-1 rounded-none border-primary/20 bg-card/50"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 shrink-0 text-foreground/30 hover:text-foreground rounded-none"
+                onClick={() => removeEnvEntry(i)}
+              >
+                <X className="w-3 h-3" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </DetailPanelShell>
   );
 }
