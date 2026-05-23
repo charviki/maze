@@ -591,6 +591,24 @@
   }
 }
 
+/* Tool 卡片选中时的扫描线动画 */
+@keyframes fabrication-card-scan {
+  0% {
+    top: 0;
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.5;
+  }
+  90% {
+    opacity: 0.5;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
 /* MazeSvg 迷宫动画 */
 
 /* 迷宫整体旋转：60s 一圈的缓慢旋转 */
