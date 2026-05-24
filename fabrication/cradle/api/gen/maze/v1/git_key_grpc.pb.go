@@ -24,6 +24,7 @@ const (
 	GitKeyService_ListGitKeys_FullMethodName  = "/maze.v1.GitKeyService/ListGitKeys"
 	GitKeyService_GetGitKey_FullMethodName    = "/maze.v1.GitKeyService/GetGitKey"
 	GitKeyService_DeleteGitKey_FullMethodName = "/maze.v1.GitKeyService/DeleteGitKey"
+	GitKeyService_UpdateGitKey_FullMethodName = "/maze.v1.GitKeyService/UpdateGitKey"
 )
 
 // GitKeyServiceClient is the client API for GitKeyService service.
@@ -34,6 +35,7 @@ type GitKeyServiceClient interface {
 	ListGitKeys(ctx context.Context, in *ListGitKeysRequest, opts ...grpc.CallOption) (*ListGitKeysResponse, error)
 	GetGitKey(ctx context.Context, in *GetGitKeyRequest, opts ...grpc.CallOption) (*GitKey, error)
 	DeleteGitKey(ctx context.Context, in *DeleteGitKeyRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	UpdateGitKey(ctx context.Context, in *UpdateGitKeyRequest, opts ...grpc.CallOption) (*GitKey, error)
 }
 
 type gitKeyServiceClient struct {
@@ -84,6 +86,16 @@ func (c *gitKeyServiceClient) DeleteGitKey(ctx context.Context, in *DeleteGitKey
 	return out, nil
 }
 
+func (c *gitKeyServiceClient) UpdateGitKey(ctx context.Context, in *UpdateGitKeyRequest, opts ...grpc.CallOption) (*GitKey, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GitKey)
+	err := c.cc.Invoke(ctx, GitKeyService_UpdateGitKey_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GitKeyServiceServer is the server API for GitKeyService service.
 // All implementations must embed UnimplementedGitKeyServiceServer
 // for forward compatibility.
@@ -92,6 +104,7 @@ type GitKeyServiceServer interface {
 	ListGitKeys(context.Context, *ListGitKeysRequest) (*ListGitKeysResponse, error)
 	GetGitKey(context.Context, *GetGitKeyRequest) (*GitKey, error)
 	DeleteGitKey(context.Context, *DeleteGitKeyRequest) (*emptypb.Empty, error)
+	UpdateGitKey(context.Context, *UpdateGitKeyRequest) (*GitKey, error)
 	mustEmbedUnimplementedGitKeyServiceServer()
 }
 
@@ -113,6 +126,9 @@ func (UnimplementedGitKeyServiceServer) GetGitKey(context.Context, *GetGitKeyReq
 }
 func (UnimplementedGitKeyServiceServer) DeleteGitKey(context.Context, *DeleteGitKeyRequest) (*emptypb.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteGitKey not implemented")
+}
+func (UnimplementedGitKeyServiceServer) UpdateGitKey(context.Context, *UpdateGitKeyRequest) (*GitKey, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateGitKey not implemented")
 }
 func (UnimplementedGitKeyServiceServer) mustEmbedUnimplementedGitKeyServiceServer() {}
 func (UnimplementedGitKeyServiceServer) testEmbeddedByValue()                       {}
@@ -207,6 +223,24 @@ func _GitKeyService_DeleteGitKey_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GitKeyService_UpdateGitKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateGitKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GitKeyServiceServer).UpdateGitKey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GitKeyService_UpdateGitKey_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GitKeyServiceServer).UpdateGitKey(ctx, req.(*UpdateGitKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // GitKeyService_ServiceDesc is the grpc.ServiceDesc for GitKeyService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -229,6 +263,10 @@ var GitKeyService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteGitKey",
 			Handler:    _GitKeyService_DeleteGitKey_Handler,
+		},
+		{
+			MethodName: "UpdateGitKey",
+			Handler:    _GitKeyService_UpdateGitKey_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

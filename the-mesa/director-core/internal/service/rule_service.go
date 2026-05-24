@@ -12,6 +12,7 @@ import (
 type RuleRepo interface {
 	Create(ctx context.Context, rule *protocol.Rule) (*protocol.Rule, error)
 	Get(ctx context.Context, name string) (*protocol.Rule, error)
+	GetByNames(ctx context.Context, names []string) ([]*protocol.Rule, error)
 	List(ctx context.Context) ([]*protocol.Rule, error)
 	Update(ctx context.Context, rule *protocol.Rule) (*protocol.Rule, error)
 	Delete(ctx context.Context, name string) error

@@ -30,6 +30,8 @@ type GitKey struct {
 	TokenMask     string                 `protobuf:"bytes,2,opt,name=token_mask,json=tokenMask,proto3" json:"token_mask,omitempty"`
 	CreatedAt     string                 `protobuf:"bytes,3,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt     string                 `protobuf:"bytes,4,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	TokenType     string                 `protobuf:"bytes,5,opt,name=token_type,json=tokenType,proto3" json:"token_type,omitempty"`
+	Host          string                 `protobuf:"bytes,6,opt,name=host,proto3" json:"host,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -92,10 +94,26 @@ func (x *GitKey) GetUpdatedAt() string {
 	return ""
 }
 
+func (x *GitKey) GetTokenType() string {
+	if x != nil {
+		return x.TokenType
+	}
+	return ""
+}
+
+func (x *GitKey) GetHost() string {
+	if x != nil {
+		return x.Host
+	}
+	return ""
+}
+
 type CreateGitKeyRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Token         string                 `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
+	TokenType     string                 `protobuf:"bytes,3,opt,name=token_type,json=tokenType,proto3" json:"token_type,omitempty"`
+	Host          string                 `protobuf:"bytes,4,opt,name=host,proto3" json:"host,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -144,6 +162,88 @@ func (x *CreateGitKeyRequest) GetToken() string {
 	return ""
 }
 
+func (x *CreateGitKeyRequest) GetTokenType() string {
+	if x != nil {
+		return x.TokenType
+	}
+	return ""
+}
+
+func (x *CreateGitKeyRequest) GetHost() string {
+	if x != nil {
+		return x.Host
+	}
+	return ""
+}
+
+type UpdateGitKeyRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Token         string                 `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
+	TokenType     string                 `protobuf:"bytes,3,opt,name=token_type,json=tokenType,proto3" json:"token_type,omitempty"`
+	Host          string                 `protobuf:"bytes,4,opt,name=host,proto3" json:"host,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateGitKeyRequest) Reset() {
+	*x = UpdateGitKeyRequest{}
+	mi := &file_maze_v1_git_key_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateGitKeyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateGitKeyRequest) ProtoMessage() {}
+
+func (x *UpdateGitKeyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_maze_v1_git_key_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateGitKeyRequest.ProtoReflect.Descriptor instead.
+func (*UpdateGitKeyRequest) Descriptor() ([]byte, []int) {
+	return file_maze_v1_git_key_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *UpdateGitKeyRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *UpdateGitKeyRequest) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+func (x *UpdateGitKeyRequest) GetTokenType() string {
+	if x != nil {
+		return x.TokenType
+	}
+	return ""
+}
+
+func (x *UpdateGitKeyRequest) GetHost() string {
+	if x != nil {
+		return x.Host
+	}
+	return ""
+}
+
 type ListGitKeysRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -152,7 +252,7 @@ type ListGitKeysRequest struct {
 
 func (x *ListGitKeysRequest) Reset() {
 	*x = ListGitKeysRequest{}
-	mi := &file_maze_v1_git_key_proto_msgTypes[2]
+	mi := &file_maze_v1_git_key_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -164,7 +264,7 @@ func (x *ListGitKeysRequest) String() string {
 func (*ListGitKeysRequest) ProtoMessage() {}
 
 func (x *ListGitKeysRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_git_key_proto_msgTypes[2]
+	mi := &file_maze_v1_git_key_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -177,7 +277,7 @@ func (x *ListGitKeysRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListGitKeysRequest.ProtoReflect.Descriptor instead.
 func (*ListGitKeysRequest) Descriptor() ([]byte, []int) {
-	return file_maze_v1_git_key_proto_rawDescGZIP(), []int{2}
+	return file_maze_v1_git_key_proto_rawDescGZIP(), []int{3}
 }
 
 type ListGitKeysResponse struct {
@@ -189,7 +289,7 @@ type ListGitKeysResponse struct {
 
 func (x *ListGitKeysResponse) Reset() {
 	*x = ListGitKeysResponse{}
-	mi := &file_maze_v1_git_key_proto_msgTypes[3]
+	mi := &file_maze_v1_git_key_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -201,7 +301,7 @@ func (x *ListGitKeysResponse) String() string {
 func (*ListGitKeysResponse) ProtoMessage() {}
 
 func (x *ListGitKeysResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_git_key_proto_msgTypes[3]
+	mi := &file_maze_v1_git_key_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -214,7 +314,7 @@ func (x *ListGitKeysResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListGitKeysResponse.ProtoReflect.Descriptor instead.
 func (*ListGitKeysResponse) Descriptor() ([]byte, []int) {
-	return file_maze_v1_git_key_proto_rawDescGZIP(), []int{3}
+	return file_maze_v1_git_key_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ListGitKeysResponse) GetGitKeys() []*GitKey {
@@ -233,7 +333,7 @@ type GetGitKeyRequest struct {
 
 func (x *GetGitKeyRequest) Reset() {
 	*x = GetGitKeyRequest{}
-	mi := &file_maze_v1_git_key_proto_msgTypes[4]
+	mi := &file_maze_v1_git_key_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -245,7 +345,7 @@ func (x *GetGitKeyRequest) String() string {
 func (*GetGitKeyRequest) ProtoMessage() {}
 
 func (x *GetGitKeyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_git_key_proto_msgTypes[4]
+	mi := &file_maze_v1_git_key_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -258,7 +358,7 @@ func (x *GetGitKeyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGitKeyRequest.ProtoReflect.Descriptor instead.
 func (*GetGitKeyRequest) Descriptor() ([]byte, []int) {
-	return file_maze_v1_git_key_proto_rawDescGZIP(), []int{4}
+	return file_maze_v1_git_key_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetGitKeyRequest) GetName() string {
@@ -277,7 +377,7 @@ type DeleteGitKeyRequest struct {
 
 func (x *DeleteGitKeyRequest) Reset() {
 	*x = DeleteGitKeyRequest{}
-	mi := &file_maze_v1_git_key_proto_msgTypes[5]
+	mi := &file_maze_v1_git_key_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -289,7 +389,7 @@ func (x *DeleteGitKeyRequest) String() string {
 func (*DeleteGitKeyRequest) ProtoMessage() {}
 
 func (x *DeleteGitKeyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_maze_v1_git_key_proto_msgTypes[5]
+	mi := &file_maze_v1_git_key_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -302,7 +402,7 @@ func (x *DeleteGitKeyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteGitKeyRequest.ProtoReflect.Descriptor instead.
 func (*DeleteGitKeyRequest) Descriptor() ([]byte, []int) {
-	return file_maze_v1_git_key_proto_rawDescGZIP(), []int{5}
+	return file_maze_v1_git_key_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *DeleteGitKeyRequest) GetName() string {
@@ -316,7 +416,7 @@ var File_maze_v1_git_key_proto protoreflect.FileDescriptor
 
 const file_maze_v1_git_key_proto_rawDesc = "" +
 	"\n" +
-	"\x15maze/v1/git_key.proto\x12\amaze.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\"y\n" +
+	"\x15maze/v1/git_key.proto\x12\amaze.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\"\xac\x01\n" +
 	"\x06GitKey\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1d\n" +
 	"\n" +
@@ -324,22 +424,35 @@ const file_maze_v1_git_key_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x03 \x01(\tR\tcreatedAt\x12\x1d\n" +
 	"\n" +
-	"updated_at\x18\x04 \x01(\tR\tupdatedAt\"Q\n" +
+	"updated_at\x18\x04 \x01(\tR\tupdatedAt\x12\x1d\n" +
+	"\n" +
+	"token_type\x18\x05 \x01(\tR\ttokenType\x12\x12\n" +
+	"\x04host\x18\x06 \x01(\tR\x04host\"\x84\x01\n" +
 	"\x13CreateGitKeyRequest\x12\x1b\n" +
 	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\x12\x1d\n" +
-	"\x05token\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x05token\"\x14\n" +
+	"\x05token\x18\x02 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x05token\x12\x1d\n" +
+	"\n" +
+	"token_type\x18\x03 \x01(\tR\ttokenType\x12\x12\n" +
+	"\x04host\x18\x04 \x01(\tR\x04host\"{\n" +
+	"\x13UpdateGitKeyRequest\x12\x1b\n" +
+	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\x12\x14\n" +
+	"\x05token\x18\x02 \x01(\tR\x05token\x12\x1d\n" +
+	"\n" +
+	"token_type\x18\x03 \x01(\tR\ttokenType\x12\x12\n" +
+	"\x04host\x18\x04 \x01(\tR\x04host\"\x14\n" +
 	"\x12ListGitKeysRequest\"A\n" +
 	"\x13ListGitKeysResponse\x12*\n" +
 	"\bgit_keys\x18\x01 \x03(\v2\x0f.maze.v1.GitKeyR\agitKeys\"/\n" +
 	"\x10GetGitKeyRequest\x12\x1b\n" +
 	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\"2\n" +
 	"\x13DeleteGitKeyRequest\x12\x1b\n" +
-	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name2\x90\x03\n" +
+	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name2\xf3\x03\n" +
 	"\rGitKeyService\x12Z\n" +
 	"\fCreateGitKey\x12\x1c.maze.v1.CreateGitKeyRequest\x1a\x0f.maze.v1.GitKey\"\x1b\x82\xd3\xe4\x93\x02\x15:\x01*\"\x10/api/v1/git-keys\x12b\n" +
 	"\vListGitKeys\x12\x1b.maze.v1.ListGitKeysRequest\x1a\x1c.maze.v1.ListGitKeysResponse\"\x18\x82\xd3\xe4\x93\x02\x12\x12\x10/api/v1/git-keys\x12X\n" +
 	"\tGetGitKey\x12\x19.maze.v1.GetGitKeyRequest\x1a\x0f.maze.v1.GitKey\"\x1f\x82\xd3\xe4\x93\x02\x19\x12\x17/api/v1/git-keys/{name}\x12e\n" +
-	"\fDeleteGitKey\x12\x1c.maze.v1.DeleteGitKeyRequest\x1a\x16.google.protobuf.Empty\"\x1f\x82\xd3\xe4\x93\x02\x19*\x17/api/v1/git-keys/{name}B\x9b\x01\n" +
+	"\fDeleteGitKey\x12\x1c.maze.v1.DeleteGitKeyRequest\x1a\x16.google.protobuf.Empty\"\x1f\x82\xd3\xe4\x93\x02\x19*\x17/api/v1/git-keys/{name}\x12a\n" +
+	"\fUpdateGitKey\x12\x1c.maze.v1.UpdateGitKeyRequest\x1a\x0f.maze.v1.GitKey\"\"\x82\xd3\xe4\x93\x02\x1c:\x01*\x1a\x17/api/v1/git-keys/{name}B\x9b\x01\n" +
 	"\vcom.maze.v1B\vGitKeyProtoP\x01ZBgithub.com/charviki/maze/fabrication/cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
 
 var (
@@ -354,28 +467,31 @@ func file_maze_v1_git_key_proto_rawDescGZIP() []byte {
 	return file_maze_v1_git_key_proto_rawDescData
 }
 
-var file_maze_v1_git_key_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_maze_v1_git_key_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_maze_v1_git_key_proto_goTypes = []any{
 	(*GitKey)(nil),              // 0: maze.v1.GitKey
 	(*CreateGitKeyRequest)(nil), // 1: maze.v1.CreateGitKeyRequest
-	(*ListGitKeysRequest)(nil),  // 2: maze.v1.ListGitKeysRequest
-	(*ListGitKeysResponse)(nil), // 3: maze.v1.ListGitKeysResponse
-	(*GetGitKeyRequest)(nil),    // 4: maze.v1.GetGitKeyRequest
-	(*DeleteGitKeyRequest)(nil), // 5: maze.v1.DeleteGitKeyRequest
-	(*emptypb.Empty)(nil),       // 6: google.protobuf.Empty
+	(*UpdateGitKeyRequest)(nil), // 2: maze.v1.UpdateGitKeyRequest
+	(*ListGitKeysRequest)(nil),  // 3: maze.v1.ListGitKeysRequest
+	(*ListGitKeysResponse)(nil), // 4: maze.v1.ListGitKeysResponse
+	(*GetGitKeyRequest)(nil),    // 5: maze.v1.GetGitKeyRequest
+	(*DeleteGitKeyRequest)(nil), // 6: maze.v1.DeleteGitKeyRequest
+	(*emptypb.Empty)(nil),       // 7: google.protobuf.Empty
 }
 var file_maze_v1_git_key_proto_depIdxs = []int32{
 	0, // 0: maze.v1.ListGitKeysResponse.git_keys:type_name -> maze.v1.GitKey
 	1, // 1: maze.v1.GitKeyService.CreateGitKey:input_type -> maze.v1.CreateGitKeyRequest
-	2, // 2: maze.v1.GitKeyService.ListGitKeys:input_type -> maze.v1.ListGitKeysRequest
-	4, // 3: maze.v1.GitKeyService.GetGitKey:input_type -> maze.v1.GetGitKeyRequest
-	5, // 4: maze.v1.GitKeyService.DeleteGitKey:input_type -> maze.v1.DeleteGitKeyRequest
-	0, // 5: maze.v1.GitKeyService.CreateGitKey:output_type -> maze.v1.GitKey
-	3, // 6: maze.v1.GitKeyService.ListGitKeys:output_type -> maze.v1.ListGitKeysResponse
-	0, // 7: maze.v1.GitKeyService.GetGitKey:output_type -> maze.v1.GitKey
-	6, // 8: maze.v1.GitKeyService.DeleteGitKey:output_type -> google.protobuf.Empty
-	5, // [5:9] is the sub-list for method output_type
-	1, // [1:5] is the sub-list for method input_type
+	3, // 2: maze.v1.GitKeyService.ListGitKeys:input_type -> maze.v1.ListGitKeysRequest
+	5, // 3: maze.v1.GitKeyService.GetGitKey:input_type -> maze.v1.GetGitKeyRequest
+	6, // 4: maze.v1.GitKeyService.DeleteGitKey:input_type -> maze.v1.DeleteGitKeyRequest
+	2, // 5: maze.v1.GitKeyService.UpdateGitKey:input_type -> maze.v1.UpdateGitKeyRequest
+	0, // 6: maze.v1.GitKeyService.CreateGitKey:output_type -> maze.v1.GitKey
+	4, // 7: maze.v1.GitKeyService.ListGitKeys:output_type -> maze.v1.ListGitKeysResponse
+	0, // 8: maze.v1.GitKeyService.GetGitKey:output_type -> maze.v1.GitKey
+	7, // 9: maze.v1.GitKeyService.DeleteGitKey:output_type -> google.protobuf.Empty
+	0, // 10: maze.v1.GitKeyService.UpdateGitKey:output_type -> maze.v1.GitKey
+	6, // [6:11] is the sub-list for method output_type
+	1, // [1:6] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
 	1, // [1:1] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
@@ -392,7 +508,7 @@ func file_maze_v1_git_key_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_maze_v1_git_key_proto_rawDesc), len(file_maze_v1_git_key_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -6,6 +6,8 @@ CREATE TABLE host_specs (
     resources    JSONB NOT NULL DEFAULT '{}'::jsonb,
     skills       JSONB NOT NULL DEFAULT '[]'::jsonb,
     mcp_servers  JSONB NOT NULL DEFAULT '[]'::jsonb,
+    rules        JSONB NOT NULL DEFAULT '[]'::jsonb,
+    git_keys     JSONB NOT NULL DEFAULT '[]'::jsonb,
     auth_token   TEXT NOT NULL,
     status       TEXT NOT NULL DEFAULT 'pending',
     error_msg    TEXT NOT NULL DEFAULT '',
@@ -81,6 +83,8 @@ CREATE TABLE git_keys (
     name             TEXT NOT NULL UNIQUE,
     encrypted_token  TEXT NOT NULL,
     token_mask       TEXT NOT NULL DEFAULT '',
+    token_type       TEXT NOT NULL DEFAULT 'PERSONAL_ACCESS_TOKEN',
+    host             TEXT,
     created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

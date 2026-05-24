@@ -31,6 +31,8 @@ type V1HostSpec struct {
 	RetryCount *int32 `json:"retryCount,omitempty"`
 	Skills []string `json:"skills,omitempty"`
 	McpServers []string `json:"mcpServers,omitempty"`
+	Rules []string `json:"rules,omitempty"`
+	GitKeys []string `json:"gitKeys,omitempty"`
 }
 
 // NewV1HostSpec instantiates a new V1HostSpec object
@@ -434,6 +436,70 @@ func (o *V1HostSpec) SetMcpServers(v []string) {
 	o.McpServers = v
 }
 
+// GetRules returns the Rules field value if set, zero value otherwise.
+func (o *V1HostSpec) GetRules() []string {
+	if o == nil || IsNil(o.Rules) {
+		var ret []string
+		return ret
+	}
+	return o.Rules
+}
+
+// GetRulesOk returns a tuple with the Rules field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *V1HostSpec) GetRulesOk() ([]string, bool) {
+	if o == nil || IsNil(o.Rules) {
+		return nil, false
+	}
+	return o.Rules, true
+}
+
+// HasRules returns a boolean if a field has been set.
+func (o *V1HostSpec) HasRules() bool {
+	if o != nil && !IsNil(o.Rules) {
+		return true
+	}
+
+	return false
+}
+
+// SetRules gets a reference to the given []string and assigns it to the Rules field.
+func (o *V1HostSpec) SetRules(v []string) {
+	o.Rules = v
+}
+
+// GetGitKeys returns the GitKeys field value if set, zero value otherwise.
+func (o *V1HostSpec) GetGitKeys() []string {
+	if o == nil || IsNil(o.GitKeys) {
+		var ret []string
+		return ret
+	}
+	return o.GitKeys
+}
+
+// GetGitKeysOk returns a tuple with the GitKeys field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *V1HostSpec) GetGitKeysOk() ([]string, bool) {
+	if o == nil || IsNil(o.GitKeys) {
+		return nil, false
+	}
+	return o.GitKeys, true
+}
+
+// HasGitKeys returns a boolean if a field has been set.
+func (o *V1HostSpec) HasGitKeys() bool {
+	if o != nil && !IsNil(o.GitKeys) {
+		return true
+	}
+
+	return false
+}
+
+// SetGitKeys gets a reference to the given []string and assigns it to the GitKeys field.
+func (o *V1HostSpec) SetGitKeys(v []string) {
+	o.GitKeys = v
+}
+
 func (o V1HostSpec) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -479,6 +545,12 @@ func (o V1HostSpec) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.McpServers) {
 		toSerialize["mcpServers"] = o.McpServers
+	}
+	if !IsNil(o.Rules) {
+		toSerialize["rules"] = o.Rules
+	}
+	if !IsNil(o.GitKeys) {
+		toSerialize["gitKeys"] = o.GitKeys
 	}
 	return toSerialize, nil
 }

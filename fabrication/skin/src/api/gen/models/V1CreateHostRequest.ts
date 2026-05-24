@@ -64,6 +64,18 @@ export interface V1CreateHostRequest {
      * @memberof V1CreateHostRequest
      */
     mcpServers?: Array<string>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof V1CreateHostRequest
+     */
+    rules?: Array<string>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof V1CreateHostRequest
+     */
+    gitKeys?: Array<string>;
 }
 
 /**
@@ -89,6 +101,8 @@ export function V1CreateHostRequestFromJSONTyped(json: any, ignoreDiscriminator:
         'resources': json['resources'] == null ? undefined : V1ResourceLimitsFromJSON(json['resources']),
         'skills': json['skills'] == null ? undefined : json['skills'],
         'mcpServers': json['mcpServers'] == null ? undefined : json['mcpServers'],
+        'rules': json['rules'] == null ? undefined : json['rules'],
+        'gitKeys': json['gitKeys'] == null ? undefined : json['gitKeys'],
     };
 }
 
@@ -109,6 +123,8 @@ export function V1CreateHostRequestToJSONTyped(value?: V1CreateHostRequest | nul
         'resources': V1ResourceLimitsToJSON(value['resources']),
         'skills': value['skills'],
         'mcpServers': value['mcpServers'],
+        'rules': value['rules'],
+        'gitKeys': value['gitKeys'],
     };
 }
 

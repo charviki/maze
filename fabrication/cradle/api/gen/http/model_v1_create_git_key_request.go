@@ -21,6 +21,8 @@ var _ MappedNullable = &V1CreateGitKeyRequest{}
 type V1CreateGitKeyRequest struct {
 	Name *string `json:"name,omitempty"`
 	Token *string `json:"token,omitempty"`
+	TokenType *string `json:"tokenType,omitempty"`
+	Host *string `json:"host,omitempty"`
 }
 
 // NewV1CreateGitKeyRequest instantiates a new V1CreateGitKeyRequest object
@@ -104,6 +106,70 @@ func (o *V1CreateGitKeyRequest) SetToken(v string) {
 	o.Token = &v
 }
 
+// GetTokenType returns the TokenType field value if set, zero value otherwise.
+func (o *V1CreateGitKeyRequest) GetTokenType() string {
+	if o == nil || IsNil(o.TokenType) {
+		var ret string
+		return ret
+	}
+	return *o.TokenType
+}
+
+// GetTokenTypeOk returns a tuple with the TokenType field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *V1CreateGitKeyRequest) GetTokenTypeOk() (*string, bool) {
+	if o == nil || IsNil(o.TokenType) {
+		return nil, false
+	}
+	return o.TokenType, true
+}
+
+// HasTokenType returns a boolean if a field has been set.
+func (o *V1CreateGitKeyRequest) HasTokenType() bool {
+	if o != nil && !IsNil(o.TokenType) {
+		return true
+	}
+
+	return false
+}
+
+// SetTokenType gets a reference to the given string and assigns it to the TokenType field.
+func (o *V1CreateGitKeyRequest) SetTokenType(v string) {
+	o.TokenType = &v
+}
+
+// GetHost returns the Host field value if set, zero value otherwise.
+func (o *V1CreateGitKeyRequest) GetHost() string {
+	if o == nil || IsNil(o.Host) {
+		var ret string
+		return ret
+	}
+	return *o.Host
+}
+
+// GetHostOk returns a tuple with the Host field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *V1CreateGitKeyRequest) GetHostOk() (*string, bool) {
+	if o == nil || IsNil(o.Host) {
+		return nil, false
+	}
+	return o.Host, true
+}
+
+// HasHost returns a boolean if a field has been set.
+func (o *V1CreateGitKeyRequest) HasHost() bool {
+	if o != nil && !IsNil(o.Host) {
+		return true
+	}
+
+	return false
+}
+
+// SetHost gets a reference to the given string and assigns it to the Host field.
+func (o *V1CreateGitKeyRequest) SetHost(v string) {
+	o.Host = &v
+}
+
 func (o V1CreateGitKeyRequest) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -119,6 +185,12 @@ func (o V1CreateGitKeyRequest) ToMap() (map[string]interface{}, error) {
 	}
 	if !IsNil(o.Token) {
 		toSerialize["token"] = o.Token
+	}
+	if !IsNil(o.TokenType) {
+		toSerialize["tokenType"] = o.TokenType
+	}
+	if !IsNil(o.Host) {
+		toSerialize["host"] = o.Host
 	}
 	return toSerialize, nil
 }

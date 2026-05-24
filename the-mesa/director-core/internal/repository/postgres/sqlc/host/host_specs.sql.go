@@ -19,7 +19,7 @@ func (q *Queries) DeleteHostSpecByName(ctx context.Context, name string) error {
 }
 
 const getHostSpecByName = `-- name: GetHostSpecByName :one
-SELECT id, name, display_name, tools, resources, skills, mcp_servers, auth_token, status, error_msg, retry_count, created_at, updated_at FROM host_specs WHERE name = $1
+SELECT id, name, display_name, tools, resources, skills, mcp_servers, rules, git_keys, auth_token, status, error_msg, retry_count, created_at, updated_at FROM host_specs WHERE name = $1
 `
 
 func (q *Queries) GetHostSpecByName(ctx context.Context, name string) (HostSpec, error) {
@@ -33,6 +33,8 @@ func (q *Queries) GetHostSpecByName(ctx context.Context, name string) (HostSpec,
 		&i.Resources,
 		&i.Skills,
 		&i.McpServers,
+		&i.Rules,
+		&i.GitKeys,
 		&i.AuthToken,
 		&i.Status,
 		&i.ErrorMsg,
@@ -47,7 +49,7 @@ const incrementHostSpecRetry = `-- name: IncrementHostSpecRetry :one
 UPDATE host_specs
 SET retry_count = retry_count + 1, updated_at = NOW()
 WHERE name = $1
-RETURNING id, name, display_name, tools, resources, skills, mcp_servers, auth_token, status, error_msg, retry_count, created_at, updated_at
+RETURNING id, name, display_name, tools, resources, skills, mcp_servers, rules, git_keys, auth_token, status, error_msg, retry_count, created_at, updated_at
 `
 
 func (q *Queries) IncrementHostSpecRetry(ctx context.Context, name string) (HostSpec, error) {
@@ -61,6 +63,8 @@ func (q *Queries) IncrementHostSpecRetry(ctx context.Context, name string) (Host
 		&i.Resources,
 		&i.Skills,
 		&i.McpServers,
+		&i.Rules,
+		&i.GitKeys,
 		&i.AuthToken,
 		&i.Status,
 		&i.ErrorMsg,
@@ -72,8 +76,8 @@ func (q *Queries) IncrementHostSpecRetry(ctx context.Context, name string) (Host
 }
 
 const insertHostSpec = `-- name: InsertHostSpec :execrows
-INSERT INTO host_specs (name, display_name, tools, resources, skills, mcp_servers, auth_token, status)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+INSERT INTO host_specs (name, display_name, tools, resources, skills, mcp_servers, auth_token, status, rules, git_keys)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 ON CONFLICT (name) DO NOTHING
 `
 
@@ -86,6 +90,8 @@ type InsertHostSpecParams struct {
 	McpServers  []byte `json:"mcp_servers"`
 	AuthToken   string `json:"auth_token"`
 	Status      string `json:"status"`
+	Rules       []byte `json:"rules"`
+	GitKeys     []byte `json:"git_keys"`
 }
 
 func (q *Queries) InsertHostSpec(ctx context.Context, arg InsertHostSpecParams) (int64, error) {
@@ -98,6 +104,8 @@ func (q *Queries) InsertHostSpec(ctx context.Context, arg InsertHostSpecParams) 
 		arg.McpServers,
 		arg.AuthToken,
 		arg.Status,
+		arg.Rules,
+		arg.GitKeys,
 	)
 	if err != nil {
 		return 0, err
@@ -106,7 +114,7 @@ func (q *Queries) InsertHostSpec(ctx context.Context, arg InsertHostSpecParams) 
 }
 
 const listHostSpecs = `-- name: ListHostSpecs :many
-SELECT id, name, display_name, tools, resources, skills, mcp_servers, auth_token, status, error_msg, retry_count, created_at, updated_at FROM host_specs ORDER BY name ASC
+SELECT id, name, display_name, tools, resources, skills, mcp_servers, rules, git_keys, auth_token, status, error_msg, retry_count, created_at, updated_at FROM host_specs ORDER BY name ASC
 `
 
 func (q *Queries) ListHostSpecs(ctx context.Context) ([]HostSpec, error) {
@@ -126,6 +134,8 @@ func (q *Queries) ListHostSpecs(ctx context.Context) ([]HostSpec, error) {
 			&i.Resources,
 			&i.Skills,
 			&i.McpServers,
+			&i.Rules,
+			&i.GitKeys,
 			&i.AuthToken,
 			&i.Status,
 			&i.ErrorMsg,
@@ -147,7 +157,7 @@ const updateHostSpecStatus = `-- name: UpdateHostSpecStatus :one
 UPDATE host_specs
 SET status = $2, error_msg = $3, updated_at = NOW()
 WHERE name = $1
-RETURNING id, name, display_name, tools, resources, skills, mcp_servers, auth_token, status, error_msg, retry_count, created_at, updated_at
+RETURNING id, name, display_name, tools, resources, skills, mcp_servers, rules, git_keys, auth_token, status, error_msg, retry_count, created_at, updated_at
 `
 
 type UpdateHostSpecStatusParams struct {
@@ -167,6 +177,8 @@ func (q *Queries) UpdateHostSpecStatus(ctx context.Context, arg UpdateHostSpecSt
 		&i.Resources,
 		&i.Skills,
 		&i.McpServers,
+		&i.Rules,
+		&i.GitKeys,
 		&i.AuthToken,
 		&i.Status,
 		&i.ErrorMsg,

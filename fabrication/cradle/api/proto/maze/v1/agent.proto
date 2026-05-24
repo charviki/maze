@@ -7,6 +7,7 @@ option go_package = "github.com/charviki/maze/fabrication/cradle/api/gen/maze/v1
 import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "maze/v1/config.proto";
+import "maze/v1/host.proto";
 
 // 与 protocol.AgentCapabilities 对齐
 message AgentCapabilities {
@@ -83,4 +84,6 @@ service AgentService {
       body: "*"
     };
   }
+
+  rpc GetHostConfig(GetHostConfigRequest) returns (GetHostConfigResponse) {};
 }

@@ -12,6 +12,7 @@ import (
 type MCPServerRepo interface {
 	Create(ctx context.Context, server *protocol.MCPServer) (*protocol.MCPServer, error)
 	Get(ctx context.Context, name string) (*protocol.MCPServer, error)
+	GetByNames(ctx context.Context, names []string) ([]*protocol.MCPServer, error)
 	List(ctx context.Context) ([]*protocol.MCPServer, error)
 	Update(ctx context.Context, server *protocol.MCPServer) (*protocol.MCPServer, error)
 	Delete(ctx context.Context, name string) error

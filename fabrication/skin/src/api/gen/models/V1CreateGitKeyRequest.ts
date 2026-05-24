@@ -32,6 +32,18 @@ export interface V1CreateGitKeyRequest {
      * @memberof V1CreateGitKeyRequest
      */
     token?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof V1CreateGitKeyRequest
+     */
+    tokenType?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof V1CreateGitKeyRequest
+     */
+    host?: string;
 }
 
 /**
@@ -53,6 +65,8 @@ export function V1CreateGitKeyRequestFromJSONTyped(json: any, ignoreDiscriminato
         
         'name': json['name'] == null ? undefined : json['name'],
         'token': json['token'] == null ? undefined : json['token'],
+        'tokenType': json['tokenType'] == null ? undefined : json['tokenType'],
+        'host': json['host'] == null ? undefined : json['host'],
     };
 }
 
@@ -69,6 +83,8 @@ export function V1CreateGitKeyRequestToJSONTyped(value?: V1CreateGitKeyRequest |
         
         'name': value['name'],
         'token': value['token'],
+        'tokenType': value['tokenType'],
+        'host': value['host'],
     };
 }
 

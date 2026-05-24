@@ -29,6 +29,8 @@ func (r *GitKeyRepository) Create(ctx context.Context, key *protocol.GitKey) (*p
 		Name:           key.Name,
 		EncryptedToken: key.Token,
 		TokenMask:      key.TokenMask,
+		TokenType:      key.TokenType,
+		Host:           strPtr(key.Host),
 	})
 	if err != nil {
 		return nil, err
@@ -64,16 +66,55 @@ func (r *GitKeyRepository) List(ctx context.Context) ([]*protocol.GitKey, error)
 	return result, nil
 }
 
+// Update updates an existing git key.
+func (r *GitKeyRepository) Update(ctx context.Context, key *protocol.GitKey) (*protocol.GitKey, error) {
+	row, err := r.queries(ctx).UpdateGitKeyByName(ctx, hostgen.UpdateGitKeyByNameParams{
+		Name:           key.Name,
+		EncryptedToken: key.Token,
+		TokenMask:      key.TokenMask,
+		TokenType:      key.TokenType,
+		Host:           strPtr(key.Host),
+	})
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	result := gitKeyFromRow(row)
+	return &result, nil
+}
+
 // Delete deletes a git key by name.
 func (r *GitKeyRepository) Delete(ctx context.Context, name string) error {
 	return r.queries(ctx).DeleteGitKeyByName(ctx, name)
+}
+
+// GetByNames returns git keys matching the given names.
+func (r *GitKeyRepository) GetByNames(ctx context.Context, names []string) ([]*protocol.GitKey, error) {
+	if len(names) == 0 {
+		return nil, nil
+	}
+	rows, err := r.queries(ctx).GetGitKeysByNames(ctx, names)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]*protocol.GitKey, 0, len(rows))
+	for _, row := range rows {
+		s := gitKeyFromRow(row)
+		result = append(result, &s)
+	}
+	return result, nil
 }
 
 func gitKeyFromRow(row hostgen.GitKey) protocol.GitKey {
 	return protocol.GitKey{
 		Name:      row.Name,
 		TokenMask: row.TokenMask,
+		TokenType: row.TokenType,
+		Host:      derefString(row.Host),
 		CreatedAt: row.CreatedAt.Time,
 		UpdatedAt: row.UpdatedAt.Time,
 	}
 }
+

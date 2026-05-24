@@ -100,6 +100,18 @@ export interface V1HostSpec {
      * @memberof V1HostSpec
      */
     mcpServers?: Array<string>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof V1HostSpec
+     */
+    rules?: Array<string>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof V1HostSpec
+     */
+    gitKeys?: Array<string>;
 }
 
 /**
@@ -131,6 +143,8 @@ export function V1HostSpecFromJSONTyped(json: any, ignoreDiscriminator: boolean)
         'retryCount': json['retryCount'] == null ? undefined : json['retryCount'],
         'skills': json['skills'] == null ? undefined : json['skills'],
         'mcpServers': json['mcpServers'] == null ? undefined : json['mcpServers'],
+        'rules': json['rules'] == null ? undefined : json['rules'],
+        'gitKeys': json['gitKeys'] == null ? undefined : json['gitKeys'],
     };
 }
 
@@ -157,6 +171,8 @@ export function V1HostSpecToJSONTyped(value?: V1HostSpec | null, ignoreDiscrimin
         'retryCount': value['retryCount'],
         'skills': value['skills'],
         'mcpServers': value['mcpServers'],
+        'rules': value['rules'],
+        'gitKeys': value['gitKeys'],
     };
 }
 

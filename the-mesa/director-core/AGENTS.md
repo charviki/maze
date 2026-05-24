@@ -2,7 +2,7 @@
 
 ## 职责
 
-The Mesa 控制面核心，负责 Agent 节点注册/心跳管理、声明式 Host 编排（HostSpec 持久化 + Reconciler 自动化）、Session/Template/Config 代理转发、审计日志，以及 JWT 认证 + Casbin RBAC 权限系统。
+The Mesa 控制面核心，负责 Agent 节点注册/心跳管理、声明式 Host 编排（HostSpec 持久化 + Reconciler 自动化）、Host 配置注入（skills/rules/git keys 聚合下发）、Session/Template/Config 代理转发、审计日志，以及 JWT 认证 + Casbin RBAC 权限系统。
 
 ## 项目结构
 
@@ -12,6 +12,7 @@ The Mesa 控制面核心，负责 Agent 节点注册/心跳管理、声明式 Ho
 
 - **代理网关** — 前端不直连 Agent，所有请求经 Director Core 代理转发到 Black Ridge 节点，并记录审计日志
 - **声明式编排** — HostSpec 持久化到文件系统，Reconciler 定期调和实际状态趋近期望状态，支持 Docker 和 Kubernetes 双运行时
+- **配置注入** — HostSpec 通过 rules/git_keys 关联配置项，GetHostConfig RPC 聚合 skills、rules、git keys（含解密 token）完整配置供 Agent 启动时拉取
 - **Proto 层校验** — 所有 gRPC 请求通过 gatewayutil.NewValidationInterceptor（buf.validate）统一校验，transport/service 层不做手动参数检查
 - **双数据库** — 权限系统（auth DB）与 Host 管理（host DB）使用独立 PostgreSQL 实例，通过独立连接池和 migration 管理
 

@@ -1,4 +1,5 @@
 import type { V1Skill, V1MCPServer, V1Rule, V1GitKey } from '@maze/fabrication';
+import type { CreateGitKeyData } from '../components/git-keys/constants';
 
 function now(): string {
   return new Date().toISOString();
@@ -58,7 +59,7 @@ interface RuleApi {
 
 interface GitKeyApi {
   list(): Promise<V1GitKey[]>;
-  create(data: { name: string; token: string }): Promise<V1GitKey>;
+  create(data: CreateGitKeyData): Promise<V1GitKey>;
   get(name: string): Promise<V1GitKey>;
   delete(name: string): Promise<void>;
 }
@@ -221,12 +222,14 @@ class MockGitKeyApi implements GitKeyApi {
   list(): Promise<V1GitKey[]> {
     return Promise.resolve(Array.from(this.items.values()));
   }
-  create(data: { name: string; token: string }): Promise<V1GitKey> {
+  create(data: CreateGitKeyData): Promise<V1GitKey> {
     if (this.items.has(data.name))
       return Promise.reject(new Error(`GitKey "${data.name}" already exists`));
     const item: V1GitKey = {
       name: data.name,
       tokenMask: generateTokenMask(data.token),
+      tokenType: data.tokenType,
+      host: data.host,
       createdAt: now(),
     };
     this.items.set(data.name, item);

@@ -6,19 +6,41 @@ data:
   entrypoint.sh: |
     #!/bin/sh
     set -e
-    # Docker Desktop VirtioFS 的 fsync 语义弱于原生 Linux，
-    # VM 挂起/重启时 WAL checkpoint 可能被截断导致无法启动。
-    # 在启动前检测并自动修复损坏的 WAL。
-    if [ -f "$PGDATA/PG_VERSION" ] && ! pg_isready -q 2>/dev/null; then
-      echo "[entrypoint] Attempting WAL recovery..."
-      if ! pg_ctl start -w -t 30 -o "-c listen_addresses='' -p 5433" 2>/dev/null; then
-        echo "[entrypoint] WAL recovery failed, resetting WAL with pg_resetwal..."
-        gosu postgres pg_resetwal -f "$PGDATA" 2>&1 || true
-      else
-        pg_ctl stop -m fast -w -t 30 2>/dev/null || true
+
+    # Auto-recover corrupted WAL (Docker Desktop VirtioFS heavy I/O can corrupt checkpoint records).
+    # If PG fails to start due to WAL corruption, pg_resetwal rebuilds the WAL from the data pages.
+    if [ -d "$PGDATA" ] && [ -f "$PGDATA/PG_VERSION" ]; then
+      if ! pg_controldata "$PGDATA" >/dev/null 2>&1; then
+        echo "[entrypoint] pg_controldata failed, running pg_resetwal -f to recover"
+        pg_resetwal -f "$PGDATA" 2>&1 || true
       fi
     fi
+
     exec /usr/local/bin/docker-entrypoint.sh postgres
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-db
+data:
+  init-db.sh: |
+    #!/bin/bash
+    set -e
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+      SELECT 'CREATE DATABASE maze_host' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'maze_host')\gexec
+      SELECT 'CREATE DATABASE maze_forge' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'maze_forge')\gexec
+    EOSQL
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgresql-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -38,11 +60,20 @@ spec:
         - name: postgresql
           image: postgres:17-alpine
           command: ['/bin/sh', '/scripts/entrypoint.sh']
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: '1'
+              memory: 512Mi
           ports:
             - containerPort: 5432
           env:
             - name: POSTGRES_DB
               value: maze_auth
+            - name: POSTGRES_INITDB_ARGS
+              value: '--data-checksums'
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
@@ -85,7 +116,7 @@ spec:
               command:
                 - /bin/sh
                 - -c
-                - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+                - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_USER" -d "$POSTGRES_DB"
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 6
@@ -100,9 +131,8 @@ spec:
             failureThreshold: 6
       volumes:
         - name: data
-          hostPath:
-            path: ${MAZE_HOST_PATH}/postgresql/data
-            type: DirectoryOrCreate
+          persistentVolumeClaim:
+            claimName: postgresql-data
         - name: init-db
           configMap:
             name: postgres-init-db

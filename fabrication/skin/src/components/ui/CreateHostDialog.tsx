@@ -4,8 +4,27 @@ import { Dialog, DialogPortal, DialogOverlay, DialogTitle, DialogDescription } f
 import { Button } from './button';
 import { Input } from './input';
 import { clipPathHalf } from '../../utils';
-import type { Tool, CreateHostRequest, HostSpec, HostStatus, Skill, MCPServer } from '../../types';
-import { Loader2, Cpu, MemoryStick, Wrench, Sparkles, Server, X } from 'lucide-react';
+import type {
+  Tool,
+  CreateHostRequest,
+  HostSpec,
+  HostStatus,
+  Skill,
+  MCPServer,
+  Rule,
+  GitKey,
+} from '../../types';
+import {
+  Loader2,
+  Cpu,
+  MemoryStick,
+  Wrench,
+  Sparkles,
+  Server,
+  FileText,
+  KeyRound,
+  X,
+} from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────
 
@@ -18,11 +37,26 @@ export interface CreateHostDialogProps {
   tools: Tool[];
   skills: Skill[];
   mcpServers: MCPServer[];
+  rules: Rule[];
+  gitKeys: GitKey[];
   onSubmit: (request: CreateHostRequest) => Promise<HostSpec>;
   onWaitOnline: (hostName: string) => Promise<boolean>;
   getHostBuildLog: (name: string) => Promise<string>;
   onEnterHost?: (hostName: string) => void;
 }
+
+interface ResourceSection<T> {
+  items: T[];
+  selected: string[];
+  toggle: (name: string) => void;
+  emptyMessage: string;
+  label: string;
+  getName: (item: T) => string;
+  renderCard: (item: T, isSelected: boolean, onToggle: () => void) => React.ReactNode;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- used to erase generic in section arrays
+type AnyResourceSection = ResourceSection<any>;
 
 // ─── Constants ────────────────────────────────────────
 
@@ -60,6 +94,17 @@ function getTrustLevel(id: string): number {
     hash = ((hash << 5) - hash + id.charCodeAt(i)) | 0;
   }
   return (Math.abs(hash) % 6) + 4;
+}
+
+function useToggleSelection(): [
+  string[],
+  (name: string) => void,
+  React.Dispatch<React.SetStateAction<string[]>>,
+] {
+  const [selected, setSelected] = useState<string[]>([]);
+  const toggle = (name: string) =>
+    setSelected((prev) => (prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]));
+  return [selected, toggle, setSelected];
 }
 
 // ─── Sub-components ───────────────────────────────────
@@ -132,9 +177,13 @@ function SpecSheetPanel({
   selectedTools,
   selectedSkills,
   selectedMcpServers,
+  selectedRules,
+  selectedGitKeys,
   totalTools,
   totalSkills,
   totalMcpServers,
+  totalRules,
+  totalGitKeys,
   currentStep,
 }: {
   name: string;
@@ -143,9 +192,13 @@ function SpecSheetPanel({
   selectedTools: string[];
   selectedSkills: string[];
   selectedMcpServers: string[];
+  selectedRules: string[];
+  selectedGitKeys: string[];
   totalTools: number;
   totalSkills: number;
   totalMcpServers: number;
+  totalRules: number;
+  totalGitKeys: number;
   currentStep: FabricationStep;
 }) {
   const stepIndex = STEPS.findIndex((s) => s.id === currentStep);
@@ -174,6 +227,16 @@ function SpecSheetPanel({
           label="MCP"
           value={totalMcpServers > 0 ? `${selectedMcpServers.length}/${totalMcpServers}` : '—'}
           highlight={selectedMcpServers.length > 0}
+        />
+        <SheetRow
+          label="Rules"
+          value={totalRules > 0 ? `${selectedRules.length}/${totalRules}` : '—'}
+          highlight={selectedRules.length > 0}
+        />
+        <SheetRow
+          label="Git Keys"
+          value={totalGitKeys > 0 ? `${selectedGitKeys.length}/${totalGitKeys}` : '—'}
+          highlight={selectedGitKeys.length > 0}
         />
         <div className="h-px bg-border/20 my-2" />
         <div className="text-[10px] text-muted-foreground/40 uppercase tracking-widest">
@@ -360,12 +423,18 @@ function ImbuingStep({
   );
 }
 
-function SkillCard({
-  skill,
+function SelectableCard({
+  icon: Icon,
+  label,
+  badge,
+  description,
   isSelected,
   onToggle,
 }: {
-  skill: Skill;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  badge?: string;
+  description?: string;
   isSelected: boolean;
   onToggle: () => void;
 }) {
@@ -381,17 +450,40 @@ function SkillCard({
       style={{ clipPath: clipPathHalf(6) }}
     >
       <div className="flex items-center gap-2">
-        <Sparkles
-          className={`w-3 h-3 shrink-0 ${isSelected ? 'text-primary' : 'text-primary/40'}`}
-        />
-        <span className="font-mono text-sm text-foreground truncate">{skill.name}</span>
+        <Icon className={`w-3 h-3 shrink-0 ${isSelected ? 'text-primary' : 'text-primary/40'}`} />
+        <span className="font-mono text-sm text-foreground truncate">{label}</span>
+        {badge && (
+          <span className="text-[9px] text-muted-foreground/50 font-mono uppercase tracking-wider shrink-0">
+            [{badge}]
+          </span>
+        )}
       </div>
-      {skill.description && (
+      {description && (
         <p className="text-[11px] text-muted-foreground font-mono mt-1 leading-tight truncate">
-          {skill.description}
+          {description}
         </p>
       )}
     </button>
+  );
+}
+
+function SkillCard({
+  skill,
+  isSelected,
+  onToggle,
+}: {
+  skill: Skill;
+  isSelected: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <SelectableCard
+      icon={Sparkles}
+      label={skill.name ?? ''}
+      description={skill.description}
+      isSelected={isSelected}
+      onToggle={onToggle}
+    />
   );
 }
 
@@ -405,98 +497,107 @@ function McpServerCard({
   onToggle: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className={`relative overflow-hidden text-left p-3 transition-all ${
-        isSelected
-          ? 'bg-primary/8 border border-primary border-l-2'
-          : 'bg-card/30 border border-primary/15 hover:border-primary/30 hover:bg-primary/5'
-      }`}
-      style={{ clipPath: clipPathHalf(6) }}
-    >
-      <div className="flex items-center gap-2">
-        <Server className={`w-3 h-3 shrink-0 ${isSelected ? 'text-primary' : 'text-primary/40'}`} />
-        <span className="font-mono text-sm text-foreground truncate">{mcpServer.name}</span>
-        {mcpServer.type && (
-          <span className="text-[9px] text-muted-foreground/50 font-mono uppercase tracking-wider shrink-0">
-            [{mcpServer.type}]
-          </span>
-        )}
-      </div>
-    </button>
+    <SelectableCard
+      icon={Server}
+      label={mcpServer.name ?? ''}
+      badge={mcpServer.type || undefined}
+      isSelected={isSelected}
+      onToggle={onToggle}
+    />
   );
 }
 
-function ConvergenceStep({
-  skills,
-  selectedSkills,
-  toggleSkill,
-  mcpServers,
-  selectedMcpServers,
-  toggleMcpServer,
+function RuleCard({
+  rule,
+  isSelected,
+  onToggle,
 }: {
-  skills: Skill[];
-  selectedSkills: string[];
-  toggleSkill: (name: string) => void;
-  mcpServers: MCPServer[];
-  selectedMcpServers: string[];
-  toggleMcpServer: (name: string) => void;
+  rule: Rule;
+  isSelected: boolean;
+  onToggle: () => void;
 }) {
   return (
+    <SelectableCard
+      icon={FileText}
+      label={rule.name ?? ''}
+      isSelected={isSelected}
+      onToggle={onToggle}
+    />
+  );
+}
+
+function GitKeyCard({
+  gitKey,
+  isSelected,
+  onToggle,
+}: {
+  gitKey: GitKey;
+  isSelected: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <SelectableCard
+      icon={KeyRound}
+      label={gitKey.name ?? ''}
+      badge={gitKey.tokenType || undefined}
+      isSelected={isSelected}
+      onToggle={onToggle}
+    />
+  );
+}
+
+function EmptyListPlaceholder({ message }: { message: string }) {
+  return (
+    <div
+      className="border border-primary/20 bg-card/30 p-4 text-center"
+      style={{ clipPath: clipPathHalf(8) }}
+    >
+      <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest">
+        [ {message} ]
+      </div>
+    </div>
+  );
+}
+
+function ResourceSectionList({
+  items,
+  selected,
+  toggle,
+  emptyMessage,
+  label,
+  getName,
+  renderCard,
+}: AnyResourceSection) {
+  const selectedSet = useMemo(() => new Set(selected), [selected]);
+  return (
+    <div className="space-y-2">
+      <label className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">
+        {label} [{selected.length}/{items.length}]
+      </label>
+      {items.length === 0 ? (
+        <EmptyListPlaceholder message={emptyMessage} />
+      ) : (
+        <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1">
+          {items.map((item) => {
+            const name = getName(item);
+            return (
+              <Fragment key={name}>
+                {renderCard(item, selectedSet.has(name), () => toggle(name))}
+              </Fragment>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ConvergenceStep({ sections }: { sections: AnyResourceSection[] }) {
+  return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <label className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">
-          SKILL CONVERGENCE [{selectedSkills.length}/{skills.length}]
-        </label>
-        {skills.length === 0 ? (
-          <div
-            className="border border-primary/20 bg-card/30 p-4 text-center"
-            style={{ clipPath: clipPathHalf(8) }}
-          >
-            <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest">
-              [ NO SKILLS AVAILABLE — FABRICATE ONE FIRST ]
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1">
-            {skills.map((skill) => (
-              <SkillCard
-                key={skill.name ?? ''}
-                skill={skill}
-                isSelected={selectedSkills.includes(skill.name ?? '')}
-                onToggle={() => toggleSkill(skill.name ?? '')}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-      <div className="space-y-2">
-        <label className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">
-          MCP SERVER LINKS [{selectedMcpServers.length}/{mcpServers.length}]
-        </label>
-        {mcpServers.length === 0 ? (
-          <div
-            className="border border-primary/20 bg-card/30 p-4 text-center"
-            style={{ clipPath: clipPathHalf(8) }}
-          >
-            <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest">
-              [ NO MCP SERVERS AVAILABLE — CONFIGURE IN FABRICATION ]
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto pr-1">
-            {mcpServers.map((server) => (
-              <McpServerCard
-                key={server.name ?? ''}
-                mcpServer={server}
-                isSelected={selectedMcpServers.includes(server.name ?? '')}
-                onToggle={() => toggleMcpServer(server.name ?? '')}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      {sections.map((section) => (
+        <ResourceSectionList key={section.label} {...section} />
+      ))}
     </div>
   );
 }
@@ -706,6 +807,8 @@ export function CreateHostDialog({
   tools,
   skills,
   mcpServers,
+  rules,
+  gitKeys,
   onSubmit,
   onWaitOnline,
   getHostBuildLog,
@@ -714,8 +817,10 @@ export function CreateHostDialog({
   // Form state
   const [name, setName] = useState('');
   const [selectedTools, setSelectedTools] = useState<string[]>([]);
-  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
-  const [selectedMcpServers, setSelectedMcpServers] = useState<string[]>([]);
+  const [selectedSkills, toggleSkill, setSelectedSkills] = useToggleSelection();
+  const [selectedMcpServers, toggleMcpServer, setSelectedMcpServers] = useToggleSelection();
+  const [selectedRules, toggleRule, setSelectedRules] = useToggleSelection();
+  const [selectedGitKeys, toggleGitKey, setSelectedGitKeys] = useToggleSelection();
   const [cpuLimit, setCpuLimit] = useState('2');
   const [memoryLimit, setMemoryLimit] = useState('2g');
 
@@ -749,6 +854,8 @@ export function CreateHostDialog({
     setSelectedTools([]);
     setSelectedSkills([]);
     setSelectedMcpServers([]);
+    setSelectedRules([]);
+    setSelectedGitKeys([]);
     setCpuLimit('2');
     setMemoryLimit('4g');
     setError(null);
@@ -800,6 +907,8 @@ export function CreateHostDialog({
         tools: selectedTools,
         skills: selectedSkills,
         mcpServers: selectedMcpServers,
+        rules: selectedRules,
+        gitKeys: selectedGitKeys,
         resources: {
           cpuLimit: cpuLimit || undefined,
           memoryLimit: memoryLimit || undefined,
@@ -954,24 +1063,68 @@ export function CreateHostDialog({
                   )}
                   {currentStep === 'convergence' && (
                     <ConvergenceStep
-                      skills={skills}
-                      selectedSkills={selectedSkills}
-                      toggleSkill={(skillName) =>
-                        setSelectedSkills((prev) =>
-                          prev.includes(skillName)
-                            ? prev.filter((s) => s !== skillName)
-                            : [...prev, skillName],
-                        )
-                      }
-                      mcpServers={mcpServers}
-                      selectedMcpServers={selectedMcpServers}
-                      toggleMcpServer={(serverName) =>
-                        setSelectedMcpServers((prev) =>
-                          prev.includes(serverName)
-                            ? prev.filter((s) => s !== serverName)
-                            : [...prev, serverName],
-                        )
-                      }
+                      sections={[
+                        {
+                          items: skills,
+                          selected: selectedSkills,
+                          toggle: toggleSkill,
+                          emptyMessage: 'NO SKILLS AVAILABLE — FABRICATE ONE FIRST',
+                          label: 'SKILL CONVERGENCE',
+                          getName: (s: Skill) => s.name ?? '',
+                          renderCard: (item, isSelected, onToggle) => (
+                            <SkillCard
+                              skill={item as Skill}
+                              isSelected={isSelected}
+                              onToggle={onToggle}
+                            />
+                          ),
+                        },
+                        {
+                          items: mcpServers,
+                          selected: selectedMcpServers,
+                          toggle: toggleMcpServer,
+                          emptyMessage: 'NO MCP SERVERS AVAILABLE — CONFIGURE IN FABRICATION',
+                          label: 'MCP SERVER LINKS',
+                          getName: (s: MCPServer) => s.name ?? '',
+                          renderCard: (item, isSelected, onToggle) => (
+                            <McpServerCard
+                              mcpServer={item as MCPServer}
+                              isSelected={isSelected}
+                              onToggle={onToggle}
+                            />
+                          ),
+                        },
+                        {
+                          items: rules,
+                          selected: selectedRules,
+                          toggle: toggleRule,
+                          emptyMessage: 'NO RULES AVAILABLE — FABRICATE ONE FIRST',
+                          label: 'RULES',
+                          getName: (r: Rule) => r.name ?? '',
+                          renderCard: (item, isSelected, onToggle) => (
+                            <RuleCard
+                              rule={item as Rule}
+                              isSelected={isSelected}
+                              onToggle={onToggle}
+                            />
+                          ),
+                        },
+                        {
+                          items: gitKeys,
+                          selected: selectedGitKeys,
+                          toggle: toggleGitKey,
+                          emptyMessage: 'NO GIT KEYS AVAILABLE — CONFIGURE IN FABRICATION',
+                          label: 'GIT KEYS',
+                          getName: (k: GitKey) => k.name ?? '',
+                          renderCard: (item, isSelected, onToggle) => (
+                            <GitKeyCard
+                              gitKey={item as GitKey}
+                              isSelected={isSelected}
+                              onToggle={onToggle}
+                            />
+                          ),
+                        },
+                      ]}
                     />
                   )}
 
@@ -996,9 +1149,13 @@ export function CreateHostDialog({
                   selectedTools={selectedTools}
                   selectedSkills={selectedSkills}
                   selectedMcpServers={selectedMcpServers}
+                  selectedRules={selectedRules}
+                  selectedGitKeys={selectedGitKeys}
                   totalTools={tools.length}
                   totalSkills={skills.length}
                   totalMcpServers={mcpServers.length}
+                  totalRules={rules.length}
+                  totalGitKeys={gitKeys.length}
                   currentStep={currentStep}
                 />
               </>

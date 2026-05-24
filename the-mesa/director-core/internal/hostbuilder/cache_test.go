@@ -54,10 +54,3 @@ func TestExtractDockerfileHash(t *testing.T) {
 		})
 	}
 }
-
-func TestResolveImageDigest_ImageNotFound(t *testing.T) {
-	_, err := ResolveImageDigest("maze-deps-nonexistent-tool:never-exist")
-	if err == nil {
-		t.Error("不存在的镜像应返回 error")
-	}
-}

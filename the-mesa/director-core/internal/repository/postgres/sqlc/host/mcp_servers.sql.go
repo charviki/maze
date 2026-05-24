@@ -78,6 +78,40 @@ func (q *Queries) GetMCPServerByName(ctx context.Context, name string) (McpServe
 	return i, err
 }
 
+const getMCPServersByNames = `-- name: GetMCPServersByNames :many
+SELECT id, name, type, command, url, args, env, created_at, updated_at FROM mcp_servers WHERE name = ANY($1::text[])
+`
+
+func (q *Queries) GetMCPServersByNames(ctx context.Context, dollar_1 []string) ([]McpServer, error) {
+	rows, err := q.db.Query(ctx, getMCPServersByNames, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []McpServer
+	for rows.Next() {
+		var i McpServer
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Type,
+			&i.Command,
+			&i.Url,
+			&i.Args,
+			&i.Env,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listMCPServers = `-- name: ListMCPServers :many
 SELECT id, name, type, command, url, args, env, created_at, updated_at FROM mcp_servers ORDER BY name ASC
 `

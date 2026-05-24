@@ -130,11 +130,12 @@ func extractBearerToken(ctx context.Context) (string, error) {
 	return token, nil
 }
 
-// isAgentServiceMethod 判断是否是 AgentService 的 RPC 方法（注册/心跳），
+// isAgentServiceMethod 判断是否是 AgentService 的 RPC 方法（注册/心跳/配置拉取），
 // 这些路径由 UnaryHostTokenInterceptor 单独处理。
 func isAgentServiceMethod(method string) bool {
 	return method == mazev1.AgentService_Register_FullMethodName ||
-		method == mazev1.AgentService_Heartbeat_FullMethodName
+		method == mazev1.AgentService_Heartbeat_FullMethodName ||
+		method == mazev1.AgentService_GetHostConfig_FullMethodName
 }
 
 // isAuthServiceMethod 判断是否是 AuthService 的免鉴权方法（Login/Refresh 不需要 JWT）。
@@ -145,12 +146,14 @@ func isAuthServiceMethod(method string) bool {
 }
 
 // extractAgentName 从 gRPC 请求中提取 agent name，
-// 支持 RegisterRequest 和 HeartbeatRequest 两种类型。
+// 支持 RegisterRequest、HeartbeatRequest 和 GetHostConfigRequest。
 func extractAgentName(req any) string {
 	switch r := req.(type) {
 	case *mazev1.RegisterRequest:
 		return r.GetName()
 	case *mazev1.HeartbeatRequest:
+		return r.GetName()
+	case *mazev1.GetHostConfigRequest:
 		return r.GetName()
 	default:
 		return ""

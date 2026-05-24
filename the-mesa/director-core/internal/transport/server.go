@@ -222,7 +222,6 @@ func newHTTPServer(cfg *config.Config, logger logutil.Logger, gwmux *gwruntime.S
 	mcpRepo := postgres.NewMCPServerRepository(hostPool)
 	ruleRepo := postgres.NewRuleRepository(hostPool)
 	gitKeyRepo := postgres.NewGitKeyRepository(hostPool)
-	hostSvc.SetResourceRepos(skillRepo, mcpRepo)
 	skillSvc := service.NewSkillService(skillRepo, logger)
 	mcpSvc := service.NewMCPServerService(mcpRepo, logger)
 	ruleSvc := service.NewRuleService(ruleRepo, logger)
@@ -242,6 +241,8 @@ func newHTTPServer(cfg *config.Config, logger logutil.Logger, gwmux *gwruntime.S
 	if err != nil {
 		return nil, nil, err
 	}
+
+	hostSvc.SetResourceRepos(skillRepo, mcpRepo, ruleRepo, gitKeySvc)
 
 	sessionProxyHandler := NewSessionProxyHandler(registry, auditLog, logger, cfg.Server.JWTSecret, cfg.AllowedOrigins(), cfg.Server.AllowPrivateNetworks)
 

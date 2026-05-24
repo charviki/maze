@@ -6,6 +6,7 @@ import (
 	"math"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -119,19 +120,21 @@ func (s *headerCapturingTransportStream) SetTrailer(md metadata.MD) error {
 
 type stubSkillRepo struct{}
 
-func (stubSkillRepo) Create(context.Context, *protocol.Skill) (*protocol.Skill, error) { return nil, nil }
-func (stubSkillRepo) Get(context.Context, string) (*protocol.Skill, error)             { return nil, nil }
-func (stubSkillRepo) List(context.Context) ([]*protocol.Skill, error)                  { return nil, nil }
-func (stubSkillRepo) Update(context.Context, *protocol.Skill) (*protocol.Skill, error) { return nil, nil }
-func (stubSkillRepo) Delete(context.Context, string) error                             { return nil }
+func (stubSkillRepo) Create(context.Context, *protocol.Skill) (*protocol.Skill, error)    { return nil, nil }
+func (stubSkillRepo) Get(context.Context, string) (*protocol.Skill, error)                { return nil, nil }
+func (stubSkillRepo) GetByNames(context.Context, []string) ([]*protocol.Skill, error)     { return nil, nil }
+func (stubSkillRepo) List(context.Context) ([]*protocol.Skill, error)                     { return nil, nil }
+func (stubSkillRepo) Update(context.Context, *protocol.Skill) (*protocol.Skill, error)    { return nil, nil }
+func (stubSkillRepo) Delete(context.Context, string) error                                { return nil }
 
 type stubMCPServerRepo struct{}
 
 func (stubMCPServerRepo) Create(context.Context, *protocol.MCPServer) (*protocol.MCPServer, error) {
 	return nil, nil
 }
-func (stubMCPServerRepo) Get(context.Context, string) (*protocol.MCPServer, error) { return nil, nil }
-func (stubMCPServerRepo) List(context.Context) ([]*protocol.MCPServer, error)      { return nil, nil }
+func (stubMCPServerRepo) Get(context.Context, string) (*protocol.MCPServer, error)            { return nil, nil }
+func (stubMCPServerRepo) GetByNames(context.Context, []string) ([]*protocol.MCPServer, error) { return nil, nil }
+func (stubMCPServerRepo) List(context.Context) ([]*protocol.MCPServer, error)                 { return nil, nil }
 func (stubMCPServerRepo) Update(context.Context, *protocol.MCPServer) (*protocol.MCPServer, error) {
 	return nil, nil
 }
@@ -139,18 +142,135 @@ func (stubMCPServerRepo) Delete(context.Context, string) error { return nil }
 
 type stubRuleRepo struct{}
 
-func (stubRuleRepo) Create(context.Context, *protocol.Rule) (*protocol.Rule, error) { return nil, nil }
-func (stubRuleRepo) Get(context.Context, string) (*protocol.Rule, error)            { return nil, nil }
-func (stubRuleRepo) List(context.Context) ([]*protocol.Rule, error)                 { return nil, nil }
-func (stubRuleRepo) Update(context.Context, *protocol.Rule) (*protocol.Rule, error) { return nil, nil }
-func (stubRuleRepo) Delete(context.Context, string) error                           { return nil }
+func (stubRuleRepo) Create(context.Context, *protocol.Rule) (*protocol.Rule, error)    { return nil, nil }
+func (stubRuleRepo) Get(context.Context, string) (*protocol.Rule, error)               { return nil, nil }
+func (stubRuleRepo) GetByNames(context.Context, []string) ([]*protocol.Rule, error)    { return nil, nil }
+func (stubRuleRepo) List(context.Context) ([]*protocol.Rule, error)                    { return nil, nil }
+func (stubRuleRepo) Update(context.Context, *protocol.Rule) (*protocol.Rule, error)    { return nil, nil }
+func (stubRuleRepo) Delete(context.Context, string) error                              { return nil }
 
 type stubGitKeyRepo struct{}
 
-func (stubGitKeyRepo) Create(context.Context, *protocol.GitKey) (*protocol.GitKey, error) { return nil, nil }
-func (stubGitKeyRepo) Get(context.Context, string) (*protocol.GitKey, error)              { return nil, nil }
-func (stubGitKeyRepo) List(context.Context) ([]*protocol.GitKey, error)                   { return nil, nil }
-func (stubGitKeyRepo) Delete(context.Context, string) error                               { return nil }
+func (stubGitKeyRepo) Create(context.Context, *protocol.GitKey) (*protocol.GitKey, error)    { return nil, nil }
+func (stubGitKeyRepo) Get(context.Context, string) (*protocol.GitKey, error)                 { return nil, nil }
+func (stubGitKeyRepo) GetByNames(context.Context, []string) ([]*protocol.GitKey, error)      { return nil, nil }
+func (stubGitKeyRepo) List(context.Context) ([]*protocol.GitKey, error)                      { return nil, nil }
+func (stubGitKeyRepo) Update(context.Context, *protocol.GitKey) (*protocol.GitKey, error)    { return nil, nil }
+func (stubGitKeyRepo) Delete(context.Context, string) error                                  { return nil }
+
+// configurableRepoStub holds configurable responses for GetHostConfig tests.
+type configurableSkillRepo struct {
+	stubSkillRepo
+	skills []*protocol.Skill
+}
+
+func (r *configurableSkillRepo) GetByNames(_ context.Context, _ []string) ([]*protocol.Skill, error) {
+	return r.skills, nil
+}
+
+type configurableRuleRepo struct {
+	stubRuleRepo
+	rules []*protocol.Rule
+}
+
+func (r *configurableRuleRepo) GetByNames(_ context.Context, _ []string) ([]*protocol.Rule, error) {
+	return r.rules, nil
+}
+
+type configurableGitKeyRepo struct {
+	stubGitKeyRepo
+	mu   sync.RWMutex
+	keys map[string]*protocol.GitKey
+}
+
+func newConfigurableGitKeyRepo() *configurableGitKeyRepo {
+	return &configurableGitKeyRepo{keys: make(map[string]*protocol.GitKey)}
+}
+
+func (r *configurableGitKeyRepo) Create(_ context.Context, key *protocol.GitKey) (*protocol.GitKey, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.keys[key.Name] = key
+	return key, nil
+}
+
+func (r *configurableGitKeyRepo) Get(_ context.Context, name string) (*protocol.GitKey, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.keys[name], nil
+}
+
+func (r *configurableGitKeyRepo) GetByNames(_ context.Context, names []string) ([]*protocol.GitKey, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	var result []*protocol.GitKey
+	for _, name := range names {
+		if k, ok := r.keys[name]; ok {
+			result = append(result, k)
+		}
+	}
+	return result, nil
+}
+
+func (r *configurableGitKeyRepo) Update(_ context.Context, key *protocol.GitKey) (*protocol.GitKey, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if existing, ok := r.keys[key.Name]; ok {
+		if key.Token != "" {
+			existing.Token = key.Token
+		}
+		if key.TokenType != "" {
+			existing.TokenType = key.TokenType
+		}
+		if key.Host != "" {
+			existing.Host = key.Host
+		}
+		return existing, nil
+	}
+	return nil, service.ErrNotFound
+}
+
+func newServerTestEnvWithConfig(
+	t *testing.T,
+	skillRepo service.SkillRepo,
+	ruleRepo service.RuleRepo,
+	gitKeyRepo service.GitKeyRepo,
+) (*Server, *filerepo.HostSpecRepository) {
+	t.Helper()
+
+	tmpDir := t.TempDir()
+	registry := filerepo.NewNodeRegistry(filepath.Join(tmpDir, "nodes.json"), logutil.NewNop())
+	specMgr := filerepo.NewHostSpecRepository(filepath.Join(tmpDir, "host_specs.json"), logutil.NewNop())
+	rt := &transportRuntimeMock{}
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			ServerConfig: configutil.ServerConfig{JWTSecret: "director-core-token"},
+		},
+		Docker: config.DockerConfig{AgentBaseImage: "maze-agent-base:latest"},
+	}
+	hostSvc := service.NewHostService(registry, specMgr, transportHostTxManagerStub{}, rt, transportAuditLoggerStub{}, nil, cfg, logutil.NewNop(), filepath.Join(tmpDir, "logs"))
+	hostSvc.SetResourceRepos(skillRepo, stubMCPServerRepo{}, ruleRepo, mustNewGitKeyReadSvc(t, gitKeyRepo))
+	nodeSvc := service.NewNodeService(registry, logutil.NewNop())
+	auditSvc := service.NewAuditService(auditrepo.NewLogger("", logutil.NewNop()))
+	skillSvc := service.NewSkillService(skillRepo, logutil.NewNop())
+	mcpSvc := service.NewMCPServerService(stubMCPServerRepo{}, logutil.NewNop())
+	ruleSvc := service.NewRuleService(ruleRepo, logutil.NewNop())
+	gitKeySvc, _ := service.NewGitKeyService(gitKeyRepo, make([]byte, 32), logutil.NewNop())
+	server := NewServer(hostSvc, nodeSvc, auditSvc, skillSvc, mcpSvc, ruleSvc, gitKeySvc, nil, registry, "director-core-token", logutil.NewNop())
+
+	t.Cleanup(specMgr.WaitSave)
+	t.Cleanup(registry.WaitSave)
+	return server, specMgr
+}
+
+func mustNewGitKeyReadSvc(t *testing.T, repo service.GitKeyRepo) *service.GitKeyService {
+	t.Helper()
+	svc, err := service.NewGitKeyService(repo, make([]byte, 32), logutil.NewNop())
+	if err != nil {
+		t.Fatalf("create git key service: %v", err)
+	}
+	return svc
+}
 
 func newServerTestEnv(t *testing.T) (*Server, *filerepo.NodeRegistry, *filerepo.HostSpecRepository, *transportRuntimeMock) {
 	t.Helper()
@@ -426,5 +546,115 @@ func TestToStatusError_PermissionStateChanged(t *testing.T) {
 	gotReason := errutil.ReasonFromError(result)
 	if gotReason != pb.ErrorReason_ERROR_REASON_PERMISSION_APPLICATION_STATE_CHANGED {
 		t.Errorf("reason = %v, want PERMISSION_APPLICATION_STATE_CHANGED", gotReason)
+	}
+}
+
+func TestServer_GetHostConfig_ReturnsConfig(t *testing.T) {
+	skillRepo := &configurableSkillRepo{
+		skills: []*protocol.Skill{
+			{Name: "skill-1", Description: "test skill", Config: map[string]string{"k": "v"}},
+		},
+	}
+	ruleRepo := &configurableRuleRepo{
+		rules: []*protocol.Rule{
+			{Name: "rule-1", Content: "do the thing"},
+		},
+	}
+	gitKeyRepo := newConfigurableGitKeyRepo()
+
+	server, specMgr := newServerTestEnvWithConfig(t, skillRepo, ruleRepo, gitKeyRepo)
+
+	// Create git key via gRPC (encrypts token properly)
+	_, err := server.CreateGitKey(context.Background(), &pb.CreateGitKeyRequest{
+		Name:      "key-1",
+		Token:     "secret-token",
+		TokenType: "SSH_KEY",
+		Host:      "github.com",
+	})
+	if err != nil {
+		t.Fatalf("CreateGitKey: %v", err)
+	}
+
+	// Create a host spec with skills, rules, git keys
+	specMgr.Create(context.Background(), &protocol.HostSpec{
+		Name:    "config-host",
+		Skills:  []string{"skill-1"},
+		Rules:   []string{"rule-1"},
+		GitKeys: []string{"key-1"},
+	})
+
+	resp, err := server.GetHostConfig(context.Background(), &pb.GetHostConfigRequest{Name: "config-host"})
+	if err != nil {
+		t.Fatalf("GetHostConfig: %v", err)
+	}
+
+	if len(resp.GetSkills()) != 1 || resp.GetSkills()[0].GetName() != "skill-1" {
+		t.Errorf("Skills = %v, want [skill-1]", resp.GetSkills())
+	}
+	if resp.GetSkills()[0].GetDescription() != "test skill" {
+		t.Errorf("Skill description = %q, want %q", resp.GetSkills()[0].GetDescription(), "test skill")
+	}
+	if len(resp.GetRules()) != 1 || resp.GetRules()[0].GetName() != "rule-1" {
+		t.Errorf("Rules = %v, want [rule-1]", resp.GetRules())
+	}
+	if resp.GetRules()[0].GetContent() != "do the thing" {
+		t.Errorf("Rule content = %q, want %q", resp.GetRules()[0].GetContent(), "do the thing")
+	}
+	if len(resp.GetGitKeys()) != 1 || resp.GetGitKeys()[0].GetName() != "key-1" {
+		t.Errorf("GitKeys = %v, want [key-1]", resp.GetGitKeys())
+	}
+	if resp.GetGitKeys()[0].GetTokenType() != "SSH_KEY" {
+		t.Errorf("GitKey TokenType = %q, want %q", resp.GetGitKeys()[0].GetTokenType(), "SSH_KEY")
+	}
+	if resp.GetGitKeys()[0].GetHost() != "github.com" {
+		t.Errorf("GitKey Host = %q, want %q", resp.GetGitKeys()[0].GetHost(), "github.com")
+	}
+	if resp.GetGitKeys()[0].GetDecryptedToken() != "secret-token" {
+		t.Errorf("GitKey DecryptedToken = %q, want %q", resp.GetGitKeys()[0].GetDecryptedToken(), "secret-token")
+	}
+}
+
+func TestServer_GetHostConfig_HostNotFound(t *testing.T) {
+	server, _ := newServerTestEnvWithConfig(t, &configurableSkillRepo{}, &configurableRuleRepo{}, newConfigurableGitKeyRepo())
+
+	_, err := server.GetHostConfig(context.Background(), &pb.GetHostConfigRequest{Name: "nonexistent"})
+	if err == nil {
+		t.Fatal("expected error for nonexistent host")
+	}
+	if status.Code(err) != codes.NotFound {
+		t.Errorf("status code = %v, want %v", status.Code(err), codes.NotFound)
+	}
+}
+
+func TestServer_UpdateGitKey_PartialUpdate(t *testing.T) {
+	gitKeyRepo := newConfigurableGitKeyRepo()
+
+	server, _ := newServerTestEnvWithConfig(t, &configurableSkillRepo{}, &configurableRuleRepo{}, gitKeyRepo)
+
+	// Create key via gRPC (encrypts token)
+	_, err := server.CreateGitKey(context.Background(), &pb.CreateGitKeyRequest{
+		Name:      "key-1",
+		Token:     "original-token",
+		TokenType: "PERSONAL_ACCESS_TOKEN",
+		Host:      "gitlab.com",
+	})
+	if err != nil {
+		t.Fatalf("CreateGitKey: %v", err)
+	}
+
+	resp, err := server.UpdateGitKey(context.Background(), &pb.UpdateGitKeyRequest{
+		Name:  "key-1",
+		Token: "new-token",
+	})
+	if err != nil {
+		t.Fatalf("UpdateGitKey: %v", err)
+	}
+
+	// tokenType and host should be preserved
+	if resp.GetTokenType() != "PERSONAL_ACCESS_TOKEN" {
+		t.Errorf("TokenType = %q, want %q", resp.GetTokenType(), "PERSONAL_ACCESS_TOKEN")
+	}
+	if resp.GetHost() != "gitlab.com" {
+		t.Errorf("Host = %q, want %q", resp.GetHost(), "gitlab.com")
 	}
 }

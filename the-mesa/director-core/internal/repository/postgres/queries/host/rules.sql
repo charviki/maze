@@ -17,3 +17,6 @@ RETURNING *;
 
 -- name: DeleteRuleByName :exec
 DELETE FROM rules WHERE name = $1;
+
+-- name: GetRulesByNames :many
+SELECT * FROM rules WHERE name = ANY($1::text[]);

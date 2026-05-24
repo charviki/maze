@@ -62,6 +62,37 @@ func (q *Queries) GetSkillByName(ctx context.Context, name string) (Skill, error
 	return i, err
 }
 
+const getSkillsByNames = `-- name: GetSkillsByNames :many
+SELECT id, name, description, config, created_at, updated_at FROM skills WHERE name = ANY($1::text[])
+`
+
+func (q *Queries) GetSkillsByNames(ctx context.Context, dollar_1 []string) ([]Skill, error) {
+	rows, err := q.db.Query(ctx, getSkillsByNames, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Skill
+	for rows.Next() {
+		var i Skill
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.Config,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listSkills = `-- name: ListSkills :many
 SELECT id, name, description, config, created_at, updated_at FROM skills ORDER BY name ASC
 `

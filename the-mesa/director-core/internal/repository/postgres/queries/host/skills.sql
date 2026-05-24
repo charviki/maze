@@ -17,3 +17,6 @@ RETURNING *;
 
 -- name: DeleteSkillByName :exec
 DELETE FROM skills WHERE name = $1;
+
+-- name: GetSkillsByNames :many
+SELECT * FROM skills WHERE name = ANY($1::text[]);

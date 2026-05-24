@@ -27,6 +27,8 @@ type HostService struct {
 	hostSpecRepo  HostSpecRepository
 	skillRepo     SkillRepo
 	mcpServerRepo MCPServerRepo
+	ruleRepo      RuleRepo
+	gitKeySvc     GitKeyReadSvc
 	txm           HostTxManager
 	runtime       runtime.HostRuntime
 	auditLog      AuditLogWriter
@@ -75,11 +77,13 @@ func (s *HostService) SetCredentialStore(store repository.CredentialStore) {
 	})
 }
 
-// SetResourceRepos 延迟注入 SkillRepo 和 MCPServerRepo，用于创建 Host 时校验资源存在性。
+// SetResourceRepos 延迟注入 SkillRepo、MCPServerRepo、RuleRepo、GitKeySvc，用于创建 Host 时校验资源存在性。
 // 必须在服务就绪（接受请求）前调用。
-func (s *HostService) SetResourceRepos(skillRepo SkillRepo, mcpServerRepo MCPServerRepo) {
+func (s *HostService) SetResourceRepos(skillRepo SkillRepo, mcpServerRepo MCPServerRepo, ruleRepo RuleRepo, gitKeySvc GitKeyReadSvc) {
 	s.skillRepo = skillRepo
 	s.mcpServerRepo = mcpServerRepo
+	s.ruleRepo = ruleRepo
+	s.gitKeySvc = gitKeySvc
 }
 
 // CreateHost 校验 → 持久化 HostSpec → 后台异步构建部署
@@ -113,6 +117,22 @@ func (s *HostService) CreateHost(ctx context.Context, req *protocol.CreateHostRe
 		}
 	}
 
+	if s.ruleRepo != nil {
+		if unknown, err := s.validateRulesExist(ctx, req.Rules); err != nil {
+			return nil, fmt.Errorf("validate rules: %w", err)
+		} else if len(unknown) > 0 {
+			return nil, fmt.Errorf("unknown rules: %s", strings.Join(unknown, ", "))
+		}
+	}
+
+	if s.gitKeySvc != nil {
+		if unknown, err := s.validateGitKeysExist(ctx, req.GitKeys); err != nil {
+			return nil, fmt.Errorf("validate git_keys: %w", err)
+		} else if len(unknown) > 0 {
+			return nil, fmt.Errorf("unknown git_keys: %s", strings.Join(unknown, ", "))
+		}
+	}
+
 	tokenBytes := make([]byte, 32)
 	if _, err := rand.Read(tokenBytes); err != nil {
 		return nil, fmt.Errorf("generate host token: %w", err)
@@ -126,6 +146,8 @@ func (s *HostService) CreateHost(ctx context.Context, req *protocol.CreateHostRe
 		Resources:   req.Resources,
 		Skills:      req.Skills,
 		MCPServers:  req.MCPServers,
+		Rules:       req.Rules,
+		GitKeys:     req.GitKeys,
 		AuthToken:   hostToken,
 		Status:      protocol.HostStatusPending,
 	}
@@ -416,30 +438,100 @@ func (s *HostService) revokeHostCredential(ctx context.Context, name string) {
 	}
 }
 
-func (s *HostService) validateSkillsExist(ctx context.Context, names []string) ([]string, error) {
+// nameChecker reports whether a named resource exists.
+type nameChecker func(ctx context.Context, name string) (bool, error)
+
+func validateNamesExist(ctx context.Context, names []string, resourceLabel string, check nameChecker) ([]string, error) {
 	var unknown []string
 	for _, name := range names {
-		skill, err := s.skillRepo.Get(ctx, name)
+		exists, err := check(ctx, name)
 		if err != nil {
-			return nil, fmt.Errorf("check skill %q: %w", name, err)
+			return nil, fmt.Errorf("check %s %q: %w", resourceLabel, name, err)
 		}
-		if skill == nil {
+		if !exists {
 			unknown = append(unknown, name)
 		}
 	}
 	return unknown, nil
 }
 
+func (s *HostService) validateSkillsExist(ctx context.Context, names []string) ([]string, error) {
+	return validateNamesExist(ctx, names, "skill", func(ctx context.Context, name string) (bool, error) {
+		item, err := s.skillRepo.Get(ctx, name)
+		return item != nil, err
+	})
+}
+
 func (s *HostService) validateMCPServersExist(ctx context.Context, names []string) ([]string, error) {
-	var unknown []string
-	for _, name := range names {
-		server, err := s.mcpServerRepo.Get(ctx, name)
+	return validateNamesExist(ctx, names, "mcp_server", func(ctx context.Context, name string) (bool, error) {
+		item, err := s.mcpServerRepo.Get(ctx, name)
+		return item != nil, err
+	})
+}
+
+func (s *HostService) validateRulesExist(ctx context.Context, names []string) ([]string, error) {
+	return validateNamesExist(ctx, names, "rule", func(ctx context.Context, name string) (bool, error) {
+		item, err := s.ruleRepo.Get(ctx, name)
+		return item != nil, err
+	})
+}
+
+func (s *HostService) validateGitKeysExist(ctx context.Context, names []string) ([]string, error) {
+	return validateNamesExist(ctx, names, "git_key", func(ctx context.Context, name string) (bool, error) {
+		item, err := s.gitKeySvc.Get(ctx, name)
+		return item != nil, err
+	})
+}
+
+// GetHostConfig returns the full config for a host (skills, rules, git keys with decrypted tokens).
+func (s *HostService) GetHostConfig(ctx context.Context, name string) (*protocol.HostConfig, error) {
+	spec, err := s.hostSpecRepo.Get(ctx, name)
+	if err != nil {
+		return nil, fmt.Errorf("get host spec %q: %w", name, err)
+	}
+	if spec == nil {
+		return nil, ErrNotFound
+	}
+
+	cfg := &protocol.HostConfig{}
+
+	if len(spec.Skills) > 0 && s.skillRepo != nil {
+		skills, err := s.skillRepo.GetByNames(ctx, spec.Skills)
 		if err != nil {
-			return nil, fmt.Errorf("check mcp_server %q: %w", name, err)
-		}
-		if server == nil {
-			unknown = append(unknown, name)
+			s.logger.Warnf("[host-config] batch get skills for host %q failed: %v", name, err)
+		} else {
+			for _, skill := range skills {
+				cfg.Skills = append(cfg.Skills, protocol.SkillConfig{
+					Name:        skill.Name,
+					Description: skill.Description,
+					Config:      skill.Config,
+				})
+			}
 		}
 	}
-	return unknown, nil
+
+	if len(spec.Rules) > 0 && s.ruleRepo != nil {
+		rules, err := s.ruleRepo.GetByNames(ctx, spec.Rules)
+		if err != nil {
+			s.logger.Warnf("[host-config] batch get rules for host %q failed: %v", name, err)
+		} else {
+			for _, rule := range rules {
+				cfg.Rules = append(cfg.Rules, protocol.RuleConfig{
+					Name:    rule.Name,
+					Content: rule.Content,
+				})
+			}
+		}
+	}
+
+	if len(spec.GitKeys) > 0 && s.gitKeySvc != nil {
+		items, err := s.gitKeySvc.DecryptTokensByNames(ctx, spec.GitKeys)
+		if err != nil {
+			s.logger.Warnf("[host-config] batch decrypt git keys for host %q failed: %v", name, err)
+		} else {
+			cfg.GitKeys = items
+		}
+	}
+
+	return cfg, nil
 }

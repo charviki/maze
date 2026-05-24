@@ -553,7 +553,7 @@ var File_maze_v1_agent_proto protoreflect.FileDescriptor
 
 const file_maze_v1_agent_proto_rawDesc = "" +
 	"\n" +
-	"\x13maze/v1/agent.proto\x12\amaze.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x14maze/v1/config.proto\"}\n" +
+	"\x13maze/v1/agent.proto\x12\amaze.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x14maze/v1/config.proto\x1a\x12maze/v1/host.proto\"}\n" +
 	"\x11AgentCapabilities\x12/\n" +
 	"\x13supported_templates\x18\x01 \x03(\tR\x12supportedTemplates\x12!\n" +
 	"\fmax_sessions\x18\x02 \x01(\x05R\vmaxSessions\x12\x14\n" +
@@ -592,10 +592,11 @@ const file_maze_v1_agent_proto_rawDesc = "" +
 	"\x06status\x18\x02 \x01(\v2\x14.maze.v1.AgentStatusR\x06status\"?\n" +
 	"\x11HeartbeatResponse\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
-	"\x06status\x18\x02 \x01(\tR\x06status2\xda\x01\n" +
+	"\x06status\x18\x02 \x01(\tR\x06status2\xac\x02\n" +
 	"\fAgentService\x12b\n" +
 	"\bRegister\x12\x18.maze.v1.RegisterRequest\x1a\x19.maze.v1.RegisterResponse\"!\x82\xd3\xe4\x93\x02\x1b:\x01*\"\x16/api/v1/nodes/register\x12f\n" +
-	"\tHeartbeat\x12\x19.maze.v1.HeartbeatRequest\x1a\x1a.maze.v1.HeartbeatResponse\"\"\x82\xd3\xe4\x93\x02\x1c:\x01*\"\x17/api/v1/nodes/heartbeatB\x9a\x01\n" +
+	"\tHeartbeat\x12\x19.maze.v1.HeartbeatRequest\x1a\x1a.maze.v1.HeartbeatResponse\"\"\x82\xd3\xe4\x93\x02\x1c:\x01*\"\x17/api/v1/nodes/heartbeat\x12P\n" +
+	"\rGetHostConfig\x12\x1d.maze.v1.GetHostConfigRequest\x1a\x1e.maze.v1.GetHostConfigResponse\"\x00B\x9a\x01\n" +
 	"\vcom.maze.v1B\n" +
 	"AgentProtoP\x01ZBgithub.com/charviki/maze/fabrication/cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
 
@@ -613,32 +614,36 @@ func file_maze_v1_agent_proto_rawDescGZIP() []byte {
 
 var file_maze_v1_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_maze_v1_agent_proto_goTypes = []any{
-	(*AgentCapabilities)(nil), // 0: maze.v1.AgentCapabilities
-	(*AgentStatus)(nil),       // 1: maze.v1.AgentStatus
-	(*SessionDetail)(nil),     // 2: maze.v1.SessionDetail
-	(*AgentMetadata)(nil),     // 3: maze.v1.AgentMetadata
-	(*RegisterRequest)(nil),   // 4: maze.v1.RegisterRequest
-	(*RegisterResponse)(nil),  // 5: maze.v1.RegisterResponse
-	(*HeartbeatRequest)(nil),  // 6: maze.v1.HeartbeatRequest
-	(*HeartbeatResponse)(nil), // 7: maze.v1.HeartbeatResponse
-	(*LocalAgentConfig)(nil),  // 8: maze.v1.LocalAgentConfig
+	(*AgentCapabilities)(nil),     // 0: maze.v1.AgentCapabilities
+	(*AgentStatus)(nil),           // 1: maze.v1.AgentStatus
+	(*SessionDetail)(nil),         // 2: maze.v1.SessionDetail
+	(*AgentMetadata)(nil),         // 3: maze.v1.AgentMetadata
+	(*RegisterRequest)(nil),       // 4: maze.v1.RegisterRequest
+	(*RegisterResponse)(nil),      // 5: maze.v1.RegisterResponse
+	(*HeartbeatRequest)(nil),      // 6: maze.v1.HeartbeatRequest
+	(*HeartbeatResponse)(nil),     // 7: maze.v1.HeartbeatResponse
+	(*LocalAgentConfig)(nil),      // 8: maze.v1.LocalAgentConfig
+	(*GetHostConfigRequest)(nil),  // 9: maze.v1.GetHostConfigRequest
+	(*GetHostConfigResponse)(nil), // 10: maze.v1.GetHostConfigResponse
 }
 var file_maze_v1_agent_proto_depIdxs = []int32{
-	2, // 0: maze.v1.AgentStatus.session_details:type_name -> maze.v1.SessionDetail
-	8, // 1: maze.v1.AgentStatus.local_config:type_name -> maze.v1.LocalAgentConfig
-	0, // 2: maze.v1.RegisterRequest.capabilities:type_name -> maze.v1.AgentCapabilities
-	1, // 3: maze.v1.RegisterRequest.status:type_name -> maze.v1.AgentStatus
-	3, // 4: maze.v1.RegisterRequest.metadata:type_name -> maze.v1.AgentMetadata
-	1, // 5: maze.v1.HeartbeatRequest.status:type_name -> maze.v1.AgentStatus
-	4, // 6: maze.v1.AgentService.Register:input_type -> maze.v1.RegisterRequest
-	6, // 7: maze.v1.AgentService.Heartbeat:input_type -> maze.v1.HeartbeatRequest
-	5, // 8: maze.v1.AgentService.Register:output_type -> maze.v1.RegisterResponse
-	7, // 9: maze.v1.AgentService.Heartbeat:output_type -> maze.v1.HeartbeatResponse
-	8, // [8:10] is the sub-list for method output_type
-	6, // [6:8] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	2,  // 0: maze.v1.AgentStatus.session_details:type_name -> maze.v1.SessionDetail
+	8,  // 1: maze.v1.AgentStatus.local_config:type_name -> maze.v1.LocalAgentConfig
+	0,  // 2: maze.v1.RegisterRequest.capabilities:type_name -> maze.v1.AgentCapabilities
+	1,  // 3: maze.v1.RegisterRequest.status:type_name -> maze.v1.AgentStatus
+	3,  // 4: maze.v1.RegisterRequest.metadata:type_name -> maze.v1.AgentMetadata
+	1,  // 5: maze.v1.HeartbeatRequest.status:type_name -> maze.v1.AgentStatus
+	4,  // 6: maze.v1.AgentService.Register:input_type -> maze.v1.RegisterRequest
+	6,  // 7: maze.v1.AgentService.Heartbeat:input_type -> maze.v1.HeartbeatRequest
+	9,  // 8: maze.v1.AgentService.GetHostConfig:input_type -> maze.v1.GetHostConfigRequest
+	5,  // 9: maze.v1.AgentService.Register:output_type -> maze.v1.RegisterResponse
+	7,  // 10: maze.v1.AgentService.Heartbeat:output_type -> maze.v1.HeartbeatResponse
+	10, // 11: maze.v1.AgentService.GetHostConfig:output_type -> maze.v1.GetHostConfigResponse
+	9,  // [9:12] is the sub-list for method output_type
+	6,  // [6:9] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_maze_v1_agent_proto_init() }
@@ -647,6 +652,7 @@ func file_maze_v1_agent_proto_init() {
 		return
 	}
 	file_maze_v1_config_proto_init()
+	file_maze_v1_host_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

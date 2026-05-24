@@ -43,6 +43,14 @@ func (r *HostSpecRepository) Create(ctx context.Context, spec *protocol.HostSpec
 	if err != nil {
 		return false, err
 	}
+	rules, err := json.Marshal(spec.Rules)
+	if err != nil {
+		return false, err
+	}
+	gitKeys, err := json.Marshal(spec.GitKeys)
+	if err != nil {
+		return false, err
+	}
 	rowsAffected, err := r.queries(ctx).InsertHostSpec(ctx, hostgen.InsertHostSpecParams{
 		Name:        spec.Name,
 		DisplayName: spec.DisplayName,
@@ -52,6 +60,8 @@ func (r *HostSpecRepository) Create(ctx context.Context, spec *protocol.HostSpec
 		McpServers:  mcpServers,
 		AuthToken:   spec.AuthToken,
 		Status:      spec.Status,
+		Rules:       rules,
+		GitKeys:     gitKeys,
 	})
 	if err != nil {
 		return false, err
@@ -148,6 +158,18 @@ func hostSpecFromRow(row hostgen.HostSpec) protocol.HostSpec {
 			slog.Warn("unmarshal host_spec.mcp_servers failed", "name", row.Name, "err", err)
 		}
 	}
+	var rules []string
+	if len(row.Rules) > 0 {
+		if err := json.Unmarshal(row.Rules, &rules); err != nil {
+			slog.Warn("unmarshal host_spec.rules failed", "name", row.Name, "err", err)
+		}
+	}
+	var gitKeys []string
+	if len(row.GitKeys) > 0 {
+		if err := json.Unmarshal(row.GitKeys, &gitKeys); err != nil {
+			slog.Warn("unmarshal host_spec.git_keys failed", "name", row.Name, "err", err)
+		}
+	}
 	return protocol.HostSpec{
 		Name:        row.Name,
 		DisplayName: row.DisplayName,
@@ -155,6 +177,8 @@ func hostSpecFromRow(row hostgen.HostSpec) protocol.HostSpec {
 		Resources:   resources,
 		Skills:      skills,
 		MCPServers:  mcpServers,
+		Rules:       rules,
+		GitKeys:     gitKeys,
 		AuthToken:   row.AuthToken,
 		Status:      row.Status,
 		ErrorMsg:    row.ErrorMsg,

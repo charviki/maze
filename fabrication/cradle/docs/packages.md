@@ -10,6 +10,6 @@
 | grpcutil | gRPC 生命周期适配器（`ManagedGRPCServer`） |
 | lifecycle | 多服务器统一启停管理（errgroup + signal + 优雅关闭） |
 | pipeline | Session 管线步骤定义与层级过滤 |
-| protocol | 领域模型：Agent 注册/心跳、Host 部署、审计日志（JSON 持久化） |
+| protocol | 领域模型：Agent 注册/心跳、Host 部署、Host 配置注入（HostConfig/SkillConfig/RuleConfig/GitKeyItem）、Git 密钥（含 token_type/host）、审计日志（JSON 持久化） |
 | maskutil | 敏感值脱敏 |
 | storeutil | 泛型 JSON 持久化存储 |

@@ -1,6 +1,6 @@
 -- name: InsertHostSpec :execrows
-INSERT INTO host_specs (name, display_name, tools, resources, skills, mcp_servers, auth_token, status)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+INSERT INTO host_specs (name, display_name, tools, resources, skills, mcp_servers, auth_token, status, rules, git_keys)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 ON CONFLICT (name) DO NOTHING;
 
 -- name: GetHostSpecByName :one

@@ -239,44 +239,43 @@ func extractHashFromDockerfile(dockerfile string) string {
 	return ""
 }
 
-func TestComputeComboHash_NilDigestsFallback(t *testing.T) {
+func TestComputeComboHash_NilFingerprintsFallback(t *testing.T) {
 	content := "FROM test-base:latest\nRUN echo hello"
 	textOnly := DockerfileHash(content)
 	comboWithNil := ComputeComboHash(content, nil)
 
 	if textOnly != comboWithNil {
-		t.Errorf("nil digests should produce same hash as text-only: text=%s combo=%s", textOnly, comboWithNil)
+		t.Errorf("nil fingerprints should produce same hash as text-only: text=%s combo=%s", textOnly, comboWithNil)
 	}
 }
 
-func TestComputeComboHash_SameTextDifferentDigests(t *testing.T) {
+func TestComputeComboHash_SameTextDifferentFingerprints(t *testing.T) {
 	content := "FROM test-base:latest\nRUN echo hello"
 
 	hash1 := ComputeComboHash(content, map[string]string{"maze-deps-claude:latest": "sha256:aaa"})
 	hash2 := ComputeComboHash(content, map[string]string{"maze-deps-claude:latest": "sha256:bbb"})
 
 	if hash1 == hash2 {
-		t.Errorf("same text with different digests should produce different hash: %s == %s", hash1, hash2)
+		t.Errorf("same text with different fingerprints should produce different hash: %s == %s", hash1, hash2)
 	}
 }
 
-func TestComputeComboHash_SameDigestsSameHash(t *testing.T) {
+func TestComputeComboHash_SameFingerprintsSameHash(t *testing.T) {
 	content := "FROM test-base:latest\nRUN echo hello"
-	digests := map[string]string{"maze-deps-claude:latest": "sha256:aaa"}
+	fingerprints := map[string]string{"maze-deps-claude:latest": "sha256:aaa"}
 
-	hash1 := ComputeComboHash(content, digests)
-	hash2 := ComputeComboHash(content, digests)
+	hash1 := ComputeComboHash(content, fingerprints)
+	hash2 := ComputeComboHash(content, fingerprints)
 
 	if hash1 != hash2 {
-		t.Errorf("same text and digests should produce same hash: %s != %s", hash1, hash2)
+		t.Errorf("same text and fingerprints should produce same hash: %s != %s", hash1, hash2)
 	}
 }
 
-func TestComputeComboHash_DigestChangesHash(t *testing.T) {
+func TestComputeComboHash_FingerprintChangesHash(t *testing.T) {
 	tools := []string{"claude"}
 	base := "test-base:latest"
 
-	// Same tools + base but different digests should produce different Dockerfile hashes
 	result1 := GenerateHostDockerfile(tools, base, map[string]string{
 		"maze-deps-claude:latest": "sha256:version1",
 		"test-base:latest":        "sha256:base1",
@@ -290,6 +289,6 @@ func TestComputeComboHash_DigestChangesHash(t *testing.T) {
 	hash2 := extractHashFromDockerfile(result2)
 
 	if hash1 == hash2 {
-		t.Errorf("supplier digest change should produce different hash: %s == %s", hash1, hash2)
+		t.Errorf("fingerprint change should produce different hash: %s == %s", hash1, hash2)
 	}
 }

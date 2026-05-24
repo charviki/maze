@@ -6,12 +6,12 @@ servers:
 - url: /
 tags:
 - name: ConfigService
+- name: HostService
 - name: AgentService
 - name: AuditService
 - name: AuthService
 - name: PermissionService
 - name: GitKeyService
-- name: HostService
 - name: KnowledgeService
 - name: MCPService
 - name: NodeService
@@ -659,6 +659,36 @@ paths:
           description: An unexpected error response.
       tags:
       - GitKeyService
+    put:
+      operationId: GitKeyService_UpdateGitKey
+      parameters:
+      - in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GitKeyServiceUpdateGitKeyBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1GitKey"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - GitKeyService
+      x-codegen-request-body-name: body
   /api/v1/host/tools:
     get:
       operationId: HostService_ListTools
@@ -757,6 +787,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1HostInfo"
+          description: A successful response.
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/rpcStatus"
+          description: An unexpected error response.
+      tags:
+      - HostService
+  /api/v1/hosts/{name}/config:
+    get:
+      operationId: HostService_GetHostConfig
+      parameters:
+      - in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1GetHostConfigResponse"
           description: A successful response.
         default:
           content:
@@ -2732,6 +2786,19 @@ components:
             type: string
           type: object
       type: object
+    GitKeyServiceUpdateGitKeyBody:
+      example:
+        host: host
+        tokenType: tokenType
+        token: token
+      properties:
+        token:
+          type: string
+        tokenType:
+          type: string
+        host:
+          type: string
+      type: object
     KnowledgeServiceCreateLinkBody:
       example:
         relationType: relationType
@@ -3363,6 +3430,10 @@ components:
           type: string
         token:
           type: string
+        tokenType:
+          type: string
+        host:
+          type: string
       type: object
     v1CreateHostRequest:
       properties:
@@ -3381,6 +3452,14 @@ components:
             type: string
           type: array
         mcpServers:
+          items:
+            type: string
+          type: array
+        rules:
+          items:
+            type: string
+          type: array
+        gitKeys:
           items:
             type: string
           type: array
@@ -3844,6 +3923,45 @@ components:
             type: string
           type: object
       type: object
+    v1GetHostConfigResponse:
+      example:
+        skills:
+        - name: name
+          description: description
+          config:
+            key: config
+        - name: name
+          description: description
+          config:
+            key: config
+        gitKeys:
+        - decryptedToken: decryptedToken
+          name: name
+          host: host
+          tokenType: tokenType
+        - decryptedToken: decryptedToken
+          name: name
+          host: host
+          tokenType: tokenType
+        rules:
+        - name: name
+          content: content
+        - name: name
+          content: content
+      properties:
+        skills:
+          items:
+            $ref: "#/components/schemas/v1HostConfigSkill"
+          type: array
+        rules:
+          items:
+            $ref: "#/components/schemas/v1HostConfigRule"
+          type: array
+        gitKeys:
+          items:
+            $ref: "#/components/schemas/v1HostConfigGitKey"
+          type: array
+      type: object
     v1GetLinksResponse:
       example:
         links:
@@ -3909,6 +4027,8 @@ components:
       example:
         createdAt: createdAt
         name: name
+        host: host
+        tokenType: tokenType
         tokenMask: tokenMask
         updatedAt: updatedAt
       properties:
@@ -3919,6 +4039,10 @@ components:
         createdAt:
           type: string
         updatedAt:
+          type: string
+        tokenType:
+          type: string
+        host:
           type: string
       type: object
     v1HeartbeatRequest:
@@ -3939,6 +4063,48 @@ components:
         status:
           type: string
       type: object
+    v1HostConfigGitKey:
+      example:
+        decryptedToken: decryptedToken
+        name: name
+        host: host
+        tokenType: tokenType
+      properties:
+        name:
+          type: string
+        tokenType:
+          type: string
+        host:
+          type: string
+        decryptedToken:
+          type: string
+      type: object
+    v1HostConfigRule:
+      example:
+        name: name
+        content: content
+      properties:
+        name:
+          type: string
+        content:
+          type: string
+      type: object
+    v1HostConfigSkill:
+      example:
+        name: name
+        description: description
+        config:
+          key: config
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        config:
+          additionalProperties:
+            type: string
+          type: object
+      type: object
     v1HostInfo:
       example:
         address: address
@@ -3951,6 +4117,9 @@ components:
         mcpServers:
         - mcpServers
         - mcpServers
+        rules:
+        - rules
+        - rules
         tools:
         - tools
         - tools
@@ -3959,6 +4128,9 @@ components:
         - skills
         - skills
         createdAt: createdAt
+        gitKeys:
+        - gitKeys
+        - gitKeys
         sessionCount: 6
         name: name
         updatedAt: updatedAt
@@ -4000,30 +4172,44 @@ components:
           items:
             type: string
           type: array
+        rules:
+          items:
+            type: string
+          type: array
+        gitKeys:
+          items:
+            type: string
+          type: array
       title: 与 protocol.HostInfo 对齐（HostSpec + 运行时状态合并视图）
       type: object
     v1HostSpec:
       example:
-        skills:
-        - skills
-        - skills
-        createdAt: createdAt
         displayName: displayName
         retryCount: 0
         authToken: authToken
-        name: name
         resources:
           cpuLimit: cpuLimit
           memoryLimit: memoryLimit
         mcpServers:
         - mcpServers
         - mcpServers
+        rules:
+        - rules
+        - rules
         tools:
         - tools
         - tools
+        errorMsg: errorMsg
+        skills:
+        - skills
+        - skills
+        createdAt: createdAt
+        gitKeys:
+        - gitKeys
+        - gitKeys
+        name: name
         updatedAt: updatedAt
         status: status
-        errorMsg: errorMsg
       properties:
         name:
           type: string
@@ -4053,6 +4239,14 @@ components:
             type: string
           type: array
         mcpServers:
+          items:
+            type: string
+          type: array
+        rules:
+          items:
+            type: string
+          type: array
+        gitKeys:
           items:
             type: string
           type: array
@@ -4159,10 +4353,14 @@ components:
         gitKeys:
         - createdAt: createdAt
           name: name
+          host: host
+          tokenType: tokenType
           tokenMask: tokenMask
           updatedAt: updatedAt
         - createdAt: createdAt
           name: name
+          host: host
+          tokenType: tokenType
           tokenMask: tokenMask
           updatedAt: updatedAt
       properties:
@@ -4184,6 +4382,9 @@ components:
           mcpServers:
           - mcpServers
           - mcpServers
+          rules:
+          - rules
+          - rules
           tools:
           - tools
           - tools
@@ -4192,6 +4393,9 @@ components:
           - skills
           - skills
           createdAt: createdAt
+          gitKeys:
+          - gitKeys
+          - gitKeys
           sessionCount: 6
           name: name
           updatedAt: updatedAt
@@ -4206,6 +4410,9 @@ components:
           mcpServers:
           - mcpServers
           - mcpServers
+          rules:
+          - rules
+          - rules
           tools:
           - tools
           - tools
@@ -4214,6 +4421,9 @@ components:
           - skills
           - skills
           createdAt: createdAt
+          gitKeys:
+          - gitKeys
+          - gitKeys
           sessionCount: 6
           name: name
           updatedAt: updatedAt

@@ -5,10 +5,11 @@ import { KeyRound } from 'lucide-react';
 import { GitKeyDetailPanel } from './GitKeyDetailPanel';
 import { useFabricationList } from '../shared/useFabricationList';
 import { FabricationListColumn } from '../shared/FabricationListColumn';
+import { TOKEN_TYPE_DISPLAY, type CreateGitKeyData } from './constants';
 
 interface GitKeyApi {
   list(): Promise<V1GitKey[]>;
-  create(data: { name: string; token: string }): Promise<V1GitKey>;
+  create(data: CreateGitKeyData): Promise<V1GitKey>;
   delete(name: string): Promise<void>;
 }
 
@@ -56,6 +57,20 @@ export function GitKeyList({ api }: { api: GitKeyApi }) {
         editingItem={null}
         selectedName={selectedName}
         renderItemSubtitle={(item) => item.tokenMask}
+        renderItemExtra={(item) => (
+          <div className="flex items-center gap-2 mt-1">
+            {item.tokenType && (
+              <span className="inline-block px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-widest border border-primary/30 bg-primary/10 text-primary">
+                {TOKEN_TYPE_DISPLAY[item.tokenType] ?? item.tokenType}
+              </span>
+            )}
+            {item.host && (
+              <span className="text-[9px] font-mono text-primary/40 uppercase tracking-widest truncate">
+                {item.host}
+              </span>
+            )}
+          </div>
+        )}
         onCreate={() => {
           handleCreate();
           setSelectedName(null);

@@ -59,6 +59,10 @@ type CreateHostRequest struct {
 	Skills []string `json:"skills,omitempty"`
 	// MCPServers 选配的 MCP Server 名称列表
 	MCPServers []string `json:"mcp_servers,omitempty"`
+	// Rules 选配的 Rule 名称列表
+	Rules []string `json:"rules,omitempty"`
+	// GitKeys 选配的 Git Key 名称列表
+	GitKeys []string `json:"git_keys,omitempty"`
 }
 
 // CreateHostResponse 创建 Host 响应
@@ -102,6 +106,8 @@ type HostSpec struct {
 	RetryCount  int            `json:"retry_count"`
 	Skills      []string       `json:"skills,omitempty"`
 	MCPServers  []string       `json:"mcp_servers,omitempty"`
+	Rules       []string       `json:"rules,omitempty"`
+	GitKeys     []string       `json:"git_keys,omitempty"`
 }
 
 // HostInfo API 响应的合并视图：HostSpec + NodeRegistry 运行时信息
@@ -124,4 +130,32 @@ type ContainerInfo struct {
 	Image string `json:"image"`
 	// CreatedAt 创建时间
 	CreatedAt time.Time `json:"created_at"`
+}
+
+// HostConfig black-ridge 启动时拉取的完整配置
+type HostConfig struct {
+	Skills  []SkillConfig `json:"skills"`
+	Rules   []RuleConfig  `json:"rules"`
+	GitKeys []GitKeyItem  `json:"git_keys"`
+}
+
+// SkillConfig skill 注入配置
+type SkillConfig struct {
+	Name        string            `json:"name"`
+	Description string            `json:"description"`
+	Config      map[string]string `json:"config,omitempty"`
+}
+
+// RuleConfig rule 注入配置
+type RuleConfig struct {
+	Name    string `json:"name"`
+	Content string `json:"content"`
+}
+
+// GitKeyItem git key 注入配置（含解密后的 token）
+type GitKeyItem struct {
+	Name           string `json:"name"`
+	TokenType      string `json:"token_type"`
+	Host           string `json:"host,omitempty"`
+	DecryptedToken string `json:"decrypted_token"`
 }

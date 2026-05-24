@@ -298,6 +298,8 @@ func (s *Server) CreateHost(ctx context.Context, req *pb.CreateHostRequest) (*pb
 		DisplayName: req.GetDisplayName(),
 		Skills:      req.GetSkills(),
 		MCPServers:  req.GetMcpServers(),
+		Rules:       req.GetRules(),
+		GitKeys:     req.GetGitKeys(),
 	}
 	if req.GetResources() != nil {
 		protoReq.Resources = protocol.ResourceLimits{
@@ -597,6 +599,8 @@ func hostInfoToProto(info *protocol.HostInfo) *pb.HostInfo {
 		LastHeartbeat: info.LastHeartbeat,
 		Skills:        info.Skills,
 		McpServers:    info.MCPServers,
+		Rules:         info.Rules,
+		GitKeys:       info.GitKeys,
 	}
 }
 
@@ -643,6 +647,8 @@ func hostSpecToProto(spec *protocol.HostSpec) *pb.HostSpec {
 		RetryCount:  safeInt32(spec.RetryCount),
 		Skills:      spec.Skills,
 		McpServers:  spec.MCPServers,
+		Rules:       spec.Rules,
+		GitKeys:     spec.GitKeys,
 	}
 }
 
@@ -918,8 +924,10 @@ func ruleToProto(rule *protocol.Rule) *pb.Rule {
 // CreateGitKey creates a new git key.
 func (s *Server) CreateGitKey(ctx context.Context, req *pb.CreateGitKeyRequest) (*pb.GitKey, error) {
 	result, err := s.gitKeySvc.Create(ctx, &protocol.GitKey{
-		Name:  req.GetName(),
-		Token: req.GetToken(),
+		Name:      req.GetName(),
+		Token:     req.GetToken(),
+		TokenType: req.GetTokenType(),
+		Host:      req.GetHost(),
 	})
 	if err != nil {
 		return nil, toStatusError(err)
@@ -957,6 +965,52 @@ func (s *Server) DeleteGitKey(ctx context.Context, req *pb.DeleteGitKeyRequest) 
 	return &emptypb.Empty{}, nil
 }
 
+// UpdateGitKey updates an existing git key.
+func (s *Server) UpdateGitKey(ctx context.Context, req *pb.UpdateGitKeyRequest) (*pb.GitKey, error) {
+	result, err := s.gitKeySvc.Update(ctx, &protocol.GitKey{
+		Name:      req.GetName(),
+		Token:     req.GetToken(),
+		TokenType: req.GetTokenType(),
+		Host:      req.GetHost(),
+	})
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+	return gitKeyToProto(result), nil
+}
+
+// GetHostConfig returns the full config for a host (skills, rules, git keys with decrypted tokens).
+func (s *Server) GetHostConfig(ctx context.Context, req *pb.GetHostConfigRequest) (*pb.GetHostConfigResponse, error) {
+	config, err := s.hostSvc.GetHostConfig(ctx, req.GetName())
+	if err != nil {
+		return nil, toStatusError(err)
+	}
+
+	resp := &pb.GetHostConfigResponse{}
+	for _, skill := range config.Skills {
+		resp.Skills = append(resp.Skills, &pb.HostConfigSkill{
+			Name:        skill.Name,
+			Description: skill.Description,
+			Config:      skill.Config,
+		})
+	}
+	for _, rule := range config.Rules {
+		resp.Rules = append(resp.Rules, &pb.HostConfigRule{
+			Name:    rule.Name,
+			Content: rule.Content,
+		})
+	}
+	for _, key := range config.GitKeys {
+		resp.GitKeys = append(resp.GitKeys, &pb.HostConfigGitKey{
+			Name:           key.Name,
+			TokenType:      key.TokenType,
+			Host:           key.Host,
+			DecryptedToken: key.DecryptedToken,
+		})
+	}
+	return resp, nil
+}
+
 func gitKeyToProto(key *protocol.GitKey) *pb.GitKey {
 	if key == nil {
 		return nil
@@ -964,6 +1018,8 @@ func gitKeyToProto(key *protocol.GitKey) *pb.GitKey {
 	return &pb.GitKey{
 		Name:      key.Name,
 		TokenMask: key.TokenMask,
+		TokenType: key.TokenType,
+		Host:      key.Host,
 		CreatedAt: key.CreatedAt.Format(time.RFC3339),
 		UpdatedAt: key.UpdatedAt.Format(time.RFC3339),
 	}

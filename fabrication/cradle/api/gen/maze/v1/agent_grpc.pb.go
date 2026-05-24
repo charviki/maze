@@ -19,8 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AgentService_Register_FullMethodName  = "/maze.v1.AgentService/Register"
-	AgentService_Heartbeat_FullMethodName = "/maze.v1.AgentService/Heartbeat"
+	AgentService_Register_FullMethodName      = "/maze.v1.AgentService/Register"
+	AgentService_Heartbeat_FullMethodName     = "/maze.v1.AgentService/Heartbeat"
+	AgentService_GetHostConfig_FullMethodName = "/maze.v1.AgentService/GetHostConfig"
 )
 
 // AgentServiceClient is the client API for AgentService service.
@@ -29,6 +30,7 @@ const (
 type AgentServiceClient interface {
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 	Heartbeat(ctx context.Context, in *HeartbeatRequest, opts ...grpc.CallOption) (*HeartbeatResponse, error)
+	GetHostConfig(ctx context.Context, in *GetHostConfigRequest, opts ...grpc.CallOption) (*GetHostConfigResponse, error)
 }
 
 type agentServiceClient struct {
@@ -59,12 +61,23 @@ func (c *agentServiceClient) Heartbeat(ctx context.Context, in *HeartbeatRequest
 	return out, nil
 }
 
+func (c *agentServiceClient) GetHostConfig(ctx context.Context, in *GetHostConfigRequest, opts ...grpc.CallOption) (*GetHostConfigResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetHostConfigResponse)
+	err := c.cc.Invoke(ctx, AgentService_GetHostConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AgentServiceServer is the server API for AgentService service.
 // All implementations must embed UnimplementedAgentServiceServer
 // for forward compatibility.
 type AgentServiceServer interface {
 	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
 	Heartbeat(context.Context, *HeartbeatRequest) (*HeartbeatResponse, error)
+	GetHostConfig(context.Context, *GetHostConfigRequest) (*GetHostConfigResponse, error)
 	mustEmbedUnimplementedAgentServiceServer()
 }
 
@@ -80,6 +93,9 @@ func (UnimplementedAgentServiceServer) Register(context.Context, *RegisterReques
 }
 func (UnimplementedAgentServiceServer) Heartbeat(context.Context, *HeartbeatRequest) (*HeartbeatResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Heartbeat not implemented")
+}
+func (UnimplementedAgentServiceServer) GetHostConfig(context.Context, *GetHostConfigRequest) (*GetHostConfigResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetHostConfig not implemented")
 }
 func (UnimplementedAgentServiceServer) mustEmbedUnimplementedAgentServiceServer() {}
 func (UnimplementedAgentServiceServer) testEmbeddedByValue()                      {}
@@ -138,6 +154,24 @@ func _AgentService_Heartbeat_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AgentService_GetHostConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetHostConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentServiceServer).GetHostConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AgentService_GetHostConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentServiceServer).GetHostConfig(ctx, req.(*GetHostConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AgentService_ServiceDesc is the grpc.ServiceDesc for AgentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -152,6 +186,10 @@ var AgentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Heartbeat",
 			Handler:    _AgentService_Heartbeat_Handler,
+		},
+		{
+			MethodName: "GetHostConfig",
+			Handler:    _AgentService_GetHostConfig_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

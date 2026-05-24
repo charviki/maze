@@ -39,6 +39,8 @@ type HostSpec struct {
 	RetryCount    int32                  `protobuf:"varint,10,opt,name=retry_count,json=retryCount,proto3" json:"retry_count,omitempty"`
 	Skills        []string               `protobuf:"bytes,11,rep,name=skills,proto3" json:"skills,omitempty"`
 	McpServers    []string               `protobuf:"bytes,12,rep,name=mcp_servers,json=mcpServers,proto3" json:"mcp_servers,omitempty"`
+	Rules         []string               `protobuf:"bytes,13,rep,name=rules,proto3" json:"rules,omitempty"`
+	GitKeys       []string               `protobuf:"bytes,14,rep,name=git_keys,json=gitKeys,proto3" json:"git_keys,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -153,6 +155,20 @@ func (x *HostSpec) GetSkills() []string {
 func (x *HostSpec) GetMcpServers() []string {
 	if x != nil {
 		return x.McpServers
+	}
+	return nil
+}
+
+func (x *HostSpec) GetRules() []string {
+	if x != nil {
+		return x.Rules
+	}
+	return nil
+}
+
+func (x *HostSpec) GetGitKeys() []string {
+	if x != nil {
+		return x.GitKeys
 	}
 	return nil
 }
@@ -328,6 +344,8 @@ type HostInfo struct {
 	LastHeartbeat string                 `protobuf:"bytes,12,opt,name=last_heartbeat,json=lastHeartbeat,proto3" json:"last_heartbeat,omitempty"`
 	Skills        []string               `protobuf:"bytes,13,rep,name=skills,proto3" json:"skills,omitempty"`
 	McpServers    []string               `protobuf:"bytes,14,rep,name=mcp_servers,json=mcpServers,proto3" json:"mcp_servers,omitempty"`
+	Rules         []string               `protobuf:"bytes,15,rep,name=rules,proto3" json:"rules,omitempty"`
+	GitKeys       []string               `protobuf:"bytes,16,rep,name=git_keys,json=gitKeys,proto3" json:"git_keys,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -460,6 +478,20 @@ func (x *HostInfo) GetMcpServers() []string {
 	return nil
 }
 
+func (x *HostInfo) GetRules() []string {
+	if x != nil {
+		return x.Rules
+	}
+	return nil
+}
+
+func (x *HostInfo) GetGitKeys() []string {
+	if x != nil {
+		return x.GitKeys
+	}
+	return nil
+}
+
 type CreateHostRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -468,6 +500,8 @@ type CreateHostRequest struct {
 	Resources     *ResourceLimits        `protobuf:"bytes,4,opt,name=resources,proto3" json:"resources,omitempty"`
 	Skills        []string               `protobuf:"bytes,5,rep,name=skills,proto3" json:"skills,omitempty"`
 	McpServers    []string               `protobuf:"bytes,6,rep,name=mcp_servers,json=mcpServers,proto3" json:"mcp_servers,omitempty"`
+	Rules         []string               `protobuf:"bytes,7,rep,name=rules,proto3" json:"rules,omitempty"`
+	GitKeys       []string               `protobuf:"bytes,8,rep,name=git_keys,json=gitKeys,proto3" json:"git_keys,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -540,6 +574,20 @@ func (x *CreateHostRequest) GetSkills() []string {
 func (x *CreateHostRequest) GetMcpServers() []string {
 	if x != nil {
 		return x.McpServers
+	}
+	return nil
+}
+
+func (x *CreateHostRequest) GetRules() []string {
+	if x != nil {
+		return x.Rules
+	}
+	return nil
+}
+
+func (x *CreateHostRequest) GetGitKeys() []string {
+	if x != nil {
+		return x.GitKeys
 	}
 	return nil
 }
@@ -1012,11 +1060,295 @@ func (x *ListToolsResponse) GetTools() []*ToolConfig {
 	return nil
 }
 
+type GetHostConfigRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetHostConfigRequest) Reset() {
+	*x = GetHostConfigRequest{}
+	mi := &file_maze_v1_host_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetHostConfigRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetHostConfigRequest) ProtoMessage() {}
+
+func (x *GetHostConfigRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_maze_v1_host_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetHostConfigRequest.ProtoReflect.Descriptor instead.
+func (*GetHostConfigRequest) Descriptor() ([]byte, []int) {
+	return file_maze_v1_host_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *GetHostConfigRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type HostConfigSkill struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	Config        map[string]string      `protobuf:"bytes,3,rep,name=config,proto3" json:"config,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HostConfigSkill) Reset() {
+	*x = HostConfigSkill{}
+	mi := &file_maze_v1_host_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HostConfigSkill) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HostConfigSkill) ProtoMessage() {}
+
+func (x *HostConfigSkill) ProtoReflect() protoreflect.Message {
+	mi := &file_maze_v1_host_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HostConfigSkill.ProtoReflect.Descriptor instead.
+func (*HostConfigSkill) Descriptor() ([]byte, []int) {
+	return file_maze_v1_host_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *HostConfigSkill) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *HostConfigSkill) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *HostConfigSkill) GetConfig() map[string]string {
+	if x != nil {
+		return x.Config
+	}
+	return nil
+}
+
+type HostConfigRule struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HostConfigRule) Reset() {
+	*x = HostConfigRule{}
+	mi := &file_maze_v1_host_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HostConfigRule) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HostConfigRule) ProtoMessage() {}
+
+func (x *HostConfigRule) ProtoReflect() protoreflect.Message {
+	mi := &file_maze_v1_host_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HostConfigRule.ProtoReflect.Descriptor instead.
+func (*HostConfigRule) Descriptor() ([]byte, []int) {
+	return file_maze_v1_host_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *HostConfigRule) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *HostConfigRule) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
+type HostConfigGitKey struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Name           string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	TokenType      string                 `protobuf:"bytes,2,opt,name=token_type,json=tokenType,proto3" json:"token_type,omitempty"`
+	Host           string                 `protobuf:"bytes,3,opt,name=host,proto3" json:"host,omitempty"`
+	DecryptedToken string                 `protobuf:"bytes,4,opt,name=decrypted_token,json=decryptedToken,proto3" json:"decrypted_token,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *HostConfigGitKey) Reset() {
+	*x = HostConfigGitKey{}
+	mi := &file_maze_v1_host_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HostConfigGitKey) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HostConfigGitKey) ProtoMessage() {}
+
+func (x *HostConfigGitKey) ProtoReflect() protoreflect.Message {
+	mi := &file_maze_v1_host_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HostConfigGitKey.ProtoReflect.Descriptor instead.
+func (*HostConfigGitKey) Descriptor() ([]byte, []int) {
+	return file_maze_v1_host_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *HostConfigGitKey) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *HostConfigGitKey) GetTokenType() string {
+	if x != nil {
+		return x.TokenType
+	}
+	return ""
+}
+
+func (x *HostConfigGitKey) GetHost() string {
+	if x != nil {
+		return x.Host
+	}
+	return ""
+}
+
+func (x *HostConfigGitKey) GetDecryptedToken() string {
+	if x != nil {
+		return x.DecryptedToken
+	}
+	return ""
+}
+
+type GetHostConfigResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Skills        []*HostConfigSkill     `protobuf:"bytes,1,rep,name=skills,proto3" json:"skills,omitempty"`
+	Rules         []*HostConfigRule      `protobuf:"bytes,2,rep,name=rules,proto3" json:"rules,omitempty"`
+	GitKeys       []*HostConfigGitKey    `protobuf:"bytes,3,rep,name=git_keys,json=gitKeys,proto3" json:"git_keys,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetHostConfigResponse) Reset() {
+	*x = GetHostConfigResponse{}
+	mi := &file_maze_v1_host_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetHostConfigResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetHostConfigResponse) ProtoMessage() {}
+
+func (x *GetHostConfigResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_maze_v1_host_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetHostConfigResponse.ProtoReflect.Descriptor instead.
+func (*GetHostConfigResponse) Descriptor() ([]byte, []int) {
+	return file_maze_v1_host_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *GetHostConfigResponse) GetSkills() []*HostConfigSkill {
+	if x != nil {
+		return x.Skills
+	}
+	return nil
+}
+
+func (x *GetHostConfigResponse) GetRules() []*HostConfigRule {
+	if x != nil {
+		return x.Rules
+	}
+	return nil
+}
+
+func (x *GetHostConfigResponse) GetGitKeys() []*HostConfigGitKey {
+	if x != nil {
+		return x.GitKeys
+	}
+	return nil
+}
+
 var File_maze_v1_host_proto protoreflect.FileDescriptor
 
 const file_maze_v1_host_proto_rawDesc = "" +
 	"\n" +
-	"\x12maze/v1/host.proto\x12\amaze.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\"\xfa\x02\n" +
+	"\x12maze/v1/host.proto\x12\amaze.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1bgoogle/protobuf/empty.proto\"\xab\x03\n" +
 	"\bHostSpec\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x14\n" +
@@ -1035,7 +1367,9 @@ const file_maze_v1_host_proto_rawDesc = "" +
 	"retryCount\x12\x16\n" +
 	"\x06skills\x18\v \x03(\tR\x06skills\x12\x1f\n" +
 	"\vmcp_servers\x18\f \x03(\tR\n" +
-	"mcpServers\"P\n" +
+	"mcpServers\x12\x14\n" +
+	"\x05rules\x18\r \x03(\tR\x05rules\x12\x19\n" +
+	"\bgit_keys\x18\x0e \x03(\tR\agitKeys\"P\n" +
 	"\x0eResourceLimits\x12\x1b\n" +
 	"\tcpu_limit\x18\x01 \x01(\tR\bcpuLimit\x12!\n" +
 	"\fmemory_limit\x18\x02 \x01(\tR\vmemoryLimit\"\xc4\x02\n" +
@@ -1052,7 +1386,7 @@ const file_maze_v1_host_proto_rawDesc = "" +
 	"\bcategory\x18\b \x01(\tR\bcategory\x1a:\n" +
 	"\fEnvVarsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xc1\x03\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xf2\x03\n" +
 	"\bHostInfo\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x14\n" +
@@ -1072,7 +1406,9 @@ const file_maze_v1_host_proto_rawDesc = "" +
 	"\x0elast_heartbeat\x18\f \x01(\tR\rlastHeartbeat\x12\x16\n" +
 	"\x06skills\x18\r \x03(\tR\x06skills\x12\x1f\n" +
 	"\vmcp_servers\x18\x0e \x03(\tR\n" +
-	"mcpServers\"\xe3\x01\n" +
+	"mcpServers\x12\x14\n" +
+	"\x05rules\x18\x0f \x03(\tR\x05rules\x12\x19\n" +
+	"\bgit_keys\x18\x10 \x03(\tR\agitKeys\"\x94\x02\n" +
 	"\x11CreateHostRequest\x12\x1b\n" +
 	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\x12\x1e\n" +
 	"\x05tools\x18\x02 \x03(\tB\b\xbaH\x05\x92\x01\x02\b\x01R\x05tools\x12!\n" +
@@ -1080,7 +1416,9 @@ const file_maze_v1_host_proto_rawDesc = "" +
 	"\tresources\x18\x04 \x01(\v2\x17.maze.v1.ResourceLimitsR\tresources\x12\x16\n" +
 	"\x06skills\x18\x05 \x03(\tR\x06skills\x12\x1f\n" +
 	"\vmcp_servers\x18\x06 \x03(\tR\n" +
-	"mcpServers\"\x12\n" +
+	"mcpServers\x12\x14\n" +
+	"\x05rules\x18\a \x03(\tR\x05rules\x12\x19\n" +
+	"\bgit_keys\x18\b \x03(\tR\agitKeys\"\x12\n" +
 	"\x10ListHostsRequest\"<\n" +
 	"\x11ListHostsResponse\x12'\n" +
 	"\x05hosts\x18\x01 \x03(\v2\x11.maze.v1.HostInfoR\x05hosts\"-\n" +
@@ -1100,7 +1438,29 @@ const file_maze_v1_host_proto_rawDesc = "" +
 	"\x03log\x18\x01 \x01(\tR\x03log\"\x12\n" +
 	"\x10ListToolsRequest\">\n" +
 	"\x11ListToolsResponse\x12)\n" +
-	"\x05tools\x18\x01 \x03(\v2\x13.maze.v1.ToolConfigR\x05tools2\xc2\x05\n" +
+	"\x05tools\x18\x01 \x03(\v2\x13.maze.v1.ToolConfigR\x05tools\"3\n" +
+	"\x14GetHostConfigRequest\x12\x1b\n" +
+	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\"\xc0\x01\n" +
+	"\x0fHostConfigSkill\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x12<\n" +
+	"\x06config\x18\x03 \x03(\v2$.maze.v1.HostConfigSkill.ConfigEntryR\x06config\x1a9\n" +
+	"\vConfigEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\">\n" +
+	"\x0eHostConfigRule\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
+	"\acontent\x18\x02 \x01(\tR\acontent\"\x82\x01\n" +
+	"\x10HostConfigGitKey\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1d\n" +
+	"\n" +
+	"token_type\x18\x02 \x01(\tR\ttokenType\x12\x12\n" +
+	"\x04host\x18\x03 \x01(\tR\x04host\x12'\n" +
+	"\x0fdecrypted_token\x18\x04 \x01(\tR\x0edecryptedToken\"\xae\x01\n" +
+	"\x15GetHostConfigResponse\x120\n" +
+	"\x06skills\x18\x01 \x03(\v2\x18.maze.v1.HostConfigSkillR\x06skills\x12-\n" +
+	"\x05rules\x18\x02 \x03(\v2\x17.maze.v1.HostConfigRuleR\x05rules\x124\n" +
+	"\bgit_keys\x18\x03 \x03(\v2\x19.maze.v1.HostConfigGitKeyR\agitKeys2\xb7\x06\n" +
 	"\vHostService\x12U\n" +
 	"\n" +
 	"CreateHost\x12\x1a.maze.v1.CreateHostRequest\x1a\x11.maze.v1.HostSpec\"\x18\x82\xd3\xe4\x93\x02\x12:\x01*\"\r/api/v1/hosts\x12Y\n" +
@@ -1110,7 +1470,8 @@ const file_maze_v1_host_proto_rawDesc = "" +
 	"DeleteHost\x12\x1a.maze.v1.DeleteHostRequest\x1a\x16.google.protobuf.Empty\"\x1c\x82\xd3\xe4\x93\x02\x16*\x14/api/v1/hosts/{name}\x12q\n" +
 	"\vGetBuildLog\x12\x1b.maze.v1.GetBuildLogRequest\x1a\x1c.maze.v1.GetBuildLogResponse\"'\x82\xd3\xe4\x93\x02!\x12\x1f/api/v1/hosts/{name}/logs/build\x12y\n" +
 	"\rGetRuntimeLog\x12\x1d.maze.v1.GetRuntimeLogRequest\x1a\x1e.maze.v1.GetRuntimeLogResponse\")\x82\xd3\xe4\x93\x02#\x12!/api/v1/hosts/{name}/logs/runtime\x12^\n" +
-	"\tListTools\x12\x19.maze.v1.ListToolsRequest\x1a\x1a.maze.v1.ListToolsResponse\"\x1a\x82\xd3\xe4\x93\x02\x14\x12\x12/api/v1/host/toolsB\x99\x01\n" +
+	"\tListTools\x12\x19.maze.v1.ListToolsRequest\x1a\x1a.maze.v1.ListToolsResponse\"\x1a\x82\xd3\xe4\x93\x02\x14\x12\x12/api/v1/host/tools\x12s\n" +
+	"\rGetHostConfig\x12\x1d.maze.v1.GetHostConfigRequest\x1a\x1e.maze.v1.GetHostConfigResponse\"#\x82\xd3\xe4\x93\x02\x1d\x12\x1b/api/v1/hosts/{name}/configB\x99\x01\n" +
 	"\vcom.maze.v1B\tHostProtoP\x01ZBgithub.com/charviki/maze/fabrication/cradle/api/gen/maze/v1;mazev1\xa2\x02\x03MXX\xaa\x02\aMaze.V1\xca\x02\aMaze\\V1\xe2\x02\x13Maze\\V1\\GPBMetadata\xea\x02\bMaze::V1b\x06proto3"
 
 var (
@@ -1125,7 +1486,7 @@ func file_maze_v1_host_proto_rawDescGZIP() []byte {
 	return file_maze_v1_host_proto_rawDescData
 }
 
-var file_maze_v1_host_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_maze_v1_host_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_maze_v1_host_proto_goTypes = []any{
 	(*HostSpec)(nil),              // 0: maze.v1.HostSpec
 	(*ResourceLimits)(nil),        // 1: maze.v1.ResourceLimits
@@ -1143,35 +1504,47 @@ var file_maze_v1_host_proto_goTypes = []any{
 	(*GetRuntimeLogResponse)(nil), // 13: maze.v1.GetRuntimeLogResponse
 	(*ListToolsRequest)(nil),      // 14: maze.v1.ListToolsRequest
 	(*ListToolsResponse)(nil),     // 15: maze.v1.ListToolsResponse
-	nil,                           // 16: maze.v1.ToolConfig.EnvVarsEntry
-	(*emptypb.Empty)(nil),         // 17: google.protobuf.Empty
+	(*GetHostConfigRequest)(nil),  // 16: maze.v1.GetHostConfigRequest
+	(*HostConfigSkill)(nil),       // 17: maze.v1.HostConfigSkill
+	(*HostConfigRule)(nil),        // 18: maze.v1.HostConfigRule
+	(*HostConfigGitKey)(nil),      // 19: maze.v1.HostConfigGitKey
+	(*GetHostConfigResponse)(nil), // 20: maze.v1.GetHostConfigResponse
+	nil,                           // 21: maze.v1.ToolConfig.EnvVarsEntry
+	nil,                           // 22: maze.v1.HostConfigSkill.ConfigEntry
+	(*emptypb.Empty)(nil),         // 23: google.protobuf.Empty
 }
 var file_maze_v1_host_proto_depIdxs = []int32{
 	1,  // 0: maze.v1.HostSpec.resources:type_name -> maze.v1.ResourceLimits
-	16, // 1: maze.v1.ToolConfig.env_vars:type_name -> maze.v1.ToolConfig.EnvVarsEntry
+	21, // 1: maze.v1.ToolConfig.env_vars:type_name -> maze.v1.ToolConfig.EnvVarsEntry
 	1,  // 2: maze.v1.HostInfo.resources:type_name -> maze.v1.ResourceLimits
 	1,  // 3: maze.v1.CreateHostRequest.resources:type_name -> maze.v1.ResourceLimits
 	3,  // 4: maze.v1.ListHostsResponse.hosts:type_name -> maze.v1.HostInfo
 	2,  // 5: maze.v1.ListToolsResponse.tools:type_name -> maze.v1.ToolConfig
-	4,  // 6: maze.v1.HostService.CreateHost:input_type -> maze.v1.CreateHostRequest
-	5,  // 7: maze.v1.HostService.ListHosts:input_type -> maze.v1.ListHostsRequest
-	7,  // 8: maze.v1.HostService.GetHost:input_type -> maze.v1.GetHostRequest
-	8,  // 9: maze.v1.HostService.DeleteHost:input_type -> maze.v1.DeleteHostRequest
-	10, // 10: maze.v1.HostService.GetBuildLog:input_type -> maze.v1.GetBuildLogRequest
-	12, // 11: maze.v1.HostService.GetRuntimeLog:input_type -> maze.v1.GetRuntimeLogRequest
-	14, // 12: maze.v1.HostService.ListTools:input_type -> maze.v1.ListToolsRequest
-	0,  // 13: maze.v1.HostService.CreateHost:output_type -> maze.v1.HostSpec
-	6,  // 14: maze.v1.HostService.ListHosts:output_type -> maze.v1.ListHostsResponse
-	3,  // 15: maze.v1.HostService.GetHost:output_type -> maze.v1.HostInfo
-	17, // 16: maze.v1.HostService.DeleteHost:output_type -> google.protobuf.Empty
-	11, // 17: maze.v1.HostService.GetBuildLog:output_type -> maze.v1.GetBuildLogResponse
-	13, // 18: maze.v1.HostService.GetRuntimeLog:output_type -> maze.v1.GetRuntimeLogResponse
-	15, // 19: maze.v1.HostService.ListTools:output_type -> maze.v1.ListToolsResponse
-	13, // [13:20] is the sub-list for method output_type
-	6,  // [6:13] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	22, // 6: maze.v1.HostConfigSkill.config:type_name -> maze.v1.HostConfigSkill.ConfigEntry
+	17, // 7: maze.v1.GetHostConfigResponse.skills:type_name -> maze.v1.HostConfigSkill
+	18, // 8: maze.v1.GetHostConfigResponse.rules:type_name -> maze.v1.HostConfigRule
+	19, // 9: maze.v1.GetHostConfigResponse.git_keys:type_name -> maze.v1.HostConfigGitKey
+	4,  // 10: maze.v1.HostService.CreateHost:input_type -> maze.v1.CreateHostRequest
+	5,  // 11: maze.v1.HostService.ListHosts:input_type -> maze.v1.ListHostsRequest
+	7,  // 12: maze.v1.HostService.GetHost:input_type -> maze.v1.GetHostRequest
+	8,  // 13: maze.v1.HostService.DeleteHost:input_type -> maze.v1.DeleteHostRequest
+	10, // 14: maze.v1.HostService.GetBuildLog:input_type -> maze.v1.GetBuildLogRequest
+	12, // 15: maze.v1.HostService.GetRuntimeLog:input_type -> maze.v1.GetRuntimeLogRequest
+	14, // 16: maze.v1.HostService.ListTools:input_type -> maze.v1.ListToolsRequest
+	16, // 17: maze.v1.HostService.GetHostConfig:input_type -> maze.v1.GetHostConfigRequest
+	0,  // 18: maze.v1.HostService.CreateHost:output_type -> maze.v1.HostSpec
+	6,  // 19: maze.v1.HostService.ListHosts:output_type -> maze.v1.ListHostsResponse
+	3,  // 20: maze.v1.HostService.GetHost:output_type -> maze.v1.HostInfo
+	23, // 21: maze.v1.HostService.DeleteHost:output_type -> google.protobuf.Empty
+	11, // 22: maze.v1.HostService.GetBuildLog:output_type -> maze.v1.GetBuildLogResponse
+	13, // 23: maze.v1.HostService.GetRuntimeLog:output_type -> maze.v1.GetRuntimeLogResponse
+	15, // 24: maze.v1.HostService.ListTools:output_type -> maze.v1.ListToolsResponse
+	20, // 25: maze.v1.HostService.GetHostConfig:output_type -> maze.v1.GetHostConfigResponse
+	18, // [18:26] is the sub-list for method output_type
+	10, // [10:18] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_maze_v1_host_proto_init() }
@@ -1185,7 +1558,7 @@ func file_maze_v1_host_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_maze_v1_host_proto_rawDesc), len(file_maze_v1_host_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   17,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

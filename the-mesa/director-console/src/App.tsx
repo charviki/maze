@@ -25,9 +25,23 @@ import type {
   HostSpec,
   Skill,
   MCPServer,
+  Rule,
+  GitKey,
 } from '@maze/fabrication';
 import { Activity, Menu, Settings } from 'lucide-react';
 import './index.css';
+
+function handleSettledResult<T>(
+  result: PromiseSettledResult<T>,
+  onFulfilled: (value: T) => void,
+  onRejected: () => void,
+) {
+  if (result.status === 'fulfilled') {
+    onFulfilled(result.value);
+  } else {
+    onRejected();
+  }
+}
 
 // Toast hook 依赖 Provider，上层壳组件负责先装配 Provider，避免应用启动即白屏。
 function AppContent() {
@@ -41,6 +55,8 @@ function AppContent() {
   const [availableTools, setAvailableTools] = useState<Tool[]>([]);
   const [availableSkills, setAvailableSkills] = useState<Skill[]>([]);
   const [availableMcpServers, setAvailableMcpServers] = useState<MCPServer[]>([]);
+  const [availableRules, setAvailableRules] = useState<Rule[]>([]);
+  const [availableGitKeys, setAvailableGitKeys] = useState<GitKey[]>([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [logPanelHost, setLogPanelHost] = useState<string | null>(null);
   const [selectedFabricationItem, setSelectedFabricationItem] = useState<FabricationItem | null>(
@@ -87,35 +103,58 @@ function AppContent() {
 
   const handleOpenCreateHost = useCallback(async () => {
     setShowCreateHost(true);
-    const [toolsResult, skillsResult, mcpServersResult] = await Promise.allSettled([
-      controllerApi.listTools(),
-      controllerApi.listSkills(),
-      controllerApi.listMCPServers(),
-    ]);
+    const [toolsResult, skillsResult, mcpServersResult, rulesResult, gitKeysResult] =
+      await Promise.allSettled([
+        controllerApi.listTools(),
+        controllerApi.listSkills(),
+        controllerApi.listMCPServers(),
+        controllerApi.listRules(),
+        controllerApi.listGitKeys(),
+      ]);
 
-    if (toolsResult.status === 'fulfilled') {
-      const res = toolsResult.value;
-      if (res.status === 'ok' && res.data) {
-        setAvailableTools(res.data);
-      }
-    } else {
-      setAvailableTools([]);
-      showToast('error', '工具列表获取失败');
-    }
+    handleSettledResult(
+      toolsResult,
+      (res) => {
+        if (res.status === 'ok' && res.data) setAvailableTools(res.data);
+      },
+      () => {
+        setAvailableTools([]);
+        showToast('error', '工具列表获取失败');
+      },
+    );
 
-    if (skillsResult.status === 'fulfilled') {
-      setAvailableSkills(skillsResult.value);
-    } else {
-      setAvailableSkills([]);
-      showToast('error', 'Skill 列表获取失败');
-    }
-
-    if (mcpServersResult.status === 'fulfilled') {
-      setAvailableMcpServers(mcpServersResult.value);
-    } else {
-      setAvailableMcpServers([]);
-      showToast('error', 'MCP Server 列表获取失败');
-    }
+    handleSettledResult(
+      skillsResult,
+      (v) => setAvailableSkills(v),
+      () => {
+        setAvailableSkills([]);
+        showToast('error', 'Skill 列表获取失败');
+      },
+    );
+    handleSettledResult(
+      mcpServersResult,
+      (v) => setAvailableMcpServers(v),
+      () => {
+        setAvailableMcpServers([]);
+        showToast('error', 'MCP Server 列表获取失败');
+      },
+    );
+    handleSettledResult(
+      rulesResult,
+      (v) => setAvailableRules(v),
+      () => {
+        setAvailableRules([]);
+        showToast('error', 'Rule 列表获取失败');
+      },
+    );
+    handleSettledResult(
+      gitKeysResult,
+      (v) => setAvailableGitKeys(v),
+      () => {
+        setAvailableGitKeys([]);
+        showToast('error', 'Git Key 列表获取失败');
+      },
+    );
   }, [showToast]);
 
   const handleCreateHost = useCallback(async (data: CreateHostRequest): Promise<HostSpec> => {
@@ -270,6 +309,8 @@ function AppContent() {
         tools={availableTools}
         skills={availableSkills}
         mcpServers={availableMcpServers}
+        rules={availableRules}
+        gitKeys={availableGitKeys}
         onSubmit={handleCreateHost}
         onWaitOnline={handleWaitOnline}
         getHostBuildLog={async (name: string) => {

@@ -500,13 +500,6 @@ func nullableString(value string) *string {
 	return &trimmed
 }
 
-func derefString(value *string) string {
-	if value == nil {
-		return ""
-	}
-	return *value
-}
-
 func subjectTypeFromKey(subjectKey string) string {
 	parts := strings.SplitN(subjectKey, ":", 2)
 	if len(parts) == 0 || parts[0] == "" {

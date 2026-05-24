@@ -17,3 +17,6 @@ RETURNING *;
 
 -- name: DeleteMCPServerByName :exec
 DELETE FROM mcp_servers WHERE name = $1;
+
+-- name: GetMCPServersByNames :many
+SELECT * FROM mcp_servers WHERE name = ANY($1::text[]);

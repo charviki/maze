@@ -30,6 +30,11 @@ import {
     V1GetBuildLogResponseToJSON,
 } from '../models/V1GetBuildLogResponse';
 import {
+    type V1GetHostConfigResponse,
+    V1GetHostConfigResponseFromJSON,
+    V1GetHostConfigResponseToJSON,
+} from '../models/V1GetHostConfigResponse';
+import {
     type V1GetRuntimeLogResponse,
     V1GetRuntimeLogResponseFromJSON,
     V1GetRuntimeLogResponseToJSON,
@@ -68,6 +73,10 @@ export interface HostServiceGetBuildLogRequest {
 }
 
 export interface HostServiceGetHostRequest {
+    name: string;
+}
+
+export interface HostServiceGetHostConfigRequest {
     name: string;
 }
 
@@ -251,6 +260,49 @@ export class HostServiceApi extends runtime.BaseAPI {
      */
     async hostServiceGetHost(requestParameters: HostServiceGetHostRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<V1HostInfo> {
         const response = await this.hostServiceGetHostRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for hostServiceGetHostConfig without sending the request
+     */
+    async hostServiceGetHostConfigRequestOpts(requestParameters: HostServiceGetHostConfigRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['name'] == null) {
+            throw new runtime.RequiredError(
+                'name',
+                'Required parameter "name" was null or undefined when calling hostServiceGetHostConfig().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+
+        let urlPath = `/api/v1/hosts/{name}/config`;
+        urlPath = urlPath.replace('{name}', encodeURIComponent(String(requestParameters['name'])));
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     */
+    async hostServiceGetHostConfigRaw(requestParameters: HostServiceGetHostConfigRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<V1GetHostConfigResponse>> {
+        const requestOptions = await this.hostServiceGetHostConfigRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => V1GetHostConfigResponseFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async hostServiceGetHostConfig(requestParameters: HostServiceGetHostConfigRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<V1GetHostConfigResponse> {
+        const response = await this.hostServiceGetHostConfigRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

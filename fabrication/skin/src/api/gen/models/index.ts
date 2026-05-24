@@ -2,6 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 export * from './ConfigServiceUpdateConfigBody';
+export * from './GitKeyServiceUpdateGitKeyBody';
 export * from './KnowledgeServiceCreateLinkBody';
 export * from './KnowledgeServiceUpdateArchiveBody';
 export * from './KnowledgeServiceUpdateDocBody';
@@ -51,12 +52,16 @@ export * from './V1GetBuildLogResponse';
 export * from './V1GetDocAncestorsResponse';
 export * from './V1GetDocTreeResponse';
 export * from './V1GetEnvResponse';
+export * from './V1GetHostConfigResponse';
 export * from './V1GetLinksResponse';
 export * from './V1GetRuntimeLogResponse';
 export * from './V1GetSavedSessionsResponse';
 export * from './V1GitKey';
 export * from './V1HeartbeatRequest';
 export * from './V1HeartbeatResponse';
+export * from './V1HostConfigGitKey';
+export * from './V1HostConfigRule';
+export * from './V1HostConfigSkill';
 export * from './V1HostInfo';
 export * from './V1HostSpec';
 export * from './V1ListArchivesResponse';

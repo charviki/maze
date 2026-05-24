@@ -84,6 +84,23 @@ func (r *RuleRepository) Delete(ctx context.Context, name string) error {
 	return r.queries(ctx).DeleteRuleByName(ctx, name)
 }
 
+// GetByNames returns rules matching the given names.
+func (r *RuleRepository) GetByNames(ctx context.Context, names []string) ([]*protocol.Rule, error) {
+	if len(names) == 0 {
+		return nil, nil
+	}
+	rows, err := r.queries(ctx).GetRulesByNames(ctx, names)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]*protocol.Rule, 0, len(rows))
+	for _, row := range rows {
+		s := ruleFromRow(row)
+		result = append(result, &s)
+	}
+	return result, nil
+}
+
 func ruleFromRow(row hostgen.Rule) protocol.Rule {
 	return protocol.Rule{
 		Name:      row.Name,

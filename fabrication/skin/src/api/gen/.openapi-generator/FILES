@@ -15,6 +15,7 @@ apis/TemplateServiceApi.ts
 apis/index.ts
 index.ts
 models/ConfigServiceUpdateConfigBody.ts
+models/GitKeyServiceUpdateGitKeyBody.ts
 models/KnowledgeServiceCreateLinkBody.ts
 models/KnowledgeServiceUpdateArchiveBody.ts
 models/KnowledgeServiceUpdateDocBody.ts
@@ -64,12 +65,16 @@ models/V1GetBuildLogResponse.ts
 models/V1GetDocAncestorsResponse.ts
 models/V1GetDocTreeResponse.ts
 models/V1GetEnvResponse.ts
+models/V1GetHostConfigResponse.ts
 models/V1GetLinksResponse.ts
 models/V1GetRuntimeLogResponse.ts
 models/V1GetSavedSessionsResponse.ts
 models/V1GitKey.ts
 models/V1HeartbeatRequest.ts
 models/V1HeartbeatResponse.ts
+models/V1HostConfigGitKey.ts
+models/V1HostConfigRule.ts
+models/V1HostConfigSkill.ts
 models/V1HostInfo.ts
 models/V1HostSpec.ts
 models/V1ListArchivesResponse.ts

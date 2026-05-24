@@ -22,6 +22,8 @@ message HostSpec {
   int32 retry_count = 10;
   repeated string skills = 11;
   repeated string mcp_servers = 12;
+  repeated string rules = 13;
+  repeated string git_keys = 14;
 }
 
 // 与 protocol.ResourceLimits 对齐
@@ -58,6 +60,8 @@ message HostInfo {
   string last_heartbeat = 12;
   repeated string skills = 13;
   repeated string mcp_servers = 14;
+  repeated string rules = 15;
+  repeated string git_keys = 16;
 }
 
 message CreateHostRequest {
@@ -67,6 +71,8 @@ message CreateHostRequest {
   ResourceLimits resources = 4;
   repeated string skills = 5;
   repeated string mcp_servers = 6;
+  repeated string rules = 7;
+  repeated string git_keys = 8;
 }
 
 message ListHostsRequest {}
@@ -107,6 +113,34 @@ message ListToolsRequest {}
 
 message ListToolsResponse {
   repeated ToolConfig tools = 1;
+}
+
+message GetHostConfigRequest {
+  string name = 1 [(buf.validate.field).string = { min_len: 1 }];
+}
+
+message HostConfigSkill {
+  string name = 1;
+  string description = 2;
+  map<string, string> config = 3;
+}
+
+message HostConfigRule {
+  string name = 1;
+  string content = 2;
+}
+
+message HostConfigGitKey {
+  string name = 1;
+  string token_type = 2;
+  string host = 3;
+  string decrypted_token = 4;
+}
+
+message GetHostConfigResponse {
+  repeated HostConfigSkill skills = 1;
+  repeated HostConfigRule rules = 2;
+  repeated HostConfigGitKey git_keys = 3;
 }
 
 service HostService {
@@ -150,6 +184,12 @@ service HostService {
   rpc ListTools(ListToolsRequest) returns (ListToolsResponse) {
     option (google.api.http) = {
       get: "/api/v1/host/tools"
+    };
+  }
+
+  rpc GetHostConfig(GetHostConfigRequest) returns (GetHostConfigResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/hosts/{name}/config"
     };
   }
 }

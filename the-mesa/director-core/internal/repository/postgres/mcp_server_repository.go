@@ -109,6 +109,23 @@ func (r *MCPServerRepository) Delete(ctx context.Context, name string) error {
 	return r.queries(ctx).DeleteMCPServerByName(ctx, name)
 }
 
+// GetByNames returns MCP servers matching the given names.
+func (r *MCPServerRepository) GetByNames(ctx context.Context, names []string) ([]*protocol.MCPServer, error) {
+	if len(names) == 0 {
+		return nil, nil
+	}
+	rows, err := r.queries(ctx).GetMCPServersByNames(ctx, names)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]*protocol.MCPServer, 0, len(rows))
+	for _, row := range rows {
+		s := mcpServerFromRow(row)
+		result = append(result, &s)
+	}
+	return result, nil
+}
+
 func mcpServerFromRow(row hostgen.McpServer) protocol.MCPServer {
 	var args []string
 	if len(row.Args) > 0 {

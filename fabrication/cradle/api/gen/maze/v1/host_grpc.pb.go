@@ -27,6 +27,7 @@ const (
 	HostService_GetBuildLog_FullMethodName   = "/maze.v1.HostService/GetBuildLog"
 	HostService_GetRuntimeLog_FullMethodName = "/maze.v1.HostService/GetRuntimeLog"
 	HostService_ListTools_FullMethodName     = "/maze.v1.HostService/ListTools"
+	HostService_GetHostConfig_FullMethodName = "/maze.v1.HostService/GetHostConfig"
 )
 
 // HostServiceClient is the client API for HostService service.
@@ -40,6 +41,7 @@ type HostServiceClient interface {
 	GetBuildLog(ctx context.Context, in *GetBuildLogRequest, opts ...grpc.CallOption) (*GetBuildLogResponse, error)
 	GetRuntimeLog(ctx context.Context, in *GetRuntimeLogRequest, opts ...grpc.CallOption) (*GetRuntimeLogResponse, error)
 	ListTools(ctx context.Context, in *ListToolsRequest, opts ...grpc.CallOption) (*ListToolsResponse, error)
+	GetHostConfig(ctx context.Context, in *GetHostConfigRequest, opts ...grpc.CallOption) (*GetHostConfigResponse, error)
 }
 
 type hostServiceClient struct {
@@ -120,6 +122,16 @@ func (c *hostServiceClient) ListTools(ctx context.Context, in *ListToolsRequest,
 	return out, nil
 }
 
+func (c *hostServiceClient) GetHostConfig(ctx context.Context, in *GetHostConfigRequest, opts ...grpc.CallOption) (*GetHostConfigResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetHostConfigResponse)
+	err := c.cc.Invoke(ctx, HostService_GetHostConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // HostServiceServer is the server API for HostService service.
 // All implementations must embed UnimplementedHostServiceServer
 // for forward compatibility.
@@ -131,6 +143,7 @@ type HostServiceServer interface {
 	GetBuildLog(context.Context, *GetBuildLogRequest) (*GetBuildLogResponse, error)
 	GetRuntimeLog(context.Context, *GetRuntimeLogRequest) (*GetRuntimeLogResponse, error)
 	ListTools(context.Context, *ListToolsRequest) (*ListToolsResponse, error)
+	GetHostConfig(context.Context, *GetHostConfigRequest) (*GetHostConfigResponse, error)
 	mustEmbedUnimplementedHostServiceServer()
 }
 
@@ -161,6 +174,9 @@ func (UnimplementedHostServiceServer) GetRuntimeLog(context.Context, *GetRuntime
 }
 func (UnimplementedHostServiceServer) ListTools(context.Context, *ListToolsRequest) (*ListToolsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListTools not implemented")
+}
+func (UnimplementedHostServiceServer) GetHostConfig(context.Context, *GetHostConfigRequest) (*GetHostConfigResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetHostConfig not implemented")
 }
 func (UnimplementedHostServiceServer) mustEmbedUnimplementedHostServiceServer() {}
 func (UnimplementedHostServiceServer) testEmbeddedByValue()                     {}
@@ -309,6 +325,24 @@ func _HostService_ListTools_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HostService_GetHostConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetHostConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HostServiceServer).GetHostConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HostService_GetHostConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HostServiceServer).GetHostConfig(ctx, req.(*GetHostConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // HostService_ServiceDesc is the grpc.ServiceDesc for HostService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -343,6 +377,10 @@ var HostService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListTools",
 			Handler:    _HostService_ListTools_Handler,
+		},
+		{
+			MethodName: "GetHostConfig",
+			Handler:    _HostService_GetHostConfig_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -59,6 +59,36 @@ func (q *Queries) GetRuleByName(ctx context.Context, name string) (Rule, error) 
 	return i, err
 }
 
+const getRulesByNames = `-- name: GetRulesByNames :many
+SELECT id, name, content, created_at, updated_at FROM rules WHERE name = ANY($1::text[])
+`
+
+func (q *Queries) GetRulesByNames(ctx context.Context, dollar_1 []string) ([]Rule, error) {
+	rows, err := q.db.Query(ctx, getRulesByNames, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Rule
+	for rows.Next() {
+		var i Rule
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Content,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listRules = `-- name: ListRules :many
 SELECT id, name, content, created_at, updated_at FROM rules ORDER BY name ASC
 `

@@ -6,7 +6,7 @@ Go 共享库，为 Manager、Agent 和知识库服务提供统一的日志、配
 
 ## 项目结构
 
-Protobuf IDL 定义在 api/proto/（含 Director Core 的 Host/Node/Auth/Permission/Session/Template/Config/Agent 服务和 The Forge 的 KnowledgeService），由 buf 生成 Go 类型/gRPC stub/gateway handler/OpenAPI spec（api/gen/），openapi-generator 再生成 Go HTTP client。工具包按 domain 划分：configutil（配置）、httputil（HTTP 封装）、logutil（日志）、middleware/gatewayutil（认证/审计/Proto 校验）、grpcutil/lifecycle（gRPC 生命周期）、pipeline（管线）、protocol（领域模型）、maskutil（脱敏）、storeutil（持久化）。PostgreSQL 共享能力在 db/。
+Protobuf IDL 定义在 api/proto/（含 Director Core 的 Host/Node/Auth/Permission/Session/Template/Config/Agent/GitKey 服务和 The Forge 的 KnowledgeService），由 buf 生成 Go 类型/gRPC stub/gateway handler/OpenAPI spec（api/gen/），openapi-generator 再生成 Go HTTP client。工具包按 domain 划分：configutil（配置）、httputil（HTTP 封装）、logutil（日志）、middleware/gatewayutil（认证/审计/Proto 校验）、grpcutil/lifecycle（gRPC 生命周期）、pipeline（管线）、protocol（领域模型 + HostConfig 配置注入类型）、maskutil（脱敏）、storeutil（持久化）。PostgreSQL 共享能力在 db/。
 
 ## 核心原则
 

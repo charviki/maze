@@ -10,6 +10,7 @@ import {
   unwrapVoidResponse,
 } from '@maze/fabrication';
 import type { HostSpec, V1Skill, V1MCPServer, V1Rule, V1GitKey } from '@maze/fabrication';
+import type { CreateGitKeyData } from '../components/git-keys/constants';
 
 const config = createSdkConfiguration('');
 const nodeApi = new NodeServiceApi(config);
@@ -125,7 +126,7 @@ export const controllerApi = {
     const res = await gitKeyApi.gitKeyServiceListGitKeys();
     return res.gitKeys ?? [];
   },
-  createGitKey: async (data: { name: string; token: string }): Promise<V1GitKey> => {
+  createGitKey: async (data: CreateGitKeyData): Promise<V1GitKey> => {
     return gitKeyApi.gitKeyServiceCreateGitKey({ body: data });
   },
   getGitKey: (name: string) => gitKeyApi.gitKeyServiceGetGitKey({ name }),

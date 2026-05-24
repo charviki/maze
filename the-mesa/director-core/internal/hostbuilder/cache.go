@@ -36,29 +36,20 @@ func ExtractDockerfileHash(dockerfileContent string) string {
 	return ""
 }
 
-// ResolveImageDigest 获取本地镜像的唯一标识符。
-// 优先使用 RepoDigest（registry 拉取的镜像），回退到 Image ID（本地构建的镜像）。
-func ResolveImageDigest(imageName string) (string, error) {
+// ResolveContentFingerprint 获取镜像的内容指纹（RootFS.Layers）。
+// 使用内容寻址的 layer digest 而非 Image ID，避免构建时间戳等非确定性因素干扰。
+// 相同镜像内容 → 相同指纹；代码变更 → 层内容变更 → 指纹变化。
+func ResolveContentFingerprint(imageName string) (string, error) {
 	//nolint:gosec // docker CLI args are internally constructed
 	cmd := exec.CommandContext(context.Background(), "docker", "image", "inspect",
-		"--format", "{{if .RepoDigests}}{{index .RepoDigests 0}}{{end}}", imageName)
+		"--format", "{{json .RootFS.Layers}}", imageName)
 	output, err := cmd.Output()
-	if err == nil {
-		if digest := strings.TrimSpace(string(output)); digest != "" {
-			return digest, nil
-		}
-	}
-
-	// 本地构建的镜像无 RepoDigests，回退到 Image ID
-	//nolint:gosec
-	cmd = exec.CommandContext(context.Background(), "docker", "image", "inspect",
-		"--format", "{{.Id}}", imageName)
-	output, err = cmd.Output()
 	if err != nil {
-		return "", fmt.Errorf("resolve digest for %s: image not found", imageName)
+		return "", fmt.Errorf("resolve fingerprint for %s: %w", imageName, err)
 	}
-	if id := strings.TrimSpace(string(output)); id != "" {
-		return id, nil
+	fingerprint := strings.TrimSpace(string(output))
+	if fingerprint == "" {
+		return "", fmt.Errorf("resolve fingerprint for %s: empty layers", imageName)
 	}
-	return "", fmt.Errorf("resolve digest for %s: empty id", imageName)
+	return fingerprint, nil
 }

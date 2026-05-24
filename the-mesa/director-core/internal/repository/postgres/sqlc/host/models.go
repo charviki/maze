@@ -25,6 +25,8 @@ type GitKey struct {
 	Name           string             `json:"name"`
 	EncryptedToken string             `json:"encrypted_token"`
 	TokenMask      string             `json:"token_mask"`
+	TokenType      string             `json:"token_type"`
+	Host           *string            `json:"host"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 }
@@ -37,6 +39,8 @@ type HostSpec struct {
 	Resources   []byte             `json:"resources"`
 	Skills      []byte             `json:"skills"`
 	McpServers  []byte             `json:"mcp_servers"`
+	Rules       []byte             `json:"rules"`
+	GitKeys     []byte             `json:"git_keys"`
 	AuthToken   string             `json:"auth_token"`
 	Status      string             `json:"status"`
 	ErrorMsg    string             `json:"error_msg"`

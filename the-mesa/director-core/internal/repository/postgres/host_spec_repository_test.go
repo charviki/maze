@@ -35,12 +35,12 @@ func TestHostSpecRepositoryCreateAndGet(t *testing.T) {
 	createdAt := time.Now().UTC().Round(time.Microsecond)
 	updatedAt := createdAt.Add(time.Minute)
 	mock.ExpectExec("INSERT INTO host_specs").
-		WithArgs("host-1", "Host One", pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), "token-1", protocol.HostStatusPending).
+		WithArgs("host-1", "Host One", pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), pgxmock.AnyArg(), "token-1", protocol.HostStatusPending, pgxmock.AnyArg(), pgxmock.AnyArg()).
 		WillReturnResult(pgxmock.NewResult("INSERT", 1))
 	mock.ExpectQuery("SELECT .* FROM host_specs WHERE name = \\$1").
 		WithArgs("host-1").
 		WillReturnRows(pgxmock.NewRows([]string{
-			"id", "name", "display_name", "tools", "resources", "skills", "mcp_servers", "auth_token", "status", "error_msg", "retry_count", "created_at", "updated_at",
+			"id", "name", "display_name", "tools", "resources", "skills", "mcp_servers", "rules", "git_keys", "auth_token", "status", "error_msg", "retry_count", "created_at", "updated_at",
 		}).AddRow(
 			int64(1),
 			"host-1",
@@ -49,6 +49,8 @@ func TestHostSpecRepositoryCreateAndGet(t *testing.T) {
 			[]byte(`{"cpu_limit":"2","memory_limit":"4Gi"}`),
 			[]byte(`[]`),
 			[]byte(`[]`),
+				[]byte(`[]`),
+				[]byte(`[]`),
 			"token-1",
 			protocol.HostStatusPending,
 			"",

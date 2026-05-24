@@ -10,25 +10,35 @@ import (
 )
 
 const createGitKey = `-- name: CreateGitKey :one
-INSERT INTO git_keys (name, encrypted_token, token_mask)
-VALUES ($1, $2, $3)
-RETURNING id, name, encrypted_token, token_mask, created_at, updated_at
+INSERT INTO git_keys (name, encrypted_token, token_mask, token_type, host)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, name, encrypted_token, token_mask, token_type, host, created_at, updated_at
 `
 
 type CreateGitKeyParams struct {
-	Name           string `json:"name"`
-	EncryptedToken string `json:"encrypted_token"`
-	TokenMask      string `json:"token_mask"`
+	Name           string  `json:"name"`
+	EncryptedToken string  `json:"encrypted_token"`
+	TokenMask      string  `json:"token_mask"`
+	TokenType      string  `json:"token_type"`
+	Host           *string `json:"host"`
 }
 
 func (q *Queries) CreateGitKey(ctx context.Context, arg CreateGitKeyParams) (GitKey, error) {
-	row := q.db.QueryRow(ctx, createGitKey, arg.Name, arg.EncryptedToken, arg.TokenMask)
+	row := q.db.QueryRow(ctx, createGitKey,
+		arg.Name,
+		arg.EncryptedToken,
+		arg.TokenMask,
+		arg.TokenType,
+		arg.Host,
+	)
 	var i GitKey
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.EncryptedToken,
 		&i.TokenMask,
+		&i.TokenType,
+		&i.Host,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -45,7 +55,7 @@ func (q *Queries) DeleteGitKeyByName(ctx context.Context, name string) error {
 }
 
 const getGitKeyByName = `-- name: GetGitKeyByName :one
-SELECT id, name, encrypted_token, token_mask, created_at, updated_at FROM git_keys WHERE name = $1
+SELECT id, name, encrypted_token, token_mask, token_type, host, created_at, updated_at FROM git_keys WHERE name = $1
 `
 
 func (q *Queries) GetGitKeyByName(ctx context.Context, name string) (GitKey, error) {
@@ -56,14 +66,49 @@ func (q *Queries) GetGitKeyByName(ctx context.Context, name string) (GitKey, err
 		&i.Name,
 		&i.EncryptedToken,
 		&i.TokenMask,
+		&i.TokenType,
+		&i.Host,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
 }
 
+const getGitKeysByNames = `-- name: GetGitKeysByNames :many
+SELECT id, name, encrypted_token, token_mask, token_type, host, created_at, updated_at FROM git_keys WHERE name = ANY($1::text[])
+`
+
+func (q *Queries) GetGitKeysByNames(ctx context.Context, dollar_1 []string) ([]GitKey, error) {
+	rows, err := q.db.Query(ctx, getGitKeysByNames, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GitKey
+	for rows.Next() {
+		var i GitKey
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.EncryptedToken,
+			&i.TokenMask,
+			&i.TokenType,
+			&i.Host,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listGitKeys = `-- name: ListGitKeys :many
-SELECT id, name, encrypted_token, token_mask, created_at, updated_at FROM git_keys ORDER BY name ASC
+SELECT id, name, encrypted_token, token_mask, token_type, host, created_at, updated_at FROM git_keys ORDER BY name ASC
 `
 
 func (q *Queries) ListGitKeys(ctx context.Context) ([]GitKey, error) {
@@ -80,6 +125,8 @@ func (q *Queries) ListGitKeys(ctx context.Context) ([]GitKey, error) {
 			&i.Name,
 			&i.EncryptedToken,
 			&i.TokenMask,
+			&i.TokenType,
+			&i.Host,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -91,4 +138,45 @@ func (q *Queries) ListGitKeys(ctx context.Context) ([]GitKey, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateGitKeyByName = `-- name: UpdateGitKeyByName :one
+UPDATE git_keys
+SET encrypted_token = COALESCE($2, encrypted_token),
+    token_mask = COALESCE($3, token_mask),
+    token_type = COALESCE($4, token_type),
+    host = COALESCE($5, host),
+    updated_at = NOW()
+WHERE name = $1
+RETURNING id, name, encrypted_token, token_mask, token_type, host, created_at, updated_at
+`
+
+type UpdateGitKeyByNameParams struct {
+	Name           string  `json:"name"`
+	EncryptedToken string  `json:"encrypted_token"`
+	TokenMask      string  `json:"token_mask"`
+	TokenType      string  `json:"token_type"`
+	Host           *string `json:"host"`
+}
+
+func (q *Queries) UpdateGitKeyByName(ctx context.Context, arg UpdateGitKeyByNameParams) (GitKey, error) {
+	row := q.db.QueryRow(ctx, updateGitKeyByName,
+		arg.Name,
+		arg.EncryptedToken,
+		arg.TokenMask,
+		arg.TokenType,
+		arg.Host,
+	)
+	var i GitKey
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.EncryptedToken,
+		&i.TokenMask,
+		&i.TokenType,
+		&i.Host,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }

@@ -53,6 +53,17 @@ func main() {
 	heartbeatRunner := lifecycle.NewBackgroundRunner("heartbeat", logger, heartbeatService.Start)
 	autoSaveRunner := lifecycle.NewBackgroundRunner("autosave", logger, autoSaveService.Start)
 
+	// 注册成功后拉取 Host 配置
+	hostConfigService := service.NewHostConfigService(heartbeatService.GetAgentClient(), cfg.Server.Name, cfg.Controller.AuthToken, logger)
+	hostConfigCtx, hostConfigCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	go func() {
+		defer hostConfigCancel()
+		<-heartbeatService.RegisteredCh()
+		if err := hostConfigService.FetchAndApply(hostConfigCtx); err != nil {
+			logger.Warnf("[host-config] fetch and apply failed: %v", err)
+		}
+	}()
+
 	manager := &lifecycle.Manager{
 		ShutdownTimeout: 5 * time.Second,
 		Logger:          logger,

@@ -95,6 +95,23 @@ func (r *SkillRepository) Delete(ctx context.Context, name string) error {
 	return r.queries(ctx).DeleteSkillByName(ctx, name)
 }
 
+// GetByNames returns skills matching the given names.
+func (r *SkillRepository) GetByNames(ctx context.Context, names []string) ([]*protocol.Skill, error) {
+	if len(names) == 0 {
+		return nil, nil
+	}
+	rows, err := r.queries(ctx).GetSkillsByNames(ctx, names)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]*protocol.Skill, 0, len(rows))
+	for _, row := range rows {
+		s := skillFromRow(row)
+		result = append(result, &s)
+	}
+	return result, nil
+}
+
 func skillFromRow(row hostgen.Skill) protocol.Skill {
 	var config map[string]string
 	if len(row.Config) > 0 {

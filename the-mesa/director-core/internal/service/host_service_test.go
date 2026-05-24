@@ -697,3 +697,257 @@ func TestHostService_StopCancelsAllInFlightDeployments(t *testing.T) {
 		t.Fatal("Stop should cancel and wait for all in-flight deployments")
 	}
 }
+
+// ─── GetHostConfig stubs ─────────────────────────────
+
+type skillRepoStub struct {
+	mu    sync.RWMutex
+	items map[string]*protocol.Skill
+}
+
+func newSkillRepoStub(items ...*protocol.Skill) *skillRepoStub {
+	s := &skillRepoStub{items: make(map[string]*protocol.Skill)}
+	for _, item := range items {
+		s.items[item.Name] = item
+	}
+	return s
+}
+
+func (s *skillRepoStub) Create(_ context.Context, skill *protocol.Skill) (*protocol.Skill, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.items[skill.Name] = skill
+	return skill, nil
+}
+func (s *skillRepoStub) Get(_ context.Context, name string) (*protocol.Skill, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.items[name], nil
+}
+func (s *skillRepoStub) GetByNames(_ context.Context, names []string) ([]*protocol.Skill, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var result []*protocol.Skill
+	for _, n := range names {
+		if item, ok := s.items[n]; ok {
+			result = append(result, item)
+		}
+	}
+	return result, nil
+}
+func (s *skillRepoStub) List(_ context.Context) ([]*protocol.Skill, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	out := make([]*protocol.Skill, 0, len(s.items))
+	for _, v := range s.items {
+		out = append(out, v)
+	}
+	return out, nil
+}
+func (s *skillRepoStub) Update(_ context.Context, skill *protocol.Skill) (*protocol.Skill, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.items[skill.Name] = skill
+	return skill, nil
+}
+func (s *skillRepoStub) Delete(_ context.Context, name string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.items, name)
+	return nil
+}
+
+type ruleRepoStub struct {
+	mu    sync.RWMutex
+	items map[string]*protocol.Rule
+}
+
+func newRuleRepoStub(items ...*protocol.Rule) *ruleRepoStub {
+	r := &ruleRepoStub{items: make(map[string]*protocol.Rule)}
+	for _, item := range items {
+		r.items[item.Name] = item
+	}
+	return r
+}
+
+func (r *ruleRepoStub) Create(_ context.Context, rule *protocol.Rule) (*protocol.Rule, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.items[rule.Name] = rule
+	return rule, nil
+}
+func (r *ruleRepoStub) Get(_ context.Context, name string) (*protocol.Rule, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.items[name], nil
+}
+func (r *ruleRepoStub) GetByNames(_ context.Context, names []string) ([]*protocol.Rule, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	var result []*protocol.Rule
+	for _, n := range names {
+		if item, ok := r.items[n]; ok {
+			result = append(result, item)
+		}
+	}
+	return result, nil
+}
+func (r *ruleRepoStub) List(_ context.Context) ([]*protocol.Rule, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	out := make([]*protocol.Rule, 0, len(r.items))
+	for _, v := range r.items {
+		out = append(out, v)
+	}
+	return out, nil
+}
+func (r *ruleRepoStub) Update(_ context.Context, rule *protocol.Rule) (*protocol.Rule, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.items[rule.Name] = rule
+	return rule, nil
+}
+func (r *ruleRepoStub) Delete(_ context.Context, name string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	delete(r.items, name)
+	return nil
+}
+
+type gitKeyReadSvcStub struct {
+	items map[string]*protocol.GitKey
+}
+
+func newGitKeyReadSvcStub(items ...*protocol.GitKey) *gitKeyReadSvcStub {
+	s := &gitKeyReadSvcStub{items: make(map[string]*protocol.GitKey)}
+	for _, item := range items {
+		s.items[item.Name] = item
+	}
+	return s
+}
+
+func (s *gitKeyReadSvcStub) Get(_ context.Context, name string) (*protocol.GitKey, error) {
+	return s.items[name], nil
+}
+func (s *gitKeyReadSvcStub) DecryptToken(_ context.Context, name string) (string, error) {
+	k := s.items[name]
+	if k == nil {
+		return "", service.ErrNotFound
+	}
+	return k.DecryptedToken, nil
+}
+func (s *gitKeyReadSvcStub) DecryptTokensByNames(_ context.Context, names []string) ([]protocol.GitKeyItem, error) {
+	var items []protocol.GitKeyItem
+	for _, n := range names {
+		if k, ok := s.items[n]; ok {
+			items = append(items, protocol.GitKeyItem{
+				Name:           k.Name,
+				TokenType:      k.TokenType,
+				Host:           k.Host,
+				DecryptedToken: k.DecryptedToken,
+			})
+		}
+	}
+	return items, nil
+}
+
+func newHostServiceTestEnvWithResources(t *testing.T) (*service.HostService, *hostSpecRepositoryStub) {
+	t.Helper()
+
+	_, registry, specMgr, _, _ := newHostServiceTestEnv(t)
+	tmpDir := t.TempDir()
+	rt := &hostServiceRuntimeMock{}
+	auditLog := &auditLoggerRecorder{}
+	txm := &hostServiceTxManagerStub{registry: registry, specRepo: specMgr}
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			ServerConfig: configutil.ServerConfig{JWTSecret: "director-core-token"},
+		},
+		Docker: config.DockerConfig{AgentBaseImage: "maze-agent-base:latest"},
+	}
+	logDir := filepath.Join(tmpDir, "host-logs")
+	svc := service.NewHostService(registry, specMgr, txm, rt, auditLog, nil, cfg, logutil.NewNop(), logDir)
+	return svc, specMgr
+}
+
+func TestHostService_GetHostConfig_BatchFetches(t *testing.T) {
+	svc, specMgr := newHostServiceTestEnvWithResources(t)
+
+	skillRepo := newSkillRepoStub(
+		&protocol.Skill{Name: "s1", Description: "skill one", Config: map[string]string{"k": "v"}},
+		&protocol.Skill{Name: "s2", Description: "skill two"},
+	)
+	ruleRepo := newRuleRepoStub(
+		&protocol.Rule{Name: "r1", Content: "rule content 1"},
+		&protocol.Rule{Name: "r2", Content: "rule content 2"},
+	)
+	gitKeySvc := newGitKeyReadSvcStub(
+		&protocol.GitKey{Name: "gk1", TokenType: "PERSONAL_ACCESS_TOKEN", Host: "github.com", DecryptedToken: "ghp_decrypted"},
+	)
+	svc.SetResourceRepos(skillRepo, nil, ruleRepo, gitKeySvc)
+
+	spec := testHostSpec("host-cfg")
+	spec.Skills = []string{"s1", "s2"}
+	spec.Rules = []string{"r1", "r2"}
+	spec.GitKeys = []string{"gk1"}
+	if ok, _ := specMgr.Create(context.Background(), spec); !ok {
+		t.Fatal("pre-seed host spec")
+	}
+
+	cfg, err := svc.GetHostConfig(context.Background(), "host-cfg")
+	if err != nil {
+		t.Fatalf("GetHostConfig: %v", err)
+	}
+
+	if len(cfg.Skills) != 2 {
+		t.Fatalf("Skills count = %d, want 2", len(cfg.Skills))
+	}
+	if cfg.Skills[0].Name != "s1" || cfg.Skills[1].Name != "s2" {
+		t.Errorf("Skills = %v, want [s1 s2]", cfg.Skills)
+	}
+	if cfg.Skills[0].Config["k"] != "v" {
+		t.Errorf("Skill s1 Config[k] = %q, want %q", cfg.Skills[0].Config["k"], "v")
+	}
+
+	if len(cfg.Rules) != 2 {
+		t.Fatalf("Rules count = %d, want 2", len(cfg.Rules))
+	}
+	if cfg.Rules[0].Name != "r1" || cfg.Rules[1].Name != "r2" {
+		t.Errorf("Rules = %v, want [r1 r2]", cfg.Rules)
+	}
+
+	if len(cfg.GitKeys) != 1 {
+		t.Fatalf("GitKeys count = %d, want 1", len(cfg.GitKeys))
+	}
+	if cfg.GitKeys[0].DecryptedToken != "ghp_decrypted" {
+		t.Errorf("GitKey decrypted = %q, want %q", cfg.GitKeys[0].DecryptedToken, "ghp_decrypted")
+	}
+}
+
+func TestHostService_GetHostConfig_EmptySpecFields(t *testing.T) {
+	svc, specMgr := newHostServiceTestEnvWithResources(t)
+	svc.SetResourceRepos(newSkillRepoStub(), nil, newRuleRepoStub(), newGitKeyReadSvcStub())
+
+	spec := testHostSpec("host-empty")
+	if ok, _ := specMgr.Create(context.Background(), spec); !ok {
+		t.Fatal("pre-seed host spec")
+	}
+
+	cfg, err := svc.GetHostConfig(context.Background(), "host-empty")
+	if err != nil {
+		t.Fatalf("GetHostConfig: %v", err)
+	}
+	if len(cfg.Skills) != 0 || len(cfg.Rules) != 0 || len(cfg.GitKeys) != 0 {
+		t.Errorf("expected all empty, got skills=%d rules=%d gitkeys=%d",
+			len(cfg.Skills), len(cfg.Rules), len(cfg.GitKeys))
+	}
+}
+
+func TestHostService_GetHostConfig_HostNotFound(t *testing.T) {
+	svc, _ := newHostServiceTestEnvWithResources(t)
+
+	_, err := svc.GetHostConfig(context.Background(), "nonexistent")
+	if !errors.Is(err, service.ErrNotFound) {
+		t.Errorf("error = %v, want ErrNotFound", err)
+	}
+}

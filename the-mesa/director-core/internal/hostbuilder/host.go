@@ -22,9 +22,9 @@ func ToolsetImageTag(toolIDs []string) string {
 // baseImage 是已包含 agent 二进制、entrypoint.sh 和基础运行时的镜像。
 // 在此基础上叠加供应商工具链。
 // 工具列表排序后再生成，确保相同组合产生相同 Dockerfile，最大化 Docker 层缓存命中。
-// imageDigests 为各引用镜像的 digest，用于计算内容感知的缓存 hash；
+// imageFingerprints 为各引用镜像的内容指纹（RootFS.Layers），用于检测镜像内容变更；
 // 传 nil 时退化为纯文本 hash。
-func GenerateHostDockerfile(toolIDs []string, baseImage string, imageDigests map[string]string) string {
+func GenerateHostDockerfile(toolIDs []string, baseImage string, imageFingerprints map[string]string) string {
 	sorted := make([]string, len(toolIDs))
 	copy(sorted, toolIDs)
 	sort.Strings(sorted)
@@ -71,29 +71,29 @@ func GenerateHostDockerfile(toolIDs []string, baseImage string, imageDigests map
 		buf.WriteString(env + "\n")
 	}
 
-	// 注入 Dockerfile 内容 hash 作为 LABEL，供应商镜像更新时自动触发重建
-	contentHash := ComputeComboHash(buf.String(), imageDigests)
+	// 注入 Dockerfile 内容 hash 作为 LABEL，镜像内容变更时自动触发重建
+	contentHash := ComputeComboHash(buf.String(), imageFingerprints)
 	fmt.Fprintf(&buf, "LABEL maze.dockerfile-hash=%s\n", contentHash)
 
 	return buf.String()
 }
 
-// ComputeComboHash 计算 Dockerfile 内容与供应商镜像 digest 的组合 hash。
-// imageDigests 为 nil 时退化为纯文本 hash，保持向后兼容。
-// 当 supplier 镜像被重新构建（同 tag 不同内容）时，digest 变化会导致 hash 改变，
-// 从而正确地使缓存失效。
-func ComputeComboHash(content string, imageDigests map[string]string) string {
+// ComputeComboHash 计算 Dockerfile 内容与镜像内容指纹的组合 hash。
+// imageFingerprints 为 nil 时退化为纯文本 hash。
+// 当镜像内容变更（如 agent 二进制更新）时，指纹变化会导致 hash 改变，
+// 从而正确地触发重建。
+func ComputeComboHash(content string, imageFingerprints map[string]string) string {
 	h := sha256.New()
 	h.Write([]byte(content))
 
-	if len(imageDigests) > 0 {
-		keys := make([]string, 0, len(imageDigests))
-		for k := range imageDigests {
+	if len(imageFingerprints) > 0 {
+		keys := make([]string, 0, len(imageFingerprints))
+		for k := range imageFingerprints {
 			keys = append(keys, k)
 		}
 		sort.Strings(keys)
 		for _, k := range keys {
-			h.Write([]byte(k + ":" + imageDigests[k] + "\n"))
+			h.Write([]byte(k + ":" + imageFingerprints[k] + "\n"))
 		}
 	}
 

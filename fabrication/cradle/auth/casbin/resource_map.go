@@ -64,6 +64,8 @@ func DirectorCoreResourceMap() map[string]ResourceAction {
 		pb.GitKeyService_CreateGitKey_FullMethodName:                    {Resource: "git-key/*", Action: "create"},
 		pb.GitKeyService_ListGitKeys_FullMethodName:                     {Resource: "git-key/*", Action: "read"},
 		pb.GitKeyService_GetGitKey_FullMethodName:                       {Resource: "git-key/*", Action: "read"},
+		pb.GitKeyService_UpdateGitKey_FullMethodName:                    {Resource: "git-key/*", Action: "update"},
 		pb.GitKeyService_DeleteGitKey_FullMethodName:                    {Resource: "git-key/*", Action: "delete"},
+		pb.HostService_GetHostConfig_FullMethodName:                     {Resource: "host/*/config", Action: "read"},
 	}
 }

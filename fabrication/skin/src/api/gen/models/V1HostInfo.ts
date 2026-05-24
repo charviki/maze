@@ -112,6 +112,18 @@ export interface V1HostInfo {
      * @memberof V1HostInfo
      */
     mcpServers?: Array<string>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof V1HostInfo
+     */
+    rules?: Array<string>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof V1HostInfo
+     */
+    gitKeys?: Array<string>;
 }
 
 /**
@@ -145,6 +157,8 @@ export function V1HostInfoFromJSONTyped(json: any, ignoreDiscriminator: boolean)
         'lastHeartbeat': json['lastHeartbeat'] == null ? undefined : json['lastHeartbeat'],
         'skills': json['skills'] == null ? undefined : json['skills'],
         'mcpServers': json['mcpServers'] == null ? undefined : json['mcpServers'],
+        'rules': json['rules'] == null ? undefined : json['rules'],
+        'gitKeys': json['gitKeys'] == null ? undefined : json['gitKeys'],
     };
 }
 
@@ -173,6 +187,8 @@ export function V1HostInfoToJSONTyped(value?: V1HostInfo | null, ignoreDiscrimin
         'lastHeartbeat': value['lastHeartbeat'],
         'skills': value['skills'],
         'mcpServers': value['mcpServers'],
+        'rules': value['rules'],
+        'gitKeys': value['gitKeys'],
     };
 }
 

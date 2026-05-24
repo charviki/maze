@@ -15,6 +15,11 @@
 
 import * as runtime from '../runtime';
 import {
+    type GitKeyServiceUpdateGitKeyBody,
+    GitKeyServiceUpdateGitKeyBodyFromJSON,
+    GitKeyServiceUpdateGitKeyBodyToJSON,
+} from '../models/GitKeyServiceUpdateGitKeyBody';
+import {
     type RpcStatus,
     RpcStatusFromJSON,
     RpcStatusToJSON,
@@ -45,6 +50,11 @@ export interface GitKeyServiceDeleteGitKeyRequest {
 
 export interface GitKeyServiceGetGitKeyRequest {
     name: string;
+}
+
+export interface GitKeyServiceUpdateGitKeyRequest {
+    name: string;
+    body: GitKeyServiceUpdateGitKeyBody;
 }
 
 /**
@@ -215,6 +225,59 @@ export class GitKeyServiceApi extends runtime.BaseAPI {
      */
     async gitKeyServiceListGitKeys(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<V1ListGitKeysResponse> {
         const response = await this.gitKeyServiceListGitKeysRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for gitKeyServiceUpdateGitKey without sending the request
+     */
+    async gitKeyServiceUpdateGitKeyRequestOpts(requestParameters: GitKeyServiceUpdateGitKeyRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['name'] == null) {
+            throw new runtime.RequiredError(
+                'name',
+                'Required parameter "name" was null or undefined when calling gitKeyServiceUpdateGitKey().'
+            );
+        }
+
+        if (requestParameters['body'] == null) {
+            throw new runtime.RequiredError(
+                'body',
+                'Required parameter "body" was null or undefined when calling gitKeyServiceUpdateGitKey().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+
+        let urlPath = `/api/v1/git-keys/{name}`;
+        urlPath = urlPath.replace('{name}', encodeURIComponent(String(requestParameters['name'])));
+
+        return {
+            path: urlPath,
+            method: 'PUT',
+            headers: headerParameters,
+            query: queryParameters,
+            body: GitKeyServiceUpdateGitKeyBodyToJSON(requestParameters['body']),
+        };
+    }
+
+    /**
+     */
+    async gitKeyServiceUpdateGitKeyRaw(requestParameters: GitKeyServiceUpdateGitKeyRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<V1GitKey>> {
+        const requestOptions = await this.gitKeyServiceUpdateGitKeyRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => V1GitKeyFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async gitKeyServiceUpdateGitKey(requestParameters: GitKeyServiceUpdateGitKeyRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<V1GitKey> {
+        const response = await this.gitKeyServiceUpdateGitKeyRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

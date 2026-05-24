@@ -66,6 +66,7 @@ func ResourceActionForMethod(resourceMap map[string]ResourceAction, fullMethod s
 func isSkippedMethod(method string) bool {
 	switch method {
 	case mazev1.AgentService_Register_FullMethodName, mazev1.AgentService_Heartbeat_FullMethodName,
+		mazev1.AgentService_GetHostConfig_FullMethodName,
 		mazev1.AuthService_Login_FullMethodName, mazev1.AuthService_Refresh_FullMethodName,
 		mazev1.AuthService_Logout_FullMethodName:
 		return true

@@ -13,11 +13,22 @@ message GitKey {
   string token_mask = 2;
   string created_at = 3;
   string updated_at = 4;
+  string token_type = 5;
+  string host = 6;
 }
 
 message CreateGitKeyRequest {
   string name = 1 [(buf.validate.field).string = {min_len: 1}];
   string token = 2 [(buf.validate.field).string = {min_len: 1}];
+  string token_type = 3;
+  string host = 4;
+}
+
+message UpdateGitKeyRequest {
+  string name = 1 [(buf.validate.field).string = {min_len: 1}];
+  string token = 2;
+  string token_type = 3;
+  string host = 4;
 }
 
 message ListGitKeysRequest {}
@@ -52,5 +63,12 @@ service GitKeyService {
 
   rpc DeleteGitKey(DeleteGitKeyRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/api/v1/git-keys/{name}"};
+  }
+
+  rpc UpdateGitKey(UpdateGitKeyRequest) returns (GitKey) {
+    option (google.api.http) = {
+      put: "/api/v1/git-keys/{name}"
+      body: "*"
+    };
   }
 }

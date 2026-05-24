@@ -1,0 +1,12 @@
+-- +goose Up
+ALTER TABLE git_keys ADD COLUMN token_type TEXT NOT NULL DEFAULT 'PERSONAL_ACCESS_TOKEN';
+ALTER TABLE git_keys ADD COLUMN host TEXT;
+
+ALTER TABLE host_specs ADD COLUMN rules JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE host_specs ADD COLUMN git_keys JSONB NOT NULL DEFAULT '[]'::jsonb;
+
+-- +goose Down
+ALTER TABLE host_specs DROP COLUMN IF EXISTS git_keys;
+ALTER TABLE host_specs DROP COLUMN IF EXISTS rules;
+ALTER TABLE git_keys DROP COLUMN IF EXISTS host;
+ALTER TABLE git_keys DROP COLUMN IF EXISTS token_type;

@@ -9,6 +9,9 @@
       "name": "ConfigService"
     },
     {
+      "name": "HostService"
+    },
+    {
       "name": "AgentService"
     },
     {
@@ -22,9 +25,6 @@
     },
     {
       "name": "GitKeyService"
-    },
-    {
-      "name": "HostService"
     },
     {
       "name": "KnowledgeService"
@@ -868,6 +868,42 @@
         "tags": [
           "GitKeyService"
         ]
+      },
+      "put": {
+        "operationId": "GitKeyService_UpdateGitKey",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GitKey"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/GitKeyServiceUpdateGitKeyBody"
+            }
+          }
+        ],
+        "tags": [
+          "GitKeyService"
+        ]
       }
     },
     "/api/v1/host/tools": {
@@ -981,6 +1017,36 @@
             "schema": {
               "type": "object",
               "properties": {}
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "HostService"
+        ]
+      }
+    },
+    "/api/v1/hosts/{name}/config": {
+      "get": {
+        "operationId": "HostService_GetHostConfig",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetHostConfigResponse"
             }
           },
           "default": {
@@ -3454,6 +3520,20 @@
         }
       }
     },
+    "GitKeyServiceUpdateGitKeyBody": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string"
+        },
+        "tokenType": {
+          "type": "string"
+        },
+        "host": {
+          "type": "string"
+        }
+      }
+    },
     "KnowledgeServiceCreateLinkBody": {
       "type": "object",
       "properties": {
@@ -4028,6 +4108,12 @@
         },
         "token": {
           "type": "string"
+        },
+        "tokenType": {
+          "type": "string"
+        },
+        "host": {
+          "type": "string"
         }
       }
     },
@@ -4056,6 +4142,18 @@
           }
         },
         "mcpServers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "gitKeys": {
           "type": "array",
           "items": {
             "type": "string"
@@ -4397,6 +4495,32 @@
         }
       }
     },
+    "v1GetHostConfigResponse": {
+      "type": "object",
+      "properties": {
+        "skills": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1HostConfigSkill"
+          }
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1HostConfigRule"
+          }
+        },
+        "gitKeys": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1HostConfigGitKey"
+          }
+        }
+      }
+    },
     "v1GetLinksResponse": {
       "type": "object",
       "properties": {
@@ -4443,6 +4567,12 @@
         },
         "updatedAt": {
           "type": "string"
+        },
+        "tokenType": {
+          "type": "string"
+        },
+        "host": {
+          "type": "string"
         }
       }
     },
@@ -4466,6 +4596,51 @@
         },
         "status": {
           "type": "string"
+        }
+      }
+    },
+    "v1HostConfigGitKey": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "tokenType": {
+          "type": "string"
+        },
+        "host": {
+          "type": "string"
+        },
+        "decryptedToken": {
+          "type": "string"
+        }
+      }
+    },
+    "v1HostConfigRule": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        }
+      }
+    },
+    "v1HostConfigSkill": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
         }
       }
     },
@@ -4524,6 +4699,18 @@
           "items": {
             "type": "string"
           }
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "gitKeys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "title": "与 protocol.HostInfo 对齐（HostSpec + 运行时状态合并视图）"
@@ -4572,6 +4759,18 @@
           }
         },
         "mcpServers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "gitKeys": {
           "type": "array",
           "items": {
             "type": "string"

@@ -8,6 +8,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"google.golang.org/grpc"
@@ -42,7 +43,9 @@ type HeartbeatService struct {
 	registry     *provider.Registry
 	grpcConn     *grpc.ClientConn
 	agentClient  pb.AgentServiceClient
-	registered   bool
+	registered     bool
+	registeredCh   chan struct{}
+	registeredOnce sync.Once
 	logger       logutil.Logger
 	startedAt    time.Time
 	currentDelay time.Duration
@@ -59,14 +62,15 @@ func NewHeartbeatService(cfg *config.Config, tmuxService TmuxService, localConfi
 	}
 
 	return &HeartbeatService{
-		cfg:         cfg,
-		tmuxService: tmuxService,
-		localConfig: localConfig,
-		registry:    registry,
-		grpcConn:    conn,
-		agentClient: pb.NewAgentServiceClient(conn),
-		logger:      logger,
-		startedAt:   time.Now(),
+		cfg:          cfg,
+		tmuxService:  tmuxService,
+		localConfig:  localConfig,
+		registry:     registry,
+		grpcConn:     conn,
+		agentClient:  pb.NewAgentServiceClient(conn),
+		logger:       logger,
+		startedAt:    time.Now(),
+		registeredCh: make(chan struct{}),
 	}, nil
 }
 
@@ -115,6 +119,7 @@ func (s *HeartbeatService) Start(stopCh <-chan struct{}) {
 				s.logger.Errorf("[heartbeat] register failed: %v, retry in %v", err, s.currentDelay)
 			} else {
 				s.registered = true
+				s.registeredOnce.Do(func() { close(s.registeredCh) })
 				s.currentDelay = baseInterval
 				s.logger.Infof("[heartbeat] registered as %s", name)
 			}
@@ -149,6 +154,16 @@ func (s *HeartbeatService) Stop() {
 	if s.grpcConn != nil {
 		_ = s.grpcConn.Close()
 	}
+}
+
+// GetAgentClient 返回 gRPC AgentServiceClient，供其他服务复用连接。
+func (s *HeartbeatService) GetAgentClient() pb.AgentServiceClient {
+	return s.agentClient
+}
+
+// RegisteredCh 返回注册完成信号 channel，close 后可多次读取零值。
+func (s *HeartbeatService) RegisteredCh() <-chan struct{} {
+	return s.registeredCh
 }
 
 // collectStatus 收集当前 Agent 运行状态快照
@@ -283,11 +298,7 @@ func (s *HeartbeatService) getSupportedTemplates() []string {
 }
 
 func (s *HeartbeatService) withAuth(ctx context.Context) context.Context {
-	if s.cfg.Controller.AuthToken != "" {
-		md := metadata.Pairs("authorization", "Bearer "+s.cfg.Controller.AuthToken)
-		return metadata.NewOutgoingContext(ctx, md)
-	}
-	return ctx
+	return withBearerAuth(ctx, s.cfg.Controller.AuthToken)
 }
 
 // getOwnHostname 获取本机主机名，失败时回退到 localhost
@@ -297,6 +308,15 @@ func getOwnHostname() string {
 		return "localhost"
 	}
 	return hostname
+}
+
+// withBearerAuth injects a Bearer token into the gRPC metadata if token is non-empty.
+func withBearerAuth(ctx context.Context, token string) context.Context {
+	if token != "" {
+		md := metadata.Pairs("authorization", "Bearer "+token)
+		return metadata.NewOutgoingContext(ctx, md)
+	}
+	return ctx
 }
 
 // extractHostFromAddr 从 AdvertisedAddr 中提取 hostname

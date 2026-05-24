@@ -12,6 +12,7 @@ import (
 type SkillRepo interface {
 	Create(ctx context.Context, skill *protocol.Skill) (*protocol.Skill, error)
 	Get(ctx context.Context, name string) (*protocol.Skill, error)
+	GetByNames(ctx context.Context, names []string) ([]*protocol.Skill, error)
 	List(ctx context.Context) ([]*protocol.Skill, error)
 	Update(ctx context.Context, skill *protocol.Skill) (*protocol.Skill, error)
 	Delete(ctx context.Context, name string) error
