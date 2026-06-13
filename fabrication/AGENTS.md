@@ -6,7 +6,7 @@
 
 ## 项目结构
 
-molds/ 包含 5 个工具链的供应商 Dockerfile，fabrication/Dockerfile.host 为 Host 装配镜像（多 target stage，按工具集组合动态生成）。deps/ 管理 go/python/js 声明式依赖。kubernetes/ 按 overlay 分环境（dev/test/production），由仓库根 `Makefile` 统一编排部署与代理命令。
+molds/ 包含 5 个工具链的供应商 Dockerfile，Host 装配镜像由 `sweetwater/black-ridge/Dockerfile` 承担（多 target stage，按工具集组合动态生成）。deps/ 管理 go/python/js 声明式依赖（版本锁定，升级用 `make deps-bump`）。kubernetes/ 按 overlay 分环境（dev/test/production），由仓库根 `Makefile` 统一编排部署与代理命令。
 
 ## 核心原则
 
@@ -14,8 +14,9 @@ molds/ 包含 5 个工具链的供应商 Dockerfile，fabrication/Dockerfile.hos
 
 ## 命令
 
-- `make build-deps` — 构建所有供应商镜像
-- `make up PLATFORM=kubernetes ENV=dev|test|prod` — K8s 构建并部署环境
+- `make build-deps` — 构建所有供应商镜像（并行；SKIP_DEPS=1 可跳过、复用现有镜像）
+- `make deps-bump` — 查询并更新供应商依赖锁定版本，之后需 `make build-deps`
+- `make up PLATFORM=kubernetes ENV=dev|test|prod` — K8s 部署（用已有镜像；首次先 `make build`）
 - `make deploy PLATFORM=kubernetes ENV=dev|test|prod` — K8s 只部署，不构建镜像
 - `make proxy PLATFORM=kubernetes ENV=dev|test|prod` — 代理当前环境服务到本地
 
