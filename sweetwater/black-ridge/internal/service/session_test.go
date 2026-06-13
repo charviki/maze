@@ -25,9 +25,9 @@ func TestSessionStruct(t *testing.T) {
 }
 
 func TestConfigItemStruct(t *testing.T) {
-	c := ConfigItem{Type: "env", Key: "PATH", Value: "/usr/bin"}
-	if c.Type != "env" {
-		t.Errorf("Type = %q, want env", c.Type)
+	c := ConfigItem{Type: ConfigTypeEnv, Key: "PATH", Value: "/usr/bin"}
+	if c.Type != ConfigTypeEnv {
+		t.Errorf("Type = %q, want %q", c.Type, ConfigTypeEnv)
 	}
 	if c.Key != "PATH" {
 		t.Errorf("Key = %q, want PATH", c.Key)

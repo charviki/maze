@@ -19,9 +19,17 @@ message Session {
   string working_dir = 7;
 }
 
+enum ConfigItemType {
+  CONFIG_ITEM_TYPE_UNSPECIFIED = 0;
+  CONFIG_ITEM_TYPE_ENV = 1;
+  CONFIG_ITEM_TYPE_FILE = 2;
+  CONFIG_ITEM_TYPE_COMMAND = 3;
+  CONFIG_ITEM_TYPE_PROMPT = 4;
+}
+
 // 与 model.ConfigItem 对齐
 message ConfigItem {
-  string type = 1;
+  ConfigItemType type = 1;
   string key = 2;
   string value = 3;
 }

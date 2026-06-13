@@ -145,6 +145,9 @@ func (p *testProvider) HealthCheckTask() provider.Task {
 		},
 	}
 }
+func (p *testProvider) CompletionHookConfig(_ string, _ string) *provider.CompletionHookConfig {
+	return nil
+}
 
 // compile-time check: HeartbeatService unused import guard
 var _ = logutil.NewNop

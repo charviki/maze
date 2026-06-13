@@ -17,6 +17,7 @@ const (
 	StepEnv     PipelineStepType = "env"     // 设置环境变量
 	StepFile    PipelineStepType = "file"    // 写入文件
 	StepCommand PipelineStepType = "command" // 执行命令
+	StepPrompt  PipelineStepType = "prompt"  // 向交互式程序发送 prompt 并等待完成
 )
 
 // PipelineStep 管线步骤
@@ -25,8 +26,9 @@ type PipelineStep struct {
 	Type  PipelineStepType `json:"type"`
 	Phase PipelinePhase    `json:"phase"`
 	Order int              `json:"order"`
-	Key   string           `json:"key,omitempty"` // cd: 目录路径; env: 变量名; file: 文件路径; command: 空
-	Value string           `json:"value"`         // cd: 空; env: 变量值; file: 文件内容; command: shell 命令
+	Key   string           `json:"key,omitempty"` // cd: 目录路径; env: 变量名; file: 文件路径; prompt: ready 信号文件路径
+	Value string           `json:"value"`         // cd: 空; env: 变量值; file: 文件内容; command: shell 命令; prompt: prompt 文本
+	Extra string           `json:"extra,omitempty"` // prompt: done 信号文件路径（由 Stop hook 写入）
 }
 
 // Pipeline 管线（有序步骤列表）

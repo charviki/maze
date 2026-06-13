@@ -54,7 +54,7 @@ func (s *Server) CreateSession(ctx context.Context, req *pb.CreateSessionRequest
 
 	confs := make([]service.ConfigItem, len(req.GetSessionConfs()))
 	for i, c := range req.GetSessionConfs() {
-		confs[i] = service.ConfigItem{Type: c.GetType(), Key: c.GetKey(), Value: c.GetValue()}
+		confs[i] = service.ConfigItem{Type: c.GetType().String(), Key: c.GetKey(), Value: c.GetValue()}
 	}
 
 	// session_confs 校验：确保 env key 和 file path 在模板声明的范围内
@@ -383,13 +383,13 @@ func validateSessionConfs(configs []service.ConfigItem, tpl *service.SessionTemp
 	for i := range configs {
 		cfg := &configs[i]
 		switch cfg.Type {
-		case "env":
+		case service.ConfigTypeEnv:
 			if _, ok := allowedEnvKeys[cfg.Key]; !ok {
 				return errors.New("session env key is not allowed by template")
 			}
-		case "file":
-			cleaned := filepath.Clean(strings.TrimSpace(cfg.Key))
+		case service.ConfigTypeFile:
 			// 强制路径规范化并限制为模板声明的相对路径
+			cleaned := filepath.Clean(strings.TrimSpace(cfg.Key))
 			if filepath.IsAbs(cleaned) || cleaned == "." || cleaned == ".." || strings.HasPrefix(cleaned, ".."+string(filepath.Separator)) {
 				return errors.New("session file path must stay under working directory")
 			}
@@ -397,6 +397,8 @@ func validateSessionConfs(configs []service.ConfigItem, tpl *service.SessionTemp
 				return errors.New("session file path is not allowed by template")
 			}
 			cfg.Key = cleaned
+		case service.ConfigTypePrompt:
+			// prompt 类型无需模板 schema 校验：仅向前端开放，CLI 启动后由 hook 信号驱动
 		default:
 			return errors.New("unsupported session config type")
 		}

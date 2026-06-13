@@ -24,6 +24,61 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type ConfigItemType int32
+
+const (
+	ConfigItemType_CONFIG_ITEM_TYPE_UNSPECIFIED ConfigItemType = 0
+	ConfigItemType_CONFIG_ITEM_TYPE_ENV         ConfigItemType = 1
+	ConfigItemType_CONFIG_ITEM_TYPE_FILE        ConfigItemType = 2
+	ConfigItemType_CONFIG_ITEM_TYPE_COMMAND     ConfigItemType = 3
+	ConfigItemType_CONFIG_ITEM_TYPE_PROMPT      ConfigItemType = 4
+)
+
+// Enum value maps for ConfigItemType.
+var (
+	ConfigItemType_name = map[int32]string{
+		0: "CONFIG_ITEM_TYPE_UNSPECIFIED",
+		1: "CONFIG_ITEM_TYPE_ENV",
+		2: "CONFIG_ITEM_TYPE_FILE",
+		3: "CONFIG_ITEM_TYPE_COMMAND",
+		4: "CONFIG_ITEM_TYPE_PROMPT",
+	}
+	ConfigItemType_value = map[string]int32{
+		"CONFIG_ITEM_TYPE_UNSPECIFIED": 0,
+		"CONFIG_ITEM_TYPE_ENV":         1,
+		"CONFIG_ITEM_TYPE_FILE":        2,
+		"CONFIG_ITEM_TYPE_COMMAND":     3,
+		"CONFIG_ITEM_TYPE_PROMPT":      4,
+	}
+)
+
+func (x ConfigItemType) Enum() *ConfigItemType {
+	p := new(ConfigItemType)
+	*p = x
+	return p
+}
+
+func (x ConfigItemType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ConfigItemType) Descriptor() protoreflect.EnumDescriptor {
+	return file_maze_v1_session_proto_enumTypes[0].Descriptor()
+}
+
+func (ConfigItemType) Type() protoreflect.EnumType {
+	return &file_maze_v1_session_proto_enumTypes[0]
+}
+
+func (x ConfigItemType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ConfigItemType.Descriptor instead.
+func (ConfigItemType) EnumDescriptor() ([]byte, []int) {
+	return file_maze_v1_session_proto_rawDescGZIP(), []int{0}
+}
+
 // 与 model.Session 对齐
 type Session struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -120,7 +175,7 @@ func (x *Session) GetWorkingDir() string {
 // 与 model.ConfigItem 对齐
 type ConfigItem struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Type          string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	Type          ConfigItemType         `protobuf:"varint,1,opt,name=type,proto3,enum=maze.v1.ConfigItemType" json:"type,omitempty"`
 	Key           string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
 	Value         string                 `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -157,11 +212,11 @@ func (*ConfigItem) Descriptor() ([]byte, []int) {
 	return file_maze_v1_session_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ConfigItem) GetType() string {
+func (x *ConfigItem) GetType() ConfigItemType {
 	if x != nil {
 		return x.Type
 	}
-	return ""
+	return ConfigItemType_CONFIG_ITEM_TYPE_UNSPECIFIED
 }
 
 func (x *ConfigItem) GetKey() string {
@@ -1476,10 +1531,10 @@ const file_maze_v1_session_proto_rawDesc = "" +
 	"\vtemplate_id\x18\x06 \x01(\tR\n" +
 	"templateId\x12\x1f\n" +
 	"\vworking_dir\x18\a \x01(\tR\n" +
-	"workingDir\"H\n" +
+	"workingDir\"a\n" +
 	"\n" +
-	"ConfigItem\x12\x12\n" +
-	"\x04type\x18\x01 \x01(\tR\x04type\x12\x10\n" +
+	"ConfigItem\x12+\n" +
+	"\x04type\x18\x01 \x01(\x0e2\x17.maze.v1.ConfigItemTypeR\x04type\x12\x10\n" +
 	"\x03key\x18\x02 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x03 \x01(\tR\x05value\"\x91\x02\n" +
 	"\x14CreateSessionRequest\x12\x1b\n" +
@@ -1579,7 +1634,13 @@ const file_maze_v1_session_proto_rawDesc = "" +
 	"\x03env\x18\x01 \x03(\v2 .maze.v1.GetEnvResponse.EnvEntryR\x03env\x1a6\n" +
 	"\bEnvEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x012\xf2\x0f\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xa2\x01\n" +
+	"\x0eConfigItemType\x12 \n" +
+	"\x1cCONFIG_ITEM_TYPE_UNSPECIFIED\x10\x00\x12\x18\n" +
+	"\x14CONFIG_ITEM_TYPE_ENV\x10\x01\x12\x19\n" +
+	"\x15CONFIG_ITEM_TYPE_FILE\x10\x02\x12\x1c\n" +
+	"\x18CONFIG_ITEM_TYPE_COMMAND\x10\x03\x12\x1b\n" +
+	"\x17CONFIG_ITEM_TYPE_PROMPT\x10\x042\xf2\x0f\n" +
 	"\x0eSessionService\x12\x8b\x01\n" +
 	"\fListSessions\x12\x1c.maze.v1.ListSessionsRequest\x1a\x1d.maze.v1.ListSessionsResponse\">\x82\xd3\xe4\x93\x028Z\x12\x12\x10/api/v1/sessions\x12\"/api/v1/nodes/{node_name}/sessions\x12\x86\x01\n" +
 	"\rCreateSession\x12\x1d.maze.v1.CreateSessionRequest\x1a\x10.maze.v1.Session\"D\x82\xd3\xe4\x93\x02>:\x01*Z\x15:\x01*\"\x10/api/v1/sessions\"\"/api/v1/nodes/{node_name}/sessions\x12\x84\x01\n" +
@@ -1610,75 +1671,78 @@ func file_maze_v1_session_proto_rawDescGZIP() []byte {
 	return file_maze_v1_session_proto_rawDescData
 }
 
+var file_maze_v1_session_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_maze_v1_session_proto_msgTypes = make([]protoimpl.MessageInfo, 26)
 var file_maze_v1_session_proto_goTypes = []any{
-	(*Session)(nil),                    // 0: maze.v1.Session
-	(*ConfigItem)(nil),                 // 1: maze.v1.ConfigItem
-	(*CreateSessionRequest)(nil),       // 2: maze.v1.CreateSessionRequest
-	(*ListSessionsRequest)(nil),        // 3: maze.v1.ListSessionsRequest
-	(*ListSessionsResponse)(nil),       // 4: maze.v1.ListSessionsResponse
-	(*GetSessionRequest)(nil),          // 5: maze.v1.GetSessionRequest
-	(*DeleteSessionRequest)(nil),       // 6: maze.v1.DeleteSessionRequest
-	(*GetSessionConfigRequest)(nil),    // 7: maze.v1.GetSessionConfigRequest
-	(*ConfigFileSnapshot)(nil),         // 8: maze.v1.ConfigFileSnapshot
-	(*ConfigFileUpdate)(nil),           // 9: maze.v1.ConfigFileUpdate
-	(*SessionConfigView)(nil),          // 10: maze.v1.SessionConfigView
-	(*UpdateSessionConfigRequest)(nil), // 11: maze.v1.UpdateSessionConfigRequest
-	(*RestoreSessionRequest)(nil),      // 12: maze.v1.RestoreSessionRequest
-	(*SaveSessionsRequest)(nil),        // 13: maze.v1.SaveSessionsRequest
-	(*SaveSessionsResponse)(nil),       // 14: maze.v1.SaveSessionsResponse
-	(*GetSavedSessionsRequest)(nil),    // 15: maze.v1.GetSavedSessionsRequest
-	(*SessionState)(nil),               // 16: maze.v1.SessionState
-	(*GetSavedSessionsResponse)(nil),   // 17: maze.v1.GetSavedSessionsResponse
-	(*TerminalOutput)(nil),             // 18: maze.v1.TerminalOutput
-	(*GetOutputRequest)(nil),           // 19: maze.v1.GetOutputRequest
-	(*SendInputRequest)(nil),           // 20: maze.v1.SendInputRequest
-	(*SendSignalRequest)(nil),          // 21: maze.v1.SendSignalRequest
-	(*GetEnvRequest)(nil),              // 22: maze.v1.GetEnvRequest
-	(*GetEnvResponse)(nil),             // 23: maze.v1.GetEnvResponse
-	nil,                                // 24: maze.v1.SessionState.EnvSnapshotEntry
-	nil,                                // 25: maze.v1.GetEnvResponse.EnvEntry
-	(*emptypb.Empty)(nil),              // 26: google.protobuf.Empty
+	(ConfigItemType)(0),                // 0: maze.v1.ConfigItemType
+	(*Session)(nil),                    // 1: maze.v1.Session
+	(*ConfigItem)(nil),                 // 2: maze.v1.ConfigItem
+	(*CreateSessionRequest)(nil),       // 3: maze.v1.CreateSessionRequest
+	(*ListSessionsRequest)(nil),        // 4: maze.v1.ListSessionsRequest
+	(*ListSessionsResponse)(nil),       // 5: maze.v1.ListSessionsResponse
+	(*GetSessionRequest)(nil),          // 6: maze.v1.GetSessionRequest
+	(*DeleteSessionRequest)(nil),       // 7: maze.v1.DeleteSessionRequest
+	(*GetSessionConfigRequest)(nil),    // 8: maze.v1.GetSessionConfigRequest
+	(*ConfigFileSnapshot)(nil),         // 9: maze.v1.ConfigFileSnapshot
+	(*ConfigFileUpdate)(nil),           // 10: maze.v1.ConfigFileUpdate
+	(*SessionConfigView)(nil),          // 11: maze.v1.SessionConfigView
+	(*UpdateSessionConfigRequest)(nil), // 12: maze.v1.UpdateSessionConfigRequest
+	(*RestoreSessionRequest)(nil),      // 13: maze.v1.RestoreSessionRequest
+	(*SaveSessionsRequest)(nil),        // 14: maze.v1.SaveSessionsRequest
+	(*SaveSessionsResponse)(nil),       // 15: maze.v1.SaveSessionsResponse
+	(*GetSavedSessionsRequest)(nil),    // 16: maze.v1.GetSavedSessionsRequest
+	(*SessionState)(nil),               // 17: maze.v1.SessionState
+	(*GetSavedSessionsResponse)(nil),   // 18: maze.v1.GetSavedSessionsResponse
+	(*TerminalOutput)(nil),             // 19: maze.v1.TerminalOutput
+	(*GetOutputRequest)(nil),           // 20: maze.v1.GetOutputRequest
+	(*SendInputRequest)(nil),           // 21: maze.v1.SendInputRequest
+	(*SendSignalRequest)(nil),          // 22: maze.v1.SendSignalRequest
+	(*GetEnvRequest)(nil),              // 23: maze.v1.GetEnvRequest
+	(*GetEnvResponse)(nil),             // 24: maze.v1.GetEnvResponse
+	nil,                                // 25: maze.v1.SessionState.EnvSnapshotEntry
+	nil,                                // 26: maze.v1.GetEnvResponse.EnvEntry
+	(*emptypb.Empty)(nil),              // 27: google.protobuf.Empty
 }
 var file_maze_v1_session_proto_depIdxs = []int32{
-	1,  // 0: maze.v1.CreateSessionRequest.session_confs:type_name -> maze.v1.ConfigItem
-	0,  // 1: maze.v1.ListSessionsResponse.sessions:type_name -> maze.v1.Session
-	8,  // 2: maze.v1.SessionConfigView.files:type_name -> maze.v1.ConfigFileSnapshot
-	9,  // 3: maze.v1.UpdateSessionConfigRequest.files:type_name -> maze.v1.ConfigFileUpdate
-	24, // 4: maze.v1.SessionState.env_snapshot:type_name -> maze.v1.SessionState.EnvSnapshotEntry
-	16, // 5: maze.v1.GetSavedSessionsResponse.sessions:type_name -> maze.v1.SessionState
-	25, // 6: maze.v1.GetEnvResponse.env:type_name -> maze.v1.GetEnvResponse.EnvEntry
-	3,  // 7: maze.v1.SessionService.ListSessions:input_type -> maze.v1.ListSessionsRequest
-	2,  // 8: maze.v1.SessionService.CreateSession:input_type -> maze.v1.CreateSessionRequest
-	5,  // 9: maze.v1.SessionService.GetSession:input_type -> maze.v1.GetSessionRequest
-	6,  // 10: maze.v1.SessionService.DeleteSession:input_type -> maze.v1.DeleteSessionRequest
-	7,  // 11: maze.v1.SessionService.GetSessionConfig:input_type -> maze.v1.GetSessionConfigRequest
-	11, // 12: maze.v1.SessionService.UpdateSessionConfig:input_type -> maze.v1.UpdateSessionConfigRequest
-	12, // 13: maze.v1.SessionService.RestoreSession:input_type -> maze.v1.RestoreSessionRequest
-	13, // 14: maze.v1.SessionService.SaveSessions:input_type -> maze.v1.SaveSessionsRequest
-	15, // 15: maze.v1.SessionService.GetSavedSessions:input_type -> maze.v1.GetSavedSessionsRequest
-	19, // 16: maze.v1.SessionService.GetOutput:input_type -> maze.v1.GetOutputRequest
-	20, // 17: maze.v1.SessionService.SendInput:input_type -> maze.v1.SendInputRequest
-	21, // 18: maze.v1.SessionService.SendSignal:input_type -> maze.v1.SendSignalRequest
-	22, // 19: maze.v1.SessionService.GetEnv:input_type -> maze.v1.GetEnvRequest
-	4,  // 20: maze.v1.SessionService.ListSessions:output_type -> maze.v1.ListSessionsResponse
-	0,  // 21: maze.v1.SessionService.CreateSession:output_type -> maze.v1.Session
-	0,  // 22: maze.v1.SessionService.GetSession:output_type -> maze.v1.Session
-	26, // 23: maze.v1.SessionService.DeleteSession:output_type -> google.protobuf.Empty
-	10, // 24: maze.v1.SessionService.GetSessionConfig:output_type -> maze.v1.SessionConfigView
-	10, // 25: maze.v1.SessionService.UpdateSessionConfig:output_type -> maze.v1.SessionConfigView
-	26, // 26: maze.v1.SessionService.RestoreSession:output_type -> google.protobuf.Empty
-	14, // 27: maze.v1.SessionService.SaveSessions:output_type -> maze.v1.SaveSessionsResponse
-	17, // 28: maze.v1.SessionService.GetSavedSessions:output_type -> maze.v1.GetSavedSessionsResponse
-	18, // 29: maze.v1.SessionService.GetOutput:output_type -> maze.v1.TerminalOutput
-	26, // 30: maze.v1.SessionService.SendInput:output_type -> google.protobuf.Empty
-	26, // 31: maze.v1.SessionService.SendSignal:output_type -> google.protobuf.Empty
-	23, // 32: maze.v1.SessionService.GetEnv:output_type -> maze.v1.GetEnvResponse
-	20, // [20:33] is the sub-list for method output_type
-	7,  // [7:20] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	0,  // 0: maze.v1.ConfigItem.type:type_name -> maze.v1.ConfigItemType
+	2,  // 1: maze.v1.CreateSessionRequest.session_confs:type_name -> maze.v1.ConfigItem
+	1,  // 2: maze.v1.ListSessionsResponse.sessions:type_name -> maze.v1.Session
+	9,  // 3: maze.v1.SessionConfigView.files:type_name -> maze.v1.ConfigFileSnapshot
+	10, // 4: maze.v1.UpdateSessionConfigRequest.files:type_name -> maze.v1.ConfigFileUpdate
+	25, // 5: maze.v1.SessionState.env_snapshot:type_name -> maze.v1.SessionState.EnvSnapshotEntry
+	17, // 6: maze.v1.GetSavedSessionsResponse.sessions:type_name -> maze.v1.SessionState
+	26, // 7: maze.v1.GetEnvResponse.env:type_name -> maze.v1.GetEnvResponse.EnvEntry
+	4,  // 8: maze.v1.SessionService.ListSessions:input_type -> maze.v1.ListSessionsRequest
+	3,  // 9: maze.v1.SessionService.CreateSession:input_type -> maze.v1.CreateSessionRequest
+	6,  // 10: maze.v1.SessionService.GetSession:input_type -> maze.v1.GetSessionRequest
+	7,  // 11: maze.v1.SessionService.DeleteSession:input_type -> maze.v1.DeleteSessionRequest
+	8,  // 12: maze.v1.SessionService.GetSessionConfig:input_type -> maze.v1.GetSessionConfigRequest
+	12, // 13: maze.v1.SessionService.UpdateSessionConfig:input_type -> maze.v1.UpdateSessionConfigRequest
+	13, // 14: maze.v1.SessionService.RestoreSession:input_type -> maze.v1.RestoreSessionRequest
+	14, // 15: maze.v1.SessionService.SaveSessions:input_type -> maze.v1.SaveSessionsRequest
+	16, // 16: maze.v1.SessionService.GetSavedSessions:input_type -> maze.v1.GetSavedSessionsRequest
+	20, // 17: maze.v1.SessionService.GetOutput:input_type -> maze.v1.GetOutputRequest
+	21, // 18: maze.v1.SessionService.SendInput:input_type -> maze.v1.SendInputRequest
+	22, // 19: maze.v1.SessionService.SendSignal:input_type -> maze.v1.SendSignalRequest
+	23, // 20: maze.v1.SessionService.GetEnv:input_type -> maze.v1.GetEnvRequest
+	5,  // 21: maze.v1.SessionService.ListSessions:output_type -> maze.v1.ListSessionsResponse
+	1,  // 22: maze.v1.SessionService.CreateSession:output_type -> maze.v1.Session
+	1,  // 23: maze.v1.SessionService.GetSession:output_type -> maze.v1.Session
+	27, // 24: maze.v1.SessionService.DeleteSession:output_type -> google.protobuf.Empty
+	11, // 25: maze.v1.SessionService.GetSessionConfig:output_type -> maze.v1.SessionConfigView
+	11, // 26: maze.v1.SessionService.UpdateSessionConfig:output_type -> maze.v1.SessionConfigView
+	27, // 27: maze.v1.SessionService.RestoreSession:output_type -> google.protobuf.Empty
+	15, // 28: maze.v1.SessionService.SaveSessions:output_type -> maze.v1.SaveSessionsResponse
+	18, // 29: maze.v1.SessionService.GetSavedSessions:output_type -> maze.v1.GetSavedSessionsResponse
+	19, // 30: maze.v1.SessionService.GetOutput:output_type -> maze.v1.TerminalOutput
+	27, // 31: maze.v1.SessionService.SendInput:output_type -> google.protobuf.Empty
+	27, // 32: maze.v1.SessionService.SendSignal:output_type -> google.protobuf.Empty
+	24, // 33: maze.v1.SessionService.GetEnv:output_type -> maze.v1.GetEnvResponse
+	21, // [21:34] is the sub-list for method output_type
+	8,  // [8:21] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_maze_v1_session_proto_init() }
@@ -1691,13 +1755,14 @@ func file_maze_v1_session_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_maze_v1_session_proto_rawDesc), len(file_maze_v1_session_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   26,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_maze_v1_session_proto_goTypes,
 		DependencyIndexes: file_maze_v1_session_proto_depIdxs,
+		EnumInfos:         file_maze_v1_session_proto_enumTypes,
 		MessageInfos:      file_maze_v1_session_proto_msgTypes,
 	}.Build()
 	File_maze_v1_session_proto = out.File

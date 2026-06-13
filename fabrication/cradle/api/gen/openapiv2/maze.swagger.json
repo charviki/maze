@@ -4006,7 +4006,7 @@
       "type": "object",
       "properties": {
         "type": {
-          "type": "string"
+          "$ref": "#/definitions/v1ConfigItemType"
         },
         "key": {
           "type": "string"
@@ -4016,6 +4016,17 @@
         }
       },
       "title": "与 model.ConfigItem 对齐"
+    },
+    "v1ConfigItemType": {
+      "type": "string",
+      "enum": [
+        "CONFIG_ITEM_TYPE_UNSPECIFIED",
+        "CONFIG_ITEM_TYPE_ENV",
+        "CONFIG_ITEM_TYPE_FILE",
+        "CONFIG_ITEM_TYPE_COMMAND",
+        "CONFIG_ITEM_TYPE_PROMPT"
+      ],
+      "default": "CONFIG_ITEM_TYPE_UNSPECIFIED"
     },
     "v1ConfigLayer": {
       "type": "object",

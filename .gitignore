@@ -52,3 +52,5 @@ tmp/
 *.tgz
 *.tar.gz
 the-forge-old/
+.superpowers/
+docs/superpowers/

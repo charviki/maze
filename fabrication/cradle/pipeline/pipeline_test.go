@@ -51,6 +51,7 @@ func TestPipelineStep_JSONRoundTrip_AllTypes(t *testing.T) {
 		{ID: "env", Type: StepEnv, Phase: PhaseSystem, Order: 1, Key: "FOO", Value: "bar"},
 		{ID: "file", Type: StepFile, Phase: PhaseSystem, Order: 2, Key: "/tmp/test.txt", Value: "hello"},
 		{ID: "cmd", Type: StepCommand, Phase: PhaseTemplate, Order: 3, Key: "", Value: "claude"},
+		{ID: "prompt", Type: StepPrompt, Phase: PhaseUser, Order: 4, Key: "/tmp/step_ready_s1", Value: "implement feature X", Extra: "/tmp/step_done_s1"},
 	}
 
 	for _, step := range steps {

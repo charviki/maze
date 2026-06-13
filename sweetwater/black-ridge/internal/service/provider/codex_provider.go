@@ -1,7 +1,10 @@
 package provider
 
 import (
+	"encoding/json"
+	"os"
 	"os/exec"
+	"path/filepath"
 )
 
 // CodexProvider 是 OpenAI Codex CLI 的 Provider 实现。
@@ -33,5 +36,52 @@ func (p *CodexProvider) HealthCheckTask() Task {
 			_, err := exec.LookPath("codex")
 			return err
 		},
+	}
+}
+
+// CompletionHookConfig 生成 Codex hooks.json 配置，注入 SessionStart + Stop hook。
+// Codex 的 hooks.json 是独立的 hook 配置文件，无需与现有配置合并：
+//   - SessionStart: CLI 启动就绪时 touch ready 信号文件
+//   - Stop: CLI 完成回复时 touch done 信号文件
+func (p *CodexProvider) CompletionHookConfig(homeDir, sessionName string) *CompletionHookConfig {
+	hooksPath := filepath.Join(homeDir, ".codex", "hooks.json")
+	signalFile := filepath.Join(os.TempDir(), "step_done_"+sessionName)
+	readySignalFile := filepath.Join(os.TempDir(), "step_ready_"+sessionName)
+
+	hooksConfig := map[string]any{
+		"hooks": []any{
+			map[string]any{
+				"event":   "SessionStart",
+				"matcher": "",
+				"hooks": []any{
+					map[string]any{
+						"type":    "command",
+						"command": "touch " + readySignalFile,
+					},
+				},
+			},
+			map[string]any{
+				"event":   "Stop",
+				"matcher": "",
+				"hooks": []any{
+					map[string]any{
+						"type":    "command",
+						"command": "touch " + signalFile,
+					},
+				},
+			},
+		},
+	}
+
+	content, err := json.MarshalIndent(hooksConfig, "", "  ")
+	if err != nil {
+		return nil
+	}
+
+	return &CompletionHookConfig{
+		ConfigPath:      hooksPath,
+		ConfigContent:   string(content),
+		SignalFile:      signalFile,
+		ReadySignalFile: readySignalFile,
 	}
 }

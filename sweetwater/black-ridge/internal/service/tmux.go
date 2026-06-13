@@ -75,7 +75,7 @@ type SessionManager interface {
 
 // PipelineExecutor 负责管线构建与执行
 type PipelineExecutor interface {
-	BuildPipeline(workingDir string, command string, configs []ConfigItem) pipeline.Pipeline
+	BuildPipeline(workingDir string, command string, configs []ConfigItem, templateID string, sessionName string) pipeline.Pipeline
 	ExecutePipeline(sessionName string, pipeline pipeline.Pipeline) error
 }
 
@@ -188,9 +188,18 @@ func (s *tmuxServiceImpl) ListSessions() ([]Session, error) {
 // system 层: cd + env + file (由系统根据 session 配置自动生成)
 // template 层: command (模板定义的启动命令)
 // user 层: 无 (用户自定义命令由前端直接传入 pipeline)
-func (s *tmuxServiceImpl) BuildPipeline(workingDir string, command string, configs []ConfigItem) pipeline.Pipeline {
+func (s *tmuxServiceImpl) BuildPipeline(workingDir string, command string, configs []ConfigItem, templateID string, sessionName string) pipeline.Pipeline {
 	var pl pipeline.Pipeline
 	order := 0
+
+	// 一次性计算 Provider 的完成检测 hook 配置（hook 文件 + ready/done 信号路径），
+	// system 层的 hook 文件注入与 user 层的 prompt 注入共用同一份，避免重复读盘与序列化。
+	var hookCfg *provider.CompletionHookConfig
+	if s.registry != nil && templateID != "" && sessionName != "" {
+		if p := s.registry.Get(templateID); p != nil {
+			hookCfg = p.CompletionHookConfig(provider.ResolveHomeDir(), sessionName)
+		}
+	}
 
 	// system 层: cd 到工作目录
 	if workingDir != "" {
@@ -207,7 +216,7 @@ func (s *tmuxServiceImpl) BuildPipeline(workingDir string, command string, confi
 
 	// system 层: 环境变量
 	for _, cfg := range configs {
-		if cfg.Type == "env" {
+		if cfg.Type == ConfigTypeEnv {
 			pl = append(pl, pipeline.PipelineStep{
 				ID:    "sys-env-" + cfg.Key,
 				Type:  pipeline.StepEnv,
@@ -222,7 +231,7 @@ func (s *tmuxServiceImpl) BuildPipeline(workingDir string, command string, confi
 
 	// system 层: 配置文件
 	for _, cfg := range configs {
-		if cfg.Type == "file" {
+		if cfg.Type == ConfigTypeFile {
 			pl = append(pl, pipeline.PipelineStep{
 				ID:    "sys-file-" + cfg.Key,
 				Type:  pipeline.StepFile,
@@ -235,6 +244,19 @@ func (s *tmuxServiceImpl) BuildPipeline(workingDir string, command string, confi
 		}
 	}
 
+	// system 层: 注入完成检测 hook 配置文件（含 SessionStart/Stop hook 写信号文件）
+	if hookCfg != nil {
+		pl = append(pl, pipeline.PipelineStep{
+			ID:    "sys-hook-file",
+			Type:  pipeline.StepFile,
+			Phase: pipeline.PhaseSystem,
+			Order: order,
+			Key:   hookCfg.ConfigPath,
+			Value: hookCfg.ConfigContent,
+		})
+		order++
+	}
+
 	// template 层: 启动命令
 	if command != "" {
 		pl = append(pl, pipeline.PipelineStep{
@@ -245,6 +267,30 @@ func (s *tmuxServiceImpl) BuildPipeline(workingDir string, command string, confi
 			Key:   "",
 			Value: command,
 		})
+	}
+
+	// user 层: prompt 步骤（向交互式 CLI 发送初始 prompt）
+	// Key 存放 ready 信号文件路径（SessionStart hook 写入），Extra 存放 done 信号文件路径（Stop hook 写入），
+	// ExecutePipeline 先用 Key 等待就绪、再用 Extra 等待回复完成。
+	for _, cfg := range configs {
+		if cfg.Type == ConfigTypePrompt {
+			readySignalFile := ""
+			signalFile := ""
+			if hookCfg != nil {
+				readySignalFile = hookCfg.ReadySignalFile
+				signalFile = hookCfg.SignalFile
+			}
+			pl = append(pl, pipeline.PipelineStep{
+				ID:    "usr-prompt-" + cfg.Key,
+				Type:  pipeline.StepPrompt,
+				Phase: pipeline.PhaseUser,
+				Order: order,
+				Key:   readySignalFile,
+				Value: cfg.Value,
+				Extra: signalFile,
+			})
+			order++
+		}
 	}
 
 	return pl
@@ -266,6 +312,10 @@ func (s *tmuxServiceImpl) ExecutePipeline(sessionName string, pipe pipeline.Pipe
 	}
 
 	echoDisabled := false
+	// readyChecked 标记是否已完成 CLI 就绪等待。
+	// SessionStart hook 仅在 CLI 启动时触发一次，ready 信号文件只需等待一次；
+	// 后续 prompt 步骤直接发送文本并等待 Stop hook 即可。
+	readyChecked := false
 
 	// 确保函数退出时恢复回显状态
 	defer func() {
@@ -339,6 +389,41 @@ func (s *tmuxServiceImpl) ExecutePipeline(sessionName string, pipe pipeline.Pipe
 			if err := s.SendKeys(sessionName, step.Value); err != nil {
 				return fmt.Errorf("pipeline command send: %w", err)
 			}
+
+		case pipeline.StepPrompt:
+			// Key 字段存放 ready 信号文件路径（由 SessionStart hook 写入）
+			readySignalFile := step.Key
+			if readySignalFile == "" {
+				return fmt.Errorf("pipeline prompt step %s: missing ready signal file path", step.ID)
+			}
+			// Extra 字段存放 done 信号文件路径（由 Stop hook 写入）
+			signalFile := step.Extra
+			if signalFile == "" {
+				return fmt.Errorf("pipeline prompt step %s: missing completion signal file path", step.ID)
+			}
+
+			// 仅在第一个 prompt 前等待 ready 信号：
+			// SessionStart hook 仅在 CLI 启动时触发一次，后续 prompt 无需再等待。
+			if !readyChecked {
+				_ = os.Remove(readySignalFile)
+				if err := s.waitForReady(readySignalFile); err != nil {
+					return fmt.Errorf("pipeline prompt ready: %w", err)
+				}
+				readyChecked = true
+			}
+
+			// 清除上一次可能残留的 done 信号文件
+			_ = os.Remove(signalFile)
+
+			// 发送 prompt 文本
+			if err := s.SendKeys(sessionName, step.Value); err != nil {
+				return fmt.Errorf("pipeline prompt send: %w", err)
+			}
+
+			// 等待 CLI 的 Stop hook 写入 done 信号文件
+			if err := s.waitForCompletion(signalFile); err != nil {
+				return fmt.Errorf("pipeline prompt completion: %w", err)
+			}
 		}
 	}
 
@@ -375,7 +460,7 @@ func (s *tmuxServiceImpl) CreateSession(opts CreateSessionOptions) (*Session, er
 		return nil, fmt.Errorf("wait for shell init: %w", err)
 	}
 
-	pl := s.BuildPipeline(workingDir, command, configs)
+	pl := s.BuildPipeline(workingDir, command, configs, opts.TemplateID, opts.Name)
 
 	if workingDir != "" && s.registry != nil {
 		if p := s.registry.Get(templateID); p != nil {
@@ -432,6 +517,16 @@ const (
 	promptTimeout         = 5 * time.Second
 	promptMaxRetries      = int(promptTimeout / promptPollInterval)
 	terminalSnapshotLines = 50
+
+	// completion detection
+	completionPollInterval = 500 * time.Millisecond
+	completionTimeout      = 5 * time.Minute
+	completionMaxRetries   = int(completionTimeout / completionPollInterval)
+
+	// ready detection — CLI 启动通常在数秒内完成，30s 超时足够覆盖冷启动场景
+	readyPollInterval = 200 * time.Millisecond
+	readyTimeout      = 30 * time.Second
+	readyMaxRetries   = int(readyTimeout / readyPollInterval)
 )
 
 // waitForPrompt 轮询终端内容，直到最后一行出现 shell 提示符（表示命令已执行完毕）
@@ -466,6 +561,32 @@ func (s *tmuxServiceImpl) waitForPrompt(name string) error {
 	return fmt.Errorf("timeout waiting for prompt in session %s", name)
 }
 
+// waitForReady 轮询 ready 信号文件，检测 CLI 工具的 SessionStart hook 是否触发。
+// 在 StepPrompt 发送文本前调用，确保 CLI 的 TUI 已完全初始化。
+func (s *tmuxServiceImpl) waitForReady(readySignalFile string) error {
+	for i := 0; i < readyMaxRetries; i++ {
+		time.Sleep(readyPollInterval)
+		if _, err := os.Stat(readySignalFile); err == nil {
+			return nil
+		}
+	}
+	s.logger.Warnf("[tmux] timeout waiting for ready signal: %s", readySignalFile)
+	return fmt.Errorf("timeout waiting for ready signal: %s", readySignalFile)
+}
+
+// waitForCompletion 轮询信号文件，检测 CLI 工具的 Stop hook 是否触发。
+// 信号文件出现即视为完成；超时直接返回错误并中止当前管线步骤。
+func (s *tmuxServiceImpl) waitForCompletion(signalFile string) error {
+	for i := 0; i < completionMaxRetries; i++ {
+		time.Sleep(completionPollInterval)
+		if _, err := os.Stat(signalFile); err == nil {
+			return nil
+		}
+	}
+	s.logger.Warnf("[tmux] timeout waiting for completion signal: %s", signalFile)
+	return fmt.Errorf("timeout waiting for completion signal: %s", signalFile)
+}
+
 // expandPath 将 ~/ 开头的路径展开为用户主目录的绝对路径
 func (s *tmuxServiceImpl) expandPath(p string) string {
 	if strings.HasPrefix(p, "~/") {
@@ -476,7 +597,7 @@ func (s *tmuxServiceImpl) expandPath(p string) string {
 
 // KillSession 终止指定 tmux 会话
 func (s *tmuxServiceImpl) KillSession(name string) error {
-	// 先做 has-session 检查，统一将“不存在”映射为 ErrSessionNotFound，
+	// 先做 has-session 检查，统一将"不存在"映射为 ErrSessionNotFound，
 	// 避免不同 tmux 版本/输出格式下 kill-session 的 stderr 文案不稳定。
 	if _, err := s.runTmux("has-session", "-t", name); err != nil {
 		return fmt.Errorf("kill session %s: %w", name, ErrSessionNotFound)

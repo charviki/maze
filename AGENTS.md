@@ -10,7 +10,7 @@ The Maze — AI Agent 管理平台。The Mesa 控制面域负责代理网关 + H
 - **分阶段实施** — 大范围改动拆分为小步骤，每步验证通过后再推进下一步
 - **拒绝技术债** — 识别设计污染或不必要的兼容妥协时，主动指出并给出替代方案
 - **查验全量覆盖** — `make build-go` + `make lint` + `make test` + `make check-frontend` 全部通过
-- **JSON camelCase** — 前后端交互的 JSON 请求体和响应体统一使用 camelCase（grpc-gateway 的 proto3 JSON 映射默认行为：proto 字段 `refresh_token` 在 JSON 中序列化为 `refreshToken`；反序列化时两种格式均可接受，但代码中统一使用 camelCase）
+- **JSON camelCase** — 前后端交互的 JSON 字段名统一使用 camelCase（grpc-gateway 的 proto3 JSON 映射默认行为：proto 字段 `refresh_token` 在 JSON 中序列化为 `refreshToken`；反序列化时两种格式均可接受，但代码中统一使用 camelCase）。注：此规则只约束字段名，不约束字段值。字段值分两类：proto enum 字段遵循 proto3 JSON 默认序列化（输出 enum 值名，如 `ConfigItem.type` 的 `"CONFIG_ITEM_TYPE_PROMPT"`），不做小写化；其余自由字符串字段（如模板 id、命令名、配置 key）保持小写短横线形式
 
 ## 交付铁律
 

@@ -105,7 +105,7 @@ func TestValidateSessionConfs_Empty(t *testing.T) {
 }
 
 func TestValidateSessionConfs_NoTemplate(t *testing.T) {
-	configs := []service.ConfigItem{{Type: "env", Key: "FOO", Value: "bar"}}
+	configs := []service.ConfigItem{{Type: service.ConfigTypeEnv, Key: "FOO", Value: "bar"}}
 	err := validateSessionConfs(configs, nil)
 	if err == nil {
 		t.Fatal("有配置但无模板应返回错误")
@@ -118,7 +118,7 @@ func TestValidateSessionConfs_ValidEnv(t *testing.T) {
 			EnvDefs: []configutil.EnvDef{{Key: "API_KEY"}},
 		},
 	}
-	configs := []service.ConfigItem{{Type: "env", Key: "API_KEY", Value: "secret"}}
+	configs := []service.ConfigItem{{Type: service.ConfigTypeEnv, Key: "API_KEY", Value: "secret"}}
 	err := validateSessionConfs(configs, tpl)
 	if err != nil {
 		t.Fatalf("合法 env key 应通过: %v", err)
@@ -131,7 +131,7 @@ func TestValidateSessionConfs_InvalidEnv(t *testing.T) {
 			EnvDefs: []configutil.EnvDef{{Key: "API_KEY"}},
 		},
 	}
-	configs := []service.ConfigItem{{Type: "env", Key: "UNAUTHORIZED", Value: "val"}}
+	configs := []service.ConfigItem{{Type: service.ConfigTypeEnv, Key: "UNAUTHORIZED", Value: "val"}}
 	err := validateSessionConfs(configs, tpl)
 	if err == nil {
 		t.Fatal("未声明 env key 应被拒绝")
@@ -144,7 +144,7 @@ func TestValidateSessionConfs_ValidFile(t *testing.T) {
 			FileDefs: []configutil.FileDef{{Path: "CLAUDE.md"}},
 		},
 	}
-	configs := []service.ConfigItem{{Type: "file", Key: "CLAUDE.md", Value: "# Instructions"}}
+	configs := []service.ConfigItem{{Type: service.ConfigTypeFile, Key: "CLAUDE.md", Value: "# Instructions"}}
 	err := validateSessionConfs(configs, tpl)
 	if err != nil {
 		t.Fatalf("合法 file path 应通过: %v", err)
@@ -157,7 +157,7 @@ func TestValidateSessionConfs_InvalidFile(t *testing.T) {
 			FileDefs: []configutil.FileDef{{Path: "CLAUDE.md"}},
 		},
 	}
-	configs := []service.ConfigItem{{Type: "file", Key: "/etc/passwd", Value: "hacked"}}
+	configs := []service.ConfigItem{{Type: service.ConfigTypeFile, Key: "/etc/passwd", Value: "hacked"}}
 	err := validateSessionConfs(configs, tpl)
 	if err == nil {
 		t.Fatal("绝对路径文件应被拒绝")
@@ -179,7 +179,7 @@ func TestValidateSessionConfs_FilePathTraversal(t *testing.T) {
 			FileDefs: []configutil.FileDef{{Path: "CLAUDE.md"}},
 		},
 	}
-	configs := []service.ConfigItem{{Type: "file", Key: "../secret", Value: "data"}}
+	configs := []service.ConfigItem{{Type: service.ConfigTypeFile, Key: "../secret", Value: "data"}}
 	err := validateSessionConfs(configs, tpl)
 	if err == nil {
 		t.Fatal("路径遍历文件应被拒绝")
@@ -253,7 +253,7 @@ func (m *mockTmuxService) ExecutePipeline(sessionName string, pipeline pipeline.
 	return nil
 }
 
-func (m *mockTmuxService) BuildPipeline(workingDir, command string, configs []service.ConfigItem) pipeline.Pipeline {
+func (m *mockTmuxService) BuildPipeline(workingDir, command string, configs []service.ConfigItem, templateID, sessionName string) pipeline.Pipeline {
 	return nil
 }
 

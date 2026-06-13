@@ -215,6 +215,61 @@ func (p *ClaudeProvider) HealthCheckTask() Task {
 	}
 }
 
+// CompletionHookConfig 读取现有 ~/.claude/settings.json，在 hooks 节点的 SessionStart/Stop
+// 子键上追加信号 hook（保留 entrypoint task 写入的 permissions 及既有其它 hook）：
+//   - SessionStart: CLI 启动就绪时 touch ready 信号文件
+//   - Stop: CLI 完成回复时 touch done 信号文件
+func (p *ClaudeProvider) CompletionHookConfig(homeDir, sessionName string) *CompletionHookConfig {
+	settingsPath := filepath.Join(homeDir, ".claude", "settings.json")
+	signalFile := filepath.Join(os.TempDir(), "step_done_"+sessionName)
+	readySignalFile := filepath.Join(os.TempDir(), "step_ready_"+sessionName)
+
+	// 读取现有 settings.json（由 entrypoint task 写入）
+	cfg := make(map[string]any)
+	data, err := os.ReadFile(filepath.Clean(settingsPath))
+	if err == nil {
+		_ = json.Unmarshal(data, &cfg)
+	}
+
+	// 读取既有 hooks 节点（可能由 Host Config Injection 等流程写入 PreToolUse 等 hook），
+	// 在 SessionStart/Stop 子键上追加信号 hook，避免整体覆盖丢失既有配置。
+	hooks, _ := cfg["hooks"].(map[string]any)
+	if hooks == nil {
+		hooks = make(map[string]any)
+	}
+	sessionStartHooks, _ := hooks["SessionStart"].([]any)
+	hooks["SessionStart"] = append(sessionStartHooks, map[string]any{
+		"hooks": []any{
+			map[string]any{
+				"type":    "command",
+				"command": "touch " + readySignalFile,
+			},
+		},
+	})
+	stopHooks, _ := hooks["Stop"].([]any)
+	hooks["Stop"] = append(stopHooks, map[string]any{
+		"hooks": []any{
+			map[string]any{
+				"type":    "command",
+				"command": "touch " + signalFile,
+			},
+		},
+	})
+	cfg["hooks"] = hooks
+
+	content, err := json.MarshalIndent(cfg, "", "  ")
+	if err != nil {
+		return nil
+	}
+
+	return &CompletionHookConfig{
+		ConfigPath:      settingsPath,
+		ConfigContent:   string(content),
+		SignalFile:      signalFile,
+		ReadySignalFile: readySignalFile,
+	}
+}
+
 // validateJSONFile 验证文件存在、可读取、可解析为 JSON 对象。
 func validateJSONFile(path string) error {
 	data, err := os.ReadFile(filepath.Clean(path))

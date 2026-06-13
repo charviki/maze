@@ -16,6 +16,27 @@ type Provider interface {
 	BootstrapTask() Task
 	EntrypointTasks() []Task
 	HealthCheckTask() Task
+	CompletionHookConfig(homeDir, sessionName string) *CompletionHookConfig
+}
+
+// CompletionHookConfig 描述 Provider 的 hook 配置，同时注入 SessionStart 和 Stop 两个 hook：
+//   - SessionStart hook: CLI 启动就绪时写入 ReadySignalFile，供 StepPrompt 等待后再发送文本
+//   - Stop hook: CLI 完成回复时写入 SignalFile，供 waitForCompletion 检测
+type CompletionHookConfig struct {
+	// ConfigPath 需要写入的配置文件绝对路径
+	// Claude: ~/.claude/settings.json
+	// Codex:  ~/.codex/hooks.json
+	ConfigPath string
+
+	// ConfigContent 配置文件的完整 JSON 内容（已合并 hook）
+	ConfigContent string
+
+	// SignalFile 完成信号的文件路径，格式: /tmp/step_done_{session_name}
+	SignalFile string
+
+	// ReadySignalFile 就绪信号的文件路径，格式: /tmp/step_ready_{session_name}
+	// 由 SessionStart hook 在 CLI 初始化完成时写入，StepPrompt 发送文本前需先等待此文件
+	ReadySignalFile string
 }
 
 // Task 描述一个 Provider 需要执行的操作。

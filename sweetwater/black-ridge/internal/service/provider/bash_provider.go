@@ -24,3 +24,8 @@ func (p *BashProvider) EntrypointTasks() []Task { return nil }
 func (p *BashProvider) HealthCheckTask() Task {
 	return Task{Name: "bash-health-check", Description: "always available"}
 }
+
+// CompletionHookConfig 返回 nil，bash 不支持完成检测 hook。
+func (p *BashProvider) CompletionHookConfig(_ string, _ string) *CompletionHookConfig {
+	return nil
+}

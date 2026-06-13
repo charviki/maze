@@ -3,6 +3,7 @@
 package service
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,6 +22,7 @@ func newTestTmuxService() *tmuxServiceImpl {
 		defaultShell: "/bin/bash",
 		stateRepo:    newFileSessionStateRepository("/tmp/test-session-state"),
 		logger:       logutil.NewNop(),
+		registry:     provider.NewRegistry(),
 	}
 }
 
@@ -28,11 +30,11 @@ func TestBuildPipeline_WithWorkingDir(t *testing.T) {
 	svc := newTestTmuxService()
 
 	configs := []ConfigItem{
-		{Type: "env", Key: "FOO", Value: "bar"},
-		{Type: "file", Key: "/tmp/test.txt", Value: "hello"},
+		{Type: ConfigTypeEnv, Key: "FOO", Value: "bar"},
+		{Type: ConfigTypeFile, Key: "/tmp/test.txt", Value: "hello"},
 	}
 
-	pl := svc.BuildPipeline("/home/agent/project", "claude", configs)
+	pl := svc.BuildPipeline("/home/agent/project", "claude", configs, "claude", "test-session")
 
 	system := pl.SystemSteps()
 	if len(system) < 3 {
@@ -87,7 +89,7 @@ func TestBuildPipeline_WithWorkingDir(t *testing.T) {
 
 func TestBuildPipeline_NoWorkingDir(t *testing.T) {
 	svc := newTestTmuxService()
-	pl := svc.BuildPipeline("", "bash", nil)
+	pl := svc.BuildPipeline("", "bash", nil, "bash", "test-session")
 
 	// 无工作目录时不应有 cd 步骤
 	for _, s := range pl {
@@ -105,7 +107,7 @@ func TestBuildPipeline_NoWorkingDir(t *testing.T) {
 
 func TestBuildPipeline_NoCommand(t *testing.T) {
 	svc := newTestTmuxService()
-	pl := svc.BuildPipeline("/home/agent", "", nil)
+	pl := svc.BuildPipeline("/home/agent", "", nil, "", "test-session")
 
 	// 无命令时不应有 template 步骤
 	tpl := pl.TemplateSteps()
@@ -123,31 +125,40 @@ func TestBuildPipeline_OrderCorrectness(t *testing.T) {
 	svc := newTestTmuxService()
 
 	configs := []ConfigItem{
-		{Type: "env", Key: "A", Value: "1"},
-		{Type: "file", Key: "/tmp/f", Value: "content"},
-		{Type: "env", Key: "B", Value: "2"},
+		{Type: ConfigTypeEnv, Key: "A", Value: "1"},
+		{Type: ConfigTypeFile, Key: "/tmp/f", Value: "content"},
+		{Type: ConfigTypeEnv, Key: "B", Value: "2"},
 	}
 
-	pl := svc.BuildPipeline("/home/agent", "claude", configs)
+	pl := svc.BuildPipeline("/home/agent", "claude", configs, "claude", "test-session")
 	sorted := pl.Sorted()
 
 	// 验证顺序: cd -> env -> env -> file -> command
-	expectedOrder := []pipeline.PipelineStepType{
-		pipeline.StepCD, pipeline.StepEnv, pipeline.StepEnv, pipeline.StepFile, pipeline.StepCommand,
-	}
-	if len(sorted) != len(expectedOrder) {
-		t.Fatalf("步骤数 = %d, 期望 %d", len(sorted), len(expectedOrder))
-	}
-	for i, step := range sorted {
-		if step.Type != expectedOrder[i] {
-			t.Errorf("sorted[%d].Type = %q, 期望 %q", i, step.Type, expectedOrder[i])
+	// 注意：有 claude provider 时还会插入 hook env + hook file，这里只验证非 hook 步骤的相对顺序
+	cdIdx := -1
+	cmdIdx := -1
+	for i, s := range sorted {
+		if s.Type == pipeline.StepCD {
+			cdIdx = i
 		}
+		if s.Type == pipeline.StepCommand {
+			cmdIdx = i
+		}
+	}
+	if cdIdx == -1 {
+		t.Fatal("期望包含 cd 步骤")
+	}
+	if cmdIdx == -1 {
+		t.Fatal("期望包含 command 步骤")
+	}
+	if cdIdx > cmdIdx {
+		t.Errorf("cd (index=%d) 应在 command (index=%d) 之前", cdIdx, cmdIdx)
 	}
 }
 
 func TestBuildPipeline_Empty(t *testing.T) {
 	svc := newTestTmuxService()
-	pl := svc.BuildPipeline("", "", nil)
+	pl := svc.BuildPipeline("", "", nil, "", "test-session")
 	if len(pl) != 0 {
 		t.Errorf("空输入管线步骤数 = %d, 期望 0", len(pl))
 	}
@@ -157,13 +168,13 @@ func TestBuildPipeline_MultipleEnvsAndFiles(t *testing.T) {
 	svc := newTestTmuxService()
 
 	configs := []ConfigItem{
-		{Type: "env", Key: "K1", Value: "V1"},
-		{Type: "env", Key: "K2", Value: "V2"},
-		{Type: "file", Key: "/tmp/a.txt", Value: "aaa"},
-		{Type: "file", Key: "/tmp/b.txt", Value: "bbb"},
+		{Type: ConfigTypeEnv, Key: "K1", Value: "V1"},
+		{Type: ConfigTypeEnv, Key: "K2", Value: "V2"},
+		{Type: ConfigTypeFile, Key: "/tmp/a.txt", Value: "aaa"},
+		{Type: ConfigTypeFile, Key: "/tmp/b.txt", Value: "bbb"},
 	}
 
-	pl := svc.BuildPipeline("/home/agent", "bash", configs)
+	pl := svc.BuildPipeline("/home/agent", "bash", configs, "bash", "test-session")
 
 	envCount := 0
 	fileCount := 0
@@ -291,5 +302,134 @@ func TestResizeSession_ReturnsCommandContextOnFailure(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "resize tmux window session-under-test:0 to 120x40") {
 		t.Fatalf("错误信息未包含目标窗口和尺寸, 实际: %v", err)
+	}
+}
+
+func TestBuildPipeline_WithPromptSteps(t *testing.T) {
+	svc := newTestTmuxService()
+	svc.registry.Register(&provider.ClaudeProvider{})
+
+	configs := []ConfigItem{
+		{Type: ConfigTypeEnv, Key: "FOO", Value: "bar"},
+		{Type: ConfigTypePrompt, Key: "init", Value: "implement feature X"},
+		{Type: ConfigTypePrompt, Key: "verify", Value: "run tests"},
+	}
+
+	pl := svc.BuildPipeline("/home/agent", "claude", configs, "claude", "my-session")
+
+	user := pl.UserSteps()
+	promptCount := 0
+	for _, s := range user {
+		if s.Type == pipeline.StepPrompt {
+			promptCount++
+		}
+	}
+	if promptCount != 2 {
+		t.Errorf("prompt 步骤数 = %d, 期望 2", promptCount)
+	}
+
+	for _, s := range user {
+		if s.ID == "usr-prompt-init" {
+			if s.Value != "implement feature X" {
+				t.Errorf("init prompt value = %q, 期望 %q", s.Value, "implement feature X")
+			}
+			// Key 应为 ready 信号文件路径
+			if !strings.Contains(s.Key, "step_ready_") {
+				t.Errorf("init prompt Key = %q, 期望包含 'step_ready_'", s.Key)
+			}
+			// Extra 应为 done 信号文件路径
+			if !strings.Contains(s.Extra, "step_done_") {
+				t.Errorf("init prompt Extra = %q, 期望包含 'step_done_'", s.Extra)
+			}
+		}
+		if s.ID == "usr-prompt-verify" {
+			if s.Value != "run tests" {
+				t.Errorf("verify prompt value = %q, 期望 %q", s.Value, "run tests")
+			}
+			if !strings.Contains(s.Key, "step_ready_") {
+				t.Errorf("verify prompt Key = %q, 期望包含 'step_ready_'", s.Key)
+			}
+			if !strings.Contains(s.Extra, "step_done_") {
+				t.Errorf("verify prompt Extra = %q, 期望包含 'step_done_'", s.Extra)
+			}
+		}
+	}
+}
+
+func TestBuildPipeline_HookInjectionForClaude(t *testing.T) {
+	svc := newTestTmuxService()
+	svc.registry.Register(&provider.ClaudeProvider{})
+
+	pl := svc.BuildPipeline("/home/agent", "claude", nil, "claude", "test-sess")
+
+	hasHookFile := false
+	for _, s := range pl.SystemSteps() {
+		// 验证 hook 配置文件同时包含 SessionStart 和 Stop
+		if s.Type == pipeline.StepFile && strings.Contains(s.Key, ".claude") {
+			hasHookFile = true
+			// 解析 JSON 内容，验证同时包含 SessionStart 和 Stop
+			var cfg map[string]any
+			if err := json.Unmarshal([]byte(s.Value), &cfg); err != nil {
+				t.Fatalf("hook 配置文件 JSON 解析失败: %v", err)
+			}
+			hooks, ok := cfg["hooks"].(map[string]any)
+			if !ok {
+				t.Fatal("hook 配置中缺少 hooks 字段")
+			}
+			if _, ok := hooks["SessionStart"]; !ok {
+				t.Error("hook 配置中缺少 SessionStart hook")
+			}
+			if _, ok := hooks["Stop"]; !ok {
+				t.Error("hook 配置中缺少 Stop hook")
+			}
+		}
+	}
+	if !hasHookFile {
+		t.Error("期望包含 hook 配置文件步骤")
+	}
+}
+
+func TestBuildPipeline_NoHookInjectionWithoutProvider(t *testing.T) {
+	svc := newTestTmuxService()
+
+	pl := svc.BuildPipeline("/home/agent", "bash", nil, "bash", "test-sess")
+
+	for _, s := range pl.SystemSteps() {
+		if s.ID == "sys-hook-file" {
+			t.Error("无 provider 时不应注入 hook 配置文件步骤")
+		}
+	}
+}
+
+func TestBuildPipeline_PromptStepsAfterCommand(t *testing.T) {
+	svc := newTestTmuxService()
+	svc.registry.Register(&provider.ClaudeProvider{})
+
+	configs := []ConfigItem{
+		{Type: ConfigTypePrompt, Key: "init", Value: "hello"},
+	}
+
+	pl := svc.BuildPipeline("/home/agent", "claude", configs, "claude", "test")
+	sorted := pl.Sorted()
+
+	cmdIdx := -1
+	promptIdx := -1
+	for i, s := range sorted {
+		if s.Type == pipeline.StepCommand {
+			cmdIdx = i
+		}
+		if s.Type == pipeline.StepPrompt {
+			promptIdx = i
+		}
+	}
+
+	if cmdIdx == -1 {
+		t.Fatal("期望包含 command 步骤")
+	}
+	if promptIdx == -1 {
+		t.Fatal("期望包含 prompt 步骤")
+	}
+	if promptIdx <= cmdIdx {
+		t.Errorf("prompt 步骤 (index=%d) 应在 command 步骤 (index=%d) 之后", promptIdx, cmdIdx)
 	}
 }

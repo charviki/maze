@@ -16,6 +16,15 @@ type ConfigItem struct {
 	Value string `json:"value"`
 }
 
+// ConfigType 常量与 proto ConfigItemType enum 的字符串表示对齐。
+// 其中 ConfigTypeCommand 暂未启用：前端不产生、校验层不接受，仅保留以对齐 proto enum。
+const (
+	ConfigTypeEnv     = "CONFIG_ITEM_TYPE_ENV"
+	ConfigTypeFile    = "CONFIG_ITEM_TYPE_FILE"
+	ConfigTypeCommand = "CONFIG_ITEM_TYPE_COMMAND"
+	ConfigTypePrompt  = "CONFIG_ITEM_TYPE_PROMPT"
+)
+
 // ConfigScope 区分配置文件的作用域：全局或项目级
 type ConfigScope string
 

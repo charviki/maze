@@ -16,6 +16,7 @@ const stepTypeLabel: Record<PipelineStepType, string> = {
   env: '环境变量',
   file: '写入文件',
   command: '执行命令',
+  prompt: '发送 Prompt',
 };
 
 // 层级对应的样式
@@ -152,6 +153,11 @@ export function SessionPipeline({ steps, onChange, readOnly = false }: SessionPi
             {step.value}
           </span>
         ) : null}
+        {step.type === 'prompt' && (
+          <span className="font-mono flex-1 min-w-0 whitespace-nowrap">
+            ⚡ {step.value || '（空）'}
+          </span>
+        )}
 
         {/* 操作按钮 */}
         {isSystem && !readOnly && <Lock className="w-3 h-3 text-gray-400 shrink-0" />}

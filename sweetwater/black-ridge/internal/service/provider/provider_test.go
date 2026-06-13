@@ -23,6 +23,7 @@ func (s *stubProvider) RestoreCommandTemplate() string { return s.restoreCmdTmpl
 func (s *stubProvider) BootstrapTask() Task          { return s.bootstrapTask }
 func (s *stubProvider) EntrypointTasks() []Task      { return s.entrypointTasks }
 func (s *stubProvider) HealthCheckTask() Task        { return s.healthCheckTask }
+func (s *stubProvider) CompletionHookConfig(_ string, _ string) *CompletionHookConfig { return nil }
 
 func TestRegistry_RegisterAndGet(t *testing.T) {
 	r := NewRegistry()

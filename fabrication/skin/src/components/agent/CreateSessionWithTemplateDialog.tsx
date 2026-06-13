@@ -10,6 +10,7 @@ import type { IAgentApiClient } from '../../api';
 import { Plus, Trash2, CheckCircle, Variable } from 'lucide-react';
 import { useToast } from '../ui/Toast';
 import { maskEnvValue } from '../../utils/mask';
+import { PipelineStepConfig, type PipelineConfigStep } from '../ui/PipelineStepConfig';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { SessionPipeline } from '../ui/SessionPipeline';
@@ -19,6 +20,31 @@ import { Skeleton } from '../ui/Skeleton';
 function generateSessionName(templateId: string): string {
   const ts = Math.floor(Date.now() / 1000);
   return templateId + '-' + ts.toString(36);
+}
+
+// 将 ConfigLayer + 用户配置的 prompt 步骤合并为后端 ConfigItem 列表。
+// prompt 的 key 使用 step.id 保证唯一，避免后端 usr-prompt-{key} 生成重复步骤 ID。
+// 作为模块级纯函数定义，避免在组件 useMemo 中触发 exhaustive-deps 警告。
+function buildConfigItems(configs: ConfigLayer, steps: PipelineConfigStep[]): ConfigItem[] {
+  const items: ConfigItem[] = [];
+  for (const [key, value] of Object.entries(configs.env ?? {})) {
+    items.push({ type: 'CONFIG_ITEM_TYPE_ENV', key, value });
+  }
+  for (const file of configs.files ?? []) {
+    items.push({
+      type: 'CONFIG_ITEM_TYPE_FILE',
+      key: file.path ?? '',
+      value: file.content ?? '',
+    });
+  }
+  for (const step of steps) {
+    items.push({
+      type: step.type,
+      key: step.id,
+      value: step.value,
+    });
+  }
+  return items;
 }
 
 interface CreateSessionWithTemplateDialogProps {
@@ -54,6 +80,7 @@ export function CreateSessionWithTemplateDialog({
   const [customEnv, setCustomEnv] = useState<Record<string, string>>({});
   const [newEnvKey, setNewEnvKey] = useState('');
   const [newEnvValue, setNewEnvValue] = useState('');
+  const [pipelineConfigSteps, setPipelineConfigSteps] = useState<PipelineConfigStep[]>([]);
 
   useEffect(() => {
     if (!open) return;
@@ -94,18 +121,8 @@ export function CreateSessionWithTemplateDialog({
     setSessionEnvValues({});
     setSessionFileContents({});
     setCustomEnv({});
+    setPipelineConfigSteps([]);
     setCreateError('');
-  };
-
-  const toConfigItems = (configs: ConfigLayer): ConfigItem[] => {
-    const items: ConfigItem[] = [];
-    for (const [key, value] of Object.entries(configs.env ?? {})) {
-      items.push({ type: 'env', key, value: String(value) });
-    }
-    for (const file of configs.files ?? []) {
-      items.push({ type: 'file', key: file.path ?? '', value: String(file.content ?? '') });
-    }
-    return items;
   };
 
   const buildPipelineSteps = (
@@ -127,7 +144,7 @@ export function CreateSessionWithTemplateDialog({
       });
     }
     for (const cfg of configs) {
-      if (cfg.type === 'env') {
+      if (cfg.type === 'CONFIG_ITEM_TYPE_ENV') {
         steps.push({
           id: `sys-env-${cfg.key ?? ''}`,
           type: 'env',
@@ -139,7 +156,7 @@ export function CreateSessionWithTemplateDialog({
       }
     }
     for (const cfg of configs) {
-      if (cfg.type === 'file') {
+      if (cfg.type === 'CONFIG_ITEM_TYPE_FILE') {
         steps.push({
           id: `sys-file-${cfg.key ?? ''}`,
           type: 'file',
@@ -159,6 +176,18 @@ export function CreateSessionWithTemplateDialog({
         key: '',
         value: command,
       });
+    }
+    for (const cfg of configs) {
+      if (cfg.type === 'CONFIG_ITEM_TYPE_PROMPT') {
+        steps.push({
+          id: `usr-prompt-${order}`,
+          type: 'prompt',
+          phase: 'user',
+          order: order++,
+          key: '',
+          value: cfg.value ?? '',
+        });
+      }
     }
 
     return steps;
@@ -232,7 +261,6 @@ export function CreateSessionWithTemplateDialog({
 
   const pipelineSteps = useMemo(() => {
     if (!selectedTemplate) return [];
-
     const configs: ConfigLayer = { env: {}, files: [] };
     for (const [path, content] of Object.entries(sessionFileContents)) {
       if (content) {
@@ -245,10 +273,19 @@ export function CreateSessionWithTemplateDialog({
     for (const [key, value] of Object.entries(customEnv)) {
       if (value) configs.env![key] = String(value);
     }
-
-    const configItems = toConfigItems(configs);
-    return buildPipelineSteps(currentWorkingDir, selectedTemplate.command || '', configItems);
-  }, [selectedTemplate, currentWorkingDir, sessionEnvValues, sessionFileContents, customEnv]);
+    return buildPipelineSteps(
+      currentWorkingDir,
+      selectedTemplate.command || '',
+      buildConfigItems(configs, pipelineConfigSteps),
+    );
+  }, [
+    selectedTemplate,
+    currentWorkingDir,
+    sessionEnvValues,
+    sessionFileContents,
+    customEnv,
+    pipelineConfigSteps,
+  ]);
 
   const getDefaultRestoreStrategy = (template: NormalizedTemplate): string => {
     if ((template.command ?? '').includes('claude')) return 'auto';
@@ -265,16 +302,7 @@ export function CreateSessionWithTemplateDialog({
     setCreating(true);
 
     try {
-      const configs = buildFinalConfigs();
-
-      const configItems: ConfigItem[] = [];
-      for (const [key, value] of Object.entries(configs.env ?? {})) {
-        configItems.push({ type: 'env', key, value });
-      }
-      for (const file of configs.files ?? []) {
-        configItems.push({ type: 'file', key: file.path ?? '', value: file.content ?? '' });
-      }
-
+      const configItems = buildConfigItems(buildFinalConfigs(), pipelineConfigSteps);
       const restoreStrategy = getDefaultRestoreStrategy(selectedTemplate!);
 
       await apiClient.createSession({
@@ -576,6 +604,13 @@ export function CreateSessionWithTemplateDialog({
                     </div>
                   </div>
                 ))}
+
+                <div>
+                  <PipelineStepConfig
+                    steps={pipelineConfigSteps}
+                    onChange={setPipelineConfigSteps}
+                  />
+                </div>
 
                 <div>
                   <span className="text-sm font-medium text-muted-foreground">命令管线预览</span>

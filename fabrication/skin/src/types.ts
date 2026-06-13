@@ -116,7 +116,7 @@ export interface PreconditionViolation {
 }
 
 export type PipelinePhase = 'system' | 'template' | 'user';
-export type PipelineStepType = 'cd' | 'env' | 'file' | 'command';
+export type PipelineStepType = 'cd' | 'env' | 'file' | 'command' | 'prompt';
 
 export interface PipelineStep {
   id: string;

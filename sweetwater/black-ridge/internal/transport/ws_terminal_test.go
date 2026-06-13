@@ -24,7 +24,7 @@ func (s *testTmuxService) DeleteSessionWorkspace(sessionName string, workspaceRo
 	return nil
 }
 func (s *testTmuxService) DeleteSessionState(sessionName string) error { return nil }
-func (s *testTmuxService) BuildPipeline(workingDir string, command string, configs []service.ConfigItem) pipeline.Pipeline {
+func (s *testTmuxService) BuildPipeline(workingDir string, command string, configs []service.ConfigItem, templateID, sessionName string) pipeline.Pipeline {
 	return nil
 }
 func (s *testTmuxService) ExecutePipeline(sessionName string, pipeline pipeline.Pipeline) error {
