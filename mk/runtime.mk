@@ -1,6 +1,11 @@
-.PHONY: up deploy down destroy undeploy status proxy proxy-web proxy-director-core proxy-db
+.PHONY: up up-build deploy down destroy undeploy status proxy proxy-web proxy-director-core proxy-db
 
-up: build deploy ## 一键部署：构建镜像 + 启动服务
+# 默认只部署，不再隐式全量重建——避免每次 make up 都触发 9 个镜像构建，
+# 把旧层挤成 dangling、新层灌进 build cache（磁盘只增不减的根因之一）。
+# 日常改代码请用 make update-director-core / update-the-forge / update-web 单 target；
+# 仅 Dockerfile/依赖变动时才用 make up-build（= 旧 make up 的行为）。
+up: deploy ## 部署服务（用已有镜像；首次或镜像缺失时先 make build）
+up-build: build deploy ## 构建全部镜像 + 部署（兼容旧行为；仅 Dockerfile/依赖变动时用）
 
 deploy: ## 部署服务（根据 PLATFORM 自动选择 Docker Compose 或 K8s）
 ifeq ($(PLATFORM),docker)
