@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { PipelineStepConfig, type PipelineConfigStep } from './PipelineStepConfig';
+import { V1ConfigItemType } from '../../types';
 
 describe('PipelineStepConfig', () => {
   const mockOnChange = vi.fn();
@@ -24,7 +25,7 @@ describe('PipelineStepConfig', () => {
     expect(mockOnChange).toHaveBeenCalledTimes(1);
     expect(mockOnChange).toHaveBeenCalledWith([
       expect.objectContaining({
-        type: 'CONFIG_ITEM_TYPE_PROMPT',
+        type: V1ConfigItemType.ConfigItemTypePrompt,
         value: 'hello world',
       }),
     ]);
@@ -37,7 +38,7 @@ describe('PipelineStepConfig', () => {
     fireEvent.keyDown(input, { key: 'Enter' });
     expect(mockOnChange).toHaveBeenCalledWith([
       expect.objectContaining({
-        type: 'CONFIG_ITEM_TYPE_PROMPT',
+        type: V1ConfigItemType.ConfigItemTypePrompt,
         value: 'test prompt',
       }),
     ]);
@@ -45,8 +46,8 @@ describe('PipelineStepConfig', () => {
 
   it('renders existing steps', () => {
     const steps: PipelineConfigStep[] = [
-      { id: '1', type: 'CONFIG_ITEM_TYPE_PROMPT', value: 'implement feature X' },
-      { id: '2', type: 'CONFIG_ITEM_TYPE_PROMPT', value: 'run tests' },
+      { id: '1', type: V1ConfigItemType.ConfigItemTypePrompt, value: 'implement feature X' },
+      { id: '2', type: V1ConfigItemType.ConfigItemTypePrompt, value: 'run tests' },
     ];
     render(<PipelineStepConfig steps={steps} onChange={mockOnChange} />);
     expect(screen.getByText('implement feature X')).toBeInTheDocument();
@@ -70,7 +71,7 @@ describe('PipelineStepConfig', () => {
 
   it('removes a step', () => {
     const steps: PipelineConfigStep[] = [
-      { id: '1', type: 'CONFIG_ITEM_TYPE_PROMPT', value: 'test' },
+      { id: '1', type: V1ConfigItemType.ConfigItemTypePrompt, value: 'test' },
     ];
     render(<PipelineStepConfig steps={steps} onChange={mockOnChange} />);
     // Find the delete button (has Trash2 icon)

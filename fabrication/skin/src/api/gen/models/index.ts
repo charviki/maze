@@ -31,6 +31,7 @@ export * from './V1ConfigFile';
 export * from './V1ConfigFileSnapshot';
 export * from './V1ConfigFileUpdate';
 export * from './V1ConfigItem';
+export * from './V1ConfigItemType';
 export * from './V1ConfigLayer';
 export * from './V1CreateArchiveRequest';
 export * from './V1CreateDocRequest';

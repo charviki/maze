@@ -8,7 +8,7 @@ help: ## 显示 SDK 生成帮助
 gen-sdk: ## 生成 TypeScript SDK from OpenAPI spec (fabrication/skin)
 	@echo "\033[0;32m[gen-sdk]\033[0m Generating TypeScript SDK..."
 	@JAVA_HOME=$(JAVA_HOME) npx openapi-generator-cli generate \
-		-i ../cradle/api/gen/http/api/openapi.yaml \
+		-i ../cradle/api/gen/openapiv2/maze.swagger.json \
 		-c openapi-generator-config.yaml \
 		-o src/api/gen \
 		-g typescript-fetch

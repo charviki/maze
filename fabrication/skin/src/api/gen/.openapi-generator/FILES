@@ -44,6 +44,7 @@ models/V1ConfigFile.ts
 models/V1ConfigFileSnapshot.ts
 models/V1ConfigFileUpdate.ts
 models/V1ConfigItem.ts
+models/V1ConfigItemType.ts
 models/V1ConfigLayer.ts
 models/V1CreateArchiveRequest.ts
 models/V1CreateDocRequest.ts

@@ -58,6 +58,9 @@ export type {
   V1GitKey,
 } from './api/gen/models';
 
+// V1ConfigItemType 是运行时 enum（非纯类型），用 export 而非 export type，供业务代码引用枚举成员
+export { V1ConfigItemType } from './api/gen/models';
+
 export type Session = V1Session;
 export type Node = V1NodeInfo;
 export type Host = V1HostInfo;

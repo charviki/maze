@@ -1,5 +1,5 @@
 generatorName: typescript-fetch
-inputSpec: ../cradle/api/gen/http/api/openapi.yaml
+inputSpec: ../cradle/api/gen/openapiv2/maze.swagger.json
 outputDir: src/api/gen
 additionalProperties:
   supportsES6: true

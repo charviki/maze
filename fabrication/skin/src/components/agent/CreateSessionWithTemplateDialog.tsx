@@ -6,6 +6,7 @@ import type {
   PipelineStep,
   LocalAgentConfig,
 } from '../../types';
+import { V1ConfigItemType } from '../../types';
 import type { IAgentApiClient } from '../../api';
 import { Plus, Trash2, CheckCircle, Variable } from 'lucide-react';
 import { useToast } from '../ui/Toast';
@@ -28,11 +29,11 @@ function generateSessionName(templateId: string): string {
 function buildConfigItems(configs: ConfigLayer, steps: PipelineConfigStep[]): ConfigItem[] {
   const items: ConfigItem[] = [];
   for (const [key, value] of Object.entries(configs.env ?? {})) {
-    items.push({ type: 'CONFIG_ITEM_TYPE_ENV', key, value });
+    items.push({ type: V1ConfigItemType.ConfigItemTypeEnv, key, value });
   }
   for (const file of configs.files ?? []) {
     items.push({
-      type: 'CONFIG_ITEM_TYPE_FILE',
+      type: V1ConfigItemType.ConfigItemTypeFile,
       key: file.path ?? '',
       value: file.content ?? '',
     });
@@ -144,7 +145,7 @@ export function CreateSessionWithTemplateDialog({
       });
     }
     for (const cfg of configs) {
-      if (cfg.type === 'CONFIG_ITEM_TYPE_ENV') {
+      if (cfg.type === V1ConfigItemType.ConfigItemTypeEnv) {
         steps.push({
           id: `sys-env-${cfg.key ?? ''}`,
           type: 'env',
@@ -156,7 +157,7 @@ export function CreateSessionWithTemplateDialog({
       }
     }
     for (const cfg of configs) {
-      if (cfg.type === 'CONFIG_ITEM_TYPE_FILE') {
+      if (cfg.type === V1ConfigItemType.ConfigItemTypeFile) {
         steps.push({
           id: `sys-file-${cfg.key ?? ''}`,
           type: 'file',
@@ -178,7 +179,7 @@ export function CreateSessionWithTemplateDialog({
       });
     }
     for (const cfg of configs) {
-      if (cfg.type === 'CONFIG_ITEM_TYPE_PROMPT') {
+      if (cfg.type === V1ConfigItemType.ConfigItemTypePrompt) {
         steps.push({
           id: `usr-prompt-${order}`,
           type: 'prompt',

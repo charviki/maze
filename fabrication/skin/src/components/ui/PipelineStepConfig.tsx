@@ -2,18 +2,16 @@ import { useState } from 'react';
 import { Plus, Trash2, Zap } from 'lucide-react';
 import { Button } from './button';
 import { Input } from './input';
+import { V1ConfigItemType } from '../../types';
 
 /**
  * 管线步骤配置组件 — 在 CreateSessionWithTemplateDialog 中使用。
  * 允许用户添加 prompt 类型的管线步骤（向交互式 CLI 发送初始 prompt）。
  */
 
-// ConfigItemType 尚未在生成的 API 类型中存在，暂用字符串字面量
-export type PipelineConfigStepType = 'CONFIG_ITEM_TYPE_PROMPT';
-
 export interface PipelineConfigStep {
   id: string;
-  type: PipelineConfigStepType;
+  type: V1ConfigItemType;
   value: string;
 }
 
@@ -39,7 +37,7 @@ export function PipelineStepConfig({ steps, onChange }: PipelineStepConfigProps)
       // 不使用 crypto.randomUUID()：HTTP 非 localhost 域名（如 http://maze.local）
       // 不属于 Secure Context，浏览器会抛出 TypeError。
       id: `step-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-      type: 'CONFIG_ITEM_TYPE_PROMPT',
+      type: V1ConfigItemType.ConfigItemTypePrompt,
       value: newStepValue.trim(),
     };
     onChange([...steps, step]);

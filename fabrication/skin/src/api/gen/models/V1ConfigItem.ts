@@ -14,6 +14,14 @@
  */
 
 import { mapValues } from '../runtime';
+import type { V1ConfigItemType } from './V1ConfigItemType';
+import {
+    V1ConfigItemTypeFromJSON,
+    V1ConfigItemTypeFromJSONTyped,
+    V1ConfigItemTypeToJSON,
+    V1ConfigItemTypeToJSONTyped,
+} from './V1ConfigItemType';
+
 /**
  * 
  * @export
@@ -22,10 +30,10 @@ import { mapValues } from '../runtime';
 export interface V1ConfigItem {
     /**
      * 
-     * @type {string}
+     * @type {V1ConfigItemType}
      * @memberof V1ConfigItem
      */
-    type?: string;
+    type?: V1ConfigItemType;
     /**
      * 
      * @type {string}
@@ -39,6 +47,8 @@ export interface V1ConfigItem {
      */
     value?: string;
 }
+
+
 
 /**
  * Check if a given object implements the V1ConfigItem interface.
@@ -57,7 +67,7 @@ export function V1ConfigItemFromJSONTyped(json: any, ignoreDiscriminator: boolea
     }
     return {
         
-        'type': json['type'] == null ? undefined : json['type'],
+        'type': json['type'] == null ? undefined : V1ConfigItemTypeFromJSON(json['type']),
         'key': json['key'] == null ? undefined : json['key'],
         'value': json['value'] == null ? undefined : json['value'],
     };
@@ -74,7 +84,7 @@ export function V1ConfigItemToJSONTyped(value?: V1ConfigItem | null, ignoreDiscr
 
     return {
         
-        'type': value['type'],
+        'type': V1ConfigItemTypeToJSON(value['type']),
         'key': value['key'],
         'value': value['value'],
     };
