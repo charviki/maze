@@ -7,7 +7,8 @@ RUN sed -i 's|deb.debian.org|mirrors.tuna.tsinghua.edu.cn|g' /etc/apt/sources.li
     && rm -rf /var/lib/apt/lists/*
 
 COPY fabrication/deps/python.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir --break-system-packages -r /tmp/requirements.txt
+# 配国内镜像源（与 go 的 GOPROXY=goproxy.cn 一致），避免从 files.pythonhosted.org 下载超时
+RUN pip install --no-cache-dir --break-system-packages -i https://pypi.tuna.tsinghua.edu.cn/simple -r /tmp/requirements.txt
 
 RUN mkdir -p /opt/python/bin /opt/python/lib && \
     cp /usr/bin/python3.* /opt/python/bin/ && \

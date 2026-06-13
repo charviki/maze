@@ -1,5 +1,6 @@
 FROM public.ecr.aws/docker/library/node:22-bookworm-slim AS builder
-RUN npm install -g --prefix /opt/codex @openai/codex
+# 锁定版本避免漂移；升级用 make deps-bump
+RUN npm install -g --prefix /opt/codex @openai/codex@0.139.0
 
 FROM scratch
 COPY --from=builder /opt/codex /opt/codex

@@ -1,4 +1,7 @@
-golang.org/x/tools/gopls@latest
-github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
-github.com/go-delve/delve/cmd/dlv@latest
-golang.org/x/tools/cmd/goimports@latest
+# 锁定到具体版本，避免 @latest 每次拉到不同版本导致 deps 层漂移
+# （层 ID 变化会连带 agent 镜像 COPY --from=maze-deps-go 失效、整条链重建）。
+# 升级版本：make deps-bump
+golang.org/x/tools/gopls@v0.22.0
+github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
+github.com/go-delve/delve/cmd/dlv@v1.26.3
+golang.org/x/tools/cmd/goimports@v0.46.0

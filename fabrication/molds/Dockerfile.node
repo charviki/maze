@@ -2,7 +2,10 @@ FROM public.ecr.aws/docker/library/node:22-bookworm-slim AS builder
 RUN npm install -g pnpm
 
 COPY fabrication/deps/js.txt /tmp/js-deps.txt
-RUN xargs -a /tmp/js-deps.txt -I {} npm install -g --prefix /opt/node {} || true
+# 复用 npm 下载缓存；grep 过滤注释/空行后逐条安装（js.txt 含版本说明注释）；
+# 去掉 || true 让锁版本失败时立即可见
+RUN --mount=type=cache,id=npm-cache,target=/root/.npm \
+    grep -vE '^[[:space:]]*(#|$)' /tmp/js-deps.txt | xargs -I {} npm install -g --prefix /opt/node {}
 
 FROM scratch
 COPY --from=builder /opt/node /opt/node

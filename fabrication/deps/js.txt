@@ -1,4 +1,6 @@
-typescript@latest
-ts-node@latest
-prettier@latest
-eslint@latest
+# 锁定到具体版本，避免 @latest 每次拉到不同版本导致 deps 层漂移。
+# 升级版本：make deps-bump
+typescript@6.0.3
+ts-node@10.9.2
+prettier@3.8.4
+eslint@10.5.0
