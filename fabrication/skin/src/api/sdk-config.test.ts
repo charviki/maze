@@ -1,28 +1,22 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { http, HttpResponse, delay } from 'msw';
-import { createSdkConfiguration } from './sdk-config';
-import { Configuration } from './gen/runtime';
+import { createSdkConfiguration, createAuthFetch } from './sdk-config';
+import { client } from './gen/client.gen';
 import { server } from '../test/mocks/server';
 import { storeTokens } from './token-store';
 
 describe('createSdkConfiguration', () => {
-  it('should return a Configuration instance', () => {
-    const config = createSdkConfiguration('/api/v1');
-    expect(config).toBeInstanceOf(Configuration);
+  it('should configure client baseUrl', () => {
+    createSdkConfiguration('/api/v1');
+    // hey-api setConfig 会裁剪 baseUrl 尾斜杠
+    expect(client.getConfig().baseUrl).toBe('/api/v1');
   });
 
-  it('should set basePath', () => {
-    const config = createSdkConfiguration('/api/v1');
-    expect(config.basePath).toBe('/api/v1');
-  });
-
-  it('should inject custom fetchApi', async () => {
+  it('should inject custom fetch via createAuthFetch', async () => {
     server.use(http.get('*/test', () => HttpResponse.json({ test: true })));
 
-    const config = createSdkConfiguration('');
-    expect(config.fetchApi).toBeDefined();
-
-    const result = await config.fetchApi!('/test');
+    const fetchFn = createAuthFetch();
+    const result = await fetchFn('/test');
     expect(result.ok).toBe(true);
   });
 
@@ -36,8 +30,8 @@ describe('createSdkConfiguration', () => {
       }),
     );
 
-    const config = createSdkConfiguration('');
-    const promise = config.fetchApi!('/test');
+    const fetchFn = createAuthFetch();
+    const promise = fetchFn('/test');
     vi.advanceTimersByTime(30000);
     await expect(promise).rejects.toThrow();
 
@@ -64,8 +58,8 @@ describe('createSdkConfiguration', () => {
         }),
       );
 
-      const config = createSdkConfiguration('');
-      await config.fetchApi!('/test');
+      const fetchFn = createAuthFetch();
+      await fetchFn('/test');
 
       expect(capturedAuth).toBe('Bearer test-jwt-token');
     });
@@ -79,8 +73,8 @@ describe('createSdkConfiguration', () => {
         }),
       );
 
-      const config = createSdkConfiguration('');
-      await config.fetchApi!('/test');
+      const fetchFn = createAuthFetch();
+      await fetchFn('/test');
 
       expect(capturedAuth).toBeNull();
     });
@@ -107,8 +101,8 @@ describe('createSdkConfiguration', () => {
         }),
       );
 
-      const config = createSdkConfiguration('');
-      const response = await config.fetchApi!('/test');
+      const fetchFn = createAuthFetch();
+      const response = await fetchFn('/test');
 
       expect(response.ok).toBe(true);
       expect(capturedAuth).toBe('Bearer fresh-token');
@@ -144,8 +138,8 @@ describe('createSdkConfiguration', () => {
         }),
       );
 
-      const config = createSdkConfiguration('');
-      const response = await config.fetchApi!('/test');
+      const fetchFn = createAuthFetch();
+      const response = await fetchFn('/test');
 
       expect(response.ok).toBe(true);
       expect(capturedAuth).toEqual(['Bearer stale-token', 'Bearer retried-token']);

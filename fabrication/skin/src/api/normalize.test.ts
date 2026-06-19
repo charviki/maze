@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { normalizeTemplate } from './normalize';
-import type { V1SessionTemplate } from './gen/models';
+import type { V1SessionTemplate } from './gen';
 
 describe('normalizeTemplate', () => {
   it('should fill defaults when null', () => {

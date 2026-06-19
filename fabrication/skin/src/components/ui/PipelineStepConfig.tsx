@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Plus, Trash2, Zap } from 'lucide-react';
 import { Button } from './button';
 import { Input } from './input';
-import { V1ConfigItemType } from '../../types';
+import type { V1ConfigItemType } from '../../types';
 
 /**
  * 管线步骤配置组件 — 在 CreateSessionWithTemplateDialog 中使用。
@@ -37,7 +37,7 @@ export function PipelineStepConfig({ steps, onChange }: PipelineStepConfigProps)
       // 不使用 crypto.randomUUID()：HTTP 非 localhost 域名（如 http://maze.local）
       // 不属于 Secure Context，浏览器会抛出 TypeError。
       id: `step-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-      type: V1ConfigItemType.ConfigItemTypePrompt,
+      type: 'CONFIG_ITEM_TYPE_PROMPT',
       value: newStepValue.trim(),
     };
     onChange([...steps, step]);

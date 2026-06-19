@@ -34,19 +34,11 @@ export * from './utils/mask';
 export { formatTimeAgo } from './utils/format-time';
 export * from './types';
 export * from './api';
-// SDK API 类：显式 re-export 避免触发 gen 内部文件的 noUnusedLocals
-export {
-  SessionServiceApi,
-  TemplateServiceApi,
-  ConfigServiceApi,
-  NodeServiceApi,
-  HostServiceApi,
-  SkillServiceApi,
-  MCPServiceApi,
-  RuleServiceApi,
-  GitKeyServiceApi,
-} from './api/gen/apis/index';
-// SDK 模型类型：通过 types.ts re-export，不再直接 export * gen models
+// hey-api 函数式 SDK：re-export 供消费层（如 director-console controller）直接调用。
+// V1* 模型类型已由 types.ts re-export，这里只导出 SDK 函数 + client + Options。
+export { client } from './api/gen/client.gen';
+export * from './api/gen/sdk.gen';
+export type { Options } from './api/gen';
 export { createRequest } from './utils/request';
 export { createSdkConfiguration } from './api/sdk-config';
 export {

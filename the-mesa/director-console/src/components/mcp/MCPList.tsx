@@ -1,12 +1,12 @@
 import { ConfirmDialog } from '@maze/fabrication';
-import type { V1MCPServer } from '@maze/fabrication';
+import type { V1McpServer } from '@maze/fabrication';
 import { Plug } from 'lucide-react';
 import { MCPDetailPanel } from './MCPDetailPanel';
 import { useFabricationList } from '../shared/useFabricationList';
 import { FabricationListColumn } from '../shared/FabricationListColumn';
 
 interface MCPServerApi {
-  list(): Promise<V1MCPServer[]>;
+  list(): Promise<V1McpServer[]>;
   create(data: {
     name: string;
     type: string;
@@ -14,7 +14,7 @@ interface MCPServerApi {
     url?: string;
     args?: string[];
     env?: Record<string, string>;
-  }): Promise<V1MCPServer>;
+  }): Promise<V1McpServer>;
   update(
     name: string,
     data: {
@@ -24,7 +24,7 @@ interface MCPServerApi {
       args?: string[];
       env?: Record<string, string>;
     },
-  ): Promise<V1MCPServer>;
+  ): Promise<V1McpServer>;
   delete(name: string): Promise<void>;
 }
 

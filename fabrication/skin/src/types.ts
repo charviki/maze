@@ -21,10 +21,10 @@ import type {
   V1ResourceLimits,
   V1CreateHostRequest,
   V1Skill,
-  V1MCPServer,
+  V1McpServer,
   V1Rule,
   V1GitKey,
-} from './api/gen/models';
+} from './api/gen';
 
 // ===== SDK 类型 re-export（向后兼容别名） =====
 
@@ -53,13 +53,13 @@ export type {
   V1SessionState,
   V1SaveSessionsResponse,
   V1Skill,
-  V1MCPServer,
+  V1McpServer,
   V1Rule,
   V1GitKey,
-} from './api/gen/models';
+} from './api/gen';
 
-// V1ConfigItemType 是运行时 enum（非纯类型），用 export 而非 export type，供业务代码引用枚举成员
-export { V1ConfigItemType } from './api/gen/models';
+// V1ConfigItemType 是 union 纯类型（hey-api 默认），用 export type re-export
+export type { V1ConfigItemType } from './api/gen';
 
 export type Session = V1Session;
 export type Node = V1NodeInfo;
@@ -74,7 +74,9 @@ export type ConfigLayer = V1ConfigLayer;
 export type EnvDef = V1EnvDef;
 export type FileDef = V1FileDef;
 export type SessionSchema = V1SessionSchema;
-export type ConfigFileSnapshot = Omit<V1ConfigFileSnapshot, '_exists'> & { exists: boolean };
+// hey-api 的 V1ConfigFileSnapshot 直接有 exists 字段（typescript-fetch 是 _exists），
+// 这里 Omit 后重声明为必填，保持业务层 ConfigFileSnapshot.exists 永远是 boolean。
+export type ConfigFileSnapshot = Omit<V1ConfigFileSnapshot, 'exists'> & { exists: boolean };
 export type TemplateConfigView = V1TemplateConfigView;
 export type SessionConfigView = V1SessionConfigView;
 export type ConfigFileUpdate = V1ConfigFileUpdate;
@@ -83,7 +85,7 @@ export type Tool = V1ToolConfig;
 export type ResourceLimits = V1ResourceLimits;
 export type CreateHostRequest = V1CreateHostRequest;
 export type Skill = V1Skill;
-export type MCPServer = V1MCPServer;
+export type MCPServer = V1McpServer;
 export type Rule = V1Rule;
 export type GitKey = V1GitKey;
 export type { NormalizedTemplate } from './api/normalize';

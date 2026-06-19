@@ -1,4 +1,4 @@
-import type { V1Skill, V1MCPServer, V1Rule, V1GitKey } from '@maze/fabrication';
+import type { V1Skill, V1McpServer, V1Rule, V1GitKey } from '@maze/fabrication';
 import type { CreateGitKeyData } from '../components/git-keys/constants';
 
 function now(): string {
@@ -26,7 +26,7 @@ interface SkillApi {
 }
 
 interface MCPServerApi {
-  list(): Promise<V1MCPServer[]>;
+  list(): Promise<V1McpServer[]>;
   create(data: {
     name: string;
     type: string;
@@ -34,8 +34,8 @@ interface MCPServerApi {
     url?: string;
     args?: string[];
     env?: Record<string, string>;
-  }): Promise<V1MCPServer>;
-  get(name: string): Promise<V1MCPServer>;
+  }): Promise<V1McpServer>;
+  get(name: string): Promise<V1McpServer>;
   update(
     name: string,
     data: {
@@ -45,7 +45,7 @@ interface MCPServerApi {
       args?: string[];
       env?: Record<string, string>;
     },
-  ): Promise<V1MCPServer>;
+  ): Promise<V1McpServer>;
   delete(name: string): Promise<void>;
 }
 
@@ -115,9 +115,9 @@ class MockSkillApi implements SkillApi {
 }
 
 class MockMCPApi implements MCPServerApi {
-  private items = new Map<string, V1MCPServer>();
+  private items = new Map<string, V1McpServer>();
 
-  list(): Promise<V1MCPServer[]> {
+  list(): Promise<V1McpServer[]> {
     return Promise.resolve(Array.from(this.items.values()));
   }
   create(data: {
@@ -127,10 +127,10 @@ class MockMCPApi implements MCPServerApi {
     url?: string;
     args?: string[];
     env?: Record<string, string>;
-  }): Promise<V1MCPServer> {
+  }): Promise<V1McpServer> {
     if (this.items.has(data.name))
       return Promise.reject(new Error(`MCPServer "${data.name}" already exists`));
-    const item: V1MCPServer = {
+    const item: V1McpServer = {
       name: data.name,
       type: data.type,
       command: data.command ?? '',
@@ -143,7 +143,7 @@ class MockMCPApi implements MCPServerApi {
     this.items.set(data.name, item);
     return Promise.resolve(item);
   }
-  get(name: string): Promise<V1MCPServer> {
+  get(name: string): Promise<V1McpServer> {
     const item = this.items.get(name);
     if (!item) return Promise.reject(new Error(`MCPServer "${name}" not found`));
     return Promise.resolve(item);
@@ -157,10 +157,10 @@ class MockMCPApi implements MCPServerApi {
       args?: string[];
       env?: Record<string, string>;
     },
-  ): Promise<V1MCPServer> {
+  ): Promise<V1McpServer> {
     const item = this.items.get(name);
     if (!item) return Promise.reject(new Error(`MCPServer "${name}" not found`));
-    const updated: V1MCPServer = {
+    const updated: V1McpServer = {
       ...item,
       type: data.type ?? item.type,
       command: data.command ?? item.command,

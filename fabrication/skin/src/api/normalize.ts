@@ -1,4 +1,4 @@
-import type { V1SessionTemplate, V1ConfigLayer, V1SessionSchema } from './gen/models';
+import type { V1SessionTemplate, V1ConfigLayer, V1SessionSchema } from './gen';
 
 const emptySchema: Required<V1SessionSchema> = { envDefs: [], fileDefs: [] };
 const emptyDefaults: Required<V1ConfigLayer> = { env: {}, files: [] };

@@ -198,14 +198,14 @@ Director Core 启动时执行一次：
 
 - React + TypeScript
 - UI 组件库：`@maze/fabrication`（AgentPanel, NodeList, RadarView, BootSequence 等）
-- HTTP 请求：`@maze/fabrication` 的 `createSdkConfiguration` + SDK 生成 API 类
+- HTTP 请求：`@maze/fabrication` 的 `createSdkConfiguration` + SDK 生成的函数式 API
 
 ### API 客户端分层
 
-- **SDK 生成层** — 由 `openapi-generator`（typescript-fetch）从 OpenAPI 3.0 文档自动生成 TypeScript SDK（位于 `@maze/fabrication` 的 `src/api/gen/`），提供类型安全的 API 类和模型类型
-- **共享辅助层** — `@maze/fabrication` 提供 `createSdkConfiguration`（注入自定义 fetch）、`normalizeTemplate`（模板规范化）、`unwrapSdkResponse`（响应解包）
-- **controller.ts** — Director Core 节点/Host 管理 API，使用生成 SDK 的 NodeServiceApi/HostServiceApi，直连 Director Core
-- **agent.ts** — 通过 Director Core 代理的 Agent API，使用生成 SDK 的 SessionServiceApi/TemplateServiceApi/ConfigServiceApi，路径前缀 `/api/v1/nodes/:name/`
+- **SDK 生成层** — 由 `@hey-api/openapi-ts` 从 OpenAPI 文档自动生成 TypeScript SDK（位于 `@maze/fabrication` 的 `src/api/gen/`），提供类型安全的函数式调用和模型类型
+- **共享辅助层** — `@maze/fabrication` 提供 `createSdkConfiguration`（配置 hey-api client，注入自定义 fetch）、`normalizeTemplate`（模板规范化）、`unwrapSdkResponse`（响应解包）
+- **controller.ts** — Director Core 节点/Host 管理 API，调用生成 SDK 的函数式接口，直连 Director Core
+- **agent.ts** — 通过 Director Core 代理的 Agent API，调用生成 SDK 的函数式接口，路径前缀 `/api/v1/nodes/:name/`
 
 ### 关键交互
 

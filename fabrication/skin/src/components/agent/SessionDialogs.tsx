@@ -235,7 +235,7 @@ function SessionConfigEditorDialog({
       setFiles(
         (res.data.files ?? []).map((f) => ({
           ...f,
-          exists: f._exists ?? false,
+          exists: f.exists ?? false,
         })),
       );
     };

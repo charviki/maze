@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button, Input } from '@maze/fabrication';
-import type { V1MCPServer } from '@maze/fabrication';
+import type { V1McpServer } from '@maze/fabrication';
 import { Plug, Plus, X } from 'lucide-react';
 import { DetailPanelShell } from '../shared/DetailPanelShell';
 import { FormLabel } from '../shared/FormLabel';
@@ -8,7 +8,7 @@ import { FormLabel } from '../shared/FormLabel';
 const MCP_TYPES = ['stdio', 'sse', 'streamable-http'] as const;
 
 interface MCPDetailPanelProps {
-  server: V1MCPServer | null;
+  server: V1McpServer | null;
   isCreating: boolean;
   onSubmit: (data: {
     name: string;
@@ -39,7 +39,7 @@ export function MCPDetailPanel({ server, isCreating, onSubmit, onCancel }: MCPDe
       setUrl(server.url ?? '');
       setArgsText((server.args ?? []).join(' '));
       const entries = server.env
-        ? Object.entries(server.env).map(([key, value]) => ({ key, value }))
+        ? Object.entries(server.env).map(([key, value]) => ({ key, value: String(value) }))
         : [];
       setEnvEntries(entries.length > 0 ? entries : [{ key: '', value: '' }]);
     } else if (isCreating) {

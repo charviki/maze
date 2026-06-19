@@ -122,7 +122,7 @@ export function TemplateManager({ open, onClose, apiClient }: TemplateManagerPro
     setGlobalFiles(
       (configRes.data.files ?? []).map((file) => ({
         ...file,
-        exists: file._exists ?? false,
+        exists: file.exists ?? false,
         content: file.content ?? '',
         original_content: file.content ?? '',
         baseHash: file.hash ?? '',
@@ -207,7 +207,7 @@ export function TemplateManager({ open, onClose, apiClient }: TemplateManagerPro
         setGlobalFiles(
           (configRes.data.files ?? []).map((file) => ({
             ...file,
-            exists: file._exists ?? false,
+            exists: file.exists ?? false,
             content: file.content ?? '',
             original_content: file.content ?? '',
             baseHash: file.hash ?? '',

@@ -9,7 +9,7 @@ import type {
   V1TemplateConfigView,
   V1SessionConfigView,
   V1LocalAgentConfig,
-} from './api/gen/models';
+} from './api/gen';
 import type { NormalizedTemplate } from './api/normalize';
 import { createRequest } from './utils/request';
 import { normalizeTemplate } from './api/normalize';

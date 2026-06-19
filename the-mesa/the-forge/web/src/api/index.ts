@@ -5,7 +5,7 @@ import type {
   V1DocLink,
   V1DocTreeNode,
   V1Attachment,
-} from '@maze/fabrication/api/gen/models';
+} from '@maze/fabrication/api/gen';
 
 // Re-export generated types for convenience
 export type Archive = V1Archive;
